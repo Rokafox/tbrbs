@@ -184,7 +184,7 @@ class Character:
     def attack(self, target_kw1="Undefined", target_kw2="Undefined", 
                target_kw3="Undefined", target_kw4="Undefined", multiplier=2, repeat=1, func_after_dmg=None,
                func_damage_step=None, repeat_seq=1, func_after_miss=None, func_after_crit=None,
-               always_crit=False) -> int:
+               always_crit=False, additional_attack_after_dmg=None) -> int:
         # Warning: DO NOT MESS WITH repeat and repeat_seq TOGETHER
         # -> damage dealt
         global running, text_box
@@ -232,6 +232,8 @@ class Character:
                     damage_dealt += final_damage
                     if func_after_dmg is not None:
                         func_after_dmg(self, target)
+                    if additional_attack_after_dmg is not None:
+                        damage_dealt += additional_attack_after_dmg(self, target)
                 else:
                     if running:
                         text_box.append_html_text(f"Missed! {self.name} attacked {target.name} but missed.\n")
@@ -802,11 +804,11 @@ class Character:
     # Every turn, decrease the duration of all buffs and debuffs by 1. If the duration is 0, remove the effect.
     def updateEffects(self):
         for effect in self.buffs:
-            effect.decreaseDuration()
             if effect.duration == -1:
                 if running:
                     text_box.append_html_text(f"{effect.name} on {self.name} is active.\n")
                 print(f"{effect.name} on {self.name} is active.")
+            effect.decreaseDuration()
             if effect.duration > 0:
                 if running:
                     text_box.append_html_text(f"{effect.name} on {self.name} has {effect.duration} turns left.\n")
@@ -905,7 +907,7 @@ class Poppy(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Poppy"
-        self.skill1_description = "8 hits on random enemies, 300% atk each hit."
+        self.skill1_description = "8 hits on random enemies, 295% atk each hit."
         self.skill2_description = "610% atk on random enemy. Target speed is decreased by 30% for 6 turns."
         self.skill3_description = "On taking normal attack or skill damage, 30% chance to inflict 50% atk continuous damage to attacker for 3 turns."
 
@@ -919,7 +921,7 @@ class Poppy(Character):
         print(f"{self.name} cast skill 1.")
         if self.skill1_cooldown > 0:
             raise Exception
-        damage_dealt = self.attack(multiplier=3.0, repeat=8)      
+        damage_dealt = self.attack(multiplier=2.95, repeat=8)      
         self.skill1_cooldown = 5
         return damage_dealt
 
@@ -949,7 +951,7 @@ class Iris(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Iris"
-        self.skill1_description = "330% atk on all enemies."
+        self.skill1_description = "320% atk on all enemies."
         self.skill2_description = "350% atk on all enemies, inflict 35% atk continuous damage for 3 turns."
         self.skill3_description = "At start of battle, apply Cancellation Shield to ally with highest atk. Cancellation shield: cancel 1 attack if attack damage exceed 10% of max hp. When the shield is active, gain immunity to CC."
 
@@ -964,7 +966,7 @@ class Iris(Character):
         print(f"{self.name} cast skill 1.")
         if self.skill1_cooldown > 0:
             raise Exception
-        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.3, repeat=1)            
+        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.2, repeat=1)            
         self.skill1_cooldown = 5
         return damage_dealt
 
@@ -993,7 +995,7 @@ class Freya(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Freya"
         self.skill1_description = "580% atk on 1 enemy, 60% chance to silence for 3 turns, always target the enemy with highest ATK."
-        self.skill2_description = "480% atk on 1 enemy, always target the enemy with lowest HP."
+        self.skill2_description = "520% atk on 1 enemy, always target the enemy with lowest HP."
         self.skill3_description = "Apply Absorption Shield on self if target is fallen by skill 2. Shield will absorb up to 900% of ATK of damage."
 
     def skill_tooltip(self):
@@ -1024,7 +1026,7 @@ class Freya(Character):
         def apply_shield(self, target):
             if target.isDead():
                 self.applyEffect(AbsorptionShield("Absorption Shield", -1, True, self.atk * 9, cc_immunity=False))
-        damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=4.8, repeat=1, func_after_dmg=apply_shield)
+        damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=5.2, repeat=1, func_after_dmg=apply_shield)
 
         self.skill2_cooldown = 5
         return damage_dealt
@@ -1081,7 +1083,7 @@ class Clover(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Clover"
         self.skill1_description = "Target 1 ally with lowest hp and 1 random enemy, deal 400% atk damage to enemy and heal ally for 100% of damage dealt."
-        self.skill2_description = "Target 1 ally with lowest hp, heal for 330% atk and grant Absorption Shield, absorb damage up to 330% atk."
+        self.skill2_description = "Target 1 ally with lowest hp, heal for 350% atk and grant Absorption Shield, absorb damage up to 350% atk."
         self.skill3_description = "Every time an ally is healed by Clover, heal Clover for 40% of that amount."
 
     def skill_tooltip(self):
@@ -1104,16 +1106,16 @@ class Clover(Character):
         return damage_dealt
 
     def skill2(self):
-        # target 1 ally with lowest hp, heal for 330% atk grant AbsorptionShield, absorb damage up to 330% atk.
+        # target 1 ally with lowest hp, heal for 350% atk grant AbsorptionShield, absorb damage up to 350% atk.
         if self.skill2_cooldown > 0:
             raise Exception
         if running:
             text_box.append_html_text(f"{self.name} cast skill 2.\n")
         print(f"{self.name} cast skill 2.")
         ally_to_heal = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
-        healing, x, y = ally_to_heal.healHp(self.atk * 3.3, self)
+        healing, x, y = ally_to_heal.healHp(self.atk * 3.5, self)
         self.healHp(healing * 0.6, self)
-        ally_to_heal.applyEffect(AbsorptionShield("Shield", -1, True, self.atk * 3.3, cc_immunity=False))
+        ally_to_heal.applyEffect(AbsorptionShield("Shield", -1, True, self.atk * 3.5, cc_immunity=False))
         self.skill2_cooldown = 5
         return 0
 
@@ -1180,9 +1182,9 @@ class Olive(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Olive"
-        self.skill1_description = "480% atk on 1 enemy. Decrease target's atk by 50% for 4 turns."
+        self.skill1_description = "530% atk on 1 enemy. Decrease target's atk by 50% for 4 turns."
         self.skill2_description = "Heal 3 allies with lowest hp by 240% atk and increase their speed by 30% for 4 turns. "
-        self.skill3_description = "Normal attack deals 50% more damage if target has less speed than self."
+        self.skill3_description = "Normal attack deals 65% more damage if target has less speed than self."
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
@@ -1196,7 +1198,7 @@ class Olive(Character):
             raise Exception
         def effect(self, target):
             target.applyEffect(AttackEffect("ATK Down", 4, False, 0.5, False))
-        damage_dealt = self.attack(multiplier=4.8, repeat=1, func_after_dmg=effect)             
+        damage_dealt = self.attack(multiplier=5.3, repeat=1, func_after_dmg=effect)             
         self.skill1_cooldown = 5
         return damage_dealt
 
@@ -1216,13 +1218,13 @@ class Olive(Character):
         return 0
 
     def skill3(self):
-        # Normal attack deals 50% more damage if target has less speed than Olive.
+        # Normal attack deals 65% more damage if target has less speed than Olive.
         pass
 
     def normal_attack(self):
         def effect(self, target, final_damage):
             if target.spd < self.spd:
-                final_damage *= 1.5
+                final_damage *= 1.65
             return final_damage
         self.attack(func_damage_step=effect)
 
@@ -1284,7 +1286,7 @@ class Cerberus(Character):
         self.execution_threshold = execution_threshold
 
         self.skill1_description = "5 hits on random enemies, 320% atk each hit. Decrease target's def by 10% for each hit."
-        self.skill2_description = "300% focus atk on 1 enemy with lowest hp for 3 times. If target hp is less then 15% during the attack, execute the target."
+        self.skill2_description = "290% focus atk on 1 enemy with lowest hp for 3 times. If target hp is less then 15% during the attack, execute the target."
         self.skill3_description = "On sucessfully executing a target, increase execution threshold by 3%, heal 30% of maxhp and increase atk and critdmg by 30%."
 
     def clear_others(self):
@@ -1324,7 +1326,7 @@ class Cerberus(Character):
                 self.healHp(self.maxhp * 0.3, self)
                 self.updateAtk(1.3, False)
                 self.updateCritdmg(0.3, True)
-        damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=3.0, repeat=1, repeat_seq=3, func_after_dmg=effect)
+        damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=2.9, repeat=1, repeat_seq=3, func_after_dmg=effect)
         self.skill2_cooldown = 5
         return damage_dealt
 
@@ -1340,7 +1342,7 @@ class Pepper(Character):
         self.name = "Pepper"
         self.skill1_description = "770% atk on 1 enemy, 70% success rate, 20% chance to hit an ally with 300% atk, 10% chance to hit self with 300% atk."
         self.skill2_description = "Heal an ally with lowest hp percentage with 770% atk, 70% success rate, 20% chance to have no effect, 10% chance to damage the ally with 200% atk."
-        self.skill3_description = "On a successful healing with skill 2, 70% chance to accidently revive a neighbor ally with 70% hp."
+        self.skill3_description = "On a successful healing with skill 2, 80% chance to accidently revive a neighbor ally with 80% hp."
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
@@ -1372,18 +1374,21 @@ class Pepper(Character):
         if pondice <= 70:
             target.healHp(self.atk * 7.7, self)
             revivedice = random.randint(1, 100)
-            if revivedice <= 70:
+            if revivedice <= 80:
                 neighbors = self.get_neighbor_allies_not_including_self(False) 
                 dead_neighbors = [x for x in neighbors if x.isDead()]
                 if dead_neighbors != []:
                     revive_target = random.choice(dead_neighbors)
-                    revive_target.revive(1, 0.7)
+                    revive_target.revive(1, 0.8)
         elif pondice <= 90 and pondice > 70:
+            if running:
+                text_box.append_html_text(f"No effect!\n")
+            print(f"No effect.")
             return 0
         else:
             target.takeDamage(self.atk * 2.0, self)
 
-        self.skill2_cooldown = 5
+        self.skill2_cooldown = 4
         return 0
         
 
@@ -1391,14 +1396,122 @@ class Pepper(Character):
         pass
 
 
+class Cliffe(Character): 
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Cliffe"
+        self.skill1_description = "Attack 3 enemies with 300% atk, increase their damage taken by 20% for 3 turns."
+        self.skill2_description = "Attack random enemies 4 times for 340% atk, each successful attack and successful additional attack has 40% chance to trigger an 270% atk additional attack."
+        self.skill3_description = "Heal hp by 10% of maxhp multiplied by targets fallen by skill 2."
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1(self):
+        if running:
+            text_box.append_html_text(f"{self.name} cast skill 1.\n")
+        print(f"{self.name} cast skill 1.")
+        if self.skill1_cooldown > 0:
+            raise Exception
+        def effect(self, target):
+            target.applyEffect(ReductionShield("Crystal Breaker", 3, False, 0.2, False))
+        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="3", multiplier=3.0, repeat=1, func_after_dmg=effect)            
+        self.skill1_cooldown = 5
+        return damage_dealt
+
+    def skill2(self):
+        if running:
+            text_box.append_html_text(f"{self.name} cast skill 2.\n")
+        print(f"{self.name} cast skill 2.")
+        if self.skill2_cooldown > 0:
+            raise Exception
+        downed_target = 0
+        def more_attacks(self, target):
+            nonlocal downed_target
+            if target.isDead():
+                downed_target += 1
+            dice = random.randint(1, 100)
+            if dice <= 40:
+                if running:
+                    text_box.append_html_text(f"{self.name} triggered additional attack.\n")
+                print(f"{self.name} triggered additional attack.")
+                return self.attack(multiplier=2.7, repeat=1, additional_attack_after_dmg=more_attacks)
+            else:
+                return 0
+        damage_dealt = self.attack(multiplier=3.4, repeat=4, additional_attack_after_dmg=more_attacks)      
+        self.skill2_cooldown = 5
+        if downed_target > 0:
+            self.healHp(downed_target * 0.1 * self.maxhp, self)
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+
+class Pheonix(Character): 
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Pheonix"
+        self.skill1_description = "Attack all enemies with 240% atk, 80% chance to inflict burn for 3 turns. Burn deals 50% atk damage per turn."
+        self.skill2_description = "First time cast: apply Reborn to all allies with 65% chance each, however, allies can only revive with 15% hp and receive no buff effects. Second and further cast: attack random enemy pair with 320% atk, 80% chance to inflict burn for 3 turns. Burn deals 50% atk damage per turn."
+        self.skill3_description = "Revive with 40% hp the next turn after fallen. When revived, increase atk by 50% for 3 turns."
+        self.first_time = True
+
+    def clear_others(self):
+        self.first_time = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n\nFirst time on skill 2: {self.first_time}"
+
+    def skill1(self):
+        if running:
+            text_box.append_html_text(f"{self.name} cast skill 1.\n")
+        print(f"{self.name} cast skill 1.")
+        if self.skill1_cooldown > 0:
+            raise Exception
+        def burn_effect(self, target):
+            if random.randint(1, 100) <= 80:
+                target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5))
+        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.4, repeat=1, func_after_dmg=burn_effect)         
+        self.skill1_cooldown = 5
+        return damage_dealt
+
+    def skill2(self):
+        if running:
+            text_box.append_html_text(f"{self.name} cast skill 2.\n")
+        print(f"{self.name} cast skill 2.")
+        if self.skill2_cooldown > 0:
+            raise Exception
+        if self.first_time:
+            self.first_time = False
+            for ally in self.ally:
+                if ally != self:
+                    if random.randint(1, 100) <= 65:
+                        ally.applyEffect(RebornEffect("Reborn", -1, True, 0.15, False))
+            self.skill2_cooldown = 5
+            return 0
+        else:
+            def burn_effect(self, target):
+                if random.randint(1, 100) <= 80:
+                    target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5))
+            damage_dealt = self.attack(target_kw1="random_enemy_pair", multiplier=3.2, repeat=1, func_after_dmg=burn_effect)         
+            self.skill2_cooldown = 5
+            return damage_dealt   
+
+        
+    def skill3(self):
+        pass
+
+
 #-----------------------------------------
 #-----------------------------------------
 class Effect:
-    def __init__(self, name, duration, is_buff, cc_immunity=False,**kwargs):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0,**kwargs):
         self.name = name
         self.duration = duration
         self.is_buff = bool(is_buff)
         self.cc_immunity = bool(cc_immunity)
+        self.delay_trigger = delay_trigger # number of turns before effect is triggered
     
     def isPermanent(self):
         return self.duration == -1
@@ -1417,6 +1530,11 @@ class Effect:
         pass
     
     def applyEffectOnTurn(self, character):
+        self.delay_trigger = max(self.delay_trigger - 1, 0)
+        if self.delay_trigger == 0:
+            self.applyEffectOnTrigger(character)
+
+    def applyEffectOnTrigger(self, character):
         pass
 
     def applyEffectOnExpire(self, character):
@@ -1438,14 +1556,17 @@ class Effect:
             if self.duration == -1:
                 string = "<font color=" + color_buff + ">" + self.name + ": Permanent</font>" + "\n"
             else:
-                string = "<font color=" + color_buff + ">" + self.name + ": " + str(self.duration) + " turns remaining</font>" + "\n"
-            string += self.tooltip_description()
+                string = "<font color=" + color_buff + ">" + self.name + ": " + str(self.duration) + " turn(s) remaining</font>" + "\n"
         else:
             if self.duration == -1:
                 string = "<font color=" + color_debuff + ">" + self.name + ": Permanent</font>" + "\n"
             else:
-                string = "<font color=" + color_debuff + ">" + self.name + ": " + str(self.duration) + " turns remaining</font>" + "\n"
-            string += self.tooltip_description()
+                string = "<font color=" + color_debuff + ">" + self.name + ": " + str(self.duration) + " turn(s) remaining</font>" + "\n"
+        if self.cc_immunity:
+            string += "This effect grants CC immunity.\n"
+        if self.delay_trigger > 0:
+            string += "Trigger in " + str(self.delay_trigger) + " turn(s)\n"
+        string += self.tooltip_description()
         return string
     
     def tooltip_description(self):
@@ -1531,7 +1652,7 @@ class ContinuousDamageEffect(Effect):
         self.value = float(value)
         self.is_buff = is_buff
     
-    def applyEffectOnTurn(self, character):
+    def applyEffectOnTrigger(self, character):
         print(f"{character.name} is taking {self.value} status damage")
         character.takeStatusDamage(self.value, self)
     
@@ -1563,13 +1684,10 @@ class AbsorptionShield(Effect):
             return 0
         
     def tooltip_description(self):
-        if self.cc_immunity:
-            return f"Absorbs up to {self.shield_value} damage. Immune to CC when shield is active."
-        else:
-            return f"Absorbs up to {self.shield_value} damage."
+        return f"Absorbs up to {self.shield_value} damage."
 
 #---------------------------------------------------------
-# Reduction Shield effect (reduces damage taken by a certain percentage)
+# Reduction Shield and Damage Amplify effect (reduces/increase damage taken by a certain percentage)
 class ReductionShield(Effect):
     def __init__(self, name, duration, is_buff, effect_value, cc_immunity):
         super().__init__(name, duration, is_buff, cc_immunity=False)
@@ -1578,16 +1696,18 @@ class ReductionShield(Effect):
         self.cc_immunity = cc_immunity
 
     def applyEffectDuringDamageStep(self, character, damage):
-        damage = damage * (1 - self.effect_value)
+        if self.is_buff:
+            damage = damage * (1 - self.effect_value)
+        else:
+            damage = damage * (1 + self.effect_value)
         return damage
     
     def tooltip_description(self):
-        if self.cc_immunity:
-            return f"Reduces damage taken by {self.effect_value*100}%. Immune to CC when shield is active."
-        else:
+        if self.is_buff:
             return f"Reduces damage taken by {self.effect_value*100}%."
-
-
+        else:
+            return f"Increases damage taken by {self.effect_value*100}%."
+    
 #---------------------------------------------------------
 # Effect shield 1 (before damage calculation, if character hp is below certain threshold, healhp for certain amount)
 class EffectShield1(Effect):
@@ -1604,10 +1724,27 @@ class EffectShield1(Effect):
         return damage
     
     def tooltip_description(self):
-        if self.cc_immunity:
-            return f"When hp is below {self.threshold*100}%, heal for {self.heal_value} hp before damage calculation. Immune to CC when shield is active."
-        else:
-            return f"When hp is below {self.threshold*100}%, heal for {self.heal_value} hp before damage calculation."
+        return f"When hp is below {self.threshold*100}%, heal for {self.heal_value} hp before damage calculation."
+    
+
+#---------------------------------------------------------
+# Reborn effect (revive with certain amount of hp)
+class RebornEffect(Effect):
+    def __init__(self, name, duration, is_buff, effect_value, cc_immunity):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.effect_value = effect_value
+        self.cc_immunity = cc_immunity
+    
+    def applyEffectOnTrigger(self, character):
+        if character.isDead():
+            character.revive(1, hp_percentage_to_revive=self.effect_value)
+            if isinstance(character, Pheonix):
+                character.applyEffect(AttackEffect("ATK Up", 3, True, 0.5, False))
+            character.removeEffect(self)
+
+    def tooltip_description(self):
+        return f"Revive with {self.effect_value*100}% hp the turn after fallen."
 
 #---------------------------------------------------------
 # Cancellation Shield effect (cancel 1 attack if attack damage exceed certain amount of max hp)
@@ -1629,10 +1766,7 @@ class CancellationShield(Effect):
             return damage
         
     def tooltip_description(self):
-        if self.cc_immunity:
-            return f"Cancel 1 attack if damage exceed {self.threshold*100}% of max hp. Immune to CC when shield is active."
-        else:
-            return f"Cancel 1 attack if damage exceed {self.threshold*100}% of max hp."
+        return f"Cancel 1 attack if damage exceed {self.threshold*100}% of max hp."
 
 #--------------------------------------------------------- 
 #---------------------------------------------------------
@@ -1672,6 +1806,11 @@ def start_of_battle_effects(party):
     if any(isinstance(character, Iris) for character in party):
         character_with_highest_atk = max(party, key=lambda char: getattr(char, 'atk', 0))
         character_with_highest_atk.applyEffect(CancellationShield("Cancellation Shield", -1, True, 0.1, cc_immunity=True))
+    # Pheonix effect
+    for character in party:
+        if isinstance(character, Pheonix):
+            character.applyEffect(RebornEffect("Reborn", -1, True, 0.4, False))
+        
 
 def mid_turn_effects(party1, party2): 
     # Fenrir effect, does not work if there are more than 1 Fenrir in the party
@@ -1709,10 +1848,12 @@ character8 = Poppy("Poppy", average_party_level, 0, generate_equips_list(4))
 character9 = Lillia("Lillia", average_party_level, 0, generate_equips_list(4))
 character10 = Iris("Iris", average_party_level, 0, generate_equips_list(4))
 character11 = Pepper("Pepper", average_party_level, 0, generate_equips_list(4))
+character12 = Cliffe("Cliffe", average_party_level, 0, generate_equips_list(4))
+character13 = Pheonix("Pheonix", average_party_level, 0, generate_equips_list(4))
 
 all_characters = [character1, character2, character3, character4, character5,
                     character6, character7, character8, character9, character10,
-                        character11]
+                        character11, character12, character13]
 
 # ---------------------------------------------------------
 # ---------------------------------------------------------
@@ -1725,7 +1866,7 @@ if __name__ == "__main__":
     light_yellow = pygame.Color("#FFFFE0")
 
     display_surface = pygame.display.set_mode((1200, 900))
-    ui_manager = pygame_gui.UIManager((1200, 900), "theme_light_yellow.json")
+    ui_manager = pygame_gui.UIManager((1200, 900), "theme_light_yellow.json", starting_language='ja')
 
     pygame.display.set_caption("Battle Simulator")
 

@@ -54,25 +54,27 @@ def simulate_battle_between_party(party1, party2):
         turn += 1
     if turn > 300:
         print("Battle is taking too long.")
-        return None
+        return None, 300
     if is_someone_alive(party1) and not is_someone_alive(party2):
         print("Party 1 win!")
-        return party1
+        return party1, turn
     elif is_someone_alive(party2) and not is_someone_alive(party1):
         print("Party 2 win!")
-        return party2
+        return party2, turn
     else:
         print("Draw!")
-        return None
+        return None, turn
 
 
 def calculate_winrate_for_character(sample): 
     win_counts = {c.name: 0 for c in all_characters}
     total_games = {c.name: 0 for c in all_characters}
+    turns_total = 0
 
     for i in range(sample):
         for character in all_characters:
-            character.__init__(character.name, character.lvl, equip=generate_equips_list(4))
+            character.equip = generate_equips_list(4)
+            character.reset_stats()
 
         random.shuffle(all_characters)
         party1 = all_characters[:5]
@@ -81,12 +83,14 @@ def calculate_winrate_for_character(sample):
         for character in party1 + party2:
             total_games[character.name] += 1
 
-        winner_party = simulate_battle_between_party(party1, party2)
+        winner_party, turns = simulate_battle_between_party(party1, party2)
+        turns_total += turns
         if winner_party is not None:
             for character in winner_party:
                 win_counts[character.name] += 1
 
     print("=====================================")
+    print("Average turns:", turns_total / sample) # Ideal range: 55-60
     print("Winrate:")
     for character in all_characters:
         if total_games[character.name] > 0:
@@ -98,4 +102,4 @@ def calculate_winrate_for_character(sample):
 
 
 if __name__ == "__main__":
-    calculate_winrate_for_character(100)
+    calculate_winrate_for_character(1000)

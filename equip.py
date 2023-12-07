@@ -1,6 +1,7 @@
 import random
 
 
+# Design choice: We should not give much power to equipment, the uniqueness of each character should be preserved.
 # Normal Distribution with max and min value
 def normal_distribution(min_value, max_value, mean, std):
     while True:
@@ -247,7 +248,8 @@ class Equip:
             color = "#21d6ff"
         star_color = "#3746A7"
 
-        stats = "<font color=" + color + ">" + self.rarity + " " + self.type + "</font>" + "<font color=" + star_color + ">" + f" (+{int(self.upgrade_stars)})" + "</font>" + "<font color=" + color + ">" + "\n"
+        stats = "<font color=" + color + ">" + self.rarity + " " + self.type + "</font>" 
+        stats += "<font color=" + star_color + ">" + '★'*int(self.upgrade_stars) + "</font>" + "<font color=" + color + ">" + "\n"
         if self.maxhp_flat != 0:
             stats += "Max HP: " + str(self.maxhp_flat) + "<font color=" + star_color + ">" + f" (+{int(self.maxhp_extra)})" + "</font>" + "\n"
         if self.atk_flat != 0:
