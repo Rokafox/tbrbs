@@ -395,96 +395,114 @@ class Character:
     # Check if the character is the only one dead
     def isOnlyOneDead(self):
         return len(self.enemy) == 1
-    
+
     # Update the character's spd, flat or multiplicative
-    def updateSpd(self, value, is_flat):
+    def updateSpd(self, value, is_flat) -> (int, int):
+        prev, new = self.spd, self.spd
         if is_flat:
-            self.spd += value
-            self.spd = int(self.spd)
-            if self.spd < 0:
-                self.spd = 0
+            new += value
+            new = int(new)
+            if new < 0:
+                new = 0
         else:
-            self.spd *= value
-            self.spd = int(self.spd)
-            if self.spd < 0:
-                self.spd = 0
+            new *= value
+            new = int(new)
+            if new < 0:
+                new = 0
+        self.spd = new
+        return prev, new
  
     # Update the character's atk, flat or multiplicative
     def updateAtk(self, value, is_flat):
+        prev, new = self.atk, self.atk
         if is_flat:
-            self.atk += value
-            self.atk = int(self.atk)
-            if self.atk < 0:
-                self.atk = 0
+            new += value
+            new = int(new)
+            if new < 0:
+                new = 0
         else:
-            self.atk *= value
-            self.atk = int(self.atk)
-            if self.atk < 0:
-                self.atk = 0
+            new *= value
+            new = int(new)
+            if new < 0:
+                new = 0
+        self.atk = new
+        return prev, new
 
     # Update the character's def, flat or multiplicative
     def updateDef(self, value, is_flat):
+        prev, new = self.defense, self.defense
         if is_flat:
-            self.defense += value
-            self.defense = int(self.defense)
-            if self.defense < 0:
-                self.defense = 0
+            new += value
+            new = int(new)
+            if new < 0:
+                new = 0
         else:
-            self.defense *= value
-            self.defense = int(self.defense)
-            if self.defense < 0:
-                self.defense = 0
+            new *= value
+            new = int(new)
+            if new < 0:
+                new = 0
+        self.defense = new
+        return prev, new
 
     # Update the character's eva, flat or multiplicative
     def updateEva(self, value, is_flat):
+        prev, new = self.eva, self.eva
         if is_flat:
-            self.eva += value
+            new += value
         else:
-            self.eva *= value
+            new *= value
+        self.eva = new
+        return prev, new
     
     # Update the character's acc, flat or multiplicative
     def updateAcc(self, value, is_flat):
+        prev, new = self.acc, self.acc
         if is_flat:
-            self.acc += value
+            new += value
         else:
-            self.acc *= value
+            new *= value
+        self.acc = new
+        return prev, new
     
     # Update the character's crit, flat or multiplicative
     def updateCrit(self, value, is_flat):
+        prev, new = self.crit, self.crit
         if is_flat:
-            self.crit += value
+            new += value
         else:
-            self.crit *= value
+            new *= value
+        self.crit = new
+        return prev, new
     
     # Update the character's critdmg, flat or multiplicative
     def updateCritdmg(self, value, is_flat):
+        prev, new = self.critdmg, self.critdmg
         if is_flat:
-            self.critdmg += value
+            new += value
         else:
-            self.critdmg *= value
+            new *= value
+        self.critdmg = new
+        return prev, new
 
     # Update the character's critdef, flat or multiplicative
     def updateCritdef(self, value, is_flat):
+        prev, new = self.critdef, self.critdef
         if is_flat:
-            self.critdef += value
+            new += value
         else:
-            self.critdef *= value
+            new *= value
+        self.critdef = new
+        return prev, new
 
     # Update the character's penetration, flat or multiplicative
     def updatePenetration(self, value, is_flat):
+        prev, new = self.penetration, self.penetration
         if is_flat:
-            self.penetration += value
+            new += value
         else:
-            self.penetration *= value
-
-    # Update the character's hp, flat
-    def updateHp(self, value):
-        self.hp += value
-        self.hp = int(self.hp)
-        if self.hp < 0:
-            self.hp = 0
-        if self.hp > self.maxhp:
-            self.hp = self.maxhp
+            new *= value
+        self.penetration = new
+        return prev, new
 
     # Heal the character hp, flat, independent of updateHp
     def healHp(self, value, healer):
@@ -519,23 +537,29 @@ class Character:
 
     # Update the character's maxhp, flat or multiplicative
     def updateMaxhp(self, value, is_flat):
+        prev, new = self.maxhp, self.maxhp
         if is_flat:
-            self.maxhp += value
-            self.maxhp = int(self.maxhp)
-            if self.maxhp < 0:
-                self.maxhp = 0
+            new += value
+            new = int(new)
+            if new < 0:
+                new = 0
         else:
-            self.maxhp *= value
-            self.maxhp = int(self.maxhp)
-            if self.maxhp < 0:
-                self.maxhp = 0
+            new *= value
+            new = int(new)
+            if new < 0:
+                new = 0
+        self.maxhp = new
+        return prev, new
 
     # Update the character's hpregen, flat or multiplicative
     def updateHpregen(self, value, is_flat):
+        prev, new = self.hpregen, self.hpregen
         if is_flat:
-            self.hpregen += value
+            new += value
         else:
-            self.hpregen *= value
+            new *= value
+        self.hpregen = new
+        return prev, new
     
     # Heal from regen. This is not a flat heal, but a heal that is based on the character's regen and maxhp/mp
     def regen(self):
@@ -553,33 +577,25 @@ class Character:
             print(f"{self.name} is regenerated for {healing} HP.")
         return healing, self, overhealing
 
-    # Update the character's hpdrain, flat or multiplicative
-    def updateHpdrain(self, value, is_flat):
-        if is_flat:
-            self.hpdrain += value
-        else:
-            self.hpdrain *= value
-
-    # Update the character's thorn, flat or multiplicative
-    def updateThorn(self, value, is_flat):
-        if is_flat:
-            self.thorn += value
-        else:
-            self.thorn *= value
-
     # Update the character's heal efficiency, flat or multiplicative
     def updateHeal_efficiency(self, value, is_flat):
+        prev, new = self.heal_efficiency, self.heal_efficiency
         if is_flat:
-            self.heal_efficiency += value
+            new += value
         else:
-            self.heal_efficiency *= value
+            new *= value
+        self.heal_efficiency = new
+        return prev, new
 
     # Update the character's final damage reduction, flat or multiplicative
     def updateDamage_reduction(self, value, is_flat):
+        prev, new = self.final_damage_taken_multipler, self.final_damage_taken_multipler
         if is_flat:
-            self.final_damage_taken_multipler += value
+            new += value
         else:
-            self.final_damage_taken_multipler *= value
+            new *= value
+        self.final_damage_taken_multipler = new
+        return prev, new
 
     # Take skill or normal attack damage, flat.
     def takeDamage(self, value, attacker=None, func_after_dmg=None):
@@ -689,6 +705,15 @@ class Character:
         if self.isAlive() and effect.is_buff:
             self.buffs.append(effect)
         elif self.isAlive() and not effect.is_buff:
+            # Stun on stunned target will not stack, but refresh the duration
+            if effect.name == "Stun" and self.isStunned():
+                for d in self.debuffs:
+                    if d.name == "Stun":
+                        d.duration = effect.duration
+                        if running:
+                            text_box.append_html_text(f"{effect.name} duration on {self.name} has been refreshed.\n")
+                        print(f"{effect.name} duration on {self.name} has been refreshed.")
+                        return
             # Check if self has CC immunity
             if effect.name in ["Stun", "Confuse", "Charm", "Silence", "Asleep", "Frozen"]:
                 if self.hasCCImmunity():
@@ -770,11 +795,11 @@ class Character:
                     text_box.append_html_text(f"{effect.name} on {self.name} has {effect.duration} turns left.\n")
                 print(f"{effect.name} on {self.name} has {effect.duration} turns left.")
             if effect.isExpired():
-                self.removeEffect(effect)
-                effect.applyEffectOnExpire(self)
                 if running:
                     text_box.append_html_text(f"{effect.name} on {self.name} has expired.\n")
                 print(f"{effect.name} on {self.name} has expired.")
+                self.removeEffect(effect)
+                effect.applyEffectOnExpire(self)
         for effect in self.debuffs:
             if effect.duration == -1:
                 if running:
@@ -786,11 +811,11 @@ class Character:
                     text_box.append_html_text(f"{effect.name} on {self.name} has {effect.duration} turns left.\n")
                 print(f"{effect.name} on {self.name} has {effect.duration} turns left.")
             if effect.isExpired():
-                self.removeEffect(effect)
-                effect.applyEffectOnExpire(self)
                 if running:
                     text_box.append_html_text(f"{effect.name} on {self.name} has expired.\n")
                 print(f"{effect.name} on {self.name} has expired.")
+                self.removeEffect(effect)
+                effect.applyEffectOnExpire(self)
     
     # Every turn, calculate applyEffectOnTurn effect of all buffs and debuffs. ie. poison, burn, etc.
     def statusEffects(self):
@@ -1101,7 +1126,7 @@ class Ruby(Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 70:
-                target.applyEffect(Effect("Stun", 3, False))
+                target.applyEffect(StunEffect(duration=3))
         def stun_amplify(self, target, final_damage):
             if target.hasEffect("Stun"):
                 final_damage *= 1.3
@@ -1120,7 +1145,7 @@ class Ruby(Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 50:
-                target.applyEffect(Effect("Stun", 3, False))
+                target.applyEffect(StunEffect(duration=3))
         def stun_amplify(self, target, final_damage):
             if target.hasEffect("Stun"):
                 final_damage *= 1.3
@@ -1591,6 +1616,25 @@ class Effect:
 
 # Some common effects
 # ---------------------------------------------------------
+# Stun effect
+class StunEffect(Effect):
+    def __init__(self, duration, cc_immunity=False, delay_trigger=0):
+        self.duration = duration
+        self.name = "Stun"
+        self.is_buff = False
+        self.cc_immunity = cc_immunity
+        self.delay_trigger = delay_trigger
+    
+    def applyEffectOnApply(self, character):
+        character.updateEva(-1, True) # Eva can be lower than 0, which makes sense.
+
+    def applyEffectOnRemove(self, character):
+        character.updateEva(1, True)
+    
+    def tooltip_description(self):
+        return "Cannot take action and evade is reduced by 100%."
+
+
 # Speed effect
 class SpeedEffect(Effect):
     def __init__(self, name, duration, is_buff, value, is_flat):
@@ -1810,7 +1854,7 @@ def is_someone_alive(party):
 
 def get_neighbors(party, char, include_self=True) -> list:
     if char not in party:
-        raise ValueError("Character not in party")
+        return []
 
     index = party.index(char)
     start = max(index - 1, 0)
@@ -1820,18 +1864,6 @@ def get_neighbors(party, char, include_self=True) -> list:
     if not include_self:
         neighbors.remove(char)
     return neighbors
-
-def get_neighbors_of_character_in_party(party, char_name, include_self=True, require_character_to_be_alive=False) -> (list, Character):
-    character = next((char for char in party if char.name == char_name), None)
-
-    if not character:
-        # raise ValueError("Character not found in party")
-        return [], None
-
-    if require_character_to_be_alive and not character.isAlive():
-        return [], None
-
-    return get_neighbors(party, character, include_self), character
 
 def start_of_battle_effects(party):
     # Iris effect
@@ -1845,12 +1877,18 @@ def start_of_battle_effects(party):
         
 
 def mid_turn_effects(party1, party2): 
-    # Fenrir effect, does not work if there are more than 1 Fenrir in the party
+    # Fenrir effect
     for party in [party1, party2]:
-        characters_to_apply_effects, fenrir = get_neighbors_of_character_in_party(party, "Fenrir", include_self=False, require_character_to_be_alive=True)
-        if characters_to_apply_effects != []:
-            for character in characters_to_apply_effects:
-                character.applyEffect(EffectShield1("Protection", 1, True, 0.4, fenrir.atk, False))
+        for character in party:
+            neighbors = character.get_neighbor_allies_not_including_self()
+            fenrir = next((ally for ally in neighbors if isinstance(ally, Fenrir)), None)
+            if fenrir:
+                if not character.hasEffect("Fluffy Protection"):
+                    character.applyEffect(EffectShield1("Fluffy Protection", -1, True, 0.4, fenrir.atk, False))
+            else:
+                for buff in character.buffs:
+                    if buff.name == "Fluffy Protection":
+                        character.removeEffect(buff) 
 
 # Reset characters.ally and characters.enemy
 def reset_ally_enemy_attr(party1, party2):
@@ -2069,27 +2107,27 @@ if __name__ == "__main__":
     button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 300), (156, 50)),
                                         text='Shuffle Party',
                                         manager=ui_manager,
-                                        tool_tip_text = "Click to shuffle party and restart the battle")
+                                        tool_tip_text = "Shuffle party and restart the battle")
 
     button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 360), (156, 50)),
                                         text='Next Turn',
                                         manager=ui_manager,
-                                        tool_tip_text = "Click to simulate the next turn")
+                                        tool_tip_text = "Simulate the next turn")
 
     button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 420), (156, 50)),
                                         text='All Turns',
                                         manager=ui_manager,
-                                        tool_tip_text = "Click to skip to the end of the battle. May take a while.")
+                                        tool_tip_text = "Skip to the end of the battle. May take a while.")
 
     button4 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
                                         text='Restart Battle',
                                         manager=ui_manager,
-                                        tool_tip_text = "Click to clear the board and restart the battle")
+                                        tool_tip_text = "Restart battle")
 
     button5 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 540), (156, 50)),
                                         text='Quit',
                                         manager=ui_manager,
-                                        tool_tip_text = "Click to quit the game")
+                                        tool_tip_text = "Quit")
 
     character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"],
                                                             "Option 1",
@@ -2124,17 +2162,17 @@ if __name__ == "__main__":
     character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 380), (156, 35)),
                                         text='Replace',
                                         manager=ui_manager,
-                                        tool_tip_text = "Replace character with selected character, reset stats and reroll rune")
+                                        tool_tip_text = "Replace selected character with reserve character")
 
     levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 515), (156, 35)),
                                         text='Level Up',
                                         manager=ui_manager,
-                                        tool_tip_text = "Reset stats and level up")
+                                        tool_tip_text = "Level up")
 
     leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 555), (156, 35)),
                                         text='Level Down',
                                         manager=ui_manager,
-                                        tool_tip_text = "Reset stats and level down")
+                                        tool_tip_text = "Level down")
 
 
     def next_turn(party1, party2):
@@ -2357,7 +2395,7 @@ if __name__ == "__main__":
                 text_box.append_html_text("====================================\n")
                 text_box.append_html_text(f"Upgrading equipment {character.equip[eq_index].type} for {character.name}\n")
                 text_box.append_html_text(f"Stars: {int(a)} -> {int(b)}\n")
-                if int(b) == 5:
+                if int(b) == 15:
                     text_box.append_html_text(f"Max stars reached\n")
                 if int(b) == 0:
                     text_box.append_html_text(f"Min stars reached\n")
