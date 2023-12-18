@@ -1,5 +1,5 @@
 from battle_simulator import reset_ally_enemy_attr, start_of_battle_effects, mid_turn_effects, is_someone_alive, all_characters, generate_equips_list
-import random
+import random, sys
 
 
 def simulate_battle_between_party(party1, party2):
@@ -92,14 +92,26 @@ def calculate_winrate_for_character(sample):
     print("=====================================")
     print("Average turns:", turns_total / sample) # Ideal range: 55-60
     print("Winrate:")
+    winrate_dict = {}
     for character in all_characters:
         if total_games[character.name] > 0:
-            winrate = win_counts[character.name] / total_games[character.name] * 100
+            try:
+                winrate = win_counts[character.name] / total_games[character.name] * 100
+            except ZeroDivisionError:
+                winrate = 0
             loss_count = total_games[character.name] - win_counts[character.name]
-            print(f"{character.name} wins: {win_counts[character.name]}, losses: {loss_count}, winrate: {winrate:.2f}%")
+            winrate_dict[character.name] = (win_counts[character.name], loss_count, winrate)
         else:
-            print(f"{character.name} has not played any games.")
+            winrate_dict[character.name] = (0, 0, 0)
+    winrate_dict = {k: v for k, v in sorted(winrate_dict.items(), key=lambda item: item[1][2], reverse=True)}
+    max_key_length = max(len(key) for key in winrate_dict)
+    for k, v in winrate_dict.items():
+        print(f"{k:>{max_key_length}}: {v[0]:>5} wins, {v[1]:>5} losses, {v[2]:>6.2f}% winrate")
 
 
 if __name__ == "__main__":
-    calculate_winrate_for_character(1000)
+    if len(sys.argv) > 1:
+        sample = int(sys.argv[1])
+    else:
+        sample = 1000
+    calculate_winrate_for_character(sample)
