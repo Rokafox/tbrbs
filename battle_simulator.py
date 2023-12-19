@@ -6,6 +6,17 @@ running = False
 logging = True
 text_box = None
 
+
+# TODO:
+# 1. Add attributes to character to get info on damage dealt and healing done # Too difficult to implement, abandoning...Done
+# 2. Create graph to show damage dealt and healing done # Ignored
+# 3. Add equipment set effect # Implementing...
+# 4. Redesign UI, the location of the buttons are not good # Waiting...
+# 5. Add 'Guard' attribute as a counter to 'Penetration', equipment should have 'Guard' attribute # Waiting...
+# 6. Equipment should have level attribute, allow scaling with characters. Minimum level is 1, maximum level is 1000. # Waiting...
+# 7. Design web UI instead of pygame # Searching for a good framework...
+
+
 class Character:
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         if equip is None:
@@ -46,6 +57,7 @@ class Character:
         self.party = [] if resetally and resetenemy else self.party
         self.enemyparty = [] if resetally and resetenemy else self.enemyparty
         self.calculate_equip_effect()
+        self.eq_set = self.get_equipment_set()
         self.skill1_cooldown = 0
         self.skill2_cooldown = 0
         self.clear_others()
@@ -86,6 +98,7 @@ class Character:
                 self.hp = self.maxhp
             if self.hp > self.maxhp:
                 self.hp = self.maxhp
+            self.set_up_equipment_set_effects()
         return self.equip
 
     def clear_others(self):
@@ -764,19 +777,6 @@ class Character:
         self.buffs = []
         self.debuffs = []
 
-    # Remove set amount buffs effect randomly from the character and return the list of removed effects
-    def removeRandomBuffs(self, amount):
-        if amount > len(self.buffs):
-            amount = len(self.buffs)
-        if amount == 0:
-            return []
-        removed_effects = []
-        for i in range(amount):
-            effect = random.choice(self.buffs)
-            self.removeEffect(effect)
-            removed_effects.append(effect)
-        return removed_effects
-
     # Remove set amount debuffs effect randomly from the character and return the list of removed effects
     def removeRandomDebuffs(self, amount):
         if amount > len(self.debuffs):
@@ -831,6 +831,58 @@ class Character:
 
     def skill_tooltip(self):
         return ""
+
+    def get_equipment_set(self):
+        if len(self.equip) != 4:
+            return "None"
+        if len(set([item.eq_set for item in self.equip])) != 1:
+            return "None"
+        return self.equip[0].eq_set
+
+    def set_up_equipment_set_effects(self):
+        # first, check if self.equip have 4 items. Then, check if the 4 items attribute .eq_set is the same string.
+        # After that, we grab that string and apply if if if if if if if if
+        # This function is called at the start of the battle. We expect it just do self.applyEffect(some_effect), the effect have -1 duration.
+        set_name = self.get_equipment_set()
+        for effects in self.buffs + self.debuffs:
+            if hasattr(effects, "is_set_effect"):
+                self.removeEffect(effects)
+        if set_name == "None":
+            return
+        elif set_name == "Arasaka":
+            self.applyEffect(EquipmentSetEffect_Arasaka("Arasaka", -1, True, False))
+        elif set_name == "KangTao":
+            pass
+        elif set_name == "Militech":
+            pass
+        elif set_name == "NUSA":
+            pass
+        elif set_name == "Sovereign":
+            pass
+        else:
+            raise Exception("Effect not implemented.")
+        
+    def equipment_set_effects_tooltip(self):
+        set_name = self.equip[0].eq_set
+        if len(self.equip) != 4 or len(set([item.eq_set for item in self.equip])) != 1:
+            return "Equipment set effects is not active. Equip 4 items of the same set to receive benefits."
+        elif set_name == "Arasaka":
+            return "Arasaka\n" \
+                "Once per battle, leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 3 turns.\n"
+        elif set_name == "KangTao":
+            return "Kang Tao\n" \
+                "At start of battle, apply absorption shield on self. Shield value is 500% of atk.\n"
+        elif set_name == "Militech":
+            return "Militech\n" \
+                "Increase speed by 100% when hp falls below 20%.\n"
+        elif set_name == "NUSA":
+            return "NUSA\n" \
+                "Increase atk by 6%, def by 6%, and maxhp by 6% for each ally alive including self.\n"
+        elif set_name == "Sovereign":
+            return "Sovereign\n" \
+                "Accumulate 1 stack of Sovereign's Might when taking damage. Each stack increase atk by 5% and last 3 turns. Max 10 stacks.\n"
+        else:
+            return "Unknown set effect."
 
 
 class Lillia(Character):
@@ -1920,6 +1972,35 @@ class EffectShield1(Effect):
         return f"When hp is below {self.threshold*100}%, heal for {self.heal_value} hp before damage calculation."
     
 
+# Arasaka
+# Leave with 1 hp when taking fatal damage. Immune to damage for 3 turns.
+class EquipmentSetEffect_Arasaka(Effect):
+    def __init__(self, name, duration, is_buff, cc_immunity):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.cc_immunity = cc_immunity
+        self.is_set_effect = True
+        self.onehp_effect_triggered = False
+
+    def applyEffectDuringDamageStep(self, character, damage):
+        if self.onehp_effect_triggered:
+            return 0
+        if damage >= character.hp:
+            character.hp = 1
+            if running and logging:
+                text_box.append_html_text(f"{character.name} survived with 1 hp!\n")
+            print(f"{character.name} survived with 1 hp!")
+            self.onehp_effect_triggered = True
+            self.duration = 3
+            return 0
+        else:
+            return damage
+
+    def tooltip_description(self):
+        return f"Leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 3 turns."
+
+
+
 #---------------------------------------------------------
 # Reborn effect (revive with certain amount of hp)
 class RebornEffect(Effect):
@@ -2003,8 +2084,10 @@ def start_of_battle_effects(party):
     if any(isinstance(character, Iris) for character in party):
         character_with_highest_atk = max(party, key=lambda char: getattr(char, 'atk', 0))
         character_with_highest_atk.applyEffect(CancellationShield("Cancellation Shield", -1, True, 0.1, cc_immunity=True))
-    # Pheonix effect
     for character in party:
+        # Equipment set effect
+        character.set_up_equipment_set_effects()
+        # Pheonix effect
         if isinstance(character, Pheonix):
             character.applyEffect(RebornEffect("Reborn", -1, True, 0.4, False))
         # Seth effect
@@ -2082,7 +2165,7 @@ if __name__ == "__main__":
     deep_dark_blue = pygame.Color("#000022")
     light_yellow = pygame.Color("#FFFFE0")
 
-    display_surface = pygame.display.set_mode((1200, 900))
+    display_surface = pygame.display.set_mode((1200, 900), flags=pygame.RESIZABLE)
     ui_manager = pygame_gui.UIManager((1200, 900), "theme_light_yellow.json", starting_language='ja')
 
     pygame.display.set_caption("Battle Simulator")
@@ -2191,30 +2274,44 @@ if __name__ == "__main__":
     # Equip Slots
     # ==============================
     equip_slota1 = pygame_gui.elements.UIImage(pygame.Rect((75, 50), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slota2 = pygame_gui.elements.UIImage(pygame.Rect((75, 75), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsb1 = pygame_gui.elements.UIImage(pygame.Rect((275, 50), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsb2 = pygame_gui.elements.UIImage(pygame.Rect((275, 75), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsc1 = pygame_gui.elements.UIImage(pygame.Rect((475, 50), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsc2 = pygame_gui.elements.UIImage(pygame.Rect((475, 75), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsd1 = pygame_gui.elements.UIImage(pygame.Rect((675, 50), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsd2 = pygame_gui.elements.UIImage(pygame.Rect((675, 75), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotse1 = pygame_gui.elements.UIImage(pygame.Rect((875, 50), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotse2 = pygame_gui.elements.UIImage(pygame.Rect((875, 75), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsf1 = pygame_gui.elements.UIImage(pygame.Rect((75, 650), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsf2 = pygame_gui.elements.UIImage(pygame.Rect((75, 675), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsg1 = pygame_gui.elements.UIImage(pygame.Rect((275, 650), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsg2 = pygame_gui.elements.UIImage(pygame.Rect((275, 675), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsh1 = pygame_gui.elements.UIImage(pygame.Rect((475, 650), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsh2 = pygame_gui.elements.UIImage(pygame.Rect((475, 675), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsi1 = pygame_gui.elements.UIImage(pygame.Rect((675, 650), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsi2 = pygame_gui.elements.UIImage(pygame.Rect((675, 675), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsj1 = pygame_gui.elements.UIImage(pygame.Rect((875, 650), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsj2 = pygame_gui.elements.UIImage(pygame.Rect((875, 675), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
                                             
     equip_slot_party1 = [equip_slota1, equip_slotsb1, equip_slotsc1, equip_slotsd1, equip_slotse1]
     equip_slot_party2 = [equip_slotsf1, equip_slotsg1, equip_slotsh1, equip_slotsi1, equip_slotsj1]
     for slot in equip_slot_party1 + equip_slot_party2:
-        slot.set_image(images["chopper_knife"])                                  
+        slot.set_image(images["chopper_knife"])
+    equip_set_slot_party1 = [equip_slota2, equip_slotsb2, equip_slotsc2, equip_slotsd2, equip_slotse2]
+    equip_set_slot_party2 = [equip_slotsf2, equip_slotsg2, equip_slotsh2, equip_slotsi2, equip_slotsj2]
+    for slot in equip_set_slot_party1 + equip_set_slot_party2:
+        slot.set_image(images["KKKKK"])                                  
 
     # Character Names and Level Labels
     # ==========================
@@ -2513,7 +2610,7 @@ if __name__ == "__main__":
         text_box.append_html_text(f"{character_name} has been replaced with {new_character_name}.\n")
 
     def redraw_ui(party1, party2, refill_image=True, rebuild_healthbar=True, main_char=None):
-        def redraw_party(party, image_slots, equip_slots, sprites, labels, healthbar):
+        def redraw_party(party, image_slots, equip_slots, sprites, labels, healthbar, equip_effect_slots):
             for i, character in enumerate(party):
                 if refill_image:
                     try:
@@ -2523,6 +2620,7 @@ if __name__ == "__main__":
 
                 image_slots[i].set_tooltip(character.tooltip_string(), delay=0.1, wrap_width=250)
                 equip_slots[i].set_tooltip(character.get_equip_stats(), delay=0.1, wrap_width=250)
+                equip_effect_slots[i].set_tooltip(character.equipment_set_effects_tooltip(), delay=0.1, wrap_width=250)
                 sprites[i].current_health = character.hp
                 sprites[i].health_capacity = character.maxhp
                 labels[i].set_text(f"lv {character.lvl} {character.name}")
@@ -2531,8 +2629,8 @@ if __name__ == "__main__":
                 if main_char == character:
                     labels[i].set_text(f"--> lv {character.lvl} {character.name}")
 
-        redraw_party(party1, image_slots_party1, equip_slot_party1, sprite_party1, label_party1, health_bar_party1)
-        redraw_party(party2, image_slots_party2, equip_slot_party2, sprite_party2, label_party2, health_bar_party2)
+        redraw_party(party1, image_slots_party1, equip_slot_party1, sprite_party1, label_party1, health_bar_party1, equip_set_slot_party1)
+        redraw_party(party2, image_slots_party2, equip_slot_party2, sprite_party2, label_party2, health_bar_party2, equip_set_slot_party2)
 
         if rebuild_healthbar:
             for healthbar in all_healthbar:

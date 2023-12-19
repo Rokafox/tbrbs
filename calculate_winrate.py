@@ -73,7 +73,7 @@ def calculate_winrate_for_character(sample):
 
     for i in range(sample):
         for character in all_characters:
-            character.equip = generate_equips_list(4)
+            character.equip = generate_equips_list(4, force_eqset="None")
             character.reset_stats()
 
         random.shuffle(all_characters)
@@ -113,5 +113,5 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 1000
+        sample = 100 # fast enough to debug
     calculate_winrate_for_character(sample)

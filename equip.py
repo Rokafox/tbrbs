@@ -10,11 +10,11 @@ def normal_distribution(min_value, max_value, mean, std):
             return value
 
 class Equip:
-    def __init__(self, name, type, rarity, set="None"):
+    def __init__(self, name, type, rarity, eq_set="None"):
         self.name = name
         self.type = type
-        self.set = set
         self.rarity = rarity
+        self.check_eq_set(eq_set)
         self.maxhp_percent = 0.00
         self.atk_percent = 0.00
         self.def_percent = 0.00
@@ -40,44 +40,43 @@ class Equip:
 
 
     def __str__(self):
-        return f"{self.name} {self.type} {self.set} {self.rarity} {self.maxhp_percent} {self.atk_percent} {self.def_percent} {self.spd} {self.eva} {self.acc} {self.crit} {self.critdmg} {self.critdef} {self.penetration} {self.maxhp_flat} {self.atk_flat} {self.def_flat} {self.spd_flat} {self.heal_efficiency} {self.maxhp_extra} {self.atk_extra} {self.def_extra} {self.spd_extra}"
+        return f"{self.name} {self.type} {self.eq_set} {self.rarity} {self.maxhp_percent} {self.atk_percent} {self.def_percent} {self.spd} {self.eva} {self.acc} {self.crit} {self.critdmg} {self.critdef} {self.penetration} {self.maxhp_flat} {self.atk_flat} {self.def_flat} {self.spd_flat} {self.heal_efficiency} {self.maxhp_extra} {self.atk_extra} {self.def_extra} {self.spd_extra}"
 
     def __repr__(self):
-        return f"{self.name} {self.type} {self.set} {self.rarity} {self.maxhp_percent} {self.atk_percent} {self.def_percent} {self.spd} {self.eva} {self.acc} {self.crit} {self.critdmg} {self.critdef} {self.penetration} {self.maxhp_flat} {self.atk_flat} {self.def_flat} {self.spd_flat} {self.heal_efficiency} {self.maxhp_extra} {self.atk_extra} {self.def_extra} {self.spd_extra}"
+        return f"{self.name} {self.type} {self.eq_set} {self.rarity} {self.maxhp_percent} {self.atk_percent} {self.def_percent} {self.spd} {self.eva} {self.acc} {self.crit} {self.critdmg} {self.critdef} {self.penetration} {self.maxhp_flat} {self.atk_flat} {self.def_flat} {self.spd_flat} {self.heal_efficiency} {self.maxhp_extra} {self.atk_extra} {self.def_extra} {self.spd_extra}"
 
     def get_nonzero_nonstring_attributes(self):
         return [getattr(self, attr) for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__") and getattr(self, attr) != 0 and not isinstance(getattr(self, attr), str)]
 
-    def enhance_by_rarity(self):
-        if self.rarity == "Common":
-            pass
-        elif self.rarity == "Uncommon":
-            for attr in dir(self):
-                if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars"):
-                    setattr(self, attr, getattr(self, attr) * 1.10)
-        elif self.rarity == "Rare":
-            for attr in dir(self):
-                if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars"):
-                    setattr(self, attr, getattr(self, attr) * 1.25)
-        elif self.rarity == "Epic":
-            for attr in dir(self):
-                if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars"):
-                    setattr(self, attr, getattr(self, attr) * 1.45)
-        elif self.rarity == "Unique":
-            for attr in dir(self):
-                if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars"):
-                    setattr(self, attr, getattr(self, attr) * 1.70)
-        elif self.rarity == "Legendary":
-            for attr in dir(self):
-                if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars"):
-                    setattr(self, attr, getattr(self, attr) * 2.00)
+    def check_eq_set(self, name):
+        if name in ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign"]:
+            self.eq_set = name
         else:
+            raise Exception("Invalid equipment set")
+
+    def enhance_by_rarity(self):
+        rarity_multipliers = {
+            "Common": 1.00,
+            "Uncommon": 1.10,
+            "Rare": 1.25,
+            "Epic": 1.45,
+            "Unique": 1.70,
+            "Legendary": 2.00
+        }
+
+        multiplier = rarity_multipliers.get(self.rarity)
+        if multiplier is None:
             raise Exception("Invalid rarity")
+
+        for attr in dir(self):
+            if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars"):
+                setattr(self, attr, getattr(self, attr) * multiplier)
+
         # Convert flat attributes to integer
-        self.maxhp_flat = int(self.maxhp_flat)
-        self.atk_flat = int(self.atk_flat)
-        self.def_flat = int(self.def_flat)
-        self.spd_flat = int(self.spd_flat)
+        # No longer needed as float is needed for scalability.
+        # for attr in ["maxhp_flat", "atk_flat", "def_flat", "spd_flat"]:
+        #     if hasattr(self, attr):
+        #         setattr(self, attr, int(getattr(self, attr)))
 
     def upgrade_stars_func(self, is_upgrade=True):
         # stars will clamp between 0 and 15
@@ -97,68 +96,30 @@ class Equip:
         # However, the graph should not be linear, it climbs faster near the end, slower at the beginning
         return 1 + (self.upgrade_stars ** n) / (self.upgrade_stars_max ** n)
 
-
     def update_stats_from_upgrade(self):
-        rarity = ["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]
-        types = ["Accessory", "Weapon", "Armor", "Boots"]
-        if self.type == types[0]:
-            if self.rarity == rarity[0]:
-                self.maxhp_extra = int(200*self.upgrade_stars)
-            elif self.rarity == rarity[1]:
-                self.maxhp_extra = int(220*self.upgrade_stars)
-            elif self.rarity == rarity[2]:
-                self.maxhp_extra = int(242*self.upgrade_stars)
-            elif self.rarity == rarity[3]:
-                self.maxhp_extra = int(266*self.upgrade_stars)
-            elif self.rarity == rarity[4]:
-                self.maxhp_extra = int(292*self.upgrade_stars)
-            elif self.rarity == rarity[5]:
-                self.maxhp_extra = int(321*self.upgrade_stars)
-            self.maxhp_extra *= self.stars_effect(3)
-        elif self.type == types[1]:
-            if self.rarity == rarity[0]:
-                self.atk_extra = int(10*self.upgrade_stars)
-            elif self.rarity == rarity[1]:
-                self.atk_extra = int(11*self.upgrade_stars)
-            elif self.rarity == rarity[2]:
-                self.atk_extra = int(12*self.upgrade_stars)
-            elif self.rarity == rarity[3]:
-                self.atk_extra = int(13*self.upgrade_stars)
-            elif self.rarity == rarity[4]:
-                self.atk_extra = int(14*self.upgrade_stars)
-            elif self.rarity == rarity[5]:
-                self.atk_extra = int(16*self.upgrade_stars)
-            self.atk_extra *= self.stars_effect(3)
-        elif self.type == types[2]:
-            if self.rarity == rarity[0]:
-                self.def_extra = int(10*self.upgrade_stars)
-            elif self.rarity == rarity[1]:
-                self.def_extra = int(11*self.upgrade_stars)
-            elif self.rarity == rarity[2]:
-                self.def_extra = int(12*self.upgrade_stars)
-            elif self.rarity == rarity[3]:
-                self.def_extra = int(13*self.upgrade_stars)
-            elif self.rarity == rarity[4]:
-                self.def_extra = int(14*self.upgrade_stars)
-            elif self.rarity == rarity[5]:
-                self.def_extra = int(16*self.upgrade_stars)
-            self.def_extra *= self.stars_effect(3)
-        elif self.type == types[3]:
-            if self.rarity == rarity[0]:
-                self.spd_extra = int(10*self.upgrade_stars)
-            elif self.rarity == rarity[1]:
-                self.spd_extra = int(11*self.upgrade_stars)
-            elif self.rarity == rarity[2]:
-                self.spd_extra = int(12*self.upgrade_stars)
-            elif self.rarity == rarity[3]:
-                self.spd_extra = int(13*self.upgrade_stars)
-            elif self.rarity == rarity[4]:
-                self.spd_extra = int(14*self.upgrade_stars)
-            elif self.rarity == rarity[5]:
-                self.spd_extra = int(16*self.upgrade_stars)
-            self.spd_extra *= self.stars_effect(3)
-        return None
+        rarity_values = {
+            "Common": 1.0,
+            "Uncommon": 1.1,
+            "Rare": 1.2,
+            "Epic": 1.3,
+            "Unique": 1.4,
+            "Legendary": 1.6
+        }
 
+        type_bonus = {
+            "Accessory": ("maxhp_extra", 200),
+            "Weapon": ("atk_extra", 10),
+            "Armor": ("def_extra", 10),
+            "Boots": ("spd_extra", 10)
+        }
+
+        if self.type in type_bonus:
+            stat, base_value = type_bonus[self.type]
+            rarity_multiplier = rarity_values.get(self.rarity, 1.0)
+            bonus_value = int(base_value * self.upgrade_stars * rarity_multiplier)
+            setattr(self, stat, bonus_value * self.stars_effect(3))
+
+        return None
 
     def fake_dice(self):
         sides = [1, 2, 3, 4, 5, 6]
@@ -167,51 +128,30 @@ class Equip:
 
     def generate(self):
         extra_lines_to_generate = self.fake_dice() - 1
+        
         if self.type == "Accessory":
-            self.maxhp_flat = normal_distribution(1, 3000, 1000, 500) 
-            if extra_lines_to_generate > 0:
-                for i in range(extra_lines_to_generate):
-                    # randomly choose a non-flat attribute
-                    attr = random.choice(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
-                                            "crit", "critdmg", "critdef", "penetration", "heal_efficiency"])
-                    # generate a random value between (0, 0.3) for the attribute
-                    value = normal_distribution(1, 3000, 1000, 500)*0.0001
-                    # add the value to the attribute
-                    setattr(self, str(attr), getattr(self, str(attr)) + value)
+            self.maxhp_flat = max(normal_distribution(1, 3000, 1000, 500), 1)
         elif self.type == "Weapon":
-            self.atk_flat = normal_distribution(1, 3000, 1000, 500)*0.05
-            self.atk_flat = max(self.atk_flat, 1)
-            if extra_lines_to_generate > 0:
-                for i in range(extra_lines_to_generate):
-                    attr = random.choice(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
-                                            "crit", "critdmg", "critdef", "penetration", "heal_efficiency"])
-                    value = normal_distribution(1, 3000, 1000, 500)*0.0001
-                    setattr(self, str(attr), getattr(self, str(attr)) + value)
+            self.atk_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
         elif self.type == "Armor":
-            self.def_flat = normal_distribution(1, 3000, 1000, 500)*0.05
-            self.def_flat = max(self.def_flat, 1)
-            if extra_lines_to_generate > 0:
-                for i in range(extra_lines_to_generate):
-                    attr = random.choice(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
-                                            "crit", "critdmg", "critdef", "penetration", "heal_efficiency"])
-                    value = normal_distribution(1, 3000, 1000, 500)*0.0001
-                    setattr(self, str(attr), getattr(self, str(attr)) + value)
+            self.def_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
         elif self.type == "Boots":
-            self.spd_flat = normal_distribution(1, 3000, 1000, 500)*0.05
-            self.spd_flat = max(self.spd_flat, 1)
-            if extra_lines_to_generate > 0:
-                for i in range(extra_lines_to_generate):
-                    attr = random.choice(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
-                                            "crit", "critdmg", "critdef", "penetration", "heal_efficiency"])
-                    value = normal_distribution(1, 3000, 1000, 500)*0.0001
-                    setattr(self, str(attr), getattr(self, str(attr)) + value)
+            self.spd_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
         else:
             raise Exception("Invalid type")
+        
+        if extra_lines_to_generate > 0:
+            for i in range(extra_lines_to_generate):
+                attr = random.choice(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
+                                      "crit", "critdmg", "critdef", "penetration", "heal_efficiency"])
+                value = normal_distribution(1, 3000, 1000, 500) * 0.0001
+                setattr(self, attr, getattr(self, attr) + value)
+        
         self.enhance_by_rarity()
 
     # Print the rune's stats. Only print non-zero stats, including type, rarity.
     def print_stats(self):
-        stats = self.rarity + " " + self.type + "\n"
+        stats = self.eq_set + " " + self.rarity + " " + self.type + "\n"
         
         if self.maxhp_flat != 0:
             stats += "Max HP: " + str(self.maxhp_flat) + "\n"
@@ -264,8 +204,14 @@ class Equip:
         star_color = "#3746A7" # blue
         star_color_purple = "#9B30FF" # purple
         star_color_red = "#FF0000" # red
+        star_color_gold = "#FFD700" # gold
+        def eq_set_str():
+            if self.eq_set == "None":
+                return ""
+            else:
+                return str(self.eq_set) + " "
 
-        stats = "<font color=" + color + ">" + self.rarity + " " + self.type + "</font>" + "\n"
+        stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>" + eq_set_str() + self.rarity + " " + self.type + "</b></font></shadow>\n"
         if self.upgrade_stars > 0:
             stats += "<font color=" + star_color + ">" + '★'*min(int(self.upgrade_stars), 5) + "</font>" 
         if self.upgrade_stars > 5:
@@ -274,34 +220,27 @@ class Equip:
             stats += "<font color=" + star_color_red + ">" + '★'*min(int(self.upgrade_stars-10), 5) + "</font>" 
         stats += "\n" if self.upgrade_stars > 0 else ""
         stats += "<font color=" + color + ">"
+        def star_font_color() -> str:
+            if self.upgrade_stars <= 5:
+                return star_color
+            elif 5 < self.upgrade_stars <= 10:
+                return star_color_purple
+            elif 10 < self.upgrade_stars <= 15:
+                return star_color_red
+            else:
+                return star_color_gold
+
+        def add_stat_with_color(stat_name: str, stat_value: int, stat_extra: int) -> str:
+            return stat_name + ": " + str(stat_value) + "<font color=" + star_font_color() + ">" + f" (+{int(stat_extra)})" + "</font>" + "\n"
+
         if self.maxhp_flat != 0:
-            if 0 <= self.upgrade_stars <= 5:
-                stats += "Max HP: " + str(self.maxhp_flat) + "<font color=" + star_color + ">" + f" (+{int(self.maxhp_extra)})" + "</font>" + "\n"
-            elif 5 < self.upgrade_stars <= 10:
-                stats += "Max HP: " + str(self.maxhp_flat) + "<font color=" + star_color_purple + ">" + f" (+{int(self.maxhp_extra)})" + "</font>" + "\n"
-            elif 10 < self.upgrade_stars <= 15:
-                stats += "Max HP: " + str(self.maxhp_flat) + "<font color=" + star_color_red + ">" + f" (+{int(self.maxhp_extra)})" + "</font>" + "\n"
+            stats += add_stat_with_color("Max HP", round(self.maxhp_flat, 3), self.maxhp_extra)
         if self.atk_flat != 0:
-            if 0 <= self.upgrade_stars <= 5:
-                stats += "Attack: " + str(self.atk_flat) + "<font color=" + star_color + ">" + f" (+{int(self.atk_extra)})" + "</font>" + "\n"
-            elif 5 < self.upgrade_stars <= 10:
-                stats += "Attack: " + str(self.atk_flat) + "<font color=" + star_color_purple + ">" + f" (+{int(self.atk_extra)})" + "</font>" + "\n"
-            elif 10 < self.upgrade_stars <= 15:
-                stats += "Attack: " + str(self.atk_flat) + "<font color=" + star_color_red + ">" + f" (+{int(self.atk_extra)})" + "</font>" + "\n"
+            stats += add_stat_with_color("Attack", round(self.atk_flat, 3), self.atk_extra)
         if self.def_flat != 0:
-            if 0 <= self.upgrade_stars <= 5:
-                stats += "Defense: " + str(self.def_flat) + "<font color=" + star_color + ">" + f" (+{int(self.def_extra)})" + "</font>" + "\n"
-            elif 5 < self.upgrade_stars <= 10:
-                stats += "Defense: " + str(self.def_flat) + "<font color=" + star_color_purple + ">" + f" (+{int(self.def_extra)})" + "</font>" + "\n"
-            elif 10 < self.upgrade_stars <= 15:
-                stats += "Defense: " + str(self.def_flat) + "<font color=" + star_color_red + ">" + f" (+{int(self.def_extra)})" + "</font>" + "\n"
+            stats += add_stat_with_color("Defense", round(self.def_flat, 3), self.def_extra)
         if self.spd_flat != 0:
-            if 0 <= self.upgrade_stars <= 5:
-                stats += "Speed: " + str(self.spd_flat) + "<font color=" + star_color + ">" + f" (+{int(self.spd_extra)})" + "</font>" + "\n"
-            elif 5 < self.upgrade_stars <= 10:
-                stats += "Speed: " + str(self.spd_flat) + "<font color=" + star_color_purple + ">" + f" (+{int(self.spd_extra)})" + "</font>" + "\n"
-            elif 10 < self.upgrade_stars <= 15:
-                stats += "Speed: " + str(self.spd_flat) + "<font color=" + star_color_red + ">" + f" (+{int(self.spd_extra)})" + "</font>" + "\n"
+            stats += add_stat_with_color("Speed", round(self.spd_flat, 3), self.spd_extra)
         if self.maxhp_percent != 0:
             stats += "Max HP: " + "{:.2f}%".format(self.maxhp_percent*100) + "\n"
         if self.atk_percent != 0:
@@ -329,14 +268,18 @@ class Equip:
         return stats
 
 
-def generate_equips_list(num, the_type=None) -> list:
+def generate_equips_list(num, the_type=None, force_eqset="All") -> list:
     items = []
     for i in range(num):
         types = ["Weapon", "Armor", "Accessory", "Boots"]
-        if the_type:
-            item = Equip("Item_" + str(i+1), the_type, random.choice(["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]))
+        if force_eqset == "All":
+            eq_set_pool = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign"]
         else:
-            item = Equip("Item_" + str(i+1), types[i], random.choice(["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]))
+            eq_set_pool = [force_eqset]
+        if the_type:
+            item = Equip("Item_" + str(i+1), the_type, random.choice(["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]), random.choice(eq_set_pool))
+        else:
+            item = Equip("Item_" + str(i+1), types[i], random.choice(["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]), random.choice(eq_set_pool))
         item.generate()
         items.append(item)
     return items
