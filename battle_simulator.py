@@ -414,113 +414,31 @@ class Character:
     def isOnlyOneDead(self):
         return len(self.enemy) == 1
 
-    # Update the character's spd, flat or multiplicative
-    def updateSpd(self, value, is_flat) -> (int, int):
-        prev, new = self.spd, self.spd
-        if is_flat:
-            new += value
-            new = int(new)
-            if new < 0:
-                new = 0
-        else:
-            new *= value
-            new = int(new)
-            if new < 0:
-                new = 0
-        self.spd = new
-        return prev, new
- 
-    # Update the character's atk, flat or multiplicative
-    def updateAtk(self, value, is_flat):
-        prev, new = self.atk, self.atk
-        if is_flat:
-            new += value
-            new = int(new)
-            if new < 0:
-                new = 0
-        else:
-            new *= value
-            new = int(new)
-            if new < 0:
-                new = 0
-        self.atk = new
-        return prev, new
-
-    # Update the character's def, flat or multiplicative
-    def updateDef(self, value, is_flat):
-        prev, new = self.defense, self.defense
-        if is_flat:
-            new += value
-            new = int(new)
-            if new < 0:
-                new = 0
-        else:
-            new *= value
-            new = int(new)
-            if new < 0:
-                new = 0
-        self.defense = new
-        return prev, new
-
-    # Update the character's eva, flat or multiplicative
-    def updateEva(self, value, is_flat):
-        prev, new = self.eva, self.eva
-        if is_flat:
-            new += value
-        else:
-            new *= value
-        self.eva = new
-        return prev, new
-    
-    # Update the character's acc, flat or multiplicative
-    def updateAcc(self, value, is_flat):
-        prev, new = self.acc, self.acc
-        if is_flat:
-            new += value
-        else:
-            new *= value
-        self.acc = new
-        return prev, new
-    
-    # Update the character's crit, flat or multiplicative
-    def updateCrit(self, value, is_flat):
-        prev, new = self.crit, self.crit
-        if is_flat:
-            new += value
-        else:
-            new *= value
-        self.crit = new
-        return prev, new
-    
-    # Update the character's critdmg, flat or multiplicative
-    def updateCritdmg(self, value, is_flat):
-        prev, new = self.critdmg, self.critdmg
-        if is_flat:
-            new += value
-        else:
-            new *= value
-        self.critdmg = new
-        return prev, new
-
-    # Update the character's critdef, flat or multiplicative
-    def updateCritdef(self, value, is_flat):
-        prev, new = self.critdef, self.critdef
-        if is_flat:
-            new += value
-        else:
-            new *= value
-        self.critdef = new
-        return prev, new
-
-    # Update the character's penetration, flat or multiplicative
-    def updatePenetration(self, value, is_flat):
-        prev, new = self.penetration, self.penetration
-        if is_flat:
-            new += value
-        else:
-            new *= value
-        self.penetration = new
-        return prev, new
+    def updateStats(self, stats, reversed=False) -> (dict, dict, dict):
+        prev = {}
+        new = {}
+        delta = {}
+        for attr, value in stats.items():
+            if attr in ["maxhp", "hp", "atk", "defense", "spd"]:
+                if reversed:
+                    new_value = getattr(self, attr) / value
+                else:
+                    new_value = getattr(self, attr) * value
+                new_value = int(new_value)
+                if attr == "hp":
+                    new_value = min(new_value, self.maxhp)
+                if new_value < 0:
+                    new_value = 0
+            else:
+                if reversed:
+                    new_value = getattr(self, attr) - value
+                else:
+                    new_value = getattr(self, attr) + value
+            prev[attr] = getattr(self, attr)
+            setattr(self, attr, new_value)
+            new[attr] = new_value
+            delta[attr] = new_value - prev[attr]
+        return prev, new, delta
 
     # Heal the character hp, flat, independent of updateHp
     def healHp(self, value, healer):
@@ -551,33 +469,6 @@ class Character:
             print(f"{self.name} is revived for {self.hp} hp.")
         else:
             raise Exception(f"{self.name} is not dead. Cannot revive.")
-
-
-    # Update the character's maxhp, flat or multiplicative
-    def updateMaxhp(self, value, is_flat):
-        prev, new = self.maxhp, self.maxhp
-        if is_flat:
-            new += value
-            new = int(new)
-            if new < 0:
-                new = 0
-        else:
-            new *= value
-            new = int(new)
-            if new < 0:
-                new = 0
-        self.maxhp = new
-        return prev, new
-
-    # Update the character's hpregen, flat or multiplicative
-    def updateHpregen(self, value, is_flat):
-        prev, new = self.hpregen, self.hpregen
-        if is_flat:
-            new += value
-        else:
-            new *= value
-        self.hpregen = new
-        return prev, new
     
     # Heal from regen. This is not a flat heal, but a heal that is based on the character's regen and maxhp/mp
     def regen(self):
@@ -594,26 +485,6 @@ class Character:
                 text_box.append_html_text(f"{self.name} is healed for {healing} HP.\n")
             print(f"{self.name} is regenerated for {healing} HP.")
         return healing, self, overhealing
-
-    # Update the character's heal efficiency, flat or multiplicative
-    def updateHeal_efficiency(self, value, is_flat):
-        prev, new = self.heal_efficiency, self.heal_efficiency
-        if is_flat:
-            new += value
-        else:
-            new *= value
-        self.heal_efficiency = new
-        return prev, new
-
-    # Update the character's final damage reduction, flat or multiplicative
-    def updateDamage_reduction(self, value, is_flat):
-        prev, new = self.final_damage_taken_multipler, self.final_damage_taken_multipler
-        if is_flat:
-            new += value
-        else:
-            new *= value
-        self.final_damage_taken_multipler = new
-        return prev, new
 
     # Take skill or normal attack damage, flat.
     def takeDamage(self, value, attacker=None, func_after_dmg=None):
@@ -965,7 +836,8 @@ class Poppy(Character):
             text_box.append_html_text(f"{self.name} cast skill 2.\n")
         print(f"{self.name} cast skill 2.")
         def decrease_speed(self, target):
-            target.applyEffect(SpeedEffect("Speed Down", 5, False, 0.7, False))
+            stat_dict = {"spd": 0.7}
+            target.applyEffect(StatsEffect("Purchased!", 6, False, stat_dict))
         damage_dealt = self.attack(multiplier=6.1, repeat=1, func_after_dmg=decrease_speed)
         self.skill2_cooldown = 5
         return damage_dealt
@@ -1229,13 +1101,14 @@ class Olive(Character):
         if self.skill1_cooldown > 0:
             raise Exception
         def effect(self, target):
-            target.applyEffect(AttackEffect("ATK Down", 4, False, 0.5, False))
+            stat_dict = {"atk": 0.5}
+            target.applyEffect(StatsEffect("Weaken", 4, False, stat_dict))
         damage_dealt = self.attack(multiplier=5.4, repeat=1, func_after_dmg=effect)             
         self.skill1_cooldown = 5
         return damage_dealt
 
     def skill2(self):
-        # heal 3 allies by 240% atk with lowest hp and increase their speed by 30% for 4 turns. 
+        # heal 3 allies by 240% atk with lowest hp and increase their speed by 40% for 4 turns. 
         if self.skill2_cooldown > 0:
             raise Exception
         print(f"{self.name} cast skill 2.")
@@ -1244,7 +1117,8 @@ class Olive(Character):
         ally_to_heal = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
         for ally in ally_to_heal:
             ally.healHp(self.atk * 2.6, self)
-            ally.applyEffect(SpeedEffect("Speed Up", 4, True, 1.4, False))
+            stat_dict = {"spd": 1.4}
+            ally.applyEffect(StatsEffect("Tailwind", 4, True, stat_dict))
 
         self.skill2_cooldown = 5
         return 0
@@ -1315,7 +1189,7 @@ class Cerberus(Character):
         self.name = "Cerberus"
         self.execution_threshold = execution_threshold
 
-        self.skill1_description = "5 hits on random enemies, 300% atk each hit. Decrease target's def by 10% for each hit."
+        self.skill1_description = "5 hits on random enemies, 300% atk each hit. Decrease target's def by 10% for each hit. Effect last 3 turns."
         self.skill2_description = "290% focus atk on 1 enemy with lowest hp for 3 times. If target hp is less then 15% during the attack, execute the target."
         self.skill3_description = "On sucessfully executing a target, increase execution threshold by 3%, heal 30% of maxhp and increase atk and critdmg by 30%."
 
@@ -1333,7 +1207,8 @@ class Cerberus(Character):
         if self.skill1_cooldown > 0:
             raise Exception
         def effect(self, target):
-            target.applyEffect(DefenseEffect("Defence Down", 5, False, 0.9, False))
+            stat_dict = {"defense": 0.9}
+            target.applyEffect(StatsEffect("Clawed", 3, False, stat_dict))
         damage_dealt = self.attack(multiplier=3.0, repeat=5, func_after_dmg=effect)             
         self.skill1_cooldown = 5
         return damage_dealt
@@ -1354,8 +1229,8 @@ class Cerberus(Character):
                 print(f"Biribiri! {target.name} is executed by {self.name}.")
                 self.execution_threshold += 0.03
                 self.healHp(self.maxhp * 0.3, self)
-                self.updateAtk(1.3, False)
-                self.updateCritdmg(0.3, True)
+                stats_dict = {"atk": 1.3, "critdmg": 0.3}
+                self.updateStats(stats_dict)
         damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=2.9, repeat=1, repeat_seq=3, func_after_dmg=effect)
         self.skill2_cooldown = 5
         return damage_dealt
@@ -1533,7 +1408,8 @@ class Pheonix(Character):
         pass
 
     def after_revive(self):
-        self.applyEffect(AttackEffect("ATK Up", 3, True, 1.5, False))
+        stat_dict = {"atk": 1.5}
+        self.applyEffect(StatsEffect("Reborn", 3, True, stat_dict))
 
 
 class Bell(Character):
@@ -1692,6 +1568,7 @@ class Effect:
         self.cc_immunity = bool(cc_immunity)
         self.delay_trigger = delay_trigger # number of turns before effect is triggered
         self.flag_for_remove = False # If True, will be removed at the beginning of the next turn.
+        self.is_set_effect = False
     
     def isPermanent(self):
         return self.duration == -1
@@ -1795,37 +1672,77 @@ class StunEffect(Effect):
         self.flag_for_remove = False
     
     def applyEffectOnApply(self, character):
-        character.updateEva(-1, True) # Eva can be lower than 0, which makes sense.
+        stats_dict = {"eva": -1.00}
+        character.updateStats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
 
     def applyEffectOnRemove(self, character):
-        character.updateEva(1, True)
+        stats_dict = {"eva": 1.00}
+        character.updateStats(stats_dict, reversed=False)
     
     def tooltip_description(self):
         return "Cannot take action and evade is reduced by 100%."
 
 
-# Speed effect
-class SpeedEffect(Effect):
-    def __init__(self, name, duration, is_buff, value, is_flat):
-        super().__init__(name, duration, is_buff)
-        self.value = value
-        self.is_flat = is_flat
-    
+class StatsEffect(Effect):
+    def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True):
+        super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
+        self.stats_dict = stats_dict
+        # Condition function. If condition is not None, effect applys normally, but will not immediately trigger until condition is met,
+        # triggers if a line cross is detected.
+        self.condition = condition
+        self.flag_is_active = False
+        # If use_active_flag is False, effect applys normally, trigger every turn as long as condition is met.
+        self.use_active_flag = use_active_flag
+
     def applyEffectOnApply(self, character):
-        character.updateSpd(self.value, self.is_flat)
-    
+        if self.condition is None:
+            character.updateStats(self.stats_dict, reversed=False)
+            self.flag_is_active = True
+
     def applyEffectOnRemove(self, character):
-        if self.is_flat:
-            character.updateSpd(-self.value, self.is_flat)
+        if self.condition is None:
+            character.updateStats(self.stats_dict, reversed=True)
+
+    def applyEffectOnTrigger(self, character):
+        if self.condition is not None and self.use_active_flag:
+            if self.condition(character) and self.flag_is_active == False:
+                character.updateStats(self.stats_dict, reversed=False)
+                self.flag_is_active = True
+            elif self.condition(character) and self.flag_is_active == True:
+                return
+            elif not self.condition(character) and self.flag_is_active == False:
+                if running and logging:
+                    text_box.append_html_text(f"The effect of {self.name} is not triggered because condition is not met.\n")
+                print(f"The effect of {self.name} is not triggered because condition is not met.")
+                return
+            elif not self.condition(character) and self.flag_is_active == True:
+                character.updateStats(self.stats_dict, reversed=True)
+                self.flag_is_active = False
+                return
+            else:
+                raise RuntimeError("Logic Error")
+        elif self.condition is not None and not self.use_active_flag:
+            if self.condition(character):
+                character.updateStats(self.stats_dict, reversed=False)
+            else:
+                character.updateStats(self.stats_dict, reversed=True)
         else:
-            character.updateSpd(1/self.value, self.is_flat)
+            # condition is None, will not do anything.
+            return
 
     def tooltip_description(self):
-        if self.is_flat:
-            return f"Speed is increased by {self.value}."
-        else:
-            return f"Speed is scaled to {self.value*100}%."
-
+        string = ""
+        if self.condition is not None:
+            if self.condition:
+                string += "Effect is active.\n"
+            else:
+                string += "Effect is not active.\n"
+        for key, value in self.stats_dict.items():
+            if key in ["maxhp", "hp", "atk", "defense", "spd"]:
+                string += f"{key} is scaled to {value*100}%."
+            else:
+                string += f"{key} is increased by {value*100}%."
+        return string
 
 # ---------------------------------------------------------
 # Critical rate and critical damage effect, for character Seth. Effect increases every turn.
@@ -1836,57 +1753,11 @@ class SethEffect(Effect):
     
     def applyEffectOnTrigger(self, character):
         # Every turn, raise by 0.01(1%).
-        character.updateCrit(self.value, True)
-        character.updateCritdmg(self.value, True)
+        stats_dict = {"crit": 0.01, "critdmg": 0.01}
+        character.updateStats(stats_dict, reversed=False)
     
     def tooltip_description(self):
         return f"Critical rate and critical damage is increased by {self.value*100}% each turn."
-
-# ---------------------------------------------------------
-# Attack effect
-class AttackEffect(Effect):
-    def __init__(self, name, duration, is_buff, value, is_flat):
-        super().__init__(name, duration, is_buff)
-        self.value = value
-        self.is_flat = is_flat
-    
-    def applyEffectOnApply(self, character):
-        character.updateAtk(self.value, self.is_flat)
-    
-    def applyEffectOnRemove(self, character):
-        if self.is_flat:
-            character.updateAtk(-self.value, self.is_flat)
-        else:
-            character.updateAtk(1/self.value, self.is_flat)
-    
-    def tooltip_description(self):
-        if self.is_flat:
-            return f"Attack is increased by {self.value}."
-        else:
-            return f"Attack is scaled to {self.value*100}%."
-
-# ---------------------------------------------------------
-# Defense effect
-class DefenseEffect(Effect):
-    def __init__(self, name, duration, is_buff, value, is_flat):
-        super().__init__(name, duration, is_buff)
-        self.value = value
-        self.is_flat = is_flat
-    
-    def applyEffectOnApply(self, character):
-        character.updateDef(self.value, self.is_flat)
-    
-    def applyEffectOnRemove(self, character):
-        if self.is_flat:
-            character.updateDef(-self.value, self.is_flat)
-        else:
-            character.updateDef(1/self.value, self.is_flat)
-
-    def tooltip_description(self):
-        if self.is_flat:
-            return f"Defense is increased by {self.value}."
-        else:
-            return f"Defense is scaled to {self.value*100}%."
 
 
 # ---------------------------------------------------------
@@ -2185,11 +2056,21 @@ if __name__ == "__main__":
             pass
 
 
-    for i in range(1, 11):
-        exec(f"invisible_sprite{i} = InvisibleSprite(deep_dark_blue, 1200, 900, 1000, 100)")
+    invisible_sprites = [InvisibleSprite(deep_dark_blue, 1200, 900, 1000, 100) for _ in range(1, 11)]
 
-    sprite_party1 = [invisible_sprite1, invisible_sprite2, invisible_sprite3, invisible_sprite4, invisible_sprite5]
-    sprite_party2 = [invisible_sprite6, invisible_sprite7, invisible_sprite8, invisible_sprite9, invisible_sprite10]
+    sprite_party1 = invisible_sprites[:5]
+    sprite_party2 = invisible_sprites[5:]
+
+    invisible_sprite1 = sprite_party1[0]
+    invisible_sprite2 = sprite_party1[1]
+    invisible_sprite3 = sprite_party1[2]
+    invisible_sprite4 = sprite_party1[3]
+    invisible_sprite5 = sprite_party1[4]
+    invisible_sprite6 = sprite_party2[0]
+    invisible_sprite7 = sprite_party2[1]
+    invisible_sprite8 = sprite_party2[2]
+    invisible_sprite9 = sprite_party2[3]
+    invisible_sprite10 = sprite_party2[4]
 
     health_bar1 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((75, 220), (200, 30)),ui_manager,
                                                             invisible_sprite1)

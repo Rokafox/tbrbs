@@ -151,7 +151,12 @@ class Equip:
 
     # Print the rune's stats. Only print non-zero stats, including type, rarity.
     def print_stats(self):
-        stats = self.eq_set + " " + self.rarity + " " + self.type + "\n"
+        def eq_set_str():
+            if self.eq_set == "None":
+                return ""
+            else:
+                return str(self.eq_set) + " "
+        stats = eq_set_str() + self.rarity + " " + self.type + "\n"
         
         if self.maxhp_flat != 0:
             stats += "Max HP: " + str(self.maxhp_flat) + "\n"
