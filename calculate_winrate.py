@@ -1,8 +1,62 @@
 from battle_simulator import reset_ally_enemy_attr, start_of_battle_effects, mid_turn_effects, is_someone_alive, all_characters, generate_equips_list
-import random, sys
+import random, sys, csv
 
 
-def simulate_battle_between_party(party1, party2):
+def calculate_win_loss_rate(wins_data, losses_data, write_csv=False):
+    """
+    Calculate the win, loss, and win rate for each character with their equipment set.
+
+    :param wins_data: List of tuples (character_name, equipment_set) for wins.
+    :param losses_data: List of tuples (character_name, equipment_set) for losses.
+    :param write_csv: If True, write the results to a CSV file.
+    :return: Dictionary of {character_name_with_equipment_set: (wins, losses, winrate)}.
+    """
+    result = {}
+
+    # Process wins data
+    for character, equipment in wins_data:
+        key = f"{character}_{equipment}"
+        if key not in result:
+            result[key] = {'wins': 0, 'losses': 0}
+        result[key]['wins'] += 1
+
+    # Process losses data
+    for character, equipment in losses_data:
+        key = f"{character}_{equipment}"
+        if key not in result:
+            result[key] = {'wins': 0, 'losses': 0}
+        result[key]['losses'] += 1
+
+    # Calculate winrate
+    for key in result:
+        wins = result[key]['wins']
+        losses = result[key]['losses']
+        total_games = wins + losses
+        winrate = wins / total_games * 100 if total_games > 0 else 0
+        character, equipment = key.split("_")
+        result[key] = {'character_name': character, 'equipment_set': equipment, 'wins': wins, 'losses': losses, 'winrate': winrate}
+
+    # Sort the result, sort by A-Z of keys
+    sorted_result = {k: v for k, v in sorted(result.items(), key=lambda item: item[0])}
+
+    # Write to CSV if enabled
+    if write_csv:
+        with open('win_loss_data.csv', 'w', newline='', encoding='utf-8') as file:
+            writer = csv.DictWriter(file, fieldnames=['character_name', 'equipment_set', 'wins', 'losses', 'winrate'])
+            writer.writeheader()
+            for k, v in sorted_result.items():
+                writer.writerow(v)
+
+    # Print the result nicely
+    max_key_length = max(len(key) for key in sorted_result)
+    for k, v in sorted_result.items():
+        print(f"{k:>{max_key_length}}: {v['wins']:>5} wins, {v['losses']:>5} losses, {v['winrate']:>6.2f}% winrate")
+
+    return sorted_result
+
+
+def simulate_battle_between_party(party1, party2) -> (list, int, list):
+    # -> (winner_party, turns, loser_party)
     turn = 1
     if party1 == [] or party2 == []:
         print("One of the party is empty.")
@@ -54,26 +108,28 @@ def simulate_battle_between_party(party1, party2):
         turn += 1
     if turn > 300:
         print("Battle is taking too long.")
-        return None, 300
+        return None, 300, None
     if is_someone_alive(party1) and not is_someone_alive(party2):
         print("Party 1 win!")
-        return party1, turn
+        return party1, turn, party2
     elif is_someone_alive(party2) and not is_someone_alive(party1):
         print("Party 2 win!")
-        return party2, turn
+        return party2, turn, party1
     else:
         print("Draw!")
-        return None, turn
+        return None, turn, None
 
 
 def calculate_winrate_for_character(sample): 
     win_counts = {c.name: 0 for c in all_characters}
     total_games = {c.name: 0 for c in all_characters}
     turns_total = 0
+    character_and_eqset_wins = []
+    character_and_eqset_losses = []
 
     for i in range(sample):
         for character in all_characters:
-            character.equip = generate_equips_list(4, force_eqset="None")
+            character.equip = generate_equips_list(4, random_full_eqset=True)
             character.reset_stats()
 
         random.shuffle(all_characters)
@@ -83,35 +139,27 @@ def calculate_winrate_for_character(sample):
         for character in party1 + party2:
             total_games[character.name] += 1
 
-        winner_party, turns = simulate_battle_between_party(party1, party2)
+        winner_party, turns, loser_party = simulate_battle_between_party(party1, party2)
         turns_total += turns
         if winner_party is not None:
             for character in winner_party:
                 win_counts[character.name] += 1
+                character_and_eqset_wins.append((character.name, character.eq_set))
+        if loser_party is not None:
+            for character in loser_party:
+                character_and_eqset_losses.append((character.name, character.eq_set))
 
     print("=====================================")
     print("Average turns:", turns_total / sample) # Ideal range: 55-60
-    print("Winrate:")
-    winrate_dict = {}
-    for character in all_characters:
-        if total_games[character.name] > 0:
-            try:
-                winrate = win_counts[character.name] / total_games[character.name] * 100
-            except ZeroDivisionError:
-                winrate = 0
-            loss_count = total_games[character.name] - win_counts[character.name]
-            winrate_dict[character.name] = (win_counts[character.name], loss_count, winrate)
-        else:
-            winrate_dict[character.name] = (0, 0, 0)
-    winrate_dict = {k: v for k, v in sorted(winrate_dict.items(), key=lambda item: item[1][2], reverse=True)}
-    max_key_length = max(len(key) for key in winrate_dict)
-    for k, v in winrate_dict.items():
-        print(f"{k:>{max_key_length}}: {v[0]:>5} wins, {v[1]:>5} losses, {v[2]:>6.2f}% winrate")
+    print("=====================================")
+
+    return character_and_eqset_wins, character_and_eqset_losses
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 100 # fast enough to debug
-    calculate_winrate_for_character(sample)
+        sample = 1000 # more enough to analyze
+    a, b = calculate_winrate_for_character(sample)
+    c = calculate_win_loss_rate(a, b, write_csv=True)

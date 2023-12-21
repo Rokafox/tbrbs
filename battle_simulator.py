@@ -1,5 +1,6 @@
 import os
 from equip import *
+from effects import *
 import copy
 import more_itertools as mit
 running = False
@@ -10,8 +11,8 @@ text_box = None
 # TODO:
 # 1. Add attributes to character to get info on damage dealt and healing done # Too difficult to implement, abandoning...Done
 # 2. Create graph to show damage dealt and healing done # Ignored
-# 3. Add equipment set effect # Implementing...
-# 4. Redesign UI, the location of the buttons are not good # Waiting...
+# 3. Add equipment set effect # Implementing...Done
+# 4. Redesign UI, the location of the buttons are not good # Waiting...Delayed
 # 5. Add 'Guard' attribute as a counter to 'Penetration', equipment should have 'Guard' attribute # Waiting...
 # 6. Equipment should have level attribute, allow scaling with characters. Minimum level is 1, maximum level is 1000. # Waiting...
 # 7. Design web UI instead of pygame # Searching for a good framework...
@@ -323,23 +324,35 @@ class Character:
 
     # Level up the character
     def level_up(self):
+        # fix: we will create a copy of self.buff and self.debuff, then apply them back after reset_stats
+        # in the copy, if effect.is_set_effect, purge them.
         if self.lvl >= 1000:
             return
         self.lvl += 1
+        buff_copy = [effect for effect in self.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
+        debuff_copy = [effect for effect in self.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
         self.reset_stats(resetally=False, resetenemy=False)
         self.exp = 0
         self.maxexp = self.calculate_maxexp()
-        self.recalculateEffects()
+        for effect in buff_copy:
+            self.applyEffect(effect)
+        for effect in debuff_copy:
+            self.applyEffect(effect)
 
     # Level down the character
     def level_down(self):
         if self.lvl <= 1:
             return
         self.lvl -= 1
+        buff_copy = [effect for effect in self.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
+        debuff_copy = [effect for effect in self.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
         self.reset_stats(resetally=False, resetenemy=False)
         self.exp = 0
         self.maxexp = self.calculate_maxexp()
-        self.recalculateEffects()
+        for effect in buff_copy:
+            self.applyEffect(effect)
+        for effect in debuff_copy:
+            self.applyEffect(effect)
 
     # Check if the character is alive
     def isAlive(self):
@@ -619,17 +632,9 @@ class Character:
         print(f"{effect.name} has been applied on {self.name}.")
         effect.applyEffectOnApply(self)
 
-    # Recalculate effects on the character
-    def recalculateEffects(self):
-        if self.buffs != []:
-            for effect in self.buffs:
-                effect.applyEffectOnApply(self)
-        if self.debuffs != []:
-            for effect in self.debuffs:
-                effect.applyEffectOnApply(self)
-
     # Remove buff or debuff effect from the character
-    def removeEffect(self, effect):
+    def removeEffect(self, effect, purge=False):
+        # purge: effect is removed without triggering applyEffectOnRemove
         if effect in self.buffs:
             self.buffs.remove(effect)
         elif effect in self.debuffs:
@@ -637,7 +642,8 @@ class Character:
         if running and logging:
             text_box.append_html_text(f"{effect.name} on {self.name} has been removed.\n")
         print(f"{effect.name} on {self.name} has been removed.")
-        effect.applyEffectOnRemove(self)
+        if not purge:
+            effect.applyEffectOnRemove(self)
 
     # Remove all buffs and debuffs from the character
     def removeAllEffects(self):
@@ -664,6 +670,8 @@ class Character:
     # Every turn, decrease the duration of all buffs and debuffs by 1. If the duration is 0, remove the effect.
     # And other things.
     def updateEffects(self):
+        # Currently, effects are not removed and continue to receive updates even if character is dead. 
+        # If we want to do this, remember: Reborn effect should not be removed.
         for effect in self.buffs + self.debuffs:
             if effect.flag_for_remove:
                 if running and logging:
@@ -672,9 +680,9 @@ class Character:
                 self.removeEffect(effect)
                 continue
             if effect.duration == -1:
-                if running and logging:
-                    text_box.append_html_text(f"{effect.name} on {self.name} is active.\n")
-                print(f"{effect.name} on {self.name} is active.")
+                # if running and logging:
+                #     text_box.append_html_text(f"{effect.name} on {self.name} is active.\n")
+                # print(f"{effect.name} on {self.name} is active.")
                 continue
             effect.decreaseDuration()
             if effect.duration > 0:
@@ -716,20 +724,26 @@ class Character:
         # This function is called at the start of the battle. We expect it just do self.applyEffect(some_effect), the effect have -1 duration.
         set_name = self.get_equipment_set()
         for effects in self.buffs + self.debuffs:
-            if hasattr(effects, "is_set_effect"):
+            if hasattr(effects, "is_set_effect") and effects.is_set_effect:
                 self.removeEffect(effects)
         if set_name == "None":
             return
         elif set_name == "Arasaka":
-            self.applyEffect(EquipmentSetEffect_Arasaka("Arasaka", -1, True, False))
+            self.applyEffect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False, running=running, logging=logging, text_box=text_box))
         elif set_name == "KangTao":
-            pass
+            self.applyEffect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, self.atk * 5, False, running=running, logging=logging, text_box=text_box))
         elif set_name == "Militech":
-            pass
+            def condition_func(self):
+                return self.hp <= self.maxhp * 0.2
+            self.applyEffect(EquipmentSetEffect_Militech("Militech Set", -1, True, {"spd": 2.0}, condition_func))
         elif set_name == "NUSA":
-            pass
+            def stats_dict_function() -> dict:
+                allies_alive = len(self.ally) 
+                return {"atk": 0.06 * allies_alive + 1 , "defense": 0.06 * allies_alive + 1, "maxhp": 0.06 * allies_alive + 1}
+            self.applyEffect(EquipmentSetEffect_NUSA("NUSA Set", -1, True, {"atk": 1.30, "defense": 1.30, "maxhp": 1.30}, stats_dict_function))
         elif set_name == "Sovereign":
-            pass
+            # Instead of dynamiclly update the stats, we simply apply multiple stacks of the same effect.
+            self.applyEffect(EquipmentSetEffect_Sovereign("Sovereign Set", -1, True, {"atk": 1.05}))
         else:
             raise Exception("Effect not implemented.")
         
@@ -751,7 +765,7 @@ class Character:
                 "Increase atk by 6%, def by 6%, and maxhp by 6% for each ally alive including self.\n"
         elif set_name == "Sovereign":
             return "Sovereign\n" \
-                "Accumulate 1 stack of Sovereign's Might when taking damage. Each stack increase atk by 5% and last 3 turns. Max 10 stacks.\n"
+                "Accumulate 1 stack of Sovereign when taking damage. Each stack increase atk by 5% and last 3 turns. Max 5 stacks.\n"
         else:
             return "Unknown set effect."
 
@@ -929,7 +943,7 @@ class Freya(Character):
         print(f"{self.name} cast skill 2.")
         def apply_shield(self, target):
             if target.isDead():
-                self.applyEffect(AbsorptionShield("Absorption Shield", -1, True, self.atk * 9, cc_immunity=False))
+                self.applyEffect(AbsorptionShield("Absorption Shield", -1, True, self.atk * 9, cc_immunity=False, running=running, logging=logging, text_box=text_box))
         damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=5.2, repeat=1, func_after_dmg=apply_shield)
 
         self.skill2_cooldown = 4
@@ -1019,7 +1033,7 @@ class Clover(Character):
         ally_to_heal = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
         healing, x, y = ally_to_heal.healHp(self.atk * 3.5, self)
         self.healHp(healing * 0.6, self)
-        ally_to_heal.applyEffect(AbsorptionShield("Shield", -1, True, self.atk * 3.5, cc_immunity=False))
+        ally_to_heal.applyEffect(AbsorptionShield("Shield", -1, True, self.atk * 3.5, cc_immunity=False, running=running, logging=logging, text_box=text_box))
         self.skill2_cooldown = 5
         return 0
 
@@ -1049,7 +1063,7 @@ class Ruby(Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 70:
-                target.applyEffect(StunEffect(duration=3))
+                target.applyEffect(StunEffect('Stun', duration=3, is_buff=False))
         def stun_amplify(self, target, final_damage):
             if target.hasEffect("Stun"):
                 final_damage *= 1.3
@@ -1068,7 +1082,7 @@ class Ruby(Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 50:
-                target.applyEffect(StunEffect(duration=3))
+                target.applyEffect(StunEffect('Stun', duration=3, is_buff=False))
         def stun_amplify(self, target, final_damage):
             if target.hasEffect("Stun"):
                 final_damage *= 1.3
@@ -1468,7 +1482,7 @@ class Bell(Character):
         else:
             if self.hp < self.maxhp * 0.5:
                 self.applyEffect(CancellationShield2("Cancellation Shield", 5, True, 0.2, False))
-                self.applyEffect(AbsorptionShield("Shield", -1, True, damage * 4.0, cc_immunity=False))
+                self.applyEffect(AbsorptionShield("Shield", -1, True, damage * 4.0, cc_immunity=False, running=running, logging=logging, text_box=text_box))
                 self.skill3_used = True
             return damage
 
@@ -1491,7 +1505,7 @@ class Taily(Character):
         if self.skill1_cooldown > 0:
             raise Exception
         def stun_effect(self, target):
-            target.applyEffect(StunEffect(duration=2))
+            target.applyEffect(StunEffect('Stun', duration=2, is_buff=False))
         damage_dealt = self.attack(target_kw1="random_enemy_pair", multiplier=3.5, repeat=1, func_after_dmg=stun_effect)     
         self.skill1_cooldown = 5
         return damage_dealt
@@ -1560,376 +1574,6 @@ class Seth(Character):
 # Other characters not yet implemented:
 # Chiffon Cake
 #--------------------------------------------------------- 
-class Effect:
-    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
-        self.name = name
-        self.duration = duration
-        self.is_buff = bool(is_buff)
-        self.cc_immunity = bool(cc_immunity)
-        self.delay_trigger = delay_trigger # number of turns before effect is triggered
-        self.flag_for_remove = False # If True, will be removed at the beginning of the next turn.
-        self.is_set_effect = False
-    
-    def isPermanent(self):
-        return self.duration == -1
-    
-    def isExpired(self):
-        return self.duration == 0
-    
-    def isNotExpired(self):
-        return self.duration > 0
-    
-    def decreaseDuration(self):
-        if self.duration > 0:
-            self.duration -= 1
-    
-    def applyEffectOnApply(self, character):
-        pass
-    
-    def applyEffectOnTurn(self, character):
-        self.delay_trigger = max(self.delay_trigger - 1, 0)
-        if self.delay_trigger == 0:
-            self.applyEffectOnTrigger(character)
-
-    def applyEffectOnTrigger(self, character):
-        pass
-
-    def applyEffectOnExpire(self, character):
-        pass
-    
-    def applyEffectOnRemove(self, character):
-        pass
-
-    def applyEffectDuringDamageStep(self, character, damage):
-        return damage
-
-    def __str__(self):
-        return self.name
-    
-    def print_stats_html(self):
-        color_buff = "#659a00"
-        color_debuff = "#ff0000"
-        if self.is_buff:
-            if self.duration == -1:
-                string = "<font color=" + color_buff + ">" + self.name + ": Permanent</font>" + "\n"
-            else:
-                string = "<font color=" + color_buff + ">" + self.name + ": " + str(self.duration) + " turn(s) remaining</font>" + "\n"
-        else:
-            if self.duration == -1:
-                string = "<font color=" + color_debuff + ">" + self.name + ": Permanent</font>" + "\n"
-            else:
-                string = "<font color=" + color_debuff + ">" + self.name + ": " + str(self.duration) + " turn(s) remaining</font>" + "\n"
-        if self.cc_immunity:
-            string += "This effect grants CC immunity.\n"
-        if self.delay_trigger > 0:
-            string += "Trigger in " + str(self.delay_trigger) + " turn(s)\n"
-        string += self.tooltip_description()
-        return string
-    
-    def tooltip_description(self):
-        return "No description available."
-    
-
-# Some common effects
-# ---------------------------------------------------------
-    
-# Protected effect
-# When a protected character is about to take damage, that damage is taken by the protector instead. Does not apply to status damage.
-class ProtectedEffect(Effect):
-    def __init__(self, name, duration, is_buff, cc_immunity=False, protector=None, multiplier=1.0):
-        super().__init__(name, duration, is_buff, cc_immunity=False)
-        self.cc_immunity = cc_immunity
-        self.protector = protector
-        self.multiplier = multiplier
-
-    def protected_applyEffectDuringDamageStep(self, character, damage, attacker, func_after_dmg):
-        if self.protector is None:
-            raise Exception
-        if self.protector.isAlive():
-            damage = damage * self.multiplier
-            self.protector.takeDamage(damage, attacker, func_after_dmg)
-            return 0
-        else:
-            return damage
-    
-    def applyEffectOnTrigger(self, character):
-        # Double check, the first is to handle cases of leaving party unexpectedly.
-        if self.protector not in character.ally or self.protector.isDead():
-            self.flag_for_remove = True
-
-    def tooltip_description(self):
-        return f"Normal and skill attack damage is taken by {self.protector.name} instead. Cannot protect against status effects and damage."
-
-
-# Stun effect
-class StunEffect(Effect):
-    def __init__(self, duration, cc_immunity=False, delay_trigger=0):
-        self.duration = duration
-        self.name = "Stun"
-        self.is_buff = False
-        self.cc_immunity = cc_immunity
-        self.delay_trigger = delay_trigger
-        self.flag_for_remove = False
-    
-    def applyEffectOnApply(self, character):
-        stats_dict = {"eva": -1.00}
-        character.updateStats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
-
-    def applyEffectOnRemove(self, character):
-        stats_dict = {"eva": 1.00}
-        character.updateStats(stats_dict, reversed=False)
-    
-    def tooltip_description(self):
-        return "Cannot take action and evade is reduced by 100%."
-
-
-class StatsEffect(Effect):
-    def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True):
-        super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
-        self.stats_dict = stats_dict
-        # Condition function. If condition is not None, effect applys normally, but will not immediately trigger until condition is met,
-        # triggers if a line cross is detected.
-        self.condition = condition
-        self.flag_is_active = False
-        # If use_active_flag is False, effect applys normally, trigger every turn as long as condition is met.
-        self.use_active_flag = use_active_flag
-
-    def applyEffectOnApply(self, character):
-        if self.condition is None:
-            character.updateStats(self.stats_dict, reversed=False)
-            self.flag_is_active = True
-
-    def applyEffectOnRemove(self, character):
-        if self.condition is None:
-            character.updateStats(self.stats_dict, reversed=True)
-
-    def applyEffectOnTrigger(self, character):
-        if self.condition is not None and self.use_active_flag:
-            if self.condition(character) and self.flag_is_active == False:
-                character.updateStats(self.stats_dict, reversed=False)
-                self.flag_is_active = True
-            elif self.condition(character) and self.flag_is_active == True:
-                return
-            elif not self.condition(character) and self.flag_is_active == False:
-                if running and logging:
-                    text_box.append_html_text(f"The effect of {self.name} is not triggered because condition is not met.\n")
-                print(f"The effect of {self.name} is not triggered because condition is not met.")
-                return
-            elif not self.condition(character) and self.flag_is_active == True:
-                character.updateStats(self.stats_dict, reversed=True)
-                self.flag_is_active = False
-                return
-            else:
-                raise RuntimeError("Logic Error")
-        elif self.condition is not None and not self.use_active_flag:
-            if self.condition(character):
-                character.updateStats(self.stats_dict, reversed=False)
-            else:
-                character.updateStats(self.stats_dict, reversed=True)
-        else:
-            # condition is None, will not do anything.
-            return
-
-    def tooltip_description(self):
-        string = ""
-        if self.condition is not None:
-            if self.condition:
-                string += "Effect is active.\n"
-            else:
-                string += "Effect is not active.\n"
-        for key, value in self.stats_dict.items():
-            if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                string += f"{key} is scaled to {value*100}%."
-            else:
-                string += f"{key} is increased by {value*100}%."
-        return string
-
-# ---------------------------------------------------------
-# Critical rate and critical damage effect, for character Seth. Effect increases every turn.
-class SethEffect(Effect):
-    def __init__(self, name, duration, is_buff, value):
-        super().__init__(name, duration, is_buff)
-        self.value = value
-    
-    def applyEffectOnTrigger(self, character):
-        # Every turn, raise by 0.01(1%).
-        stats_dict = {"crit": 0.01, "critdmg": 0.01}
-        character.updateStats(stats_dict, reversed=False)
-    
-    def tooltip_description(self):
-        return f"Critical rate and critical damage is increased by {self.value*100}% each turn."
-
-
-# ---------------------------------------------------------
-# Continuous Damage effect
-class ContinuousDamageEffect(Effect):
-    def __init__(self, name, duration, is_buff, value):
-        super().__init__(name, duration, is_buff)
-        self.value = float(value)
-        self.is_buff = is_buff
-    
-    def applyEffectOnTrigger(self, character):
-        print(f"{character.name} is taking {self.value} status damage")
-        character.takeStatusDamage(self.value, self)
-    
-    def tooltip_description(self):
-        return f"Take {int(self.value)} status damage each turn."
-
-#---------------------------------------------------------
-# Absorption Shield effect
-class AbsorptionShield(Effect):
-    def __init__(self, name, duration, is_buff, shield_value, cc_immunity):
-        super().__init__(name, duration, is_buff, cc_immunity=False)
-        self.shield_value = shield_value
-        self.is_buff = is_buff
-        self.cc_immunity = cc_immunity
-
-    def applyEffectDuringDamageStep(self, character, damage):
-        if damage > self.shield_value:
-            remaining_damage = damage - self.shield_value
-            if running and logging:
-                text_box.append_html_text(f"{character.name}'s shield is broken!\n{remaining_damage} damage is dealt to {character.name}.\n")
-            print(f"{character.name}'s shield is broken! {remaining_damage} damage is dealt to {character.name}.")
-            character.removeEffect(self)
-            return remaining_damage
-        else:
-            self.shield_value -= damage
-            if running and logging:
-                text_box.append_html_text(f"{character.name}'s shield absorbs {damage} damage.\nRemaining shield: {self.shield_value}\n")
-            print(f"{character.name}'s shield absorbs {damage} damage. Remaining shield: {self.shield_value}")
-            return 0
-        
-    def tooltip_description(self):
-        return f"Absorbs up to {self.shield_value} damage."
-
-#---------------------------------------------------------
-# Reduction Shield and Damage Amplify effect (reduces/increase damage taken by a certain percentage)
-class ReductionShield(Effect):
-    def __init__(self, name, duration, is_buff, effect_value, cc_immunity):
-        super().__init__(name, duration, is_buff, cc_immunity=False)
-        self.is_buff = is_buff
-        self.effect_value = effect_value
-        self.cc_immunity = cc_immunity
-
-    def applyEffectDuringDamageStep(self, character, damage):
-        if self.is_buff:
-            damage = damage * (1 - self.effect_value)
-        else:
-            damage = damage * (1 + self.effect_value)
-        return damage
-    
-    def tooltip_description(self):
-        if self.is_buff:
-            return f"Reduces damage taken by {self.effect_value*100}%."
-        else:
-            return f"Increases damage taken by {self.effect_value*100}%."
-    
-#---------------------------------------------------------
-# Effect shield 1 (before damage calculation, if character hp is below certain threshold, healhp for certain amount)
-class EffectShield1(Effect):
-    def __init__(self, name, duration, is_buff, threshold, heal_value, cc_immunity):
-        super().__init__(name, duration, is_buff, cc_immunity=False)
-        self.is_buff = is_buff
-        self.threshold = threshold
-        self.heal_value = heal_value
-        self.cc_immunity = cc_immunity
-
-    def applyEffectDuringDamageStep(self, character, damage):
-        if character.hp < character.maxhp * self.threshold:
-            character.healHp(self.heal_value, self)
-        return damage
-    
-    def tooltip_description(self):
-        return f"When hp is below {self.threshold*100}%, heal for {self.heal_value} hp before damage calculation."
-    
-
-# Arasaka
-# Leave with 1 hp when taking fatal damage. Immune to damage for 3 turns.
-class EquipmentSetEffect_Arasaka(Effect):
-    def __init__(self, name, duration, is_buff, cc_immunity):
-        super().__init__(name, duration, is_buff, cc_immunity=False)
-        self.is_buff = is_buff
-        self.cc_immunity = cc_immunity
-        self.is_set_effect = True
-        self.onehp_effect_triggered = False
-
-    def applyEffectDuringDamageStep(self, character, damage):
-        if self.onehp_effect_triggered:
-            return 0
-        if damage >= character.hp:
-            character.hp = 1
-            if running and logging:
-                text_box.append_html_text(f"{character.name} survived with 1 hp!\n")
-            print(f"{character.name} survived with 1 hp!")
-            self.onehp_effect_triggered = True
-            self.duration = 3
-            return 0
-        else:
-            return damage
-
-    def tooltip_description(self):
-        return f"Leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 3 turns."
-
-
-
-#---------------------------------------------------------
-# Reborn effect (revive with certain amount of hp)
-class RebornEffect(Effect):
-    def __init__(self, name, duration, is_buff, effect_value, cc_immunity):
-        super().__init__(name, duration, is_buff, cc_immunity=False)
-        self.is_buff = is_buff
-        self.effect_value = effect_value
-        self.cc_immunity = cc_immunity
-    
-    def applyEffectOnTrigger(self, character):
-        if character.isDead():
-            character.revive(1, hp_percentage_to_revive=self.effect_value)
-            if hasattr(character, "after_revive"):
-                character.after_revive()
-            character.removeEffect(self)
-
-    def tooltip_description(self):
-        return f"Revive with {self.effect_value*100}% hp the turn after fallen."
-
-#---------------------------------------------------------
-# Cancellation Shield effect (cancel 1 attack if attack damage exceed certain amount of max hp)
-class CancellationShield(Effect):
-    def __init__(self, name, duration, is_buff, threshold, cc_immunity):
-        super().__init__(name, duration, is_buff, cc_immunity=False)
-        self.is_buff = is_buff
-        self.threshold = threshold
-        self.cc_immunity = cc_immunity
-
-    def applyEffectDuringDamageStep(self, character, damage):
-        if damage > character.maxhp * self.threshold:
-            character.removeEffect(self)
-            if running and logging:
-                text_box.append_html_text(f"{character.name} shielded the attack!\n")
-            print(f"{character.name} shielded the attack!")
-            return 0
-        else:
-            return damage
-        
-    def tooltip_description(self):
-        return f"Cancel 1 attack if damage exceed {self.threshold*100}% of max hp."
-
-
-# Cancellation Shield 2 effect (cancel the damage that exceed certain amount of max hp)
-class CancellationShield2(Effect):
-    def __init__(self, name, duration, is_buff, threshold, cc_immunity):
-        super().__init__(name, duration, is_buff, cc_immunity=False)
-        self.is_buff = is_buff
-        self.threshold = threshold
-        self.cc_immunity = cc_immunity
-
-    def applyEffectDuringDamageStep(self, character, damage):
-        damage = min(damage, character.maxhp * self.threshold)
-        return damage
-        
-    def tooltip_description(self):
-        return f"Cancel the damage that exceed {self.threshold*100}% of max hp."
-    
-
 #---------------------------------------------------------
 def is_someone_alive(party):
     for character in party:
@@ -1954,10 +1598,10 @@ def start_of_battle_effects(party):
     # Iris effect
     if any(isinstance(character, Iris) for character in party):
         character_with_highest_atk = max(party, key=lambda char: getattr(char, 'atk', 0))
-        character_with_highest_atk.applyEffect(CancellationShield("Cancellation Shield", -1, True, 0.1, cc_immunity=True))
+        character_with_highest_atk.applyEffect(CancellationShield("Cancellation Shield", -1, True, 0.1, cc_immunity=True, running=running, logging=logging, text_box=text_box))
     for character in party:
         # Equipment set effect
-        character.set_up_equipment_set_effects()
+        # Already handled elsewhere.
         # Pheonix effect
         if isinstance(character, Pheonix):
             character.applyEffect(RebornEffect("Reborn", -1, True, 0.4, False))
@@ -2003,27 +1647,30 @@ def reset_ally_enemy_attr(party1, party2):
 #---------------------------------------------------------
 
 average_party_level = 40
-character1 = Cerberus("Cerberus", average_party_level, 0, generate_equips_list(4))
-character2 = Fenrir("Fenrir", average_party_level, 0, generate_equips_list(4))
-character3 = Clover("Clover", average_party_level, 0, generate_equips_list(4))
-character4 = Ruby("Ruby", average_party_level, 0, generate_equips_list(4))
-character5 = Olive("Olive", average_party_level, 0, generate_equips_list(4))
-character6 = Luna("Luna", average_party_level, 0, generate_equips_list(4))
-character7 = Freya("Freya", average_party_level, 0, generate_equips_list(4))
-character8 = Poppy("Poppy", average_party_level, 0, generate_equips_list(4))
-character9 = Lillia("Lillia", average_party_level, 0, generate_equips_list(4))
-character10 = Iris("Iris", average_party_level, 0, generate_equips_list(4))
-character11 = Pepper("Pepper", average_party_level, 0, generate_equips_list(4))
-character12 = Cliffe("Cliffe", average_party_level, 0, generate_equips_list(4))
-character13 = Pheonix("Pheonix", average_party_level, 0, generate_equips_list(4))
-character14 = Bell("Bell", average_party_level, 0, generate_equips_list(4))
-character15 = Taily("Taily", average_party_level, 0, generate_equips_list(4))
-character16 = Seth("Seth", average_party_level, 0, generate_equips_list(4))
+character1 = Cerberus("Cerberus", average_party_level)
+character2 = Fenrir("Fenrir", average_party_level)
+character3 = Clover("Clover", average_party_level)
+character4 = Ruby("Ruby", average_party_level)
+character5 = Olive("Olive", average_party_level)
+character6 = Luna("Luna", average_party_level)
+character7 = Freya("Freya", average_party_level)
+character8 = Poppy("Poppy", average_party_level)
+character9 = Lillia("Lillia", average_party_level)
+character10 = Iris("Iris", average_party_level)
+character11 = Pepper("Pepper", average_party_level)
+character12 = Cliffe("Cliffe", average_party_level)
+character13 = Pheonix("Pheonix", average_party_level)
+character14 = Bell("Bell", average_party_level)
+character15 = Taily("Taily", average_party_level)
+character16 = Seth("Seth", average_party_level)
 
 all_characters = [character1, character2, character3, character4, character5,
                     character6, character7, character8, character9, character10,
                         character11, character12, character13, character14, character15
                             , character16]
+
+for character in all_characters:
+    character.equip = generate_equips_list(4, random_full_eqset=True)
 
 # ---------------------------------------------------------
 # ---------------------------------------------------------
@@ -2413,7 +2060,7 @@ if __name__ == "__main__":
         for character in all_characters:
             character.reset_stats()
 
-        start_of_battle_effects(party1)
+        start_of_battle_effects(party1) # False as already handled in reset_stats()
         start_of_battle_effects(party2)
 
         redraw_ui(party1, party2)
@@ -2525,9 +2172,14 @@ if __name__ == "__main__":
                 text_box.append_html_text("====================================\n")
                 text_box.append_html_text(f"Rerolling {character.equip[eq_index].type} for {character.name}\n")
                 text_box.append_html_text(character.equip[eq_index].print_stats())
-                print(character.equip[eq_index])
+                # The same as level_up function, save the buffs and debuffs, reset stats, then reapply buffs and debuffs
+                buff_copy = [effect for effect in character.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
+                debuff_copy = [effect for effect in character.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
                 character.reset_stats(resethp=False, resetally=False, resetenemy=False)
-                character.recalculateEffects()
+                for effect in buff_copy:
+                    character.applyEffect(effect)
+                for effect in debuff_copy:
+                    character.applyEffect(effect)
         redraw_ui(party1, party2)
 
     def eq_upgrade(eq_index, is_upgrade):
@@ -2542,8 +2194,13 @@ if __name__ == "__main__":
                     text_box.append_html_text(f"Max stars reached\n")
                 if int(b) == 0:
                     text_box.append_html_text(f"Min stars reached\n")
+                buff_copy = [effect for effect in character.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
+                debuff_copy = [effect for effect in character.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
                 character.reset_stats(resethp=False, resetally=False, resetenemy=False)
-                character.recalculateEffects()
+                for effect in buff_copy:
+                    character.applyEffect(effect)
+                for effect in debuff_copy:
+                    character.applyEffect(effect)
         redraw_ui(party1, party2)
 
     def character_level_button(up=True):

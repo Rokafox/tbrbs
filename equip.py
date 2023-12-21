@@ -1,5 +1,5 @@
 import random
-
+from itertools import cycle
 
 # Design choice: We should not give much power to equipment, the uniqueness of each character should be preserved.
 # Normal Distribution with max and min value
@@ -11,6 +11,11 @@ def normal_distribution(min_value, max_value, mean, std):
 
 class Equip:
     def __init__(self, name, type, rarity, eq_set="None"):
+        # lists
+        self.rarity_list = ["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]
+        self.type_list = ["Weapon", "Armor", "Accessory", "Boots"]
+        self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign"]
+
         self.name = name
         self.type = type
         self.rarity = rarity
@@ -39,37 +44,31 @@ class Equip:
         self.spd_extra = 0
 
 
+
+    def get_raritytypeeqset_list(self):
+        return self.rarity_list, self.type_list, self.eq_set_list
+
     def __str__(self):
         return f"{self.name} {self.type} {self.eq_set} {self.rarity} {self.maxhp_percent} {self.atk_percent} {self.def_percent} {self.spd} {self.eva} {self.acc} {self.crit} {self.critdmg} {self.critdef} {self.penetration} {self.maxhp_flat} {self.atk_flat} {self.def_flat} {self.spd_flat} {self.heal_efficiency} {self.maxhp_extra} {self.atk_extra} {self.def_extra} {self.spd_extra}"
 
     def __repr__(self):
         return f"{self.name} {self.type} {self.eq_set} {self.rarity} {self.maxhp_percent} {self.atk_percent} {self.def_percent} {self.spd} {self.eva} {self.acc} {self.crit} {self.critdmg} {self.critdef} {self.penetration} {self.maxhp_flat} {self.atk_flat} {self.def_flat} {self.spd_flat} {self.heal_efficiency} {self.maxhp_extra} {self.atk_extra} {self.def_extra} {self.spd_extra}"
 
-    def get_nonzero_nonstring_attributes(self):
-        return [getattr(self, attr) for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__") and getattr(self, attr) != 0 and not isinstance(getattr(self, attr), str)]
-
     def check_eq_set(self, name):
-        if name in ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign"]:
+        if name in self.eq_set_list:
             self.eq_set = name
         else:
             raise Exception("Invalid equipment set")
 
     def enhance_by_rarity(self):
-        rarity_multipliers = {
-            "Common": 1.00,
-            "Uncommon": 1.10,
-            "Rare": 1.25,
-            "Epic": 1.45,
-            "Unique": 1.70,
-            "Legendary": 2.00
-        }
-
+        values = [1.00, 1.10, 1.25, 1.45, 1.70, 2.00]
+        rarity_multipliers = {rarity: value for rarity, value in zip(self.rarity_list, values)}
         multiplier = rarity_multipliers.get(self.rarity)
         if multiplier is None:
             raise Exception("Invalid rarity")
 
         for attr in dir(self):
-            if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars"):
+            if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars") and not attr.endswith("_list"):
                 setattr(self, attr, getattr(self, attr) * multiplier)
 
         # Convert flat attributes to integer
@@ -97,14 +96,8 @@ class Equip:
         return 1 + (self.upgrade_stars ** n) / (self.upgrade_stars_max ** n)
 
     def update_stats_from_upgrade(self):
-        rarity_values = {
-            "Common": 1.0,
-            "Uncommon": 1.1,
-            "Rare": 1.2,
-            "Epic": 1.3,
-            "Unique": 1.4,
-            "Legendary": 1.6
-        }
+        values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.60]
+        rarity_values = {rarity: value for rarity, value in zip(self.rarity_list, values)}
 
         type_bonus = {
             "Accessory": ("maxhp_extra", 200),
@@ -273,22 +266,27 @@ class Equip:
         return stats
 
 
-def generate_equips_list(num, the_type=None, force_eqset="All") -> list:
+def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rarity=None, random_full_eqset=False) -> list:
     items = []
+    rarity_pool, types, eq_set_pool = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
+    types_cycle = cycle(types)
+    if random_full_eqset:
+        random_eq_set = random.choice(eq_set_pool[1:])
     for i in range(num):
-        types = ["Weapon", "Armor", "Accessory", "Boots"]
-        if force_eqset == "All":
-            eq_set_pool = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign"]
+        item_type = locked_type if locked_type else next(types_cycle)
+        if random_full_eqset:
+            item_eq_set = random_eq_set
         else:
-            eq_set_pool = [force_eqset]
-        if the_type:
-            item = Equip("Item_" + str(i+1), the_type, random.choice(["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]), random.choice(eq_set_pool))
-        else:
-            item = Equip("Item_" + str(i+1), types[i], random.choice(["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]), random.choice(eq_set_pool))
+            item_eq_set = locked_eq_set if locked_eq_set else random.choice(eq_set_pool)
+        item_rarity = locked_rarity if locked_rarity else random.choice(rarity_pool)
+
+        item = Equip(f"Item_{i + 1}", item_type, item_rarity, item_eq_set)
         item.generate()
         items.append(item)
+
     return items
 
 # nd_list = [normal_distribution(1, 3000, 1000, 500) for i in range(1000)]
 # avg = sum(nd_list)/len(nd_list)
 # print(avg) # near 1000
+# print(generate_equips_list(4, locked_eq_set="Arasaka"))
