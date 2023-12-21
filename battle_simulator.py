@@ -12,9 +12,9 @@ text_box = None
 # 1. Add attributes to character to get info on damage dealt and healing done # Too difficult to implement, abandoning...Done
 # 2. Create graph to show damage dealt and healing done # Ignored
 # 3. Add equipment set effect # Implementing...Done
-# 4. Redesign UI, the location of the buttons are not good # Waiting...Delayed
-# 5. Add 'Guard' attribute as a counter to 'Penetration', equipment should have 'Guard' attribute # Waiting...
-# 6. Equipment should have level attribute, allow scaling with characters. Minimum level is 1, maximum level is 1000. # Waiting...
+# 4. Redesign UI, the location of the buttons are not good # Waiting...Delayed...Partially Done...
+# 5. Add 'Guard' attribute as a counter to 'Penetration', equipment should have 'Guard' attribute # Waiting...Delayed
+# 6. Equipment should have level attribute, allow scaling with characters. Minimum level is 1, maximum level is 1000. # Implementing...Done
 # 7. Design web UI instead of pygame # Searching for a good framework...
 
 
@@ -322,28 +322,16 @@ class Character:
             scaling_factor = (self.lvl - 300) * 0.05  
             return int(100 * self.lvl * (1 + scaling_factor))
 
-    # Level up the character
-    def level_up(self):
-        # fix: we will create a copy of self.buff and self.debuff, then apply them back after reset_stats
-        # in the copy, if effect.is_set_effect, purge them.
-        if self.lvl >= 1000:
-            return
-        self.lvl += 1
-        buff_copy = [effect for effect in self.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
-        debuff_copy = [effect for effect in self.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
-        self.reset_stats(resetally=False, resetenemy=False)
-        self.exp = 0
-        self.maxexp = self.calculate_maxexp()
-        for effect in buff_copy:
-            self.applyEffect(effect)
-        for effect in debuff_copy:
-            self.applyEffect(effect)
-
-    # Level down the character
-    def level_down(self):
-        if self.lvl <= 1:
-            return
-        self.lvl -= 1
+    # Level up or down the character
+    def level_change(self, increment):
+        if increment > 0:
+            if self.lvl >= 1000:
+                return
+        elif increment < 0:
+            if self.lvl <= 1:
+                return
+        
+        self.lvl += increment
         buff_copy = [effect for effect in self.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
         debuff_copy = [effect for effect in self.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
         self.reset_stats(resetally=False, resetenemy=False)
@@ -768,6 +756,12 @@ class Character:
                 "Accumulate 1 stack of Sovereign when taking damage. Each stack increase atk by 5% and last 3 turns. Max 5 stacks.\n"
         else:
             return "Unknown set effect."
+
+    def fake_dice(self, sides=6, weights=None):
+        sides = [i for i in range(1, sides+1)]
+        if weights is None:
+            weights = [1 for i in range(sides)]
+        return random.choices(sides, weights=weights, k=1)[0]
 
 
 class Lillia(Character):
@@ -1923,41 +1917,52 @@ if __name__ == "__main__":
                                                             pygame.Rect((900, 340), (156, 35)),
                                                             ui_manager)
 
-    eq_selection_menu = pygame_gui.elements.UIDropDownMenu(["Weapon", "Armor", "Accessory", "Boots"],
-                                                            "Weapon",
-                                                            pygame.Rect((900, 420), (156, 35)),
-                                                            ui_manager)
-
-    eq_reroll_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 460), (78, 35)),
-                                        text='Reroll',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Reroll item")
-
-    eq_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((980, 460), (37, 35)),
-                                        text='+',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Upgrade item")
-
-    eq_downgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1017, 460), (37, 35)),
-                                            text='-',
-                                            manager=ui_manager,
-                                            tool_tip_text = "Downgrade item")
-
     character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 380), (156, 35)),
                                         text='Replace',
                                         manager=ui_manager,
                                         tool_tip_text = "Replace selected character with reserve character")
 
-    levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 515), (156, 35)),
-                                        text='Level Up',
+    levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 420), (76, 35)),
+                                        text='Lv +',
                                         manager=ui_manager,
-                                        tool_tip_text = "Level up")
+                                        tool_tip_text = "Level up selected character")
 
-    leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 555), (156, 35)),
-                                        text='Level Down',
+    leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((978, 420), (76, 35)),
+                                        text='Lv -',
                                         manager=ui_manager,
-                                        tool_tip_text = "Level down")
+                                        tool_tip_text = "Level down selected character")
+    
+    eq_rarity_list, eq_types_list, eq_set_list = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
 
+    eq_selection_menu = pygame_gui.elements.UIDropDownMenu(eq_types_list,
+                                                            eq_types_list[0],
+                                                            pygame.Rect((900, 470), (156, 35)),
+                                                            ui_manager)
+
+    eq_reroll_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 510), (78, 35)),
+                                        text='Reroll',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Reroll item")
+
+    eq_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((980, 510), (37, 35)),
+                                        text='+',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Upgrade item")
+
+    eq_downgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1017, 510), (37, 35)),
+                                            text='-',
+                                            manager=ui_manager,
+                                            tool_tip_text = "Downgrade item")
+
+    eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 550), (76, 35)),
+                                        text='Lv +',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Level up selected equipment for selected character")
+
+    eq_leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((978, 550), (76, 35)),
+                                        text='Lv -',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Level down selected character for selected character")
 
     def next_turn(party1, party2):
         global turn
@@ -2147,7 +2152,7 @@ if __name__ == "__main__":
                         image_slots[i].set_image(images["error"])
 
                 image_slots[i].set_tooltip(character.tooltip_string(), delay=0.1, wrap_width=250)
-                equip_slots[i].set_tooltip(character.get_equip_stats(), delay=0.1, wrap_width=250)
+                equip_slots[i].set_tooltip(character.get_equip_stats(), delay=0.1, wrap_width=300)
                 equip_effect_slots[i].set_tooltip(character.equipment_set_effects_tooltip(), delay=0.1, wrap_width=250)
                 sprites[i].current_health = character.hp
                 sprites[i].health_capacity = character.maxhp
@@ -2164,15 +2169,18 @@ if __name__ == "__main__":
             for healthbar in all_healthbar:
                 healthbar.rebuild()
 
-    def reroll_eq(eq_index):
+    def reroll_eq():
         all_characters = party1 + party2
         for character in all_characters:
             if character.name == character_selection_menu.selected_option and character.isAlive():
-                character.equip[eq_index] = generate_equips_list(4)[eq_index]
+                eq_to_gen = eq_selection_menu.selected_option
+                # from character.equip get the index for given eq_to_gen string
+                char_eq_index = [i for i, eq in enumerate(character.equip) if eq.type == eq_to_gen][0]
+                character.equip[char_eq_index] = generate_equips_list(locked_type=eq_to_gen, eq_level=character.lvl).pop()
                 text_box.append_html_text("====================================\n")
-                text_box.append_html_text(f"Rerolling {character.equip[eq_index].type} for {character.name}\n")
-                text_box.append_html_text(character.equip[eq_index].print_stats())
-                # The same as level_up function, save the buffs and debuffs, reset stats, then reapply buffs and debuffs
+                text_box.append_html_text(f"Rerolling {character.equip[char_eq_index].type} for {character.name}\n")
+                text_box.append_html_text(character.equip[char_eq_index].print_stats())
+                # The below is the same as level_up function, save the buffs and debuffs, reset stats, then reapply buffs and debuffs
                 buff_copy = [effect for effect in character.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
                 debuff_copy = [effect for effect in character.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
                 character.reset_stats(resethp=False, resetally=False, resetenemy=False)
@@ -2182,13 +2190,14 @@ if __name__ == "__main__":
                     character.applyEffect(effect)
         redraw_ui(party1, party2)
 
-    def eq_upgrade(eq_index, is_upgrade):
+    def eq_upgrade(is_upgrade):
         for character in all_characters:
             if character.name == character_selection_menu.selected_option and character.isAlive():
-                item_to_upgrade = character.equip[eq_index]
+                char_eq_index = [i for i, eq in enumerate(character.equip) if eq.type == eq_selection_menu.selected_option][0]
+                item_to_upgrade = character.equip[char_eq_index]
                 a, b = item_to_upgrade.upgrade_stars_func(is_upgrade) 
                 text_box.append_html_text("====================================\n")
-                text_box.append_html_text(f"Upgrading equipment {character.equip[eq_index].type} for {character.name}\n")
+                text_box.append_html_text(f"Upgrading equipment {character.equip[char_eq_index].type} for {character.name}\n")
                 text_box.append_html_text(f"Stars: {int(a)} -> {int(b)}\n")
                 if int(b) == 15:
                     text_box.append_html_text(f"Max stars reached\n")
@@ -2203,15 +2212,37 @@ if __name__ == "__main__":
                     character.applyEffect(effect)
         redraw_ui(party1, party2)
 
+    def eq_levelchange(increment):
+        for character in all_characters:
+            if character.name == character_selection_menu.selected_option and character.isAlive():
+                char_eq_index = [i for i, eq in enumerate(character.equip) if eq.type == eq_selection_menu.selected_option][0]
+                item_to_levelchange = character.equip[char_eq_index]
+                prev_level, new_level = item_to_levelchange.level_change(increment)
+                text_box.append_html_text("====================================\n")
+                text_box.append_html_text(f"Leveling equipment {character.equip[char_eq_index].type} for {character.name}\n")
+                text_box.append_html_text(f"Level: {int(prev_level)} -> {int(new_level)}\n")
+                if int(new_level) == 1000:
+                    text_box.append_html_text(f"Max level reached\n")
+                if int(new_level) == 1:
+                    text_box.append_html_text(f"Min level reached\n")
+                buff_copy = [effect for effect in character.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
+                debuff_copy = [effect for effect in character.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
+                character.reset_stats(resethp=False, resetally=False, resetenemy=False)
+                for effect in buff_copy:
+                    character.applyEffect(effect)
+                for effect in debuff_copy:
+                    character.applyEffect(effect)
+        redraw_ui(party1, party2)
+
     def character_level_button(up=True):
         all_characters = party1 + party2
         for character in all_characters:
             if character.name == character_selection_menu.selected_option and character.isAlive():
                 if up:
-                    character.level_up()
+                    character.level_change(1)
                     text_box.append_html_text(f"Leveling up {character.name}, New level: {character.lvl}\n")
                 else:
-                    character.level_down()
+                    character.level_change(-1)
                     text_box.append_html_text(f"Leveling down {character.name}. New level: {character.lvl}\n")
         redraw_ui(party1, party2, refill_image=False, rebuild_healthbar=True)
 
@@ -2252,38 +2283,21 @@ if __name__ == "__main__":
                 if event.ui_element == button5:
                     running = False
                 if event.ui_element == eq_reroll_button:
-                    if eq_selection_menu.selected_option == "Weapon":
-                        reroll_eq(0)
-                    elif eq_selection_menu.selected_option == "Armor":
-                        reroll_eq(1)
-                    elif eq_selection_menu.selected_option == "Accessory":
-                        reroll_eq(2)
-                    elif eq_selection_menu.selected_option == "Boots":
-                        reroll_eq(3)
+                    reroll_eq()
                 if event.ui_element == eq_upgrade_button:
-                    if eq_selection_menu.selected_option == "Weapon":
-                        eq_upgrade(0, True)
-                    elif eq_selection_menu.selected_option == "Armor":
-                        eq_upgrade(1, True)
-                    elif eq_selection_menu.selected_option == "Accessory":
-                        eq_upgrade(2, True)
-                    elif eq_selection_menu.selected_option == "Boots":
-                        eq_upgrade(3, True)
+                    eq_upgrade(True)
                 if event.ui_element == eq_downgrade_button:
-                    if eq_selection_menu.selected_option == "Weapon":
-                        eq_upgrade(0, False)
-                    elif eq_selection_menu.selected_option == "Armor":
-                        eq_upgrade(1, False)
-                    elif eq_selection_menu.selected_option == "Accessory":
-                        eq_upgrade(2, False)
-                    elif eq_selection_menu.selected_option == "Boots":
-                        eq_upgrade(3, False)
+                    eq_upgrade(False)
                 if event.ui_element == character_replace_button:
                     replace_character_with_reserve_member(character_selection_menu.selected_option, reserve_character_selection_menu.selected_option)
                 if event.ui_element == levelup_button:
                     character_level_button(up=True)
                 if event.ui_element == leveldown_button:
                     character_level_button(up=False)
+                if event.ui_element == eq_levelup_button:
+                    eq_levelchange(increment=1)
+                if event.ui_element == eq_leveldown_button:
+                    eq_levelchange(increment=-1)
 
             ui_manager.process_events(event)
 

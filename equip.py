@@ -10,11 +10,12 @@ def normal_distribution(min_value, max_value, mean, std):
             return value
 
 class Equip:
-    def __init__(self, name, type, rarity, eq_set="None"):
+    def __init__(self, name, type, rarity, eq_set="None", level=40):
         # lists
         self.rarity_list = ["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"]
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign"]
+        self.level = level
 
         self.name = name
         self.type = type
@@ -68,7 +69,7 @@ class Equip:
             raise Exception("Invalid rarity")
 
         for attr in dir(self):
-            if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars") and not attr.endswith("_list"):
+            if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars") and not attr.endswith("_list") and not attr.startswith("level"):
                 setattr(self, attr, getattr(self, attr) * multiplier)
 
         # Convert flat attributes to integer
@@ -100,10 +101,10 @@ class Equip:
         rarity_values = {rarity: value for rarity, value in zip(self.rarity_list, values)}
 
         type_bonus = {
-            "Accessory": ("maxhp_extra", 200),
-            "Weapon": ("atk_extra", 10),
-            "Armor": ("def_extra", 10),
-            "Boots": ("spd_extra", 10)
+            "Accessory": ("maxhp_extra", 200 / 40 * self.level),
+            "Weapon": ("atk_extra", 10 / 40 * self.level),
+            "Armor": ("def_extra", 10 / 40 * self.level),
+            "Boots": ("spd_extra", 10 / 40 * self.level)
         }
 
         if self.type in type_bonus:
@@ -119,17 +120,26 @@ class Equip:
         weights = [60, 30, 10, 5, 2, 1]
         return random.choices(sides, weights=weights, k=1)[0]
 
-    def generate(self):
+    def generate(self, level=40):
+        self.level = level
         extra_lines_to_generate = self.fake_dice() - 1
         
         if self.type == "Accessory":
             self.maxhp_flat = max(normal_distribution(1, 3000, 1000, 500), 1)
+            self.maxhp_flat /= 40
+            self.maxhp_flat *= self.level
         elif self.type == "Weapon":
             self.atk_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.atk_flat /= 40
+            self.atk_flat *= self.level
         elif self.type == "Armor":
             self.def_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.def_flat /= 40
+            self.def_flat *= self.level
         elif self.type == "Boots":
             self.spd_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.spd_flat /= 40
+            self.spd_flat *= self.level
         else:
             raise Exception("Invalid type")
         
@@ -142,6 +152,30 @@ class Equip:
         
         self.enhance_by_rarity()
 
+    def level_change(self, increment):
+        prev_level = self.level
+        new_level = self.level + increment
+        self.level = max(min(new_level, 1000), 1)
+        
+        if self.type == "Accessory":
+            self.maxhp_flat = self.maxhp_flat / prev_level # base value is divided by previous level
+            self.maxhp_flat *= new_level
+        elif self.type == "Weapon":
+            self.atk_flat = self.atk_flat / prev_level
+            self.atk_flat *= new_level
+        elif self.type == "Armor":
+            self.def_flat = self.def_flat / prev_level
+            self.def_flat *= new_level
+        elif self.type == "Boots":
+            self.spd_flat = self.spd_flat / prev_level
+            self.spd_flat *= new_level
+        else:
+            raise Exception("Invalid type")
+        
+        # stars effects should be updated after level change
+        self.update_stats_from_upgrade()
+        return prev_level, new_level
+    
     # Print the rune's stats. Only print non-zero stats, including type, rarity.
     def print_stats(self):
         def eq_set_str():
@@ -149,7 +183,7 @@ class Equip:
                 return ""
             else:
                 return str(self.eq_set) + " "
-        stats = eq_set_str() + self.rarity + " " + self.type + "\n"
+        stats = "lv" + str(self.level) + " " + eq_set_str() + self.rarity + " " + self.type + "\n"
         
         if self.maxhp_flat != 0:
             stats += "Max HP: " + str(self.maxhp_flat) + "\n"
@@ -209,7 +243,7 @@ class Equip:
             else:
                 return str(self.eq_set) + " "
 
-        stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>" + eq_set_str() + self.rarity + " " + self.type + "</b></font></shadow>\n"
+        stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>" + "lv" + str(self.level) + " " + eq_set_str() + self.rarity + " " + self.type + "</b></font></shadow>\n"
         if self.upgrade_stars > 0:
             stats += "<font color=" + star_color + ">" + '★'*min(int(self.upgrade_stars), 5) + "</font>" 
         if self.upgrade_stars > 5:
@@ -266,7 +300,7 @@ class Equip:
         return stats
 
 
-def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rarity=None, random_full_eqset=False) -> list:
+def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rarity=None, random_full_eqset=False, eq_level=40) -> list:
     items = []
     rarity_pool, types, eq_set_pool = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
     types_cycle = cycle(types)
@@ -281,7 +315,7 @@ def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rar
         item_rarity = locked_rarity if locked_rarity else random.choice(rarity_pool)
 
         item = Equip(f"Item_{i + 1}", item_type, item_rarity, item_eq_set)
-        item.generate()
+        item.generate(eq_level)
         items.append(item)
 
     return items
