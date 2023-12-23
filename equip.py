@@ -11,7 +11,7 @@ def normal_distribution(min_value, max_value, mean, std):
 
 class Equip:
     def __init__(self, name, type, rarity, eq_set="None", level=40):
-        # lists
+        # lists, changing them likely wont give an error.
         self.rarity_list = ["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"]
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign"]
@@ -101,10 +101,10 @@ class Equip:
         rarity_values = {rarity: value for rarity, value in zip(self.rarity_list, values)}
 
         type_bonus = {
-            "Accessory": ("maxhp_extra", 200 / 40 * self.level),
-            "Weapon": ("atk_extra", 10 / 40 * self.level),
-            "Armor": ("def_extra", 10 / 40 * self.level),
-            "Boots": ("spd_extra", 10 / 40 * self.level)
+            self.type_list[2]: ("maxhp_extra", 200 / 40 * self.level),
+            self.type_list[0]: ("atk_extra", 10 / 40 * self.level),
+            self.type_list[1]: ("def_extra", 10 / 40 * self.level),
+            self.type_list[3]: ("spd_extra", 10 / 40 * self.level)
         }
 
         if self.type in type_bonus:
@@ -124,19 +124,19 @@ class Equip:
         self.level = level
         extra_lines_to_generate = self.fake_dice() - 1
         
-        if self.type == "Accessory":
+        if self.type == self.type_list[2]:
             self.maxhp_flat = max(normal_distribution(1, 3000, 1000, 500), 1)
             self.maxhp_flat /= 40
             self.maxhp_flat *= self.level
-        elif self.type == "Weapon":
+        elif self.type == self.type_list[0]:
             self.atk_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
             self.atk_flat /= 40
             self.atk_flat *= self.level
-        elif self.type == "Armor":
+        elif self.type == self.type_list[1]:
             self.def_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
             self.def_flat /= 40
             self.def_flat *= self.level
-        elif self.type == "Boots":
+        elif self.type == self.type_list[3]:
             self.spd_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
             self.spd_flat /= 40
             self.spd_flat *= self.level
@@ -157,16 +157,16 @@ class Equip:
         new_level = self.level + increment
         self.level = max(min(new_level, 1000), 1)
         
-        if self.type == "Accessory":
+        if self.type == self.type_list[2]:
             self.maxhp_flat = self.maxhp_flat / prev_level # base value is divided by previous level
             self.maxhp_flat *= new_level
-        elif self.type == "Weapon":
+        elif self.type == self.type_list[0]:
             self.atk_flat = self.atk_flat / prev_level
             self.atk_flat *= new_level
-        elif self.type == "Armor":
+        elif self.type == self.type_list[1]:
             self.def_flat = self.def_flat / prev_level
             self.def_flat *= new_level
-        elif self.type == "Boots":
+        elif self.type == self.type_list[3]:
             self.spd_flat = self.spd_flat / prev_level
             self.spd_flat *= new_level
         else:

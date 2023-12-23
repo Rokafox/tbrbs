@@ -11,10 +11,11 @@ text_box = None
 # 1. Add attributes to character to get info on damage dealt and healing done # Too difficult to implement, abandoning...Done
 # 2. Create graph to show damage dealt and healing done # Ignored
 # 3. Add equipment set effect # Implementing...Done
-# 4. Redesign UI, the location of the buttons are not good # Waiting...Delayed...Partially Done...
+# 4. Redesign UI, the location of the buttons are not good # Waiting...Delayed...Partially Done...Delayed
 # 5. Add 'Guard' attribute as a counter to 'Penetration', equipment should have 'Guard' attribute # Waiting...Delayed
+# Reason: We will add this when damage is becoming uncontrollablly high, due to inflation of stats and effects.
 # 6. Equipment should have level attribute, allow scaling with characters. Minimum level is 1, maximum level is 1000. # Implementing...Done
-# 7. Design web UI instead of pygame # Searching for a good framework...
+# 7. Design web UI instead of pygame # Searching for a good framework...React...Delayed
 
 #--------------------------------------------------------- 
 #---------------------------------------------------------
@@ -320,7 +321,8 @@ if __name__ == "__main__":
     label_party2 = [label6, label7, label8, label9, label10]
 
     # Some buttons
-    # ==========================
+    #  =====================================
+
     button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 300), (156, 50)),
                                         text='Shuffle Party',
                                         manager=ui_manager,
@@ -346,59 +348,77 @@ if __name__ == "__main__":
                                         manager=ui_manager,
                                         tool_tip_text = "Quit")
 
+    # =====================================
+    # Character
+    # =====================================
+
     character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"],
                                                             "Option 1",
-                                                            pygame.Rect((900, 300), (156, 35)),
+                                                            pygame.Rect((880, 300), (156, 35)),
                                                             ui_manager)
 
     reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option1"],
                                                             "Option1",
-                                                            pygame.Rect((900, 340), (156, 35)),
+                                                            pygame.Rect((880, 340), (156, 35)),
                                                             ui_manager)
 
-    character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 380), (156, 35)),
+    character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((880, 380), (156, 35)),
                                         text='Replace',
                                         manager=ui_manager,
                                         tool_tip_text = "Replace selected character with reserve character")
 
-    levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 420), (76, 35)),
+    levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((880, 420), (76, 35)),
                                         text='Lv +',
                                         manager=ui_manager,
                                         tool_tip_text = "Level up selected character")
 
-    leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((978, 420), (76, 35)),
+    leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((958, 420), (76, 35)),
                                         text='Lv -',
                                         manager=ui_manager,
                                         tool_tip_text = "Level down selected character")
     
+    # =====================================
+    # Item
+    # =====================================
+
     eq_rarity_list, eq_types_list, eq_set_list = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
 
     eq_selection_menu = pygame_gui.elements.UIDropDownMenu(eq_types_list,
                                                             eq_types_list[0],
-                                                            pygame.Rect((900, 470), (156, 35)),
+                                                            pygame.Rect((880, 470), (156, 35)),
                                                             ui_manager)
 
-    eq_reroll_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 510), (78, 35)),
-                                        text='Reroll',
+    eq_rarity_selection_menu = pygame_gui.elements.UIDropDownMenu(["random"] + eq_rarity_list,
+                                                            "random",
+                                                            pygame.Rect((1040, 470), (156, 35)),
+                                                            ui_manager)
+
+    eq_set_list_selection_menu = pygame_gui.elements.UIDropDownMenu(["random"] + eq_set_list,
+                                                            "random",
+                                                            pygame.Rect((1040, 510), (156, 35)),
+                                                            ui_manager)
+
+    eq_reroll_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1040, 550), (156, 35)),
+                                        text='Generate',
                                         manager=ui_manager,
                                         tool_tip_text = "Reroll item")
 
-    eq_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((980, 510), (37, 35)),
-                                        text='+',
+    eq_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((880, 510), (76, 35)),
+                                        text='Star +',
                                         manager=ui_manager,
                                         tool_tip_text = "Upgrade stars for item")
 
-    eq_downgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1017, 510), (37, 35)),
-                                            text='-',
+    eq_downgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((958, 510), (76, 35)),
+                                            text='Star -',
                                             manager=ui_manager,
                                             tool_tip_text = "Downgrade stars for item")
 
-    eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 550), (76, 35)),
+    eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((880, 550), (76, 35)),
                                         text='Lv +',
                                         manager=ui_manager,
                                         tool_tip_text = "Level up selected item for selected character")
 
-    eq_leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((978, 550), (76, 35)),
+    eq_leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((958, 550), (76, 35)),
                                         text='Lv -',
                                         manager=ui_manager,
                                         tool_tip_text = "Level down selected item for selected character")
@@ -554,13 +574,13 @@ if __name__ == "__main__":
         character_selection_menu.kill()
         character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
                                                                 party1[0].name,
-                                                                pygame.Rect((900, 300), (156, 35)),
+                                                                pygame.Rect((880, 300), (156, 35)),
                                                                 ui_manager)
 
         reserve_character_selection_menu.kill()
         reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in remaining_characters],
                                                                 remaining_characters[0].name,
-                                                                pygame.Rect((900, 340), (156, 35)),
+                                                                pygame.Rect((880, 340), (156, 35)),
                                                                 ui_manager)
 
         redraw_ui(party1, party2)
@@ -586,7 +606,7 @@ if __name__ == "__main__":
         character_selection_menu.kill()
         character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
                                                                 party1[0].name,
-                                                                pygame.Rect((900, 300), (156, 35)),
+                                                                pygame.Rect((880, 300), (156, 35)),
                                                                 ui_manager)
 
         remaining_characters = [character for character in all_characters if character not in party1 and character not in party2]
@@ -594,7 +614,7 @@ if __name__ == "__main__":
         reserve_character_selection_menu.kill()
         reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in remaining_characters],
                                                                 remaining_characters[0].name,
-                                                                pygame.Rect((900, 340), (156, 35)),
+                                                                pygame.Rect((880, 340), (156, 35)),
                                                                 ui_manager)
         redraw_ui(party1, party2)
         reset_ally_enemy_attr(party1, party2)
@@ -630,11 +650,16 @@ if __name__ == "__main__":
     def reroll_eq():
         all_characters = party1 + party2
         for character in all_characters:
+            # Because of this, we can't have two characters with the same name
             if character.name == character_selection_menu.selected_option and character.isAlive():
                 eq_to_gen = eq_selection_menu.selected_option
+                rarity_to_gen = eq_rarity_selection_menu.selected_option
+                rarity_to_gen = None if rarity_to_gen == "random" else rarity_to_gen
+                set_to_gen = eq_set_list_selection_menu.selected_option
+                set_to_gen = None if set_to_gen == "random" else set_to_gen
                 # from character.equip get the index for given eq_to_gen string
                 char_eq_index = [i for i, eq in enumerate(character.equip) if eq.type == eq_to_gen][0]
-                character.equip[char_eq_index] = generate_equips_list(locked_type=eq_to_gen, eq_level=character.lvl).pop()
+                character.equip[char_eq_index] = generate_equips_list(locked_type=eq_to_gen, eq_level=character.lvl, locked_eq_set=set_to_gen, locked_rarity=rarity_to_gen).pop()
                 text_box.append_html_text("====================================\n")
                 text_box.append_html_text(f"Rerolling {character.equip[char_eq_index].type} for {character.name}\n")
                 text_box.append_html_text(character.equip[char_eq_index].print_stats())
@@ -711,6 +736,7 @@ if __name__ == "__main__":
     text_box.append_html_text("If lower cased character_name.jpg is not found in ./image directory, error.jpg will be used instead.\n")
     text_box.append_html_text("Hover over character image to show attributes.\n")
     text_box.append_html_text("Hover over character health bar to show status effects.\n")
+    text_box.append_html_text("Hover over kkkkk icon to show item set information.\n")
     text_box.append_html_text("Hover over chopper knife icon to show item information.\n\n")
 
     # Event loop

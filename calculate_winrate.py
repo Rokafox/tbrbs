@@ -173,8 +173,11 @@ def calculate_winrate_for_character(sample, fineprint_mode="default"):
                 character_and_eqset_losses.append((character.name, character.eq_set))
 
         # A simple progress bar
-        if i % (sample // 100) == 0:
-            print(f"{i / sample * 100:.2f}% done, {i} out of {sample}")
+        try:
+            if i % (sample // 100) == 0:
+                print(f"{i / sample * 100:.2f}% done, {i} out of {sample}")
+        except Exception:
+            pass
 
     print("=====================================")
     print(f"Average turns: {turns_total / sample}") # Ideal range: 55-60

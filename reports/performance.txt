@@ -1,28 +1,28 @@
 Character Performance:
 character_name
-Iris        57.040083
-Cerberus    55.428222
-Poppy       54.339151
-Ruby        52.930965
-Pheonix     52.778274
-Cliffe      51.173402
-Seth        50.200108
-Lillia      49.161342
-Clover      49.019860
-Taily       48.865147
-Fenrir      47.989609
-Pepper      47.777398
-Luna        47.659643
-Bell        46.454933
-Olive       44.908714
-Freya       43.401390
+Cerberus    56.810024
+Ruby        55.043299
+Pheonix     54.627946
+Iris        54.500813
+Poppy       54.282167
+Cliffe      49.642084
+Seth        49.625665
+Clover      49.340490
+Lillia      48.828290
+Taily       48.350823
+Bell        48.008628
+Fenrir      47.492315
+Pepper      47.160747
+Luna        46.949834
+Olive       45.341687
+Freya       44.272656
 Name: winrate, dtype: float64
 
 Equipment Performance:
 equipment_set
-NUSA         54.865359
-Sovereign    51.866685
-KangTao      49.778796
-Arasaka      47.799288
-Militech     45.417447
+NUSA         54.161409
+Sovereign    50.816589
+Arasaka      48.685558
+KangTao      48.382343
+Militech     48.040808
 Name: winrate, dtype: float64

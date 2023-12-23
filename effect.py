@@ -532,9 +532,9 @@ class EquipmentSetEffect_Sovereign(Effect):
 
     def applyEffectDuringDamageStep(self, character, damage):
         # count how many "Sovereign" in character.buffs, if less than 7, apply effect.
-        if Counter([effect.name for effect in character.buffs])["Sovereign"] < 6:
+        if Counter([effect.name for effect in character.buffs])["Sovereign"] < 5:
             character.applyEffect(StatsEffect("Sovereign", 3, True, self.stats_dict))
         return damage
     
     def tooltip_description(self):
-        return f"Accumulate 1 stack of Sovereign when taking damage. Each stack increase atk by {self.stats_dict['atk']*100}% and last 3 turns. Max 5 stacks."
+        return f"Accumulate 1 stack of Sovereign when taking damage. Each stack scales atk to {self.stats_dict['atk']*100}% and last 3 turns. Max 5 stacks."
