@@ -14,7 +14,7 @@ class Equip:
         # lists, changing them likely wont give an error.
         self.rarity_list = ["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"]
-        self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign"]
+        self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", "Snowflake"]
         self.level = level
 
         self.name = name

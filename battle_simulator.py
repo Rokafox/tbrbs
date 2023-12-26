@@ -94,11 +94,12 @@ character13 = Pheonix("Pheonix", average_party_level)
 character14 = Bell("Bell", average_party_level)
 character15 = Taily("Taily", average_party_level)
 character16 = Seth("Seth", average_party_level)
+character17 = Ophelia("Ophelia", average_party_level)
 
 all_characters = [character1, character2, character3, character4, character5,
                     character6, character7, character8, character9, character10,
                         character11, character12, character13, character14, character15
-                            , character16]
+                            , character16, character17]
 
 for character in all_characters:
     character.equip = generate_equips_list(4, random_full_eqset=True)
@@ -117,8 +118,8 @@ if __name__ == "__main__":
     deep_dark_blue = pygame.Color("#000022")
     light_yellow = pygame.Color("#FFFFE0")
 
-    display_surface = pygame.display.set_mode((1200, 900), flags=pygame.SCALED)
-    ui_manager = pygame_gui.UIManager((1200, 900), "theme_light_yellow.json", starting_language='ja')
+    display_surface = pygame.display.set_mode((1600, 900), flags=pygame.SCALED)
+    ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
 
     pygame.display.set_caption("Battle Simulator")
 
@@ -322,31 +323,41 @@ if __name__ == "__main__":
 
     # Some buttons
     #  =====================================
+    # Left Side
 
     button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 300), (156, 50)),
                                         text='Shuffle Party',
                                         manager=ui_manager,
                                         tool_tip_text = "Shuffle party and restart the battle")
 
-    button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 360), (156, 50)),
-                                        text='Next Turn',
+    button4 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 360), (156, 50)),
+                                        text='Restart Battle',
                                         manager=ui_manager,
-                                        tool_tip_text = "Simulate the next turn")
+                                        tool_tip_text = "Restart battle")
 
     button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 420), (156, 50)),
                                         text='All Turns',
                                         manager=ui_manager,
                                         tool_tip_text = "Skip to the end of the battle. May take a while.")
 
-    button4 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
-                                        text='Restart Battle',
+    button_left_clear_board = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
+                                        text='Clear Board',
                                         manager=ui_manager,
-                                        tool_tip_text = "Restart battle")
-
+                                        tool_tip_text = "Remove all text from the text box, text box will be slower if there are too many text.")
+    
     button5 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 540), (156, 50)),
                                         text='Quit',
                                         manager=ui_manager,
                                         tool_tip_text = "Quit")
+
+    # =====================================
+    # Right Side
+
+    button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 300), (156, 50)),
+                                        text='Next Turn',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Simulate the next turn")
+
 
     # =====================================
     # Character
@@ -354,28 +365,38 @@ if __name__ == "__main__":
 
     character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"],
                                                             "Option 1",
-                                                            pygame.Rect((880, 300), (156, 35)),
+                                                            pygame.Rect((900, 360), (156, 35)),
                                                             ui_manager)
 
     reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option1"],
                                                             "Option1",
-                                                            pygame.Rect((880, 340), (156, 35)),
+                                                            pygame.Rect((900, 400), (156, 35)),
                                                             ui_manager)
 
-    character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((880, 380), (156, 35)),
+    character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 440), (156, 35)),
                                         text='Replace',
                                         manager=ui_manager,
                                         tool_tip_text = "Replace selected character with reserve character")
 
-    levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((880, 420), (76, 35)),
+    levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 480), (76, 35)),
                                         text='Lv +',
                                         manager=ui_manager,
                                         tool_tip_text = "Level up selected character")
 
-    leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((958, 420), (76, 35)),
+    leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((980, 480), (76, 35)),
                                         text='Lv -',
                                         manager=ui_manager,
                                         tool_tip_text = "Level down selected character")
+    
+    cheat_selection_menu = pygame_gui.elements.UIDropDownMenu(["Increase Speed", "The Actor"],
+                                                            "Increase Speed",
+                                                            pygame.Rect((900, 520), (156, 35)),
+                                                            ui_manager)
+    
+    cheat_add_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 560), (156, 35)),
+                                        text='Add Debug Effect',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Add selected cheat effect to selected character, useful for debugging")
     
     # =====================================
     # Item
@@ -385,40 +406,40 @@ if __name__ == "__main__":
 
     eq_selection_menu = pygame_gui.elements.UIDropDownMenu(eq_types_list,
                                                             eq_types_list[0],
-                                                            pygame.Rect((880, 470), (156, 35)),
+                                                            pygame.Rect((1080, 360), (156, 35)),
                                                             ui_manager)
 
     eq_rarity_selection_menu = pygame_gui.elements.UIDropDownMenu(["random"] + eq_rarity_list,
                                                             "random",
-                                                            pygame.Rect((1040, 470), (156, 35)),
+                                                            pygame.Rect((1080, 400), (156, 35)),
                                                             ui_manager)
 
     eq_set_list_selection_menu = pygame_gui.elements.UIDropDownMenu(["random"] + eq_set_list,
                                                             "random",
-                                                            pygame.Rect((1040, 510), (156, 35)),
+                                                            pygame.Rect((1080, 440), (156, 35)),
                                                             ui_manager)
 
-    eq_reroll_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1040, 550), (156, 35)),
+    eq_reroll_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 480), (156, 35)),
                                         text='Generate',
                                         manager=ui_manager,
                                         tool_tip_text = "Reroll item")
 
-    eq_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((880, 510), (76, 35)),
+    eq_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 520), (76, 35)),
                                         text='Star +',
                                         manager=ui_manager,
                                         tool_tip_text = "Upgrade stars for item")
 
-    eq_downgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((958, 510), (76, 35)),
+    eq_downgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1158, 520), (76, 35)),
                                             text='Star -',
                                             manager=ui_manager,
                                             tool_tip_text = "Downgrade stars for item")
 
-    eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((880, 550), (76, 35)),
+    eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 560), (76, 35)),
                                         text='Lv +',
                                         manager=ui_manager,
                                         tool_tip_text = "Level up selected item for selected character")
 
-    eq_leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((958, 550), (76, 35)),
+    eq_leveldown_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1158, 560), (76, 35)),
                                         text='Lv -',
                                         manager=ui_manager,
                                         tool_tip_text = "Level down selected item for selected character")
@@ -543,7 +564,7 @@ if __name__ == "__main__":
         for character in all_characters:
             character.reset_stats()
 
-        start_of_battle_effects(party1) # False as already handled in reset_stats()
+        start_of_battle_effects(party1) 
         start_of_battle_effects(party2)
 
         redraw_ui(party1, party2)
@@ -574,13 +595,13 @@ if __name__ == "__main__":
         character_selection_menu.kill()
         character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
                                                                 party1[0].name,
-                                                                pygame.Rect((880, 300), (156, 35)),
+                                                                pygame.Rect((900, 360), (156, 35)),
                                                                 ui_manager)
 
         reserve_character_selection_menu.kill()
         reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in remaining_characters],
                                                                 remaining_characters[0].name,
-                                                                pygame.Rect((880, 340), (156, 35)),
+                                                                pygame.Rect((900, 400), (156, 35)),
                                                                 ui_manager)
 
         redraw_ui(party1, party2)
@@ -606,7 +627,7 @@ if __name__ == "__main__":
         character_selection_menu.kill()
         character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
                                                                 party1[0].name,
-                                                                pygame.Rect((880, 300), (156, 35)),
+                                                                pygame.Rect((900, 360), (156, 35)),
                                                                 ui_manager)
 
         remaining_characters = [character for character in all_characters if character not in party1 and character not in party2]
@@ -614,7 +635,7 @@ if __name__ == "__main__":
         reserve_character_selection_menu.kill()
         reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in remaining_characters],
                                                                 remaining_characters[0].name,
-                                                                pygame.Rect((880, 340), (156, 35)),
+                                                                pygame.Rect((900, 400), (156, 35)),
                                                                 ui_manager)
         redraw_ui(party1, party2)
         reset_ally_enemy_attr(party1, party2)
@@ -635,7 +656,7 @@ if __name__ == "__main__":
                 sprites[i].current_health = character.hp
                 sprites[i].health_capacity = character.maxhp
                 labels[i].set_text(f"lv {character.lvl} {character.name}")
-                labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=300)
+                labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=400)
                 healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=300)
                 if main_char == character:
                     labels[i].set_text(f"--> lv {character.lvl} {character.name}")
@@ -729,6 +750,24 @@ if __name__ == "__main__":
                     text_box.append_html_text(f"Leveling down {character.name}. New level: {character.lvl}\n")
         redraw_ui(party1, party2, refill_image=False, rebuild_healthbar=True)
 
+    def add_cheat_effect():
+        all_characters = party1 + party2
+        for character in all_characters:
+            if character.name == character_selection_menu.selected_option and character.isAlive():
+                e = cheat_selection_menu.selected_option
+                if e == "Increase Speed":
+                    character.try_remove_effect_with_name("Increase Speed Cheat")
+                    character.applyEffect(StatsEffect("Increase Speed Cheat", 2, True, {"spd": 100}))
+                    text_box.append_html_text(f"Added {e} cheat effect to {character.name}.\n")
+                elif e == "The Actor":
+                    character.try_remove_effect_with_name("The Actor Cheat")
+                    character.applyEffect(StatsEffect("The Actor Cheat", -1, True, {"spd": 100}))
+                    text_box.append_html_text(f"Added {e} cheat effect to {character.name}.\n")
+                else:
+                    raise Exception("Unknown cheat effect")
+        redraw_ui(party1, party2, refill_image=False, rebuild_healthbar=True)
+
+
     # Text entry box
     # ==========================
     text_box = pygame_gui.elements.UITextEntryBox(pygame.Rect((300, 300), (556, 290)),"", ui_manager)
@@ -756,6 +795,8 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_element == button_left_clear_board:
+                    text_box.set_text("Welcome to the battle simulator!\n")
                 if event.ui_element == button1:
                     text_box.set_text("Welcome to the battle simulator!\n")
                     party1, party2 = set_up_characters()
@@ -783,6 +824,8 @@ if __name__ == "__main__":
                     character_level_button(up=True)
                 if event.ui_element == leveldown_button:
                     character_level_button(up=False)
+                if event.ui_element == cheat_add_button:
+                    add_cheat_effect()
                 if event.ui_element == eq_levelup_button:
                     eq_levelchange(increment=1)
                 if event.ui_element == eq_leveldown_button:

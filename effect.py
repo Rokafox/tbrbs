@@ -19,6 +19,7 @@ class Effect:
         self.cc_immunity = bool(cc_immunity)
         self.delay_trigger = delay_trigger # number of turns before effect is triggered
         self.flag_for_remove = False # If True, will be removed at the beginning of the next turn.
+        self.secondary_name = None
     
     def isPermanent(self):
         return self.duration == -1
@@ -205,7 +206,10 @@ class StatsEffect(Effect):
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
                 string += f"{key} is scaled to {value*100}%."
             else:
-                string += f"{key} is increased by {value*100}%."
+                if value > 0:
+                    string += f"{key} is increased by {value*100}%."
+                else:
+                    string += f"{key} is decreased by {-value*100}%."
         return string
 
 # ---------------------------------------------------------
@@ -237,6 +241,31 @@ class ContinuousDamageEffect(Effect):
     
     def tooltip_description(self):
         return f"Take {int(self.value)} status damage each turn."
+
+
+# ---------------------------------------------------------
+# Continuous Heal effect
+class ContinuousHealEffect(Effect):
+    def __init__(self, name, duration, is_buff, value, is_percent=False):
+        super().__init__(name, duration, is_buff)
+        self.value = float(value)
+        self.is_buff = is_buff
+        self.is_percent = is_percent
+    
+    def applyEffectOnTrigger(self, character):
+        if character.isDead():
+            return
+        if self.is_percent:
+            character.healHp(character.maxhp * self.value, self)
+        else:
+            character.healHp(self.value, self)
+    
+    def tooltip_description(self):
+        if self.is_percent:
+            return f"Heal for {int(self.value*100)}% hp each turn."
+        else:
+            return f"Heal for {int(self.value)} hp each turn."
+
 
 #---------------------------------------------------------
 # Absorption Shield effect
@@ -521,7 +550,7 @@ class EquipmentSetEffect_NUSA(Effect):
 
 #---------------------------------------------------------
 # Sovereign
-# Accumulate 1 stack of Sovereign when taking damage. Each stack increase atk by 5% and last 3 turns. Max 5 stacks.
+# Accumulate 1 stack of Sovereign when taking damage. Each stack increase atk by 20% and last 4 turns. Max 5 stacks.
 class EquipmentSetEffect_Sovereign(Effect):
     def __init__(self, name, duration, is_buff, stats_dict=None, stats_dict_function=None):
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
@@ -531,10 +560,46 @@ class EquipmentSetEffect_Sovereign(Effect):
         self.stats_dict_function = stats_dict_function
 
     def applyEffectDuringDamageStep(self, character, damage):
-        # count how many "Sovereign" in character.buffs, if less than 7, apply effect.
+        # count how many "Sovereign" in character.buffs, if less than 5, apply effect.
         if Counter([effect.name for effect in character.buffs])["Sovereign"] < 5:
-            character.applyEffect(StatsEffect("Sovereign", 3, True, self.stats_dict))
+            character.applyEffect(StatsEffect("Sovereign", 4, True, self.stats_dict))
         return damage
     
     def tooltip_description(self):
         return f"Accumulate 1 stack of Sovereign when taking damage. Each stack scales atk to {self.stats_dict['atk']*100}% and last 3 turns. Max 5 stacks."
+
+
+# ---------------------------------------------------------
+# Snowflake
+# Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 20% hp and gain the following effect for 6 turns:
+# atk, def, maxhp, spd are increased by 20%. 
+# Each activation of this effect increases the stats bonus and healing by 20%.
+class EquipmentSetEffect_Snowflake(Effect):
+    def __init__(self, name, duration, is_buff):
+        super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
+        self.is_set_effect = True
+        self.collected_pieces = 0
+        self.activation_count = 0
+        self.bonus_stats_dict = {"atk": 1.0, "defense": 1.0, "maxhp": 1.0, "spd": 1.0}
+
+    def get_new_bonus_dict(self):
+        new_bonus_dict = {}
+        for key, value in self.bonus_stats_dict.items():
+            new_bonus_dict[key] = value + self.activation_count * 0.25
+        return new_bonus_dict
+
+    def apply_effect_custom(self):
+        self.collected_pieces += 1
+        self.collected_pieces = min(self.collected_pieces, 6)
+
+    def applyEffectOnTrigger(self, character):
+        if character.isDead():
+            return
+        if self.collected_pieces >= 6:
+            self.activation_count += 1
+            character.applyEffect(StatsEffect("Snowflake", 6, True, self.get_new_bonus_dict()))
+            character.healHp(character.maxhp * 0.25 * self.activation_count, self)
+            self.collected_pieces = 0
+
+    def tooltip_description(self):
+        return f"Collected pieces: {self.collected_pieces}, Activation count: {self.activation_count}. Collect 6 pieces to activate effect."

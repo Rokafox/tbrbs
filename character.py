@@ -276,6 +276,11 @@ class Character:
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{self.name} cannot act.\n")
             fine_print(f"{self.name} cannot act.", mode=self.fineprint_mode)
+        set_name = self.get_equipment_set()
+        if set_name == "Snowflake":
+            for buff in self.buffs:
+                if buff.name == "Snowflake Set":
+                    buff.apply_effect_custom()
 
     # Print the character's stats
     def __str__(self):
@@ -628,11 +633,22 @@ class Character:
             self.buffs.remove(effect)
         elif effect in self.debuffs:
             self.debuffs.remove(effect)
+        else:
+            raise Exception("Effect not found.")
         if self.running and self.logging:
             self.text_box.append_html_text(f"{effect.name} on {self.name} has been removed.\n")
         fine_print(f"{effect.name} on {self.name} has been removed.", mode=self.fineprint_mode)
         if not purge:
             effect.applyEffectOnRemove(self)
+
+    def try_remove_effect_with_name(self, effect_name, strict=False):
+        for effect in self.buffs + self.debuffs:
+            if effect.name == effect_name:
+                self.removeEffect(effect)
+                return True
+        if strict:
+            raise Exception("Effect with name not found.")
+        return False
 
     # Remove all buffs and debuffs from the character
     def removeAllEffects(self):
@@ -731,7 +747,9 @@ class Character:
                 return {"atk": 0.06 * allies_alive + 1 , "defense": 0.06 * allies_alive + 1, "maxhp": 0.06 * allies_alive + 1}
             self.applyEffect(EquipmentSetEffect_NUSA("NUSA Set", -1, True, {"atk": 1.30, "defense": 1.30, "maxhp": 1.30}, stats_dict_function))
         elif set_name == "Sovereign":
-            self.applyEffect(EquipmentSetEffect_Sovereign("Sovereign Set", -1, True, {"atk": 1.40}))
+            self.applyEffect(EquipmentSetEffect_Sovereign("Sovereign Set", -1, True, {"atk": 1.20}))
+        elif set_name == "Snowflake":
+            self.applyEffect(EquipmentSetEffect_Snowflake("Snowflake Set", -1, True))
         else:
             raise Exception("Effect not implemented.")
         
@@ -753,7 +771,12 @@ class Character:
                 "Increase atk by 6%, def by 6%, and maxhp by 6% for each ally alive including self.\n"
         elif set_name == "Sovereign":
             return "Sovereign\n" \
-                "Accumulate 1 stack of Sovereign when taking damage. Each stack increase atk by 40% and last 3 turns. Max 5 stacks.\n"
+                "Accumulate 1 stack of Sovereign when taking damage. Each stack increase atk by 20% and last 4 turns. Max 5 stacks.\n"
+        elif set_name == "Snowflake":
+            return "Snowflake\n" \
+                "Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 25% hp and gain the following effect for 6 turns:\n" \
+                "atk, def, maxhp, spd are increased by 25%.\n" \
+                "Each activation of this effect increases the stats bonus and healing by 25%.\n"
         else:
             return "Unknown set effect."
 
@@ -762,6 +785,11 @@ class Character:
         if weights is None:
             weights = [1 for i in range(sides)]
         return random.choices(sides, weights=weights, k=1)[0]
+
+    def battle_entry_effects(self):
+        # handles passive applied when entering battle.
+        pass
+
 
 
 class Lillia(Character):
@@ -906,7 +934,7 @@ class Freya(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Freya"
-        self.skill1_description = "600% atk on 1 enemy, 75% chance to silence for 3 turns, always target the enemy with highest ATK."
+        self.skill1_description = "620% atk on 1 enemy, 75% chance to silence for 3 turns, always target the enemy with highest ATK."
         self.skill2_description = "520% atk on 1 enemy, always target the enemy with lowest HP."
         self.skill3_description = "Apply Absorption Shield on self if target is fallen by skill 2. Shield will absorb up to 900% of ATK of damage."
 
@@ -914,7 +942,7 @@ class Freya(Character):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1(self):
-        # 600% atk on 1 enemy, 75% chance to silence for 3 turns, always target the enemy with highest ATK.
+        # 620% atk on 1 enemy, 75% chance to silence for 3 turns, always target the enemy with highest ATK.
         if self.running and self.logging:
             self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
         fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
@@ -924,8 +952,8 @@ class Freya(Character):
             dice = random.randint(1, 100)
             if dice <= 75:
                 target.applyEffect(Effect("Silence", 3, False))
-        damage_dealt = self.attack(target_kw1="n_highest_attr",target_kw2="1",target_kw3="atk",target_kw4="enemy", multiplier=6.0, repeat=1, func_after_dmg=silence_effect)
-        self.skill1_cooldown = 5
+        damage_dealt = self.attack(target_kw1="n_highest_attr",target_kw2="1",target_kw3="atk",target_kw4="enemy", multiplier=6.2, repeat=1, func_after_dmg=silence_effect)
+        self.skill1_cooldown = 4
         return damage_dealt
 
     def skill2(self):
@@ -1095,14 +1123,13 @@ class Olive(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Olive"
         self.skill1_description = "540% atk on 1 enemy. Decrease target's atk by 50% for 4 turns."
-        self.skill2_description = "Heal 3 allies with lowest hp by 260% atk and increase their speed by 40% for 4 turns. "
-        self.skill3_description = "Normal attack deals 65% more damage if target has less speed than self."
+        self.skill2_description = "Heal 3 allies with lowest hp by 270% atk and increase their speed by 40% for 4 turns. "
+        self.skill3_description = "Normal attack deals 100% more damage if target has less speed than self."
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1(self):
-        # 480% atk on 1 enemy. Decrease target's atk by 50% for 4 turns.
         if self.running and self.logging:
             self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
         fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
@@ -1116,7 +1143,6 @@ class Olive(Character):
         return damage_dealt
 
     def skill2(self):
-        # heal 3 allies by 240% atk with lowest hp and increase their speed by 40% for 4 turns. 
         if self.skill2_cooldown > 0:
             raise Exception
         fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
@@ -1124,7 +1150,7 @@ class Olive(Character):
             self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
         ally_to_heal = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
         for ally in ally_to_heal:
-            ally.healHp(self.atk * 2.6, self)
+            ally.healHp(self.atk * 2.7, self)
             stat_dict = {"spd": 1.4}
             ally.applyEffect(StatsEffect("Tailwind", 4, True, stat_dict))
 
@@ -1138,7 +1164,7 @@ class Olive(Character):
     def normal_attack(self):
         def effect(self, target, final_damage):
             if target.spd < self.spd:
-                final_damage *= 1.65
+                final_damage *= 2.00
             return final_damage
         self.attack(func_damage_step=effect)
 
@@ -1564,6 +1590,152 @@ class Seth(Character):
     def skill3(self):
         pass
 
+
+class Chiffon(Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Chiffon"
+        self.skill1_description = "Increase def by 20%, atk by 10% for 4 turns for all allies. Apply a shield that absorbs damage up to 100% self atk for 2 turns."
+        self.skill2_description = "Select random 5 targets, when target is an ally, heal 100% atk, when target is an enemy, attack with 200% atk and apply Sleep with a 50% chance."
+        self.skill3_description = "When taking damage that would exceed 10% of maxhp, reduce damage above 10% of maxhp by 50%. For every turn passed, damage reduction effect is reduced by 2%."
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1(self):
+        if self.running and self.logging:
+            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
+        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
+        if self.skill1_cooldown > 0:
+            raise Exception
+        self.skill1_cooldown = 5
+        return damage_dealt
+
+    def skill2(self):
+        if self.running and self.logging:
+            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
+        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+        if self.skill2_cooldown > 0:
+            raise Exception
+        self.skill2_cooldown = 5
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+
+class Ophelia(Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Ophelia"
+        self.skill1_description = "Attack 1 enemy with 430% atk. Consumes a card in possession to gain an additional effect according to the card type." \
+        " Death Card: Skill damage increases by 50%, Stun the target for 3 turns." \
+        " Love Card: Reduce heal efficiency for 3 turns by 100%." \
+        " Luck Card: Skill cooldown does not apply." \
+        " Gains Death Card after this skill."
+        self.skill2_description = "All allies regenerates 5% of maxhp for 4 turns. Consumes a card in possession to gain an additional effect according to the card type." \
+        " Death Card: Increase critical damage by 30% for 3 turns." \
+        " Love Card: Heal all allies for 300% atk." \
+        " Luck Card: Skill cooldown does not apply." \
+        " Gains Love Card after this skill."
+        self.skill3_description = "Normal attack and skills has 30% chance to gain Luck Card."
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1(self):
+        if self.running and self.logging:
+            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
+        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
+        if self.skill1_cooldown > 0:
+            raise Exception
+        buff_to_remove_list = []
+        def card_effect(self, target):
+            for buff in self.buffs:
+                if buff.name == "Death Card":
+                    target.applyEffect(StunEffect('Stun', duration=3, is_buff=False))
+                    buff_to_remove_list.append(buff)
+                if buff.name == "Love Card":
+                    target.applyEffect(StatsEffect("Unhealable", 3, False, {"heal_efficiency": -1.0}))
+                    buff_to_remove_list.append(buff)
+
+        def card_amplify(self, target, final_damage):
+            death_card_count = max(sum(1 for buff in self.buffs if buff.name == "Death Card"), 1)
+            final_damage *= 1.5 * death_card_count
+            return final_damage
+        
+        damage_dealt = self.attack(multiplier=4.3, repeat=1, func_after_dmg=card_effect, func_damage_step=card_amplify)
+        lucky_card_found = False
+        for buff in self.buffs:
+            if buff.name == "Luck Card":
+                buff_to_remove_list.append(buff)
+                lucky_card_found = True
+                break
+        self.buffs = [buff for buff in self.buffs if buff not in buff_to_remove_list]
+        self.applyEffect(Effect("Death Card", -1, True, False))
+        if lucky_card_found:
+            self.skill1_cooldown = 0
+        else:
+            self.skill1_cooldown = 5
+        dice = random.randint(1, 100)
+        if dice <= 30:
+            self.applyEffect(Effect("Luck Card", -1, True, False))
+            if self.running and self.logging:
+                self.text_box.append_html_text(f"{self.name} gained Luck Card.\n")
+            fine_print(f"{self.name} gained Luck Card.", mode=self.fineprint_mode)
+        
+        return damage_dealt
+
+    def skill2(self):
+        if self.running and self.logging:
+            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
+        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+        if self.skill2_cooldown > 0:
+            raise Exception
+        buff_to_remove_list = []
+        for ally in self.ally:
+            ally.applyEffect(ContinuousHealEffect("Regeneration", 4, True, 0.05, True))
+            for buff in self.buffs:
+                if buff.name == "Death Card":
+                    ally.applyEffect(StatsEffect("Crit Dmg Up", 3, True, {"critdmg": 0.3}))
+                    buff_to_remove_list.append(buff)
+                if buff.name == "Love Card":
+                    ally.healHp(self.atk * 3.0, self)
+                    buff_to_remove_list.append(buff)
+        lucky_card_found = False
+        for buff in self.buffs:
+            if buff.name == "Luck Card":
+                buff_to_remove_list.append(buff)
+                lucky_card_found = True
+                break
+        if lucky_card_found:
+            self.skill2_cooldown = 0
+        else:
+            self.skill2_cooldown = 5
+        self.buffs = [buff for buff in self.buffs if buff not in buff_to_remove_list]
+        self.applyEffect(Effect("Love Card", -1, True, False))
+        dice = random.randint(1, 100)
+        if dice <= 30:
+            self.applyEffect(Effect("Luck Card", -1, True, False))
+            if self.running and self.logging:
+                self.text_box.append_html_text(f"{self.name} gained Luck Card.\n")
+            fine_print(f"{self.name} gained Luck Card.", mode=self.fineprint_mode)
+        return 0
+        
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def effect(self, target):
+            # gain card
+            dice = random.randint(1, 100)
+            if dice <= 30:
+                self.applyEffect(Effect("Luck Card", -1, True, False))
+                if self.running and self.logging:
+                    self.text_box.append_html_text(f"{self.name} gained Luck Card.\n")
+                fine_print(f"{self.name} gained Luck Card.", mode=self.fineprint_mode)
+
+        self.attack(func_after_dmg=effect)
 
 # Other characters not yet implemented:
 # Chiffon Cake
