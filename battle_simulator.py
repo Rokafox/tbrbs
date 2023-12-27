@@ -25,42 +25,6 @@ def is_someone_alive(party):
             return True
     return False
 
-def start_of_battle_effects(party):
-    # Iris effect
-    if any(isinstance(character, Iris) for character in party):
-        character_with_highest_atk = max(party, key=lambda char: getattr(char, 'atk', 0))
-        character_with_highest_atk.applyEffect(CancellationShield("Cancellation Shield", -1, True, 0.1, cc_immunity=True, running=running, logging=logging, text_box=text_box))
-    for character in party:
-        # Equipment set effect
-        # Already handled elsewhere.
-        # Pheonix effect
-        if isinstance(character, Pheonix):
-            character.applyEffect(RebornEffect("Reborn", -1, True, 0.4, False))
-        # Seth effect
-        if isinstance(character, Seth):
-            character.applyEffect(SethEffect("Passive Effect", -1, True, 0.01))
-    # Taily effect
-    taily = next((character for character in party if isinstance(character, Taily)), None)
-    if taily:
-        for c in party:
-            if c != taily:
-                c.applyEffect(ProtectedEffect("Blessing of Firewood", -1, True, False, taily, 0.6))
-        
-
-def mid_turn_effects(party1, party2): 
-    # Fenrir effect
-    for party in [party1, party2]:
-        for character in party:
-            neighbors = character.get_neighbor_allies_not_including_self()
-            fenrir = next((ally for ally in neighbors if isinstance(ally, Fenrir)), None)
-            if fenrir:
-                if not character.hasEffect("Fluffy Protection"):
-                    character.applyEffect(EffectShield1("Fluffy Protection", -1, True, 0.4, fenrir.atk, False))
-            else:
-                for buff in character.buffs:
-                    if buff.name == "Fluffy Protection":
-                        character.removeEffect(buff) 
-
 # Reset characters.ally and characters.enemy
 def reset_ally_enemy_attr(party1, party2):
     for character in party1:
@@ -95,11 +59,12 @@ character14 = Bell("Bell", average_party_level)
 character15 = Taily("Taily", average_party_level)
 character16 = Seth("Seth", average_party_level)
 character17 = Ophelia("Ophelia", average_party_level)
+character18 = Chiffon("Chiffon", average_party_level)
 
 all_characters = [character1, character2, character3, character4, character5,
                     character6, character7, character8, character9, character10,
                         character11, character12, character13, character14, character15
-                            , character16, character17]
+                            , character16, character17, character18]
 
 for character in all_characters:
     character.equip = generate_equips_list(4, random_full_eqset=True)
@@ -199,6 +164,12 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"画像 {name} の読み込み中にエラーが発生しました: {e}")
 
+    for k, v in images.items():
+        prefix = k.split("_")[0]
+        for character in all_characters:
+            if character.name.lower() == prefix:
+                character.image.append(v)
+
 
     image_slot1 = pygame_gui.elements.UIImage(pygame.Rect((100, 50), (156, 156)),
                                         pygame.Surface((156, 156)),
@@ -238,41 +209,57 @@ if __name__ == "__main__":
     # ==============================
     equip_slota1 = pygame_gui.elements.UIImage(pygame.Rect((75, 50), (20, 20)),pygame.Surface((20, 20)),ui_manager)
     equip_slota2 = pygame_gui.elements.UIImage(pygame.Rect((75, 75), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slota3 = pygame_gui.elements.UIImage(pygame.Rect((75, 100), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsb1 = pygame_gui.elements.UIImage(pygame.Rect((275, 50), (20, 20)),pygame.Surface((20, 20)),ui_manager)
     equip_slotsb2 = pygame_gui.elements.UIImage(pygame.Rect((275, 75), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsb3 = pygame_gui.elements.UIImage(pygame.Rect((275, 100), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsc1 = pygame_gui.elements.UIImage(pygame.Rect((475, 50), (20, 20)),pygame.Surface((20, 20)),ui_manager)
     equip_slotsc2 = pygame_gui.elements.UIImage(pygame.Rect((475, 75), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsc3 = pygame_gui.elements.UIImage(pygame.Rect((475, 100), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsd1 = pygame_gui.elements.UIImage(pygame.Rect((675, 50), (20, 20)),pygame.Surface((20, 20)),ui_manager)
     equip_slotsd2 = pygame_gui.elements.UIImage(pygame.Rect((675, 75), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsd3 = pygame_gui.elements.UIImage(pygame.Rect((675, 100), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotse1 = pygame_gui.elements.UIImage(pygame.Rect((875, 50), (20, 20)),pygame.Surface((20, 20)),ui_manager)
     equip_slotse2 = pygame_gui.elements.UIImage(pygame.Rect((875, 75), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotse3 = pygame_gui.elements.UIImage(pygame.Rect((875, 100), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsf1 = pygame_gui.elements.UIImage(pygame.Rect((75, 650), (20, 20)),pygame.Surface((20, 20)),ui_manager)
     equip_slotsf2 = pygame_gui.elements.UIImage(pygame.Rect((75, 675), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsf3 = pygame_gui.elements.UIImage(pygame.Rect((75, 700), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsg1 = pygame_gui.elements.UIImage(pygame.Rect((275, 650), (20, 20)),pygame.Surface((20, 20)),ui_manager)
     equip_slotsg2 = pygame_gui.elements.UIImage(pygame.Rect((275, 675), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsg3 = pygame_gui.elements.UIImage(pygame.Rect((275, 700), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsh1 = pygame_gui.elements.UIImage(pygame.Rect((475, 650), (20, 20)),pygame.Surface((20, 20)),ui_manager)
     equip_slotsh2 = pygame_gui.elements.UIImage(pygame.Rect((475, 675), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsh3 = pygame_gui.elements.UIImage(pygame.Rect((475, 700), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsi1 = pygame_gui.elements.UIImage(pygame.Rect((675, 650), (20, 20)),pygame.Surface((20, 20)),ui_manager)
     equip_slotsi2 = pygame_gui.elements.UIImage(pygame.Rect((675, 675), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsi3 = pygame_gui.elements.UIImage(pygame.Rect((675, 700), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
     equip_slotsj1 = pygame_gui.elements.UIImage(pygame.Rect((875, 650), (20, 20)),pygame.Surface((20, 20)),ui_manager)
     equip_slotsj2 = pygame_gui.elements.UIImage(pygame.Rect((875, 675), (20, 20)),pygame.Surface((20, 20)),ui_manager)
+    equip_slotsj3 = pygame_gui.elements.UIImage(pygame.Rect((875, 700), (20, 20)),pygame.Surface((20, 20)),ui_manager)
 
                                             
     equip_slot_party1 = [equip_slota1, equip_slotsb1, equip_slotsc1, equip_slotsd1, equip_slotse1]
     equip_slot_party2 = [equip_slotsf1, equip_slotsg1, equip_slotsh1, equip_slotsi1, equip_slotsj1]
     for slot in equip_slot_party1 + equip_slot_party2:
         slot.set_image(images["chopper_knife"])
-    equip_set_slot_party1 = [equip_slota2, equip_slotsb2, equip_slotsc2, equip_slotsd2, equip_slotse2]
-    equip_set_slot_party2 = [equip_slotsf2, equip_slotsg2, equip_slotsh2, equip_slotsi2, equip_slotsj2]
+
+    equip_slot_ribbon_party1 = [equip_slota2, equip_slotsb2, equip_slotsc2, equip_slotsd2, equip_slotse2]
+    equip_slot_ribbon_party2 = [equip_slotsf2, equip_slotsg2, equip_slotsh2, equip_slotsi2, equip_slotsj2]
+    for slot in equip_slot_ribbon_party1 + equip_slot_ribbon_party2:
+        slot.set_image(images["ribbon"])
+
+    equip_set_slot_party1 = [equip_slota3, equip_slotsb3, equip_slotsc3, equip_slotsd3, equip_slotse3]
+    equip_set_slot_party2 = [equip_slotsf3, equip_slotsg3, equip_slotsh3, equip_slotsi3, equip_slotsj3]
     for slot in equip_set_slot_party1 + equip_set_slot_party2:
         slot.set_image(images["KKKKK"])                                  
 
@@ -320,7 +307,8 @@ if __name__ == "__main__":
 
     label_party1 = [label1, label2, label3, label4, label5]
     label_party2 = [label6, label7, label8, label9, label10]
-
+    
+    
     # Some buttons
     #  =====================================
     # Left Side
@@ -388,8 +376,8 @@ if __name__ == "__main__":
                                         manager=ui_manager,
                                         tool_tip_text = "Level down selected character")
     
-    cheat_selection_menu = pygame_gui.elements.UIDropDownMenu(["Increase Speed", "The Actor"],
-                                                            "Increase Speed",
+    cheat_selection_menu = pygame_gui.elements.UIDropDownMenu(["The Assignment", "The Actor", "The Downfall", "The Redemption", "The Legend"],
+                                                            "The Assignment",
                                                             pygame.Rect((900, 520), (156, 35)),
                                                             ui_manager)
     
@@ -449,6 +437,8 @@ if __name__ == "__main__":
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             text_box.append_html_text("Battle is over.\n")
             return False
+        
+        hp_before = {character.name: character.hp for character in party1 + party2}
         text_box.append_html_text("=====================================\n")
         text_box.append_html_text(f"Turn {turn}\n")
 
@@ -467,20 +457,18 @@ if __name__ == "__main__":
         
         for character in party1:
             character.statusEffects() # for effects that have method applyEffectOnTrigger, trigger them
-            if character.isAlive():
-                character.regen()
+            # if character.isAlive():
+            #     character.regen()
         for character in party2:
             character.statusEffects()
-            if character.isAlive():
-                character.regen()
+            # if character.isAlive():
+            #     character.regen()
 
         reset_ally_enemy_attr(party1, party2)
         for character in party1:
             character.updateAllyEnemy()
         for character in party2:
             character.updateAllyEnemy()
-
-        mid_turn_effects(party1, party2)
 
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             return False
@@ -490,7 +478,13 @@ if __name__ == "__main__":
         text_box.append_html_text(f"{the_chosen_one.name}'s turn.\n")
         the_chosen_one.action()
 
-        redraw_ui(party1, party2, refill_image=False, main_char=the_chosen_one)
+        for character in party1 + party2:
+            character.status_effects_at_end_of_turn()
+
+        hp_after = {character.name: character.hp for character in party1 + party2}
+        hp_diff = {k: hp_after[k] - hp_before[k] for k in hp_before.keys()}
+
+        redraw_ui(party1, party2, refill_image=True, main_char=the_chosen_one, hp_diff_dict=hp_diff)
 
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             return False
@@ -519,26 +513,28 @@ if __name__ == "__main__":
 
             for character in party1:
                 character.statusEffects()
-                if character.isAlive():
-                    character.regen()
+                # if character.isAlive():
+                #     character.regen()
             for character in party2:
                 character.statusEffects()
-                if character.isAlive():
-                    character.regen()
+                # if character.isAlive():
+                #     character.regen()
 
             reset_ally_enemy_attr(party1, party2)
             for character in party1:
                 character.updateAllyEnemy()
             for character in party2:
                 character.updateAllyEnemy()
-            
-            mid_turn_effects(party1, party2)
 
             alive_characters = [x for x in party1 + party2 if x.isAlive()]
             weight = [x.spd for x in alive_characters]
             the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
             text_box.append_html_text(f"{the_chosen_one.name}'s turn.\n")
             the_chosen_one.action()
+
+            for character in party1 + party2:
+                character.status_effects_at_end_of_turn()
+
             turn += 1
 
         redraw_ui(party1, party2)
@@ -559,39 +555,33 @@ if __name__ == "__main__":
         elif not is_someone_alive(party2):
             text_box.append_html_text("Party 2 is defeated.\n")
 
+
     def restart_battle():
         global turn
         for character in all_characters:
             character.reset_stats()
-
-        start_of_battle_effects(party1) 
-        start_of_battle_effects(party2)
-
-        redraw_ui(party1, party2)
-
         reset_ally_enemy_attr(party1, party2)
+        for character in party1:
+            character.battle_entry_effects()
+        for character in party2:
+            character.battle_entry_effects()
+        redraw_ui(party1, party2)
         turn = 1
 
-    def set_up_characters() -> (list, list):
-        global character_selection_menu, reserve_character_selection_menu, all_characters
 
+    def set_up_characters():
+        global character_selection_menu, reserve_character_selection_menu, all_characters
         for character in all_characters:
             character.reset_stats()
-
         party1 = []
         party2 = []
         list_of_characters = random.sample(all_characters, 10)
-
         remaining_characters = [character for character in all_characters if character not in list_of_characters]
-
         random.shuffle(list_of_characters)
-
         party1 = list_of_characters[:5]
         party2 = list_of_characters[5:]
-
-        start_of_battle_effects(party1)
-        start_of_battle_effects(party2)
-
+        # start_of_battle_effects(party1)
+        # start_of_battle_effects(party2)
         character_selection_menu.kill()
         character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
                                                                 party1[0].name,
@@ -603,27 +593,28 @@ if __name__ == "__main__":
                                                                 remaining_characters[0].name,
                                                                 pygame.Rect((900, 400), (156, 35)),
                                                                 ui_manager)
-
-        redraw_ui(party1, party2)
         reset_ally_enemy_attr(party1, party2)
+        for character in party1:
+            character.battle_entry_effects()
+        for character in party2:
+            character.battle_entry_effects()
+        redraw_ui(party1, party2)
         return party1, party2
+
 
     def replace_character_with_reserve_member(character_name, new_character_name):
         global party1, party2, all_characters, character_selection_menu, reserve_character_selection_menu
-
         def replace_in_party(party):
             for i, character in enumerate(party):
                 if character.name == character_name:
                     new_character = next((char for char in all_characters if char.name == new_character_name), None)
                     if new_character:
                         party[i] = new_character
-                        return True
-            return False
-
-        replaced = replace_in_party(party1)
+                        return True, new_character
+            return False, None
+        replaced, new_character = replace_in_party(party1)
         if not replaced:
-            replace_in_party(party2)
-
+            replaced, new_character = replace_in_party(party2)
         character_selection_menu.kill()
         character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
                                                                 party1[0].name,
@@ -637,36 +628,98 @@ if __name__ == "__main__":
                                                                 remaining_characters[0].name,
                                                                 pygame.Rect((900, 400), (156, 35)),
                                                                 ui_manager)
-        redraw_ui(party1, party2)
         reset_ally_enemy_attr(party1, party2)
+        new_character.battle_entry_effects()
+        redraw_ui(party1, party2)
         text_box.append_html_text(f"{character_name} has been replaced with {new_character_name}.\n")
 
-    def redraw_ui(party1, party2, refill_image=True, rebuild_healthbar=True, main_char=None):
-        def redraw_party(party, image_slots, equip_slots, sprites, labels, healthbar, equip_effect_slots):
+
+    def add_outline_to_image(surface, outline_color, outline_thickness):
+        """
+        Adds an outline to the image at the specified index in the image_slots list. Function written by Chatgpt
+
+        Parameters:
+        image (pygame.Surface): Image to add the outline to.
+        outline_color (tuple): Color of the outline in RGB format.
+        outline_thickness (int): Thickness of the outline.
+        """
+        new_image = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        new_image.fill((255, 255, 255, 0)) 
+        new_image.blit(surface, (0, 0))
+
+        rect = pygame.Rect((0, 0), surface.get_size())
+        pygame.draw.rect(new_image, outline_color, rect, outline_thickness)
+
+        return new_image
+
+
+    def create_yellow_text(surface, text, font_size, text_color=(255, 255, 0)):
+        """
+        Creates yellow text on the given surface near the bottom.
+
+        Parameters:
+        surface (pygame.Surface): The surface on which to draw the text.
+        text (str): The text to be rendered.
+        font_size (int): The size of the text.
+        text_color (tuple): RGB color of the text. Default is yellow (255, 255, 0).
+        """
+        font = pygame.font.Font(None, font_size)
+        text_surface = font.render(text, True, text_color)
+        text_rect = text_surface.get_rect()
+        text_rect.centerx = surface.get_rect().centerx
+        text_rect.bottom = surface.get_rect().bottom - 10  # 10 pixels above the bottom
+        surface.blit(text_surface, text_rect)
+
+
+    def redraw_ui(party1, party2, refill_image=True, rebuild_healthbar=True, main_char=None, hp_diff_dict=None):
+
+        def redraw_party(party, image_slots, equip_slots, ribbon_slots, sprites, labels, healthbar, equip_effect_slots):
             for i, character in enumerate(party):
                 if refill_image:
                     try:
-                        image_slots[i].set_image(images[character.name.lower()])
+                        image_slots[i].set_image(character.featured_image)
                     except Exception:
                         image_slots[i].set_image(images["error"])
 
                 image_slots[i].set_tooltip(character.tooltip_string(), delay=0.1, wrap_width=250)
                 equip_slots[i].set_tooltip(character.get_equip_stats(), delay=0.1, wrap_width=300)
-                equip_effect_slots[i].set_tooltip(character.equipment_set_effects_tooltip(), delay=0.1, wrap_width=250)
+                ribbon_slots[i].set_tooltip(character.get_equip_stats(ribbon=True), delay=0.1, wrap_width=300)
+                equip_effect_slots[i].set_tooltip(character.equipment_set_effects_tooltip(), delay=0.1, wrap_width=300)
                 sprites[i].current_health = character.hp
                 sprites[i].health_capacity = character.maxhp
                 labels[i].set_text(f"lv {character.lvl} {character.name}")
                 labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=400)
+                labels[i].set_text_alpha(255) if character.isAlive() else labels[i].set_text_alpha(125)
                 healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=300)
                 if main_char == character:
                     labels[i].set_text(f"--> lv {character.lvl} {character.name}")
+                    image = image_slots[i].image
+                    new_image = add_outline_to_image(image, (255, 215, 0), 6)
+                    image_slots[i].set_image(new_image)
+                # now we look up the hp_diff dict, if that characters value is less than 0, add red outline to image with line thickness of 4
+                # then, add red text to the bottom of the image with the value
+                if hp_diff_dict:
+                    value = hp_diff_dict[character.name]
+                    if value < 0:
+                        image = image_slots[i].image
+                        new_image = add_outline_to_image(image, (255, 0, 0), 4)
+                        create_yellow_text(new_image, str(value), 30, (255, 0, 0))
+                        image_slots[i].set_image(new_image)
+                    elif value > 0:
+                        image = image_slots[i].image
+                        new_image = add_outline_to_image(image, (0, 255, 0), 4)
+                        create_yellow_text(new_image, str(value), 30, (0, 255, 0))
+                        image_slots[i].set_image(new_image)
 
-        redraw_party(party1, image_slots_party1, equip_slot_party1, sprite_party1, label_party1, health_bar_party1, equip_set_slot_party1)
-        redraw_party(party2, image_slots_party2, equip_slot_party2, sprite_party2, label_party2, health_bar_party2, equip_set_slot_party2)
+
+
+        redraw_party(party1, image_slots_party1, equip_slot_party1, equip_slot_ribbon_party1, sprite_party1, label_party1, health_bar_party1, equip_set_slot_party1)
+        redraw_party(party2, image_slots_party2, equip_slot_party2, equip_slot_ribbon_party2, sprite_party2, label_party2, health_bar_party2, equip_set_slot_party2)
 
         if rebuild_healthbar:
             for healthbar in all_healthbar:
                 healthbar.rebuild()
+
 
     def reroll_eq():
         all_characters = party1 + party2
@@ -694,6 +747,7 @@ if __name__ == "__main__":
                     character.applyEffect(effect)
         redraw_ui(party1, party2)
 
+
     def eq_upgrade(is_upgrade):
         for character in all_characters:
             if character.name == character_selection_menu.selected_option and character.isAlive():
@@ -707,14 +761,15 @@ if __name__ == "__main__":
                     text_box.append_html_text(f"Max stars reached\n")
                 if int(b) == 0:
                     text_box.append_html_text(f"Min stars reached\n")
-                buff_copy = [effect for effect in character.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
-                debuff_copy = [effect for effect in character.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
+                buff_copy = [effect for effect in character.buffs if not effect.is_set_effect]
+                debuff_copy = [effect for effect in character.debuffs if not effect.is_set_effect]
                 character.reset_stats(resethp=False, resetally=False, resetenemy=False)
                 for effect in buff_copy:
                     character.applyEffect(effect)
                 for effect in debuff_copy:
                     character.applyEffect(effect)
         redraw_ui(party1, party2)
+
 
     def eq_levelchange(increment):
         for character in all_characters:
@@ -729,14 +784,15 @@ if __name__ == "__main__":
                     text_box.append_html_text(f"Max level reached\n")
                 if int(new_level) == 1:
                     text_box.append_html_text(f"Min level reached\n")
-                buff_copy = [effect for effect in character.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
-                debuff_copy = [effect for effect in character.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
+                buff_copy = [effect for effect in character.buffs if not effect.is_set_effect]
+                debuff_copy = [effect for effect in character.debuffs if not effect.is_set_effect]
                 character.reset_stats(resethp=False, resetally=False, resetenemy=False)
                 for effect in buff_copy:
                     character.applyEffect(effect)
                 for effect in debuff_copy:
                     character.applyEffect(effect)
         redraw_ui(party1, party2)
+
 
     def character_level_button(up=True):
         all_characters = party1 + party2
@@ -750,21 +806,26 @@ if __name__ == "__main__":
                     text_box.append_html_text(f"Leveling down {character.name}. New level: {character.lvl}\n")
         redraw_ui(party1, party2, refill_image=False, rebuild_healthbar=True)
 
+
     def add_cheat_effect():
         all_characters = party1 + party2
         for character in all_characters:
             if character.name == character_selection_menu.selected_option and character.isAlive():
                 e = cheat_selection_menu.selected_option
-                if e == "Increase Speed":
-                    character.try_remove_effect_with_name("Increase Speed Cheat")
-                    character.applyEffect(StatsEffect("Increase Speed Cheat", 2, True, {"spd": 100}))
+                if e == "The Assignment":
+                    character.try_remove_effect_with_name("The Assignment Cheat")
+                    character.applyEffect(StatsEffect("The Assignment Cheat", 2, True, {"spd": 100}))
                     text_box.append_html_text(f"Added {e} cheat effect to {character.name}.\n")
                 elif e == "The Actor":
                     character.try_remove_effect_with_name("The Actor Cheat")
                     character.applyEffect(StatsEffect("The Actor Cheat", -1, True, {"spd": 100}))
                     text_box.append_html_text(f"Added {e} cheat effect to {character.name}.\n")
+                elif e == "The Downfall":
+                    character.try_remove_effect_with_name("The Downfall Cheat")
+                    character.applyEffect(ContinuousDamageEffect("The Downfall Cheat", -1, False, character.maxhp * 0.2))
+                    text_box.append_html_text(f"Added {e} cheat effect to {character.name}.\n")
                 else:
-                    raise Exception("Unknown cheat effect")
+                    print("Unimplemented cheat effect")
         redraw_ui(party1, party2, refill_image=False, rebuild_healthbar=True)
 
 

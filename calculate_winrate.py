@@ -1,15 +1,6 @@
-from battle_simulator import reset_ally_enemy_attr, start_of_battle_effects, mid_turn_effects, is_someone_alive, all_characters, generate_equips_list
+from battle_simulator import reset_ally_enemy_attr, is_someone_alive, all_characters, generate_equips_list
 import random, sys, csv
-
-
-def fine_print(*args, mode="default", **kwargs):
-    if mode == "file":
-        with open("logs.txt", "a") as f:
-            print(*args, file=f, **kwargs)
-    elif mode == "suppress":
-        pass
-    else:
-        print(*args, **kwargs)
+from fine_print import fine_print
 
 
 def calculate_win_loss_rate(wins_data, losses_data, write_csv=False):
@@ -72,8 +63,8 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
         fine_print("One of the party is empty.", mode=fineprint_mode)
         return None
     reset_ally_enemy_attr(party1, party2)
-    start_of_battle_effects(party1)
-    start_of_battle_effects(party2)
+    for c in party1 + party2:
+        c.battle_entry_effects()
     while turn < 300 and is_someone_alive(party1) and is_someone_alive(party2):
         fine_print("=====================================", mode=fineprint_mode)
         fine_print(f"Turn {turn}", mode=fineprint_mode)
@@ -106,11 +97,6 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
             character.updateAllyEnemy()
         for character in party2:
             character.updateAllyEnemy()
-        # =================================
-        # for character in party1 + party2:
-        #     character.updateAllyEnemy() # Just this should be good. Warning: Failed the test.
-
-        mid_turn_effects(party1, party2)
 
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             break
@@ -119,6 +105,10 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
         the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
         fine_print(f"{the_chosen_one.name}'s turn.", mode=fineprint_mode)
         the_chosen_one.action()
+
+        for character in party1 + party2:
+            character.status_effects_at_end_of_turn()
+
         fine_print("", mode=fineprint_mode)
         fine_print("Party 1:", mode=fineprint_mode)
         for character in party1:
