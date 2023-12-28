@@ -308,7 +308,7 @@ if __name__ == "__main__":
     label_party1 = [label1, label2, label3, label4, label5]
     label_party2 = [label6, label7, label8, label9, label10]
     
-    
+
     # Some buttons
     #  =====================================
     # Left Side
@@ -346,7 +346,45 @@ if __name__ == "__main__":
                                         manager=ui_manager,
                                         tool_tip_text = "Simulate the next turn")
 
+    button_auto_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 300), (156, 50)),
+                                        text='Auto',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Auto battle")
+    
+    auto_battle_bar = pygame_gui.elements.UIStatusBar(pygame.Rect((1080, 290), (156, 10)),
+                                               ui_manager,
+                                               None)
 
+    auto_battle_speed_selection_menu = pygame_gui.elements.UIDropDownMenu(["Slow", "Normal", "Fast", "Very Fast", "Instant"],
+                                                            "Normal",
+                                                            pygame.Rect((1080, 260), (156, 35)),
+                                                            ui_manager)
+
+    auto_battle_speed_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 220), (156, 35)),
+                                        "Auto Battle Speed: ",
+                                        ui_manager)
+
+    after_auto_battle_selection_menu = pygame_gui.elements.UIDropDownMenu(["Do Nothing", "Restart Battle", "Shuffle Party"],
+                                                            "Do Nothing",
+                                                            pygame.Rect((1080, 180), (156, 35)),
+                                                            ui_manager)
+
+    after_auto_battle_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 140), (156, 35)),
+                                        "After Auto Battle: ",
+                                        ui_manager)
+
+    def decide_auto_battle_speed():
+        speed = auto_battle_speed_selection_menu.selected_option
+        if speed == "Slow":
+            return 10.0
+        elif speed == "Normal":
+            return 5.0
+        elif speed == "Fast":
+            return 2.5
+        elif speed == "Very Fast":
+            return 1.25
+        elif speed == "Instant":
+            return 0.625
     # =====================================
     # Character
     # =====================================
@@ -356,10 +394,20 @@ if __name__ == "__main__":
                                                             pygame.Rect((900, 360), (156, 35)),
                                                             ui_manager)
 
+    label_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((870, 360), (25, 35)),
+                                        "→",
+                                        ui_manager)
+    label_character_selection_menu.set_tooltip("Selected character. Many button effect will use selected character as target.", delay=0.1)
+
     reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option1"],
                                                             "Option1",
                                                             pygame.Rect((900, 400), (156, 35)),
                                                             ui_manager)
+
+    label_reserve_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((870, 400), (25, 35)),
+                                        "→",
+                                        ui_manager)
+    label_reserve_character_selection_menu.set_tooltip("Reserve character.", delay=0.1)
 
     character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 440), (156, 35)),
                                         text='Replace',
@@ -439,6 +487,14 @@ if __name__ == "__main__":
             return False
         
         hp_before = {character.name: character.hp for character in party1 + party2}
+        buff_before = {character.name: character.buffs for character in party1 + party2} # A dictionary of lists
+        # character.buff is a list of objects, so we want to only get the buff.name
+        buff_before = {k: [x.name for x in buff_before[k]] for k in buff_before.keys()}
+        debuff_before = {character.name: character.debuffs for character in party1 + party2}
+        debuff_before = {k: [x.name for x in debuff_before[k]] for k in debuff_before.keys()}
+        shield_value_before = {character.name: character.get_shield_value() for character in party1 + party2}
+
+
         text_box.append_html_text("=====================================\n")
         text_box.append_html_text(f"Turn {turn}\n")
 
@@ -483,8 +539,19 @@ if __name__ == "__main__":
 
         hp_after = {character.name: character.hp for character in party1 + party2}
         hp_diff = {k: hp_after[k] - hp_before[k] for k in hp_before.keys()}
+        buff_after = {character.name: character.buffs for character in party1 + party2} 
+        buff_after = {k: [x.name for x in buff_after[k]] for k in buff_after.keys()}
+        buff_applied_this_turn = {k: [x for x in buff_after[k] if x not in buff_before[k]] for k in buff_before.keys()}
+        # buff_removed_this_turn = {k: [x for x in buff_before[k] if x not in buff_after[k]] for k in buff_before.keys()}
+        debuff_after = {character.name: character.debuffs for character in party1 + party2}
+        debuff_after = {k: [x.name for x in debuff_after[k]] for k in debuff_after.keys()}
+        debuff_applied_this_turn = {k: [x for x in debuff_after[k] if x not in debuff_before[k]] for k in debuff_before.keys()}
+        shield_value_after = {character.name: character.get_shield_value() for character in party1 + party2}
+        shield_value_diff = {k: shield_value_after[k] - shield_value_before[k] for k in shield_value_before.keys()}
 
-        redraw_ui(party1, party2, refill_image=True, main_char=the_chosen_one, hp_diff_dict=hp_diff)
+        redraw_ui(party1, party2, refill_image=True, main_char=the_chosen_one, hp_diff_dict=hp_diff, 
+                  buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
+                  shield_value_diff_dict=shield_value_diff)
 
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             return False
@@ -580,8 +647,6 @@ if __name__ == "__main__":
         random.shuffle(list_of_characters)
         party1 = list_of_characters[:5]
         party2 = list_of_characters[5:]
-        # start_of_battle_effects(party1)
-        # start_of_battle_effects(party2)
         character_selection_menu.kill()
         character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
                                                                 party1[0].name,
@@ -653,25 +718,34 @@ if __name__ == "__main__":
         return new_image
 
 
-    def create_yellow_text(surface, text, font_size, text_color=(255, 255, 0)):
+    def create_yellow_text(surface, text, font_size, text_color=(255, 255, 0), offset=10, position_type='bottom'):
         """
-        Creates yellow text on the given surface near the bottom.
+        Creates text on the given surface.
 
         Parameters:
         surface (pygame.Surface): The surface on which to draw the text.
         text (str): The text to be rendered.
         font_size (int): The size of the text.
         text_color (tuple): RGB color of the text. Default is yellow (255, 255, 0).
+        offset (int): The offset from the edge of the surface.
+        position_type (str): The position type for the text ('bottom' or 'topleft').
         """
         font = pygame.font.Font(None, font_size)
         text_surface = font.render(text, True, text_color)
         text_rect = text_surface.get_rect()
-        text_rect.centerx = surface.get_rect().centerx
-        text_rect.bottom = surface.get_rect().bottom - 10  # 10 pixels above the bottom
+
+        if position_type == 'bottom':
+            text_rect.centerx = surface.get_rect().centerx
+            text_rect.bottom = surface.get_rect().bottom - offset
+        elif position_type == 'topleft':
+            text_rect.x = 10
+            text_rect.y = offset
+
         surface.blit(text_surface, text_rect)
 
 
-    def redraw_ui(party1, party2, refill_image=True, rebuild_healthbar=True, main_char=None, hp_diff_dict=None):
+    def redraw_ui(party1, party2, refill_image=True, rebuild_healthbar=True, main_char=None, hp_diff_dict=None,
+                  buff_added_this_turn=None, debuff_added_this_turn=None, shield_value_diff_dict=None):
 
         def redraw_party(party, image_slots, equip_slots, ribbon_slots, sprites, labels, healthbar, equip_effect_slots):
             for i, character in enumerate(party):
@@ -696,20 +770,46 @@ if __name__ == "__main__":
                     image = image_slots[i].image
                     new_image = add_outline_to_image(image, (255, 215, 0), 6)
                     image_slots[i].set_image(new_image)
-                # now we look up the hp_diff dict, if that characters value is less than 0, add red outline to image with line thickness of 4
-                # then, add red text to the bottom of the image with the value
                 if hp_diff_dict:
                     value = hp_diff_dict[character.name]
                     if value < 0:
                         image = image_slots[i].image
                         new_image = add_outline_to_image(image, (255, 0, 0), 4)
-                        create_yellow_text(new_image, str(value), 30, (255, 0, 0))
+                        create_yellow_text(new_image, str(value), 25, (255, 0, 0))
                         image_slots[i].set_image(new_image)
                     elif value > 0:
                         image = image_slots[i].image
                         new_image = add_outline_to_image(image, (0, 255, 0), 4)
-                        create_yellow_text(new_image, str(value), 30, (0, 255, 0))
+                        create_yellow_text(new_image, str(value), 25, (0, 255, 0))
                         image_slots[i].set_image(new_image)
+                if buff_added_this_turn:
+                    value = buff_added_this_turn[character.name]
+                    if value:
+                        image = image_slots[i].image
+                        new_image = add_outline_to_image(image, (0, 255, 0), 2)
+                        image_slots[i].set_image(new_image)
+                if debuff_added_this_turn:
+                    value = debuff_added_this_turn[character.name]
+                    if value:
+                        image = image_slots[i].image
+                        new_image = add_outline_to_image(image, (255, 0, 0), 1)
+                        image_slots[i].set_image(new_image)
+                if buff_added_this_turn and debuff_added_this_turn:
+                    buff_strs = buff_added_this_turn[character.name]
+                    debuff_strs = debuff_added_this_turn[character.name]
+                    current_offset = 10
+                    if buff_strs:
+                        for buff_str in buff_strs:
+                            create_yellow_text(image_slots[i].image, buff_str, 15, (0, 255, 0), current_offset, 'topleft')
+                            current_offset += 15
+                    if debuff_strs:
+                        for debuff_str in debuff_strs:
+                            create_yellow_text(image_slots[i].image, debuff_str, 15, (255, 0, 0), current_offset, 'topleft')
+                            current_offset += 15
+                if shield_value_diff_dict:
+                    value = shield_value_diff_dict[character.name]
+                    if value != 0:
+                        create_yellow_text(image_slots[i].image, str(int(value)), 25, (192, 192, 192), 25)
 
 
 
@@ -851,14 +951,20 @@ if __name__ == "__main__":
     party2 = []
     party1, party2 = set_up_characters()
     turn = 1
+
+    auto_battle_active = False
+    auto_battle_bar_progress = 0
+    time_acc = 0
+
     while running:
+        time_delta = clock.tick(60)/1000.0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == button_left_clear_board:
                     text_box.set_text("Welcome to the battle simulator!\n")
-                if event.ui_element == button1:
+                if event.ui_element == button1: # Shuffle party
                     text_box.set_text("Welcome to the battle simulator!\n")
                     party1, party2 = set_up_characters()
                     turn = 1
@@ -868,7 +974,7 @@ if __name__ == "__main__":
                         turn += 1
                 if event.ui_element == button3:
                     all_turns(party1, party2)
-                if event.ui_element == button4:
+                if event.ui_element == button4: # Restart battle
                     text_box.set_text("Welcome to the battle simulator!\n")
                     restart_battle()
                 if event.ui_element == button5:
@@ -891,14 +997,42 @@ if __name__ == "__main__":
                     eq_levelchange(increment=1)
                 if event.ui_element == eq_leveldown_button:
                     eq_levelchange(increment=-1)
+                if event.ui_element == button_auto_battle:
+                    if auto_battle_active:
+                        auto_battle_active = False
+                    else:
+                        auto_battle_active = True
 
             ui_manager.process_events(event)
 
-        ui_manager.update(1/60)
+        ui_manager.update(time_delta)
         display_surface.fill(light_yellow)
         ui_manager.draw_ui(display_surface)
 
+        if auto_battle_active:
+            time_acc += time_delta
+            auto_battle_bar_progress = (time_acc/decide_auto_battle_speed()) # May impact performance
+            if auto_battle_bar_progress > 1.0:
+                time_acc = 0.0
+                text_box.set_text("Welcome to the battle simulator!\n")
+                if not next_turn(party1, party2):
+                    auto_battle_active = False
+                    instruction = after_auto_battle_selection_menu.selected_option
+                    if instruction == "Do Nothing":
+                        pass
+                    elif instruction == "Restart Battle":
+                        text_box.set_text("Welcome to the battle simulator!\n")
+                        restart_battle()
+                        auto_battle_active = True
+                    elif instruction == "Shuffle Party":
+                        text_box.set_text("Welcome to the battle simulator!\n")
+                        party1, party2 = set_up_characters()
+                        turn = 1
+                        auto_battle_active = True
+                else:
+                    turn += 1
+            auto_battle_bar.percent_full = auto_battle_bar_progress
+
         pygame.display.update()
-        clock.tick(60)
 
     pygame.quit()

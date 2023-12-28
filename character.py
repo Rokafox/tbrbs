@@ -673,7 +673,7 @@ class Character:
         if not purge:
             effect.applyEffectOnRemove(self)
 
-    def try_remove_effect_with_name(self, effect_name, strict=False):
+    def try_remove_effect_with_name(self, effect_name, strict=False) -> bool:
         for effect in self.buffs + self.debuffs:
             if effect.name == effect_name:
                 self.removeEffect(effect)
@@ -681,6 +681,14 @@ class Character:
         if strict:
             raise Exception("Effect with name not found.")
         return False
+
+    # Get shield value, all shield effect must have shield_value attribute.
+    def get_shield_value(self) -> int:
+        total = 0
+        for effect in self.buffs + self.debuffs:
+            if hasattr(effect, "shield_value"):
+                total += effect.shield_value
+        return total
 
     # Remove all buffs and debuffs from the character
     def removeAllEffects(self):
