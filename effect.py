@@ -249,13 +249,14 @@ class SethEffect(Effect):
 # ---------------------------------------------------------
 # Continuous Damage effect
 class ContinuousDamageEffect(Effect):
-    def __init__(self, name, duration, is_buff, value):
+    def __init__(self, name, duration, is_buff, value, imposter):
         super().__init__(name, duration, is_buff)
         self.value = float(value)
         self.is_buff = is_buff
+        self.imposter = imposter # The character that applies this effect
     
     def applyEffectOnTrigger(self, character):
-        character.takeStatusDamage(self.value, self)
+        character.takeStatusDamage(self.value, self.imposter)
     
     def tooltip_description(self):
         return f"Take {int(self.value)} status damage each turn."
@@ -274,9 +275,9 @@ class ContinuousHealEffect(Effect):
         if character.isDead():
             return
         if self.is_percent:
-            character.healHp(character.maxhp * self.value, self)
+            character.healHp(character.maxhp * self.value, character)
         else:
-            character.healHp(self.value, self)
+            character.healHp(self.value, character)
     
     def tooltip_description(self):
         if self.is_percent:

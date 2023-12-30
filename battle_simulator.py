@@ -8,14 +8,18 @@ text_box = None
 
 
 # TODO:
-# 1. Add attributes to character to get info on damage dealt and healing done # Too difficult to implement, abandoning...Done
+# 1. 
 # 2. Create graph to show damage dealt and healing done # Ignored
-# 3. Add equipment set effect # Implementing...Done
+# 3. 
 # 4. Redesign UI, the location of the buttons are not good # Waiting...Delayed...Partially Done...Delayed
 # 5. Add 'Guard' attribute as a counter to 'Penetration', equipment should have 'Guard' attribute # Waiting...Delayed
 # Reason: We will add this when damage is becoming uncontrollablly high, due to inflation of stats and effects.
-# 6. Equipment should have level attribute, allow scaling with characters. Minimum level is 1, maximum level is 1000. # Implementing...Done
-# 7. Design web UI instead of pygame # Searching for a good framework...React...Delayed
+# 6. 
+# 7. 
+
+# NOTE:
+# 1. We cannot have character with the same name.
+# 2. We better not have effects with the same name.
 
 #--------------------------------------------------------- 
 #---------------------------------------------------------
@@ -88,63 +92,6 @@ if __name__ == "__main__":
 
     pygame.display.set_caption("Battle Simulator")
 
-    # Some Invisible Sprites for health bar, useless
-    # =====================================
-    class InvisibleSprite(pygame.sprite.Sprite):
-        def __init__(self, color, width, height, health_capacity, current_health, *groups: pygame.sprite.AbstractGroup):
-            super().__init__()
-            self.image = pygame.Surface([width, height])
-            self.image.fill(color)
-            self.rect = self.image.get_rect()
-            self.health_capacity = health_capacity
-            self.current_health = current_health
-
-        def update(self):
-            pass
-
-
-    invisible_sprites = [InvisibleSprite(deep_dark_blue, 1200, 900, 1000, 100) for _ in range(1, 11)]
-
-    sprite_party1 = invisible_sprites[:5]
-    sprite_party2 = invisible_sprites[5:]
-
-    invisible_sprite1 = sprite_party1[0]
-    invisible_sprite2 = sprite_party1[1]
-    invisible_sprite3 = sprite_party1[2]
-    invisible_sprite4 = sprite_party1[3]
-    invisible_sprite5 = sprite_party1[4]
-    invisible_sprite6 = sprite_party2[0]
-    invisible_sprite7 = sprite_party2[1]
-    invisible_sprite8 = sprite_party2[2]
-    invisible_sprite9 = sprite_party2[3]
-    invisible_sprite10 = sprite_party2[4]
-
-    health_bar1 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((75, 220), (200, 30)),ui_manager,
-                                                            invisible_sprite1)
-    health_bar2 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((275, 220), (200, 30)),ui_manager,
-                                                            invisible_sprite2)
-    health_bar3 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((475, 220), (200, 30)),ui_manager,
-                                                            invisible_sprite3)
-    health_bar4 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((675, 220), (200, 30)),ui_manager,
-                                                            invisible_sprite4)
-    health_bar5 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((875, 220), (200, 30)),ui_manager,
-                                                            invisible_sprite5)
-    health_bar6 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((75, 825), (200, 30)),ui_manager,
-                                                            invisible_sprite6)
-    health_bar7 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((275, 825), (200, 30)),ui_manager,
-                                                            invisible_sprite7)
-    health_bar8 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((475, 825), (200, 30)),ui_manager,
-                                                            invisible_sprite8)
-    health_bar9 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((675, 825), (200, 30)),ui_manager,
-                                                            invisible_sprite9)
-    health_bar10 = pygame_gui.elements.UIScreenSpaceHealthBar(pygame.Rect((875, 825), (200, 30)),ui_manager,
-                                                            invisible_sprite10)
-
-    health_bar_party1 = [health_bar1, health_bar2, health_bar3, health_bar4, health_bar5]
-    health_bar_party2 = [health_bar6, health_bar7, health_bar8, health_bar9, health_bar10]
-
-    all_healthbar = health_bar_party1 + health_bar_party2
-
     # Some Images
     # =====================================
     # load all images in ./image directory
@@ -169,7 +116,9 @@ if __name__ == "__main__":
         for character in all_characters:
             if character.name.lower() == prefix:
                 character.image.append(v)
-
+                
+    for c in all_characters:
+        c.set_up_featured_image()
 
     image_slot1 = pygame_gui.elements.UIImage(pygame.Rect((100, 50), (156, 156)),
                                         pygame.Surface((156, 156)),
@@ -486,7 +435,7 @@ if __name__ == "__main__":
             text_box.append_html_text("Battle is over.\n")
             return False
         
-        hp_before = {character.name: character.hp for character in party1 + party2}
+        # hp_before = {character.name: character.hp for character in party1 + party2}
         buff_before = {character.name: character.buffs for character in party1 + party2} # A dictionary of lists
         # character.buff is a list of objects, so we want to only get the buff.name
         buff_before = {k: [x.name for x in buff_before[k]] for k in buff_before.keys()}
@@ -537,8 +486,8 @@ if __name__ == "__main__":
         for character in party1 + party2:
             character.status_effects_at_end_of_turn()
 
-        hp_after = {character.name: character.hp for character in party1 + party2}
-        hp_diff = {k: hp_after[k] - hp_before[k] for k in hp_before.keys()}
+        # hp_after = {character.name: character.hp for character in party1 + party2}
+        # hp_diff = {k: hp_after[k] - hp_before[k] for k in hp_before.keys()}
         buff_after = {character.name: character.buffs for character in party1 + party2} 
         buff_after = {k: [x.name for x in buff_after[k]] for k in buff_after.keys()}
         buff_applied_this_turn = {k: [x for x in buff_after[k] if x not in buff_before[k]] for k in buff_before.keys()}
@@ -549,13 +498,18 @@ if __name__ == "__main__":
         shield_value_after = {character.name: character.get_shield_value() for character in party1 + party2}
         shield_value_diff = {k: shield_value_after[k] - shield_value_before[k] for k in shield_value_before.keys()}
 
-        redraw_ui(party1, party2, refill_image=True, main_char=the_chosen_one, hp_diff_dict=hp_diff, 
+        redraw_ui(party1, party2, refill_image=True, main_char=the_chosen_one, 
                   buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
                   shield_value_diff_dict=shield_value_diff)
+
+        for character in party1 + party2:
+            character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
+            character.record_healing_received() 
 
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             return False
         return True
+
 
     def all_turns(party1, party2):
         # Warning: Constant logging on text_box is slowing down the simulation
@@ -601,6 +555,10 @@ if __name__ == "__main__":
 
             for character in party1 + party2:
                 character.status_effects_at_end_of_turn()
+
+            for character in party1 + party2:
+                character.record_damage_taken()
+                character.record_healing_received()
 
             turn += 1
 
@@ -701,7 +659,7 @@ if __name__ == "__main__":
 
     def add_outline_to_image(surface, outline_color, outline_thickness):
         """
-        Adds an outline to the image at the specified index in the image_slots list. Function written by Chatgpt
+        Adds an outline to the image at the specified index in the image_slots list.
 
         Parameters:
         image (pygame.Surface): Image to add the outline to.
@@ -737,17 +695,119 @@ if __name__ == "__main__":
         if position_type == 'bottom':
             text_rect.centerx = surface.get_rect().centerx
             text_rect.bottom = surface.get_rect().bottom - offset
+        elif position_type == 'bottomleft':
+            text_rect.x = 10
+            text_rect.bottom = surface.get_rect().bottom - offset
+        elif position_type == 'bottomright':
+            text_rect.right = surface.get_rect().right - 10
+            text_rect.bottom = surface.get_rect().bottom - offset
+        elif position_type == 'top':
+            text_rect.centerx = surface.get_rect().centerx
+            text_rect.y = offset
         elif position_type == 'topleft':
             text_rect.x = 10
             text_rect.y = offset
+        elif position_type == 'topright':
+            text_rect.right = surface.get_rect().right - 10
+            text_rect.y = offset
+        elif position_type == 'center':
+            text_rect.center = surface.get_rect().center
 
         surface.blit(text_surface, text_rect)
 
 
-    def redraw_ui(party1, party2, refill_image=True, rebuild_healthbar=True, main_char=None, hp_diff_dict=None,
+    def create_healthbar(hp, maxhp, width, height, color_unfilled_bar=(255, 238, 186), color_filled_bar=(255, 193, 7), shield_value=0,
+                         shield_bar_color=(252, 248, 15)) -> pygame.Surface:
+        """
+        Creates a health bar.
+
+        Parameters:
+        hp (int): Current health.
+        maxhp (int): Maximum health.
+        width (int): Width of the health bar.
+        height (int): Height of the health bar.
+        color_unfilled_bar (tuple): RGB color of the unfilled part of the health bar.
+        color_filled_bar (tuple): RGB color of the filled part of the health bar.
+        shield_value (int): Shield value of the character. Default is 0.
+        """
+        surface = pygame.Surface((width, height))
+        surface.fill(color_unfilled_bar)
+
+        if hp > 0 and hp + shield_value <= maxhp:
+            hp_percentage = hp / maxhp
+            hp_bar_width = int(width * hp_percentage)
+            hp_bar_height = height
+            hp_bar_rect = pygame.Rect((0, 0), (hp_bar_width, hp_bar_height))
+            pygame.draw.rect(surface, color_filled_bar, hp_bar_rect)
+
+            shield_percentage = shield_value / maxhp
+            shield_bar_width = int(width * shield_percentage)
+            shield_bar_height = height
+            shield_bar_rect = pygame.Rect((hp_bar_width, 0), (shield_bar_width, shield_bar_height))
+            pygame.draw.rect(surface, shield_bar_color, shield_bar_rect)
+        elif hp > 0 and hp + shield_value > maxhp:
+            new_maxhp = hp + shield_value
+            hp_percentage = hp / new_maxhp
+            hp_bar_width = int(width * hp_percentage)
+            hp_bar_height = height
+            hp_bar_rect = pygame.Rect((0, 0), (hp_bar_width, hp_bar_height))
+            pygame.draw.rect(surface, color_filled_bar, hp_bar_rect)
+
+            shield_percentage = shield_value / new_maxhp
+            shield_bar_width = int(width * shield_percentage)
+            shield_bar_height = height
+            shield_bar_rect = pygame.Rect((hp_bar_width, 0), (shield_bar_width, shield_bar_height))
+            pygame.draw.rect(surface, shield_bar_color, shield_bar_rect)
+
+        create_yellow_text(surface, f"{hp}/{maxhp}", 25, position_type='center', text_color=(0, 0, 0))
+
+        return surface
+
+    # test_ui_image_slot = pygame_gui.elements.UIImage(pygame.Rect((1300, 100), (200, 30)),
+    #                                     pygame.Surface((200, 30)),
+    #                                     ui_manager)
+    # test_healthbar = create_healthbar(50, 100, 200, 30, shield_value=33)
+    # test_ui_image_slot.set_image(test_healthbar)
+
+    character_healthbar_slot_top1 = pygame_gui.elements.UIImage(pygame.Rect((90, 220), (176, 30)),
+                                        pygame.Surface((176, 30)),
+                                        ui_manager)
+    character_healthbar_slot_top2 = pygame_gui.elements.UIImage(pygame.Rect((290, 220), (176, 30)),
+                                        pygame.Surface((176, 30)),
+                                        ui_manager)
+    character_healthbar_slot_top3 = pygame_gui.elements.UIImage(pygame.Rect((490, 220), (176, 30)),
+                                        pygame.Surface((176, 30)),
+                                        ui_manager)
+    character_healthbar_slot_top4 = pygame_gui.elements.UIImage(pygame.Rect((690, 220), (176, 30)),
+                                        pygame.Surface((176, 30)),
+                                        ui_manager)
+    character_healthbar_slot_top5 = pygame_gui.elements.UIImage(pygame.Rect((890, 220), (176, 30)),
+                                        pygame.Surface((176, 30)),
+                                        ui_manager)
+    character_healthbar_slot_buttom1 = pygame_gui.elements.UIImage(pygame.Rect((90, 825), (176, 30)),
+                                        pygame.Surface((176, 30)),
+                                        ui_manager)
+    character_healthbar_slot_buttom2 = pygame_gui.elements.UIImage(pygame.Rect((290, 825), (176, 30)),
+                                        pygame.Surface((176, 30)),
+                                        ui_manager)
+    character_healthbar_slot_buttom3 = pygame_gui.elements.UIImage(pygame.Rect((490, 825), (176, 30)),
+                                        pygame.Surface((176, 30)),
+                                        ui_manager)
+    character_healthbar_slot_buttom4 = pygame_gui.elements.UIImage(pygame.Rect((690, 825), (176, 30)),
+                                        pygame.Surface((176, 30)),
+                                        ui_manager)
+    character_healthbar_slot_buttom5 = pygame_gui.elements.UIImage(pygame.Rect((890, 825), (176, 30)),
+                                        pygame.Surface((176, 30)),
+                                        ui_manager)
+
+    health_bar_party1 = [character_healthbar_slot_top1, character_healthbar_slot_top2, character_healthbar_slot_top3, character_healthbar_slot_top4, character_healthbar_slot_top5]
+    health_bar_party2 = [character_healthbar_slot_buttom1, character_healthbar_slot_buttom2, character_healthbar_slot_buttom3, character_healthbar_slot_buttom4, character_healthbar_slot_buttom5]
+
+
+    def redraw_ui(party1, party2, *, refill_image=True, main_char=None,
                   buff_added_this_turn=None, debuff_added_this_turn=None, shield_value_diff_dict=None):
 
-        def redraw_party(party, image_slots, equip_slots, ribbon_slots, sprites, labels, healthbar, equip_effect_slots):
+        def redraw_party(party, image_slots, equip_slots, ribbon_slots, labels, healthbar, equip_effect_slots):
             for i, character in enumerate(party):
                 if refill_image:
                     try:
@@ -759,29 +819,41 @@ if __name__ == "__main__":
                 equip_slots[i].set_tooltip(character.get_equip_stats(), delay=0.1, wrap_width=300)
                 ribbon_slots[i].set_tooltip(character.get_equip_stats(ribbon=True), delay=0.1, wrap_width=300)
                 equip_effect_slots[i].set_tooltip(character.equipment_set_effects_tooltip(), delay=0.1, wrap_width=300)
-                sprites[i].current_health = character.hp
-                sprites[i].health_capacity = character.maxhp
                 labels[i].set_text(f"lv {character.lvl} {character.name}")
                 labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=400)
                 labels[i].set_text_alpha(255) if character.isAlive() else labels[i].set_text_alpha(125)
+                healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value()))
                 healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=300)
+
                 if main_char == character:
                     labels[i].set_text(f"--> lv {character.lvl} {character.name}")
                     image = image_slots[i].image
                     new_image = add_outline_to_image(image, (255, 215, 0), 6)
                     image_slots[i].set_image(new_image)
-                if hp_diff_dict:
-                    value = hp_diff_dict[character.name]
-                    if value < 0:
-                        image = image_slots[i].image
-                        new_image = add_outline_to_image(image, (255, 0, 0), 4)
-                        create_yellow_text(new_image, str(value), 25, (255, 0, 0))
-                        image_slots[i].set_image(new_image)
-                    elif value > 0:
-                        image = image_slots[i].image
-                        new_image = add_outline_to_image(image, (0, 255, 0), 4)
-                        create_yellow_text(new_image, str(value), 25, (0, 255, 0))
-                        image_slots[i].set_image(new_image)
+
+                # self.damage_taken_this_turn = [] # list of tuples (damage, attacker), damage is int, attacker is Character object
+                current_offset_for_damage_and_healing = 10
+                if character.damage_taken_this_turn:
+                    image = image_slots[i].image
+                    new_image = add_outline_to_image(image, (255, 0, 0), 4)
+                    # get all damage from list of tuples
+                    damage_list = [x[0] for x in character.damage_taken_this_turn]
+                    # show damage on image
+                    for damage in damage_list:
+                        create_yellow_text(new_image, str(damage), 25, (255, 0, 0), current_offset_for_damage_and_healing)
+                        current_offset_for_damage_and_healing += 12
+                    image_slots[i].set_image(new_image)
+                if character.healing_received_this_turn:
+                    image = image_slots[i].image
+                    new_image = add_outline_to_image(image, (0, 255, 0), 4)
+                    # get all healing from list of tuples
+                    healing_list = [x[0] for x in character.healing_received_this_turn]
+                    # show healing on image
+                    for healing in healing_list:
+                        create_yellow_text(new_image, str(healing), 25, (0, 255, 0), current_offset_for_damage_and_healing)
+                        current_offset_for_damage_and_healing += 12
+                    image_slots[i].set_image(new_image)
+
                 if buff_added_this_turn:
                     value = buff_added_this_turn[character.name]
                     if value:
@@ -809,16 +881,13 @@ if __name__ == "__main__":
                 if shield_value_diff_dict:
                     value = shield_value_diff_dict[character.name]
                     if value != 0:
-                        create_yellow_text(image_slots[i].image, str(int(value)), 25, (192, 192, 192), 25)
+                        create_yellow_text(image_slots[i].image, str(int(value)), 25, (192, 192, 192), 10, 'bottomleft')
 
 
 
-        redraw_party(party1, image_slots_party1, equip_slot_party1, equip_slot_ribbon_party1, sprite_party1, label_party1, health_bar_party1, equip_set_slot_party1)
-        redraw_party(party2, image_slots_party2, equip_slot_party2, equip_slot_ribbon_party2, sprite_party2, label_party2, health_bar_party2, equip_set_slot_party2)
+        redraw_party(party1, image_slots_party1, equip_slot_party1, equip_slot_ribbon_party1, label_party1, health_bar_party1, equip_set_slot_party1)
+        redraw_party(party2, image_slots_party2, equip_slot_party2, equip_slot_ribbon_party2, label_party2, health_bar_party2, equip_set_slot_party2)
 
-        if rebuild_healthbar:
-            for healthbar in all_healthbar:
-                healthbar.rebuild()
 
 
     def reroll_eq():
@@ -904,7 +973,7 @@ if __name__ == "__main__":
                 else:
                     character.level_change(-1)
                     text_box.append_html_text(f"Leveling down {character.name}. New level: {character.lvl}\n")
-        redraw_ui(party1, party2, refill_image=False, rebuild_healthbar=True)
+        redraw_ui(party1, party2, refill_image=False)
 
 
     def add_cheat_effect():
@@ -926,14 +995,14 @@ if __name__ == "__main__":
                     text_box.append_html_text(f"Added {e} cheat effect to {character.name}.\n")
                 else:
                     print("Unimplemented cheat effect")
-        redraw_ui(party1, party2, refill_image=False, rebuild_healthbar=True)
+        redraw_ui(party1, party2, refill_image=False)
 
 
     # Text entry box
     # ==========================
     text_box = pygame_gui.elements.UITextEntryBox(pygame.Rect((300, 300), (556, 290)),"", ui_manager)
     text_box.set_text("Hover over character name to show skill information.\n")
-    text_box.append_html_text("If lower cased character_name.jpg is not found in ./image directory, error.jpg will be used instead.\n")
+    text_box.append_html_text("If lower cased character_name.jpg or png file is not found in ./image directory, error.jpg will be used instead.\n")
     text_box.append_html_text("Hover over character image to show attributes.\n")
     text_box.append_html_text("Hover over character health bar to show status effects.\n")
     text_box.append_html_text("Hover over kkkkk icon to show item set information.\n")

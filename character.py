@@ -12,16 +12,18 @@ class Character:
         self.exp = exp
         self.equip = equip
         self.image = [] if image is None else image
-        try:
-            self.featured_image = self.image[0]
-        except IndexError:
-            self.featured_image = None
         self.initialize_stats()
         self.calculate_equip_effect()
         self.running = running
         self.logging = logging
         self.text_box = text_box
         self.fineprint_mode = fineprint_mode
+
+    def set_up_featured_image(self):
+        try:
+            self.featured_image = self.image[0]
+        except IndexError:
+            self.featured_image = None
 
     def initialize_stats(self, resethp=True, resetally=True, resetenemy=True):
         self.maxhp = self.lvl * 100
@@ -54,10 +56,23 @@ class Character:
         self.eq_set = self.get_equipment_set()
         self.skill1_cooldown = 0
         self.skill2_cooldown = 0
+        self.damage_taken_this_turn = [] # list of tuples (damage, attacker), damage is int, attacker is Character object
+        # useful for recording damage taken sequence for certain effects
+        self.damage_taken_history = [] # list of self.damage_taken_this_turn
+        self.healing_received_this_turn = [] # list of tuples (healing, healer), healing is int, healer is Character object
+        self.healing_received_history = [] # list of self.healing_received_this_turn
         self.clear_others()
 
     def reset_stats(self, resethp=True, resetally=True, resetenemy=True):
         self.initialize_stats(resethp, resetally, resetenemy)
+
+    def record_damage_taken(self): 
+        self.damage_taken_history.append(self.damage_taken_this_turn)
+        self.damage_taken_this_turn = []
+
+    def record_healing_received(self):
+        self.healing_received_history.append(self.healing_received_this_turn)
+        self.healing_received_this_turn = []
 
     def calculate_equip_effect(self, resethp=True):
         if self.equip != []:
@@ -70,16 +85,13 @@ class Character:
                 self.maxhp *= 1 + item.maxhp_percent
                 self.maxhp = int(self.maxhp)
                 self.atk *= 1 + item.atk_percent
-                self.atk = int(self.atk)
                 self.defense *= 1 + item.def_percent
-                self.defense = int(self.defense)
                 self.spd *= 1 + item.spd
-                self.spd = int(self.spd)
 
                 self.maxhp += int(item.maxhp_extra)
-                self.atk += int(item.atk_extra)
-                self.defense += int(item.def_extra)
-                self.spd += int(item.spd_extra)
+                self.atk += item.atk_extra
+                self.defense += item.def_extra
+                self.spd += item.spd_extra
 
                 self.eva += item.eva
                 self.acc += item.acc
@@ -461,7 +473,8 @@ class Character:
                     new_value = getattr(self, attr) / value
                 else:
                     new_value = getattr(self, attr) * value
-                new_value = int(new_value)
+                if attr == "maxhp" or attr == "hp":
+                    new_value = int(new_value)
                 if attr == "hp":
                     new_value = min(new_value, self.maxhp)
                 elif attr == "maxhp":
@@ -495,6 +508,7 @@ class Character:
         if self.running and self.logging:
             self.text_box.append_html_text(f"{self.name} is healed for {healing} HP.\n")
         fine_print(f"{self.name} is healed for {healing} HP.", mode=self.fineprint_mode)
+        self.healing_received_this_turn.append((healing, healer))
         return healing, healer, overhealing
 
     # Revive
@@ -503,6 +517,7 @@ class Character:
             self.hp = hp_to_revive
             self.hp += self.maxhp * hp_percentage_to_revive
             self.hp = int(self.hp)
+            self.healing_received_this_turn.append((self.hp, self))
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{self.name} is revived for {self.hp} hp.\n")
             fine_print(f"{self.name} is revived for {self.hp} hp.", mode=self.fineprint_mode)
@@ -519,6 +534,7 @@ class Character:
             overhealing = self.hp + healing - self.maxhp
             healing = self.maxhp - self.hp
         self.hp += healing
+        self.healing_received_this_turn.append((healing, self))
         if healing > 0:
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{self.name} is healed for {healing} HP.\n")
@@ -557,7 +573,8 @@ class Character:
         if self.running and self.logging:
             self.text_box.append_html_text(f"{self.name} took {damage} damage.\n")
         fine_print(f"{self.name} took {damage} damage.", mode=self.fineprint_mode)
-        return damage, attacker
+        self.damage_taken_this_turn.append((damage, attacker))
+        return None
     
     def takeDamage_aftermath(self, damage, attacker):
         pass
@@ -586,7 +603,8 @@ class Character:
         if self.running and self.logging:
             self.text_box.append_html_text(f"{self.name} took {damage} status damage.\n")
         fine_print(f"{self.name} took {damage} status damage.", mode=self.fineprint_mode)
-        return damage, attacker
+        self.damage_taken_this_turn.append((damage, attacker))
+        return None
 
     # Take bypass all damage, flat.
     def takeBypassAllDamage(self, value, attacker=None):
@@ -607,7 +625,8 @@ class Character:
         if self.running and self.logging:
             self.text_box.append_html_text(f"{self.name} took {damage} bypass all damage.\n")
         fine_print(f"{self.name} took {damage} bypass all damage.", mode=self.fineprint_mode)
-        return damage, attacker
+        self.damage_taken_this_turn.append((damage, attacker))
+        return None
 
     # Check if character have certain effect.
     def hasEffect(self, effect_name):
@@ -933,7 +952,7 @@ class Poppy(Character):
 
     def takeDamage_aftermath(self, damage, attacker):
         if random.randint(1, 100) <= 30:
-            attacker.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5))
+            attacker.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5, self))
 
 
 class Iris(Character):
@@ -964,7 +983,7 @@ class Iris(Character):
             self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
         fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
         def bleed(self, target):
-            target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.35))
+            target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.35, self))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.2, repeat=1, func_after_dmg=bleed)
         self.skill2_cooldown = 5
         return damage_dealt
@@ -1444,7 +1463,7 @@ class Pheonix(Character):
             raise Exception
         def burn_effect(self, target):
             if random.randint(1, 100) <= 80:
-                target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5))
+                target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5, self))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.3, repeat=1, func_after_dmg=burn_effect)         
         self.skill1_cooldown = 5
         return damage_dealt
@@ -1466,7 +1485,7 @@ class Pheonix(Character):
         else:
             def burn_effect(self, target):
                 if random.randint(1, 100) <= 80:
-                    target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5))
+                    target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5, self))
             damage_dealt = self.attack(target_kw1="random_enemy_pair", multiplier=3.2, repeat=1, func_after_dmg=burn_effect)         
             self.skill2_cooldown = 5
             return damage_dealt   

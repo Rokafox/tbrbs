@@ -109,6 +109,10 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
         for character in party1 + party2:
             character.status_effects_at_end_of_turn()
 
+        for character in party1 + party2:
+            character.record_damage_taken()
+            character.record_healing_received()
+
         fine_print("", mode=fineprint_mode)
         fine_print("Party 1:", mode=fineprint_mode)
         for character in party1:
