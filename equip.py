@@ -1,23 +1,21 @@
-import random
 from itertools import cycle
+from block import *
 
-# Design choice: We should not give much power to equipment, the uniqueness of each character should be preserved.
-# Normal Distribution with max and min value
+
 def normal_distribution(min_value, max_value, mean, std):
     while True:
-        value = int(random.normalvariate(mean, std))
+        value = random.normalvariate(mean, std)
         if value >= min_value and value <= max_value:
             return value
 
-class Equip:
-    def __init__(self, name, type, rarity, eq_set="None", level=40):
+class Equip(Block):
+    def __init__(self, name: str, type: str, rarity: str, eq_set: str="None", level: int=40):
         # lists, changing them likely wont give an error.
-        self.rarity_list = ["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]
-        self.type_list = ["Weapon", "Armor", "Accessory", "Boots"]
+        super().__init__(name, "")
+        self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", "Snowflake"]
         self.level = level
-
-        self.name = name
+        self.level_max = 1000
         self.type = type
         self.rarity = rarity
         self.check_eq_set(eq_set)
@@ -37,23 +35,69 @@ class Equip:
         self.def_flat = 0
         self.spd_flat = 0
         # Effect from upgrade
-        self.upgrade_stars = 0 # 0 to 15
-        self.upgrade_stars_max = 15
+        self.stars_rating = 0 # 0 to 15
+        self.stars_rating_max = 15
+        self.star_enhence_cost = self.upgrade_stars_rating_cost()
+        self.level_cost = 200
         self.maxhp_extra = 0
         self.atk_extra = 0
         self.def_extra = 0
         self.spd_extra = 0
 
+        self.image = self.process_image_str()
+        self.can_be_stacked = False
+        self.max_stack = 1
+
+    def to_dict(self):
+        return {
+            "object": str(self.__class__),
+            "name": self.name,
+            "description": self.description,
+            "rarity": self.rarity,
+            "type": self.type,
+            "eq_set": self.eq_set,
+            "level": self.level,
+            "maxhp_percent": self.maxhp_percent,
+            "atk_percent": self.atk_percent,
+            "def_percent": self.def_percent,
+            "spd": self.spd,
+            "eva": self.eva,
+            "acc": self.acc,
+            "crit": self.crit,
+            "critdmg": self.critdmg,
+            "critdef": self.critdef,
+            "penetration": self.penetration,
+            "heal_efficiency": self.heal_efficiency,
+            "maxhp_flat": self.maxhp_flat,
+            "atk_flat": self.atk_flat,
+            "def_flat": self.def_flat,
+            "spd_flat": self.spd_flat,
+            "market_value": self.market_value,
+            "image": self.image,
+            "stars_rating": self.stars_rating,
+            "stars_rating_max": self.stars_rating_max,
+            "star_enhence_cost": self.star_enhence_cost,
+            "level_cost": self.level_cost,
+            "maxhp_extra": self.maxhp_extra,
+            "atk_extra": self.atk_extra,
+            "def_extra": self.def_extra,
+            "spd_extra": self.spd_extra
+        }
 
 
     def get_raritytypeeqset_list(self):
         return self.rarity_list, self.type_list, self.eq_set_list
 
     def __str__(self):
-        return f"{self.name} {self.type} {self.eq_set} {self.rarity} {self.maxhp_percent} {self.atk_percent} {self.def_percent} {self.spd} {self.eva} {self.acc} {self.crit} {self.critdmg} {self.critdef} {self.penetration} {self.maxhp_flat} {self.atk_flat} {self.def_flat} {self.spd_flat} {self.heal_efficiency} {self.maxhp_extra} {self.atk_extra} {self.def_extra} {self.spd_extra}"
+        eq_set_str = "" if self.eq_set == "None" else f"{self.eq_set} "
+        return f"lv{self.level} {eq_set_str}{self.rarity} {self.type}"
 
-    def __repr__(self):
-        return f"{self.name} {self.type} {self.eq_set} {self.rarity} {self.maxhp_percent} {self.atk_percent} {self.def_percent} {self.spd} {self.eva} {self.acc} {self.crit} {self.critdmg} {self.critdef} {self.penetration} {self.maxhp_flat} {self.atk_flat} {self.def_flat} {self.spd_flat} {self.heal_efficiency} {self.maxhp_extra} {self.atk_extra} {self.def_extra} {self.spd_extra}"
+    def process_image_str(self) -> str:
+        # string generated from self.eq_set and self.type, for example, NUSA_Armor
+        if self.eq_set == "None":
+            return "Generic" + "_" + self.type
+        else:
+            return self.eq_set + "_" + self.type
 
     def check_eq_set(self, name):
         if name in self.eq_set_list:
@@ -69,32 +113,34 @@ class Equip:
             raise Exception("Invalid rarity")
 
         for attr in dir(self):
-            if not callable(getattr(self, attr)) and not attr.startswith("__") and not isinstance(getattr(self, attr), str) and not attr.startswith("upgrade_stars") and not attr.endswith("_list") and not attr.startswith("level"):
+            if attr in ["atk_percent", "def_percent", "spd", "eva", "acc", "crit", "critdmg", "critdef", "penetration", "heal_efficiency", "maxhp_flat", "atk_flat", "def_flat", "spd_flat"]:
+                if getattr(self, attr) == 0:
+                    continue
+                # print(f"Enhancing {attr} by {multiplier}, old value: {getattr(self, attr)}, new value: {getattr(self, attr) * multiplier}")
                 setattr(self, attr, getattr(self, attr) * multiplier)
-
-        # Convert flat attributes to integer
-        # No longer needed as float is needed for scalability.
-        # for attr in ["maxhp_flat", "atk_flat", "def_flat", "spd_flat"]:
-        #     if hasattr(self, attr):
-        #         setattr(self, attr, int(getattr(self, attr)))
+        self.estimate_market_price()
 
     def upgrade_stars_func(self, is_upgrade=True):
         # stars will clamp between 0 and 15
-        current_stars = self.upgrade_stars
+        current_stars = self.stars_rating
         if is_upgrade:
-            self.upgrade_stars += 1
-            self.upgrade_stars = min(self.upgrade_stars, 15)
+            self.stars_rating += 1
+            self.stars_rating = min(self.stars_rating, 15)
         else:
-            self.upgrade_stars -= 1
-            self.upgrade_stars = max(self.upgrade_stars, 0)
+            self.stars_rating -= 1
+            self.stars_rating = max(self.stars_rating, 0)
         self.update_stats_from_upgrade()
-        return current_stars, self.upgrade_stars
+        self.star_enhence_cost = self.upgrade_stars_rating_cost()
+        return current_stars, self.stars_rating
 
     def stars_effect(self, n) -> float:
-        # stars will clamp between 0 and self.upgrade_stars_max, 
-        # Return value start from 1.0, as stars closer to self.upgrade_stars_max, the return value will be closer to 2.0
-        # However, the graph should not be linear, it climbs faster near the end, slower at the beginning
-        return 1 + (self.upgrade_stars ** n) / (self.upgrade_stars_max ** n)
+        return 1 + (self.stars_rating ** n) / (self.stars_rating_max ** n)
+
+    def upgrade_stars_rating_cost(self) -> int:
+        values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.60]
+        rarity_values = {rarity: value for rarity, value in zip(self.rarity_list, values)}
+        rarity_multiplier = rarity_values.get(self.rarity, 1.0)
+        return int(1000 * (self.stars_rating + 1) ** 2 * rarity_multiplier)
 
     def update_stats_from_upgrade(self):
         values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.60]
@@ -110,9 +156,10 @@ class Equip:
         if self.type in type_bonus:
             stat, base_value = type_bonus[self.type]
             rarity_multiplier = rarity_values.get(self.rarity, 1.0)
-            bonus_value = int(base_value * self.upgrade_stars * rarity_multiplier)
+            bonus_value = base_value * self.stars_rating * rarity_multiplier
             setattr(self, stat, bonus_value * self.stars_effect(3))
 
+        self.estimate_market_price()
         return None
 
     def fake_dice(self):
@@ -152,10 +199,11 @@ class Equip:
         
         self.enhance_by_rarity()
 
+
     def level_change(self, increment):
         prev_level = self.level
         new_level = self.level + increment
-        self.level = max(min(new_level, 1000), 1)
+        self.level = max(min(new_level, self.level_max), 1)
         
         if self.type == self.type_list[2]:
             self.maxhp_flat = self.maxhp_flat / prev_level # base value is divided by previous level
@@ -172,11 +220,31 @@ class Equip:
         else:
             raise Exception("Invalid type")
         
-        # stars effects should be updated after level change
         self.update_stats_from_upgrade()
+        self.level_cost = self.level_up_cost()
         return prev_level, new_level
     
-    # Print the rune's stats. Only print non-zero stats, including type, rarity.
+    def level_up_cost(self):
+        return int(200 * self.level)
+
+
+    def estimate_market_price(self):
+        base_value = sum([self.maxhp_flat, self.atk_flat * 20, self.def_flat * 20, self.spd_flat * 20])
+        base_value_b = sum([self.maxhp_percent * 200, self.atk_percent * 4000, self.def_percent * 4000, self.spd * 4000, 
+                            self.eva * 4000, self.acc * 4000, self.crit * 4000, 
+                          self.critdmg * 4000, self.critdef * 4000, self.penetration * 6000, self.heal_efficiency * 3000])
+        base_value_c = sum([self.maxhp_extra * 0.5, self.atk_extra * 10, self.def_extra * 10, self.spd_extra * 10])
+        rarity_values = [1.00, 1.10, 1.25, 1.45, 1.70, 2.00]
+        rarity_multipliers = {rarity: value for rarity, value in zip(self.rarity_list, rarity_values)}
+        rarity_multiplier = rarity_multipliers.get(self.rarity)
+        random_multiplier = random.uniform(0.95, 1.05)
+        if self.eq_set == "None":
+            self.market_value = (base_value + base_value_b + base_value_c) * rarity_multiplier * random_multiplier * 0.66
+            return self.market_value
+        else:
+            self.market_value = (base_value + base_value_b + base_value_c) * rarity_multiplier * random_multiplier 
+            return self.market_value
+
     def print_stats(self):
         def eq_set_str():
             if self.eq_set == "None":
@@ -219,21 +287,22 @@ class Equip:
         return stats
 
 
-    def print_stats_html(self):
-        color = ""
-        if self.rarity == "Common":
-            color = "#2c2c2c"
-        elif self.rarity == "Uncommon":
-            color = "#B87333"
-        elif self.rarity == "Rare":
-            color = "#FF0000"
-        elif self.rarity == "Epic":
-            color = "#659a00"
-        elif self.rarity == "Unique":
-            color = "#9966CC"
-        elif self.rarity == "Legendary":
-            color = "#21d6ff"
+    def print_stats_html(self, include_market_price=True):
+        match self.rarity:
+            case "Common":
+                color = "#2c2c2c"
+            case "Uncommon":
+                color = "#B87333"
+            case "Rare":
+                color = "#FF0000"
+            case "Epic":
+                color = "#659a00"
+            case "Unique":
+                color = "#9966CC"
+            case "Legendary":
+                color = "#21d6ff"
         star_color = "#3746A7" # blue
+        market_color = "#202d82" # blue
         star_color_purple = "#9B30FF" # purple
         star_color_red = "#FF0000" # red
         star_color_gold = "#FFD700" # gold
@@ -244,26 +313,26 @@ class Equip:
                 return str(self.eq_set) + " "
 
         stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>" + "lv" + str(self.level) + " " + eq_set_str() + self.rarity + " " + self.type + "</b></font></shadow>\n"
-        if self.upgrade_stars > 0:
-            stats += "<font color=" + star_color + ">" + '★'*min(int(self.upgrade_stars), 5) + "</font>" 
-        if self.upgrade_stars > 5:
-            stats += "<font color=" + star_color_purple + ">" + '★'*min(int(self.upgrade_stars-5), 5) + "</font>"
-        if self.upgrade_stars > 10:
-            stats += "<font color=" + star_color_red + ">" + '★'*min(int(self.upgrade_stars-10), 5) + "</font>" 
-        stats += "\n" if self.upgrade_stars > 0 else ""
+        if self.stars_rating > 0:
+            stats += "<font color=" + star_color + ">" + '★'*min(int(self.stars_rating), 5) + "</font>" 
+        if self.stars_rating > 5:
+            stats += "<font color=" + star_color_purple + ">" + '★'*min(int(self.stars_rating-5), 5) + "</font>"
+        if self.stars_rating > 10:
+            stats += "<font color=" + star_color_red + ">" + '★'*min(int(self.stars_rating-10), 5) + "</font>" 
+        stats += "\n" if self.stars_rating > 0 else ""
         stats += "<font color=" + color + ">"
         def star_font_color() -> str:
-            if self.upgrade_stars <= 5:
+            if self.stars_rating <= 5:
                 return star_color
-            elif 5 < self.upgrade_stars <= 10:
+            elif 5 < self.stars_rating <= 10:
                 return star_color_purple
-            elif 10 < self.upgrade_stars <= 15:
+            elif 10 < self.stars_rating <= 15:
                 return star_color_red
             else:
                 return star_color_gold
 
         def add_stat_with_color(stat_name: str, stat_value: int, stat_extra: int) -> str:
-            return stat_name + ": " + str(stat_value) + "<font color=" + star_font_color() + ">" + f" (+{int(stat_extra)})" + "</font>" + "\n"
+            return stat_name + ": " + str(stat_value) + "<font color=" + star_font_color() + ">" + f" (+{stat_extra})" + "</font>" + "\n"
 
         if self.maxhp_flat != 0:
             stats += add_stat_with_color("Max HP", round(self.maxhp_flat, 3), self.maxhp_extra)
@@ -295,12 +364,23 @@ class Equip:
             stats += "Penetration: " + "{:.2f}%".format(self.penetration*100) + "\n"
         if self.heal_efficiency != 0:
             stats += "Heal Efficiency: " + "{:.2f}%".format(self.heal_efficiency*100) + "</font>\n"
+        if self.stars_rating < self.stars_rating_max:
+            stats += f"<font color=#AF6E4D>Stars enhancement cost: {self.star_enhence_cost} </font>\n"
+        else:
+            stats += f"<font color=#AF6E4D>Stars enhancement cost: MAX </font>\n"
+        if self.level < self.level_max:
+            stats += f"<font color=#702963>Level up cost: {self.level_cost} </font>\n"
+        else:
+            stats += f"<font color=#702963>Level up cost: MAX </font>\n"
+        if include_market_price:
+            stats += "<font color=" + market_color + ">" + f"Market Price: {int(self.market_value)}" + "</font>\n"
         stats += "</font>"
 
         return stats
 
 
-def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rarity=None, random_full_eqset=False, eq_level=40) -> list:
+def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rarity=None, random_full_eqset=False, 
+                         eq_level=40) -> list:
     items = []
     rarity_pool, types, eq_set_pool = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
     types_cycle = cycle(types)
@@ -319,6 +399,20 @@ def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rar
         items.append(item)
 
     return items
+
+def adventure_generate_random_equip_with_weight() -> Equip:
+    rarity_pool, types, eq_set_pool = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
+    rarity_weights = list(range(len(rarity_pool), 0, -1)) 
+    eq_set_weights = [len(eq_set_pool)] + [1] * (len(eq_set_pool) - 1)
+ 
+    rarity = random.choices(rarity_pool, weights=rarity_weights, k=1)[0]
+    type = random.choice(types)
+    eq_set = random.choices(eq_set_pool, weights=eq_set_weights, k=1)[0]
+    item = Equip("Foo", type, rarity, eq_set, level=1)
+    item.generate(1)
+    return item
+
+
 
 # nd_list = [normal_distribution(1, 3000, 1000, 500) for i in range(1000)]
 # avg = sum(nd_list)/len(nd_list)

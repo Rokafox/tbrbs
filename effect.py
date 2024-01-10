@@ -12,43 +12,50 @@ class Effect:
         self.flag_for_remove = False # If True, will be removed at the beginning of the next turn.
         self.secondary_name = None
         self.is_set_effect = is_set_effect
+        self.sort_priority = 1000 # The lower the number, the higher the priority. Default is 1000.
+        self.stacks = 1 
+        self.apply_rule = "default" # "default", "stack"
+        self.is_cc_effect = False
     
-    def isPermanent(self):
+    def is_permanent(self):
         return self.duration == -1
     
-    def isExpired(self):
+    def is_expired(self):
         return self.duration == 0
     
-    def isNotExpired(self):
-        return self.duration > 0
-    
-    def decreaseDuration(self):
+    def decrease_duration(self):
         if self.duration > 0:
             self.duration -= 1
     
-    def applyEffectOnApply(self, character):
+    def apply_effect_on_apply(self, character):
         pass
     
-    def applyEffectOnTurn(self, character):
+    def apply_effect_on_turn(self, character):
         self.delay_trigger = max(self.delay_trigger - 1, 0)
         if self.delay_trigger == 0:
-            self.applyEffectOnTrigger(character)
+            self.apply_effect_on_trigger(character)
 
-    def applyEffectOnTrigger(self, character):
+    def apply_effect_on_trigger(self, character):
+        # Allows applying effects on character.
         pass
 
     def apply_effect_at_end_of_turn(self, character):
         # This method is usually used for effects that need to toggle flag_for_remove on.
         # As effect is removed at the beginning of the next turn.
+        # Allows applying effects on character.
         pass
 
-    def applyEffectOnExpire(self, character):
+    def apply_effect_when_adding_stacks(self, character, stats_income):
+        pass
+
+    def apply_effect_on_expire(self, character):
         pass
     
-    def applyEffectOnRemove(self, character):
+    def apply_effect_on_remove(self, character):
         pass
 
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
+        # Allows applying effects on character.
         return damage
 
     def __str__(self):
@@ -80,7 +87,61 @@ class Effect:
 
 # Some common effects
 # ---------------------------------------------------------
+# New Year Fireworks effect
+# New Year Fireworks: Have 6 counters. Every turn, throw a dice, counter decreases by the dice number.
+# When counter reaches 0, deal 600% of applier atk as damage to self.
+# At the end of the turn, this effect is applied to a random enemy.
+class NewYearFireworksEffect(Effect):
+    def __init__(self, name, duration, is_buff, max_counters, imposter, running=False, logging=False, text_box=None):
+        super().__init__(name, duration, is_buff)
+        self.name = name
+        self.is_buff = is_buff
+        self.max_counters = max_counters
+        self.current_counters = max_counters
+        self.imposter = imposter
+        self.running = running
+        self.logging = logging
+        self.text_box = text_box
+        self.should_trigger_end_of_turn_effect = True # We only want to trigger once per end of turn.
     
+    def apply_effect_on_trigger(self, character):
+        self.should_trigger_end_of_turn_effect = True
+        number = character.fake_dice()
+        self.current_counters -= number
+        self.current_counters = max(self.current_counters, 0)
+        if character.is_dead():
+            character.remove_effect(self)
+            return
+        if self.current_counters == 0:
+            damage = self.imposter.atk * 6
+            if self.running and self.logging:
+                self.text_box.append_html_text(f"{character.name} is about to take {int(damage)} damage from fireworks!\n")
+            fine_print(f"{character.name} is about to take {int(damage)} damage from fireworks!", mode=character.fineprint_mode)
+            character.take_status_damage(damage, self.imposter)
+            character.remove_effect(self)
+
+    def apply_effect_at_end_of_turn(self, character):
+        if not self.should_trigger_end_of_turn_effect:
+            return
+        available_enemies = character.enemy
+        if not available_enemies:
+            character.remove_effect(self)
+        else:
+            target = next(character.target_selection())
+            new_effect = NewYearFireworksEffect(self.name, self.duration, self.is_buff, self.max_counters, self.imposter)
+            new_effect.current_counters = self.current_counters
+            new_effect.running = target.running
+            new_effect.logging = target.logging
+            new_effect.text_box = target.text_box
+            new_effect.should_trigger_end_of_turn_effect = False
+            target.apply_effect(new_effect)
+            character.remove_effect(self)
+
+    def tooltip_description(self):
+        return f"Happy New Year! Get ready for some fireworks! The fireworks currently has {self.current_counters} counters." 
+
+
+
 # Protected effect
 # When a protected character is about to take damage, that damage is taken by the protector instead. Does not apply to status damage.
 class ProtectedEffect(Effect):
@@ -89,30 +150,34 @@ class ProtectedEffect(Effect):
         self.cc_immunity = cc_immunity
         self.protector = protector
         self.multiplier = multiplier
+        self.sort_priority = 100
 
-    def protected_applyEffectDuringDamageStep(self, character, damage, attacker, func_after_dmg):
+    def protected_apply_effect_during_damage_step(self, character, damage, attacker, func_after_dmg):
         if self.protector is None:
             raise Exception
-        if self.protector.isAlive():
+        if self.protector.is_alive():
             damage = damage * self.multiplier
-            self.protector.takeDamage(damage, attacker, func_after_dmg)
+            self.protector.take_damage(damage, attacker, func_after_dmg)
             return 0
         else:
             return damage
     
-    def applyEffectOnTrigger(self, character):
+    def apply_effect_on_trigger(self, character):
         # Double check, the first is to handle cases of leaving party unexpectedly.
-        if self.protector not in character.ally or self.protector.isDead():
+        if self.protector not in character.ally or self.protector.is_dead():
             self.flag_for_remove = True
 
     def apply_effect_at_end_of_turn(self, character):
-        if self.protector.isDead():
+        if self.protector.is_dead():
             self.flag_for_remove = True
 
     def tooltip_description(self):
         return f"Protected by {self.protector.name}."
 
-
+# =========================================================
+# CC effects
+# =========================================================
+    
 # Stun effect
 class StunEffect(Effect):
     def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
@@ -121,35 +186,57 @@ class StunEffect(Effect):
         self.is_buff = False
         self.cc_immunity = cc_immunity
         self.delay_trigger = delay_trigger
+        self.apply_rule = "stack"
+        self.is_cc_effect = True
     
-    def applyEffectOnApply(self, character):
+    def apply_effect_on_apply(self, character):
         stats_dict = {"eva": -1.00}
-        character.updateStats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
+        character.update_stats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
 
-    def applyEffectOnRemove(self, character):
+    def apply_effect_on_remove(self, character):
         stats_dict = {"eva": 1.00}
-        character.updateStats(stats_dict, reversed=False)
+        character.update_stats(stats_dict, reversed=False)
     
     def tooltip_description(self):
         return "Cannot take action and evade is reduced by 100%."
 
 
+# Silence effect
+class SilenceEffect(Effect):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
+        super().__init__(name, duration, is_buff)
+        self.name = "Silence"
+        self.is_buff = False
+        self.cc_immunity = cc_immunity
+        self.delay_trigger = delay_trigger
+        self.apply_rule = "stack"
+        self.is_cc_effect = True
+    
+    def tooltip_description(self):
+        return "Cannot use skill."
+
+
 # Sleep effect
 class SleepEffect(Effect):
     def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
-        super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
+        super().__init__(name, duration, is_buff)
         self.name = "Sleep"
         self.is_buff = False
         self.cc_immunity = cc_immunity
         self.delay_trigger = delay_trigger
+        self.apply_rule = "stack"
+        self.is_cc_effect = True
     
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
         self.flag_for_remove = True
         return damage
 
     def tooltip_description(self):
         return "Cannot act, effect is removed when taking damage."
 
+# =========================================================
+# End of CC effects
+# =========================================================
 
 class StatsEffect(Effect):
     def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True, stats_dict_function=None, is_set_effect=False):
@@ -168,19 +255,19 @@ class StatsEffect(Effect):
             self.stats_dict = self.stats_dict_function()
         self.is_set_effect = is_set_effect
 
-    def applyEffectOnApply(self, character):
+    def apply_effect_on_apply(self, character):
         if self.condition is None:
-            character.updateStats(self.stats_dict, reversed=False)
+            character.update_stats(self.stats_dict, reversed=False)
             self.flag_is_active = True
 
-    def applyEffectOnRemove(self, character):
+    def apply_effect_on_remove(self, character):
         if self.condition is None:
-            character.updateStats(self.stats_dict, reversed=True)
+            character.update_stats(self.stats_dict, reversed=True)
 
-    def applyEffectOnTrigger(self, character):
+    def apply_effect_on_trigger(self, character):
         if self.condition is not None and self.use_active_flag:
             if self.condition(character) and self.flag_is_active == False:
-                character.updateStats(self.stats_dict, reversed=False)
+                character.update_stats(self.stats_dict, reversed=False)
                 self.flag_is_active = True
             elif self.condition(character) and self.flag_is_active == True:
                 return
@@ -188,7 +275,7 @@ class StatsEffect(Effect):
                 fine_print(f"The effect of {self.name} is not triggered because condition is not met.", mode=character.fineprint_mode)
                 return
             elif not self.condition(character) and self.flag_is_active == True:
-                character.updateStats(self.stats_dict, reversed=True)
+                character.update_stats(self.stats_dict, reversed=True)
                 self.flag_is_active = False
                 return
             else:
@@ -200,11 +287,11 @@ class StatsEffect(Effect):
                     new_stats_dict = self.stats_dict_function()
                     # Only when stats_dict is changed, will we update stats.
                     if new_stats_dict != old_stats_dict:
-                        character.updateStats(old_stats_dict, reversed=True)
+                        character.update_stats(old_stats_dict, reversed=True)
                         self.stats_dict = new_stats_dict
-                        character.updateStats(self.stats_dict, reversed=False)
+                        character.update_stats(self.stats_dict, reversed=False)
                 else:
-                    character.updateStats(self.stats_dict, reversed=False)
+                    character.update_stats(self.stats_dict, reversed=False)
             else:
                 return
         else:
@@ -233,14 +320,15 @@ class StatsEffect(Effect):
 # ---------------------------------------------------------
 # Critical rate and critical damage effect, for character Seth. Effect increases every turn.
 class SethEffect(Effect):
+    # A simpler version of StatsEffect.
     def __init__(self, name, duration, is_buff, value):
         super().__init__(name, duration, is_buff)
         self.value = value
     
-    def applyEffectOnTrigger(self, character):
+    def apply_effect_on_trigger(self, character):
         # Every turn, raise by 0.01(1%).
         stats_dict = {"crit": 0.01, "critdmg": 0.01}
-        character.updateStats(stats_dict, reversed=False)
+        character.update_stats(stats_dict, reversed=False)
     
     def tooltip_description(self):
         return f"Critical rate and critical damage is increased by {self.value*100}% each turn."
@@ -255,12 +343,83 @@ class ContinuousDamageEffect(Effect):
         self.is_buff = is_buff
         self.imposter = imposter # The character that applies this effect
     
-    def applyEffectOnTrigger(self, character):
-        character.takeStatusDamage(self.value, self.imposter)
+    def apply_effect_on_trigger(self, character):
+        character.take_status_damage(self.value, self.imposter)
     
     def tooltip_description(self):
         return f"Take {int(self.value)} status damage each turn."
 
+
+# ---------------------------------------------------------
+# Poison effect
+# A variant of ContinuousDamageEffect, takes damage based on maxhp.
+class PoisonDamageEffect(Effect):
+    """
+    Takes damage based on maxhp, current hp, or lost hp.
+    """
+    def __init__(self, name, duration, is_buff, value, imposter, base):
+        super().__init__(name, duration, is_buff)
+        self.value = float(value)
+        self.is_buff = is_buff
+        self.imposter = imposter # The character that applies this effect
+        self.base = base # "maxhp", "hp", "losthp"
+    
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            return
+        match self.base:
+            case "maxhp":
+                character.take_status_damage(self.value * character.maxhp, self.imposter)
+            case "hp":
+                character.take_status_damage(self.value * character.hp, self.imposter)
+            case "losthp":
+                character.take_status_damage(self.value * (character.maxhp - character.hp), self.imposter)
+            case _:
+                raise Exception("Invalid base.")
+    
+    def tooltip_description(self):
+        return f"Take {int(self.value*100)}% {self.base} status damage each turn."
+
+
+# ---------------------------------------------------------
+# Great Poison effect
+# used by Requina
+class GreatPoisonEffect(Effect):
+    def __init__(self, name, duration, is_buff, value_onestack, stats_dict, imposter, stacks):
+        super().__init__(name, duration, is_buff)
+        self.name = name
+        self.value_onestack = float(value_onestack)
+        self.is_buff = is_buff
+        self.imposter = imposter
+        self.stacks = stacks
+        self.stats_dict = stats_dict 
+        self.stats_dict_original = stats_dict.copy()
+        self.apply_rule = "stack"
+
+    def update_stats_dict(self):
+        # 0.99 , 0.98 , 0.97 , 0.96 , 0.95...for each stack.
+        self.stats_dict = {key: value - (0.01 * self.stacks) for key, value in self.stats_dict_original.items()}
+
+    def apply_effect_on_apply(self, character):
+        self.update_stats_dict()
+        character.update_stats(self.stats_dict, reversed=False)
+
+    def apply_effect_on_trigger(self, character):
+        character.take_status_damage(character.maxhp * self.value_onestack * self.stacks, self.imposter)
+    
+    def apply_effect_on_remove(self, character):
+        self.update_stats_dict()
+        character.update_stats(self.stats_dict, reversed=True)
+
+    def apply_effect_when_adding_stacks(self, character, stacks_income):
+        self.apply_effect_on_remove(character)
+        self.stacks += stacks_income
+        self.stacks = min(self.stacks, 70)
+        self.apply_effect_on_apply(character)
+
+    def tooltip_description(self):
+        return f"Great Poison stacks: {self.stacks}.\nTake {int(self.value_onestack * self.stacks * 100)}% max hp status damage each turn." \
+            f"\nStats are decreased by {self.stacks}%."
 
 # ---------------------------------------------------------
 # Continuous Heal effect
@@ -271,13 +430,13 @@ class ContinuousHealEffect(Effect):
         self.is_buff = is_buff
         self.is_percent = is_percent
     
-    def applyEffectOnTrigger(self, character):
-        if character.isDead():
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
             return
         if self.is_percent:
-            character.healHp(character.maxhp * self.value, character)
+            character.heal_hp(character.maxhp * self.value, character)
         else:
-            character.healHp(self.value, character)
+            character.heal_hp(self.value, character)
     
     def tooltip_description(self):
         if self.is_percent:
@@ -298,13 +457,13 @@ class AbsorptionShield(Effect):
         self.logging = logging
         self.text_box = text_box
 
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
         if damage > self.shield_value:
             remaining_damage = damage - self.shield_value
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{character.name}'s shield is broken!\n{remaining_damage} damage is dealt to {character.name}.\n")
             fine_print(f"{character.name}'s shield is broken! {remaining_damage} damage is dealt to {character.name}.", mode=character.fineprint_mode)
-            character.removeEffect(self)
+            character.remove_effect(self)
             return remaining_damage
         else:
             self.shield_value -= damage
@@ -325,7 +484,7 @@ class ReductionShield(Effect):
         self.effect_value = effect_value
         self.cc_immunity = cc_immunity
 
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
         if self.is_buff:
             damage = damage * (1 - self.effect_value)
         else:
@@ -348,15 +507,16 @@ class EffectShield1(Effect):
         self.threshold = threshold
         self.heal_value = heal_value
         self.cc_immunity = cc_immunity
+        self.sort_priority = 120
 
     def apply_effect_at_end_of_turn(self, character):
-        character.updateAllyEnemy()
+        character.update_ally_and_enemy()
         if character.has_neighbor("Fenrir") == False:
             self.flag_for_remove = True
 
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
         if character.hp < character.maxhp * self.threshold:
-            character.healHp(self.heal_value, self)
+            character.heal_hp(self.heal_value, self)
         return damage
     
     def tooltip_description(self):
@@ -374,13 +534,14 @@ class EffectShield2(Effect):
         self.cc_immunity = cc_immunity
         self.damage_reduction = damage_reduction
         self.shrink_rate = shrink_rate
+        self.sort_priority = 150
 
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
         if damage > character.maxhp * 0.1:
             damage = character.maxhp * 0.1 + (damage - character.maxhp * 0.1) * self.damage_reduction
         return damage
     
-    def applyEffectOnTrigger(self, character):
+    def apply_effect_on_trigger(self, character):
         self.damage_reduction = max(self.damage_reduction - self.shrink_rate, 0)
         if self.damage_reduction == 0:
             self.flag_for_remove = True
@@ -399,12 +560,12 @@ class RebornEffect(Effect):
         self.effect_value = effect_value
         self.cc_immunity = cc_immunity
     
-    def applyEffectOnTrigger(self, character):
-        if character.isDead():
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
             character.revive(1, hp_percentage_to_revive=self.effect_value)
             if hasattr(character, "after_revive"):
                 character.after_revive()
-            character.removeEffect(self)
+            character.remove_effect(self)
 
     def tooltip_description(self):
         return f"Revive with {self.effect_value*100}% hp the turn after fallen."
@@ -420,10 +581,11 @@ class CancellationShield(Effect):
         self.running = running
         self.logging = logging
         self.text_box = text_box
+        self.sort_priority = 150
 
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
         if damage > character.maxhp * self.threshold:
-            character.removeEffect(self)
+            character.remove_effect(self)
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{character.name} shielded the attack!\n")
             fine_print(f"{character.name} shielded the attack!", mode=character.fineprint_mode)
@@ -442,8 +604,9 @@ class CancellationShield2(Effect):
         self.is_buff = is_buff
         self.threshold = threshold
         self.cc_immunity = cc_immunity
+        self.sort_priority = 180
 
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
         damage = min(damage, character.maxhp * self.threshold)
         return damage
         
@@ -451,6 +614,8 @@ class CancellationShield2(Effect):
         return f"Cancel the damage that exceed {self.threshold*100}% of max hp."
     
 
+#---------------------------------------------------------
+# Equipment set effects
 #---------------------------------------------------------
 # Arasaka
 # Leave with 1 hp when taking fatal damage. Immune to damage for 3 turns.
@@ -464,8 +629,9 @@ class EquipmentSetEffect_Arasaka(Effect):
         self.running = running
         self.logging = logging
         self.text_box = text_box
+        self.sort_priority = 2000
 
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
         if self.onehp_effect_triggered:
             return 0
         if damage >= character.hp:
@@ -496,14 +662,15 @@ class EquipmentSetEffect_KangTao(Effect):
         self.running = running
         self.logging = logging
         self.text_box = text_box
+        self.sort_priority = 2000
 
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
         if damage > self.shield_value:
             remaining_damage = damage - self.shield_value
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{character.name}'s shield is broken!\n{remaining_damage} damage is dealt to {character.name}.\n")
             fine_print(f"{character.name}'s shield is broken! {remaining_damage} damage is dealt to {character.name}.", mode=character.fineprint_mode)
-            character.removeEffect(self)
+            character.remove_effect(self)
             return remaining_damage
         else:
             self.shield_value -= damage
@@ -526,11 +693,12 @@ class EquipmentSetEffect_Militech(Effect):
         self.stats_dict = stats_dict
         self.condition = condition
         self.flag_is_active = False
+        self.sort_priority = 2000
 
-    def applyEffectOnTrigger(self, character):
+    def apply_effect_on_trigger(self, character):
         if self.condition is not None:
             if self.condition(character) and not self.flag_is_active:
-                character.updateStats(self.stats_dict, reversed=False)
+                character.update_stats(self.stats_dict, reversed=False)
                 self.flag_is_active = True
             elif self.condition(character) and self.flag_is_active:
                 return
@@ -538,7 +706,7 @@ class EquipmentSetEffect_Militech(Effect):
                 fine_print(f"The effect of {self.name} is not yet triggered because condition is not met.", mode=character.fineprint_mode)
                 return
             elif not self.condition(character) and self.flag_is_active:
-                character.updateStats(self.stats_dict, reversed=True)
+                character.update_stats(self.stats_dict, reversed=True)
                 self.flag_is_active = False
                 return
             else:
@@ -572,23 +740,24 @@ class EquipmentSetEffect_NUSA(Effect):
         self.stats_dict = stats_dict
         self.flag_is_active = False
         self.stats_dict_function = stats_dict_function
+        self.sort_priority = 2000
 
-    def applyEffectOnApply(self, character):
+    def apply_effect_on_apply(self, character):
         # if self.stats_dict_function:
         #     self.stats_dict = self.stats_dict_function()
         # We do not call the function here, because in this specific case, character.ally() just got reset and is empty.
-        character.updateStats(self.stats_dict, reversed=False)
+        character.update_stats(self.stats_dict, reversed=False)
 
-    def applyEffectOnRemove(self, character):
-        character.updateStats(self.stats_dict, reversed=True)
+    def apply_effect_on_remove(self, character):
+        character.update_stats(self.stats_dict, reversed=True)
 
-    def applyEffectOnTrigger(self, character):
+    def apply_effect_on_trigger(self, character):
         old_stats_dict = self.stats_dict
         new_stats_dict = self.stats_dict_function()
         if new_stats_dict != old_stats_dict:
-            character.updateStats(old_stats_dict, reversed=True)
+            character.update_stats(old_stats_dict, reversed=True)
             self.stats_dict = new_stats_dict
-            character.updateStats(self.stats_dict, reversed=False)
+            character.update_stats(self.stats_dict, reversed=False)
 
     def tooltip_description(self):
         string = ""
@@ -602,7 +771,7 @@ class EquipmentSetEffect_NUSA(Effect):
 
 #---------------------------------------------------------
 # Sovereign
-# Accumulate 1 stack of Sovereign when taking damage. Each stack increase atk by 20% and last 4 turns. Max 5 stacks.
+# Apply Sovereign effect when taking damage, Sovereign increases atk by 20% and last 4 turns. Max 5 active effects.
 class EquipmentSetEffect_Sovereign(Effect):
     def __init__(self, name, duration, is_buff, stats_dict=None, stats_dict_function=None):
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
@@ -610,11 +779,12 @@ class EquipmentSetEffect_Sovereign(Effect):
         self.stats_dict = stats_dict
         self.flag_is_active = False
         self.stats_dict_function = stats_dict_function
+        self.sort_priority = 2000
 
-    def applyEffectDuringDamageStep(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage):
         # count how many "Sovereign" in character.buffs, if less than 5, apply effect.
         if Counter([effect.name for effect in character.buffs])["Sovereign"] < 5:
-            character.applyEffect(StatsEffect("Sovereign", 4, True, self.stats_dict, is_set_effect=True))
+            character.apply_effect(StatsEffect("Sovereign", 4, True, self.stats_dict, is_set_effect=True))
         return damage
     
     def tooltip_description(self):
@@ -633,6 +803,7 @@ class EquipmentSetEffect_Snowflake(Effect):
         self.collected_pieces = 0
         self.activation_count = 0
         self.bonus_stats_dict = {"atk": 1.0, "defense": 1.0, "maxhp": 1.0, "spd": 1.0}
+        self.sort_priority = 2000
 
     def get_new_bonus_dict(self):
         new_bonus_dict = {}
@@ -644,14 +815,35 @@ class EquipmentSetEffect_Snowflake(Effect):
         self.collected_pieces += 1
         self.collected_pieces = min(self.collected_pieces, 6)
 
-    def applyEffectOnTrigger(self, character):
-        if character.isDead():
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
             return
         if self.collected_pieces >= 6:
             self.activation_count += 1
-            character.applyEffect(StatsEffect("Snowflake", 6, True, self.get_new_bonus_dict(), is_set_effect=True))
-            character.healHp(character.maxhp * 0.25 * self.activation_count, self)
+            character.apply_effect(StatsEffect("Snowflake", 6, True, self.get_new_bonus_dict(), is_set_effect=True))
+            character.heal_hp(character.maxhp * 0.25 * self.activation_count, self)
             self.collected_pieces = 0
 
     def tooltip_description(self):
         return f"Collected pieces: {self.collected_pieces}, Activation count: {self.activation_count}. Collect 6 pieces to activate effect."
+
+#---------------------------------------------------------
+# End of Equipment set effects
+#---------------------------------------------------------
+#---------------------------------------------------------
+# Monster Passive effects and others
+#---------------------------------------------------------
+class PharaohPassiveEffect(Effect):
+    # At the end of turn, if there is a cursed enemy, increase atk by 30% for 3 turns
+    def __init__(self, name, duration, is_buff, value):
+        super().__init__(name, duration, is_buff)
+        self.value = value
+    
+    def apply_effect_at_end_of_turn(self, character):
+        for c in character.enemy:
+            if c.has_effect_that_named('Curse'):
+                character.apply_effect(StatsEffect("Greater Pharaoh", 3, True, {"atk": self.value}))
+                return
+    
+    def tooltip_description(self):
+        return f"At the end of turn, if there is a cursed enemy, increase atk by {self.value*100}% for 3 turns."

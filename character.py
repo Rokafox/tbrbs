@@ -1,4 +1,5 @@
 from effect import *
+from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import random
 
@@ -6,12 +7,15 @@ import random
 class Character:
     def __init__(self, name, lvl, exp=0, equip=None, image=None, running=False, logging=False, text_box=None, fineprint_mode="default"):
         if equip is None:
-            equip = []
+            equip = {} # {str Equip.type: Equip}
+        if equip is not None and not isinstance(equip, dict):
+            raise Exception("Equip must be a dict.")
         self.name = name
         self.lvl = lvl
+        self.lvl_max = 1000
         self.exp = exp
         self.equip = equip
-        self.image = [] if image is None else image
+        self.image = [] if image is None else image # list of pygame.Surface
         self.initialize_stats()
         self.calculate_equip_effect()
         self.running = running
@@ -19,11 +23,25 @@ class Character:
         self.text_box = text_box
         self.fineprint_mode = fineprint_mode
 
+
     def set_up_featured_image(self):
         try:
             self.featured_image = self.image[0]
         except IndexError:
+            if hasattr(self, "original_name"):
+                print(f"Image not found: {self.original_name.lower()}")
+            else:
+                print(f"Image not found: {self.name.lower()}")
             self.featured_image = None
+
+    def to_dict(self): # Will only save lvl, exp, equip
+        return {
+            "object": str(self.__class__),
+            "name": self.name,
+            "lvl": self.lvl,
+            "exp": self.exp,
+            "equip": [item.to_dict() for item in self.equip.values()]
+        }
 
     def initialize_stats(self, resethp=True, resetally=True, resetenemy=True):
         self.maxhp = self.lvl * 100
@@ -52,10 +70,12 @@ class Character:
         self.enemy = [] if resetenemy else self.enemy
         self.party = [] if resetally and resetenemy else self.party
         self.enemyparty = [] if resetally and resetenemy else self.enemyparty
-        self.calculate_equip_effect()
+        self.calculate_equip_effect(resethp=resethp)
         self.eq_set = self.get_equipment_set()
         self.skill1_cooldown = 0
         self.skill2_cooldown = 0
+        self.skill1_cooldown_max = 5 # default
+        self.skill2_cooldown_max = 5
         self.damage_taken_this_turn = [] # list of tuples (damage, attacker), damage is int, attacker is Character object
         # useful for recording damage taken sequence for certain effects
         self.damage_taken_history = [] # list of self.damage_taken_this_turn
@@ -66,6 +86,7 @@ class Character:
     def reset_stats(self, resethp=True, resetally=True, resetenemy=True):
         self.initialize_stats(resethp, resetally, resetenemy)
 
+
     def record_damage_taken(self): 
         self.damage_taken_history.append(self.damage_taken_this_turn)
         self.damage_taken_this_turn = []
@@ -75,8 +96,8 @@ class Character:
         self.healing_received_this_turn = []
 
     def calculate_equip_effect(self, resethp=True):
-        if self.equip != []:
-            for item in self.equip:
+        if self.equip:
+            for item in self.equip.values():
                 self.maxhp += item.maxhp_flat
                 self.atk += item.atk_flat
                 self.defense += item.def_flat
@@ -110,19 +131,52 @@ class Character:
     def clear_others(self):
         pass
 
-    # Normal attack logic
+    def update_skill_cooldown(self, skill):
+        match skill:
+            case 1:
+                self.skill1_cooldown = self.skill1_cooldown_max
+            case 2:
+                self.skill2_cooldown = self.skill2_cooldown_max
+            case _:
+                raise Exception("Invalid skill number.")
+
     def normal_attack(self):
         self.attack("n_random_enemy", "1", "Undefined", 2)
 
     def skill1(self):
-        self.attack("n_random_enemy", "1", "Undefined", 2)
+        # Warning: Following characters have their own skill1 function:
+        # Ophelia
+        if self.running and self.logging:
+            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
+        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
+        if self.skill1_cooldown > 0:
+            raise Exception
+        damage_dealt = self.skill1_logic()
+        self.update_skill_cooldown(1)
+        return None # for now
 
     def skill2(self):
-        self.attack("n_random_enemy", "1", "Undefined", 2)
+        # Warning: Following characters have their own skill2 function:
+        # Pepper, Ophelia
+        if self.running and self.logging:
+            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
+        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+        if self.skill2_cooldown > 0:
+            raise Exception
+        damage_dealt = self.skill2_logic()
+        self.update_skill_cooldown(2)
+        return None # for now
+    
+    def skill1_logic(self):
+        pass
+
+    def skill2_logic(self):
+        pass
 
     def target_selection(self, keyword="Undefined", keyword2="Undefined", keyword3="Undefined", keyword4="Undefined", target_list=None):
         # main_character already have .ally and .enemy as list
-        # Warning: .isCharmed() and .isConfused() only works for n_random_enemy and n_random_ally, implement this later if needed
+        # Warning: .is_charmed() and .is_confused() only works for n_random_enemy and n_random_ally, implement this later if needed,
+        # or consider confused and charmed character can only normal attack
         # This function is a generator
         # default : random choice of a single enemy
         if target_list is None:
@@ -137,14 +191,13 @@ class Character:
         elif keyword == "Undefined":
             yield random.choice(self.enemy)
 
-        # n random and all
         elif keyword == "n_random_enemy":
             n = int(keyword2)
             if n > len(self.enemy):
                 n = len(self.enemy)
-            if self.isCharmed():
+            if self.is_charmed():
                 yield from random.sample(self.ally, n)
-            elif self.isConfused():
+            elif self.is_confused():
                 yield from random.sample(self.enemy + self.ally, n)
             else:
                 yield from random.sample(self.enemy, n)
@@ -153,9 +206,9 @@ class Character:
             n = int(keyword2)
             if n > len(self.ally):
                 n = len(self.ally)
-            if self.isCharmed():
+            if self.is_charmed():
                 yield from random.sample(self.enemy, n)
-            elif self.isConfused():
+            elif self.is_confused():
                 yield from random.sample(self.enemy + self.ally, n)
             else:
                 yield from random.sample(self.ally, n)
@@ -166,7 +219,6 @@ class Character:
                 n = len(self.ally) + len(self.enemy)
             yield from random.sample(self.ally + self.enemy, n)
 
-        # target with low attribute among one party
         elif keyword == "n_lowest_attr":
             n = int(keyword2)
             attr = keyword3
@@ -187,11 +239,11 @@ class Character:
 
         elif keyword == "n_dead_allies":
             n = int(keyword2)
-            yield from mit.take(n, filter(lambda x: x.isDead(), self.party))
+            yield from mit.take(n, filter(lambda x: x.is_dead(), self.party))
 
         elif keyword == "n_dead_enemies":
             n = int(keyword2)
-            yield from mit.take(n, filter(lambda x: x.isDead(), self.enemyparty))
+            yield from mit.take(n, filter(lambda x: x.is_dead(), self.enemyparty))
 
         elif keyword == "random_enemy_pair":
             if len(self.enemy) < 2:
@@ -225,13 +277,13 @@ class Character:
                target_kw3="Undefined", target_kw4="Undefined", multiplier=2, repeat=1, func_after_dmg=None,
                func_damage_step=None, repeat_seq=1, func_after_miss=None, func_after_crit=None,
                always_crit=False, additional_attack_after_dmg=None, always_hit=False, target_list=None) -> int:
-        # Warning: DO NOT MESS WITH repeat and repeat_seq TOGETHER
+        # Warning: DO NOT MESS WITH repeat and repeat_seq TOGETHER, otherwise the result will be confusing
         # -> damage dealt
         global running, text_box
         damage_dealt = 0
         for i in range(repeat):
             if repeat > 1:
-                self.updateAllyEnemy()
+                self.update_ally_and_enemy()
             try:
                 attack_sequence = list(self.target_selection(target_kw1, target_kw2, target_kw3, target_kw4, target_list))
             except Exception as e:
@@ -239,9 +291,9 @@ class Character:
             if repeat_seq > 1:
                 attack_sequence = list(mit.repeat_each(attack_sequence, repeat_seq))
             for target in attack_sequence:
-                if target.isDead():
+                if target.is_dead():
                     continue
-                if self.isDead():
+                if self.is_dead():
                     break
                 if self.running and self.logging:
                     self.text_box.append_html_text(f"{self.name} is targeting {target.name}.\n")
@@ -268,7 +320,7 @@ class Character:
                         final_damage = func_damage_step(self, target, final_damage)
                     if final_damage < 0:
                         final_damage = 0
-                    target.takeDamage(final_damage, self)
+                    target.take_damage(final_damage, self)
                     damage_dealt += final_damage
                     if func_after_dmg is not None:
                         func_after_dmg(self, target)
@@ -287,9 +339,9 @@ class Character:
         can_act, reason = self.can_take_action()
         if can_act:
             self.update_cooldown()
-            if self.skill1_cooldown == 0 and not self.isSilenced():
+            if self.skill1_cooldown == 0 and not self.is_silenced():
                 self.skill1()
-            elif self.skill2_cooldown == 0 and not self.isSilenced():
+            elif self.skill2_cooldown == 0 and not self.is_silenced():
                 self.skill2()
             else:
                 self.normal_attack()
@@ -306,10 +358,12 @@ class Character:
 
     # Print the character's stats
     def __str__(self):
-        return "{:<20s} MaxHP: {:>5d} HP: {:>5d} ATK: {:>4d} DEF: {:>4d} Speed: {:>4d}".format(self.name, self.maxhp, self.hp, self.atk, self.defense, self.spd)
+        return "{:<20s} MaxHP: {:>5d} HP: {:>5d} ATK: {:>7.2f} DEF: {:>7.2f} Speed: {:>7.2f}".format(self.name, self.maxhp, self.hp, self.atk, self.defense, self.spd)
 
     def tooltip_string(self):
+        level = self.lvl if self.lvl < self.lvl_max else "MAX"
         return f"{self.name}\n" \
+            f"level: {level}\n" \
             f"hp: {self.hp}/{self.maxhp}\n" \
             f"atk: {self.atk}\n" \
             f"def: {self.defense}\n" \
@@ -321,7 +375,8 @@ class Character:
             f"critdef: {self.critdef*100:.2f}%\n" \
             f"penetration: {self.penetration*100:.2f}%\n" \
             f"heal efficiency: {self.heal_efficiency*100:.2f}%\n" \
-            f"final damage taken: {self.final_damage_taken_multipler*100:.2f}%\n"
+            f"final damage taken: {self.final_damage_taken_multipler*100:.2f}%\n" \
+            f"exp/maxexp/perc: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n" \
 
     def tooltip_status_effects(self):
         str = "Status Effects:\n"
@@ -337,72 +392,132 @@ class Character:
                 str += "\n"
         return str
 
-    def get_equip_stats(self, ribbon=False):
+    def get_equip_stats(self, equip_type: str): # ["Weapon", "Armor", "Accessory", "Boots"]
         str = ""
-        if not ribbon:
-            for item in self.equip[:2]:
-                str += item.print_stats_html()
-                str += "\n"
-        else:
-            for item in self.equip[2:]:
-                str += item.print_stats_html()
-                str += "\n"
+        if not any([x in self.equip for x in ["Weapon", "Armor", "Accessory", "Boots"]]) and len(self.equip) > 0:
+            raise Exception("There is an unknown item type in the equipment. Fix it.")
+        match equip_type:
+            case "Weapon":
+                if "Weapon" in self.equip:
+                    str += self.equip["Weapon"].print_stats_html()
+                    str += "\n"
+            case "Armor":
+                if "Armor" in self.equip:
+                    str += self.equip["Armor"].print_stats_html()
+                    str += "\n"
+            case "Accessory":
+                if "Accessory" in self.equip:
+                    str += self.equip["Accessory"].print_stats_html()
+                    str += "\n"
+            case "Boots":
+                if "Boots" in self.equip:
+                    str += self.equip["Boots"].print_stats_html()
+                    str += "\n"
+            case _:
+                raise Exception("Invalid equip type.")
         return str
 
-    # Calculate the max exp for the character
     def calculate_maxexp(self):
-        if self.lvl <= 300:
-            return self.lvl * 100
-        else:
-            scaling_factor = (self.lvl - 300) * 0.05  
-            return int(100 * self.lvl * (1 + scaling_factor))
+        base_exp = 10  
+        for i in range(2, self.lvl + 1):
+            base_exp += i + 7  
+        return base_exp
 
-    # Level up or down the character
+    def gain_exp(self, gained_exp):
+        if not isinstance(gained_exp, int) or gained_exp <= 0:
+            raise ValueError("Experience gained must be a positive integer")
+
+        self.exp += gained_exp
+
+        while self.exp >= self.maxexp:
+            self.level_up_on_max_exp()
+
+    def level_up_on_max_exp(self):
+        while self.exp >= self.maxexp:
+            self.exp -= self.maxexp  # Deduct the max exp for the level up
+            self.level_change(1)
+            
+            if self.running and self.logging:
+                self.text_box.append_html_text(f"{self.name} leveled up!\n")
+            fine_print(f"{self.name} leveled up!", mode=self.fineprint_mode)
+
+    def reset_stats_and_reapply_effects(self, reset_hp=True):
+        buff_copy = [effect for effect in self.buffs if not effect.is_set_effect]
+        debuff_copy = [effect for effect in self.debuffs if not effect.is_set_effect]
+        self.reset_stats(resethp=reset_hp, resetally=False, resetenemy=False) # We are probably doing this during battle
+        for effect in buff_copy:
+            self.apply_effect(effect)
+        for effect in debuff_copy:
+            self.apply_effect(effect)
+
     def level_change(self, increment):
         if increment > 0:
-            if self.lvl >= 1000:
+            if self.lvl >= self.lvl_max:
                 return
         elif increment < 0:
             if self.lvl <= 1:
                 return
         
         self.lvl += increment
-        buff_copy = [effect for effect in self.buffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
-        debuff_copy = [effect for effect in self.debuffs if not hasattr(effect, "is_set_effect") or not effect.is_set_effect]
-        self.reset_stats(resetally=False, resetenemy=False)
-        self.exp = 0
+        self.reset_stats_and_reapply_effects()
         self.maxexp = self.calculate_maxexp()
-        for effect in buff_copy:
-            self.applyEffect(effect)
-        for effect in debuff_copy:
-            self.applyEffect(effect)
 
-    def isAlive(self):
+    def equip_item(self, item: Equip):
+        old_item = self.equip.pop(item.type, None)
+        self.equip[item.type] = item
+        self.reset_stats_and_reapply_effects(False)
+        return old_item
+
+    def equip_item_from_list(self, item_list: list):
+        # the items in item_list must not exist more than once of the same item.type
+        item_type_seen = []
+        for item in item_list:
+            if item.type in item_type_seen:
+                raise Exception("Cannot equip more than one of the same item type.")
+            item_type_seen.append(item.type)
+
+        old_item_list = []
+        for item in item_list:
+            old_item = self.equip.pop(item.type, None)
+            self.equip[item.type] = item
+            old_item_list.append(old_item)
+        self.reset_stats_and_reapply_effects(False)
+        return old_item_list
+
+    def unequip_item(self, item_type: str, strict):
+        if strict and item_type not in self.equip:
+            raise ValueError(f"No {item_type} equipped")
+        
+        unequipped_item = self.equip.pop(item_type, None)
+        self.reset_stats_and_reapply_effects(False)
+        return unequipped_item
+
+    def is_alive(self):
         return self.hp > 0
 
-    def isDead(self):
+    def is_dead(self):
         return self.hp <= 0
 
-    def isCharmed(self):
-        return self.hasEffect("Charm")
+    def is_charmed(self):
+        return self.has_effect_that_named("Charm")
     
-    def isConfused(self):
-        return self.hasEffect("Confuse")
+    def is_confused(self):
+        return self.has_effect_that_named("Confuse")
     
-    def isStunned(self):
-        return self.hasEffect("Stun")
+    def is_stunned(self):
+        return self.has_effect_that_named("Stun")
     
-    def isSilenced(self):
-        return self.hasEffect("Silence")
+    def is_silenced(self):
+        return self.has_effect_that_named("Silence")
     
     def is_sleeping(self):
-        return self.hasEffect("Sleep")
+        return self.has_effect_that_named("Sleep")
     
     def is_frozed(self):
-        return self.hasEffect("Frozen")
+        return self.has_effect_that_named("Frozen")
     
     def can_take_action(self) -> (bool, str):
-        if self.isStunned():
+        if self.is_stunned():
             return False, "Stunned"
         if self.is_sleeping():
             return False, "Sleeping"
@@ -410,26 +525,14 @@ class Character:
             return False, "Frozen"
         return True, "None"
     
-    # Update allies and enemies
-    def updateAllyEnemy(self):
-        self.ally = [ally for ally in self.ally if not ally.isDead()]
-        self.enemy = [enemy for enemy in self.enemy if not enemy.isDead()]
-
-    # Calculate targets
-    def checkTargets(self):
-        if self.isCharmed():
-            return self.ally
-        elif self.isConfused():
-            return self.ally + self.enemy
-        else:
-            return self.enemy
+    def update_ally_and_enemy(self):
+        self.ally = [ally for ally in self.ally if not ally.is_dead()]
+        self.enemy = [enemy for enemy in self.enemy if not enemy.is_dead()]
         
-    # Check if have certain ally
-    def hasAlly(self, ally_name):
+    def has_ally(self, ally_name):
         return ally_name in [ally.name for ally in self.ally]
     
-    # Check if have certain enemy
-    def hasEnemy(self, enemy_name):
+    def has_enemy(self, enemy_name):
         return enemy_name in [enemy.name for enemy in self.enemy]
 
     def get_neighbors(self, party, char, include_self=True, distance=1) -> list:
@@ -455,15 +558,10 @@ class Character:
                 return True
         return False
     
-    # Check if the character is the only one alive
-    def isOnlyOneAlive(self):
+    def is_only_one_alive(self):
         return len(self.ally) == 1
-    
-    # Check if the character is the only one dead
-    def isOnlyOneDead(self):
-        return len(self.enemy) == 1
 
-    def updateStats(self, stats, reversed=False) -> (dict, dict, dict):
+    def update_stats(self, stats, reversed=False) -> (dict, dict, dict):
         prev = {}
         new = {}
         delta = {}
@@ -492,9 +590,8 @@ class Character:
             delta[attr] = new_value - prev[attr]
         return prev, new, delta
 
-    # Heal the character hp, flat, independent of updateHp
-    def healHp(self, value, healer):
-        if self.isDead():
+    def heal_hp(self, value, healer):
+        if self.is_dead():
             raise Exception("Cannot heal a dead character.")
         if value < 0:
             value = 0
@@ -511,9 +608,8 @@ class Character:
         self.healing_received_this_turn.append((healing, healer))
         return healing, healer, overhealing
 
-    # Revive
     def revive(self, hp_to_revive, hp_percentage_to_revive=0):
-        if self.isDead():
+        if self.is_dead():
             self.hp = hp_to_revive
             self.hp += self.maxhp * hp_percentage_to_revive
             self.hp = int(self.hp)
@@ -524,9 +620,9 @@ class Character:
         else:
             raise Exception(f"{self.name} is not dead. Cannot revive.")
     
-    # Heal from regen. This is not a flat heal, but a heal that is based on the character's regen and maxhp/mp, not used
+    # Not used for now
     def regen(self):
-        if self.isDead():
+        if self.is_dead():
             raise Exception
         healing = int(self.maxhp * self.hpregen)
         overhealing = 0
@@ -541,62 +637,60 @@ class Character:
             fine_print(f"{self.name} is regenerated for {healing} HP.", mode=self.fineprint_mode)
         return healing, self, overhealing
 
-    # Take skill or normal attack damage, flat.
-    def takeDamage(self, value, attacker=None, func_after_dmg=None):
+    def take_damage(self, value, attacker=None, func_after_dmg=None):
         if self.running and self.logging:
             self.text_box.append_html_text(f"{self.name} is about to take {value} damage.\n")
         fine_print(f"{self.name} is about to take {value} damage.", mode=self.fineprint_mode)
-        if self.isDead():
+        if self.is_dead():
             fine_print(f"{self.name} is already dead, cannot take damage.", mode=self.fineprint_mode)
             raise Exception
-        if value < 0:
-            value = 0
+        value = max(0, value)
         # Attention: final_damage_taken_multipler is calculated before shields effects.
         damage = value * self.final_damage_taken_multipler
         if damage > 0:
-            for effect in self.buffs:
+            copyed_buffs = self.buffs.copy() # Some effect will try apply other effects during this step, see comments on Effect class for details.
+            copyed_debuffs = self.debuffs.copy()
+            for effect in copyed_buffs:
                 if isinstance(effect, ProtectedEffect):
-                    damage = effect.protected_applyEffectDuringDamageStep(self, damage, attacker, func_after_dmg)
+                    damage = effect.protected_apply_effect_during_damage_step(self, damage, attacker, func_after_dmg)
                 else:
-                    damage = effect.applyEffectDuringDamageStep(self, damage)
-            for effect in self.debuffs:
-                damage = effect.applyEffectDuringDamageStep(self, damage)
+                    damage = effect.apply_effect_during_damage_step(self, damage)
+            for effect in copyed_debuffs:
+                damage = effect.apply_effect_during_damage_step(self, damage)
         damage = int(damage)
-        if damage < 0:
-            damage = 0
+        damage = max(0, damage)
         if self.hp - damage < 0:
             damage = self.hp
         self.hp -= damage
         if func_after_dmg is not None:
             func_after_dmg(self, damage, attacker)
-        self.takeDamage_aftermath(damage, attacker)
+        self.take_damage_aftermath(damage, attacker)
         if self.running and self.logging:
             self.text_box.append_html_text(f"{self.name} took {damage} damage.\n")
         fine_print(f"{self.name} took {damage} damage.", mode=self.fineprint_mode)
         self.damage_taken_this_turn.append((damage, attacker))
         return None
     
-    def takeDamage_aftermath(self, damage, attacker):
+    def take_damage_aftermath(self, damage, attacker):
         pass
 
-    # Take status damage, flat.
-    def takeStatusDamage(self, value, attacker=None):
+    def take_status_damage(self, value, attacker=None):
         if self.running and self.logging:
             self.text_box.append_html_text(f"{self.name} is about to take {value} status damage.\n")
         fine_print(f"{self.name} is about to take {value} status damage.", mode=self.fineprint_mode)
-        if self.isDead():
+        if self.is_dead():
             return 0, attacker
-        if value < 0:
-            value = 0
+        value = max(0, value)
         damage = value * self.final_damage_taken_multipler
         if damage > 0:
-            for effect in self.buffs:
-                damage = effect.applyEffectDuringDamageStep(self, damage)
-            for effect in self.debuffs:
-                damage = effect.applyEffectDuringDamageStep(self, damage)
+            copyed_buffs = self.buffs.copy() 
+            copyed_debuffs = self.debuffs.copy()
+            for effect in copyed_buffs:
+                damage = effect.apply_effect_during_damage_step(self, damage)
+            for effect in copyed_debuffs:
+                damage = effect.apply_effect_during_damage_step(self, damage)
         damage = int(damage)
-        if damage < 0:
-            damage = 0
+        damage = max(0, damage)
         if self.hp - damage < 0:
             damage = self.hp
         self.hp -= damage
@@ -606,15 +700,13 @@ class Character:
         self.damage_taken_this_turn.append((damage, attacker))
         return None
 
-    # Take bypass all damage, flat.
-    def takeBypassAllDamage(self, value, attacker=None):
+    def take_bypass_status_effect_damage(self, value, attacker=None):
         if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} is about to take {value} bypass all damage.\n")
-        fine_print(f"{self.name} is about to take {value} bypass all damage.", mode=self.fineprint_mode)
-        if self.isDead():
-            raise Exception
-        if value < 0:
-            value = 0
+            self.text_box.append_html_text(f"{self.name} is about to take {value} bypass status effect damage.\n")
+        fine_print(f"{self.name} is about to take {value} bypass status effect damage.", mode=self.fineprint_mode)
+        if self.is_dead():
+            raise Exception("Cannot take damage when dead.")
+        value = max(0, value)
         damage = value
         damage = int(damage)
         if self.hp - damage < 0:
@@ -623,15 +715,12 @@ class Character:
             raise Exception("damage cannot be negative.")
         self.hp -= damage
         if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} took {damage} bypass all damage.\n")
-        fine_print(f"{self.name} took {damage} bypass all damage.", mode=self.fineprint_mode)
+            self.text_box.append_html_text(f"{self.name} took {damage} bypass status effect damage.\n")
+        fine_print(f"{self.name} took {damage} bypass status effect damage.", mode=self.fineprint_mode)
         self.damage_taken_this_turn.append((damage, attacker))
         return None
 
-    # Check if character have certain effect.
-    def hasEffect(self, effect_name):
-        if type(effect_name) != str:
-            raise Exception("effect_name must be a string.")
+    def has_effect_that_named(self, effect_name: str):
         for effect in self.buffs:
             if effect.name == effect_name:
                 return True
@@ -640,62 +729,64 @@ class Character:
                 return True
         return False
 
-    # Check if character have CC immunity.
-    def hasCCImmunity(self):
+    def is_immune_to_cc(self):
         for effect in self.buffs:
             if effect.cc_immunity:
                 return True
-        for effect in self.debuffs:
+        for effect in self.debuffs: # Debuff that provide CC immunity? Make no sense.
             if effect.cc_immunity:
+                print(f"Warning: {self.name} has debuff that provide CC immunity. Effect name: {effect.name}")
                 return True
         return False
 
-    # Apply buff or debuff effect to the character
-    def applyEffect(self, effect):
-        if self.isAlive() and effect.is_buff:
-            self.buffs.append(effect)
-        elif self.isAlive() and not effect.is_buff:
-            # Stun on stunned target will not stack, but refresh the duration
-            if effect.name == "Stun" and self.isStunned():
-                for d in self.debuffs:
-                    if d.name == "Stun":
-                        d.duration = effect.duration
-                        if self.running and self.logging:
-                            self.text_box.append_html_text(f"{effect.name} duration on {self.name} has been refreshed.\n")
-                        fine_print(f"{effect.name} duration on {self.name} has been refreshed.", mode=self.fineprint_mode)
-                        return
-            # Check if self has CC immunity
-            if effect.name in ["Stun", "Confuse", "Charm", "Silence", "Sleep", "Frozen"]:
-                if self.hasCCImmunity():
+    def apply_effect(self, effect):
+        # For effects that can stack, reflesh the duration
+        if effect.apply_rule == "stack" and self.is_alive():
+            for e in self.debuffs + self.buffs:
+                if e.name == effect.name:
+                    e.duration = effect.duration
+                    e.apply_effect_when_adding_stacks(self, effect.stacks)
                     if self.running and self.logging:
-                        self.text_box.append_html_text(f"{self.name} is immune to {effect.name}.\n")
-                    fine_print(f"{self.name} is immune to {effect.name}.", mode=self.fineprint_mode)
+                        self.text_box.append_html_text(f"{effect.name} duration on {self.name} has been refreshed.\n")
+                    fine_print(f"{effect.name} duration on {self.name} has been refreshed.", mode=self.fineprint_mode)
                     return
+        if self.is_alive() and effect.is_buff:
+            self.buffs.append(effect)
+            self.buffs.sort(key=lambda x: x.sort_priority)
+        elif self.is_alive() and not effect.is_buff:
+            # deal with cc effect
+            if self.is_immune_to_cc() and effect.is_cc_effect:
+                if self.running and self.logging:
+                    self.text_box.append_html_text(f"{self.name} is immune to {effect.name}.\n")
+                fine_print(f"{self.name} is immune to {effect.name}.", mode=self.fineprint_mode)
+                return
             self.debuffs.append(effect)
+            self.debuffs.sort(key=lambda x: x.sort_priority)
         if self.running and self.logging:
             self.text_box.append_html_text(f"{effect.name} has been applied on {self.name}.\n")
         fine_print(f"{effect.name} has been applied on {self.name}.", mode=self.fineprint_mode)
-        effect.applyEffectOnApply(self)
+        effect.apply_effect_on_apply(self)
 
-    # Remove buff or debuff effect from the character
-    def removeEffect(self, effect, purge=False):
-        # purge: effect is removed without triggering applyEffectOnRemove
+    def remove_effect(self, effect: Effect, purge=False, strict=False):
+        # purge: effect is removed without triggering apply_effect_on_remove
+        # Attention: Character Ophelia does not use this function, but directly temper with self.buffs and self.debuffs
         if effect in self.buffs:
             self.buffs.remove(effect)
         elif effect in self.debuffs:
             self.debuffs.remove(effect)
         else:
-            raise Exception("Effect not found.")
+            raise Exception("Effect not found.") if strict else None
         if self.running and self.logging:
             self.text_box.append_html_text(f"{effect.name} on {self.name} has been removed.\n")
         fine_print(f"{effect.name} on {self.name} has been removed.", mode=self.fineprint_mode)
         if not purge:
-            effect.applyEffectOnRemove(self)
+            effect.apply_effect_on_remove(self)
 
-    def try_remove_effect_with_name(self, effect_name, strict=False) -> bool:
+    def try_remove_effect_with_name(self, effect_name: str, strict=False) -> bool:
+        # used for add_cheat_effect() in bs
         for effect in self.buffs + self.debuffs:
             if effect.name == effect_name:
-                self.removeEffect(effect)
+                self.remove_effect(effect)
                 return True
         if strict:
             raise Exception("Effect with name not found.")
@@ -709,17 +800,12 @@ class Character:
                 total += effect.shield_value
         return total
 
-    # Remove all buffs and debuffs from the character
-    def removeAllEffects(self):
-        for effect in self.buffs:
-            effect.applyEffectOnRemove(self)
-        for effect in self.debuffs:
-            effect.applyEffectOnRemove(self)
-        self.buffs = []
-        self.debuffs = []
+    def remove_all_effects(self):
+        # Not used
+        pass
 
-    # Remove set amount debuffs effect randomly from the character and return the list of removed effects
-    def removeRandomDebuffs(self, amount):
+    def remove_random_amount_of_debuffs(self, amount) -> list:
+        # -> list of removed effects
         if amount > len(self.debuffs):
             amount = len(self.debuffs)
         if amount == 0:
@@ -727,13 +813,13 @@ class Character:
         removed_effects = []
         for i in range(amount):
             effect = random.choice(self.debuffs)
-            self.removeEffect(effect)
+            self.remove_effect(effect)
             removed_effects.append(effect)
         return removed_effects
 
     # Every turn, decrease the duration of all buffs and debuffs by 1. If the duration is 0, remove the effect.
     # And other things.
-    def updateEffects(self):
+    def status_effects_start_of_turn(self):
         # Currently, effects are not removed and continue to receive updates even if character is dead. 
         # If we want to do this, remember: Reborn effect should not be removed.
         for effect in self.buffs + self.debuffs:
@@ -741,33 +827,37 @@ class Character:
                 if self.running and self.logging:
                     self.text_box.append_html_text(f"Condition no longer met: {effect.name} on {self.name}.\n")
                 fine_print(f"Condition no longer met: {effect.name} on {self.name}.", mode=self.fineprint_mode)
-                self.removeEffect(effect)
+                self.remove_effect(effect)
                 continue
             if effect.duration == -1:
                 # if self.running and self.logging:
                 #     self.text_box.append_html_text(f"{effect.name} on {self.name} is active.\n")
                 # print(f"{effect.name} on {self.name} is active.")
                 continue
-            effect.decreaseDuration()
+            effect.decrease_duration()
             if effect.duration > 0:
                 if self.running and self.logging:
                     self.text_box.append_html_text(f"{effect.name} on {self.name} has {effect.duration} turns left.\n")
                 fine_print(f"{effect.name} on {self.name} has {effect.duration} turns left.", mode=self.fineprint_mode)
                 continue
-            if effect.isExpired():
+            if effect.is_expired():
                 if self.running and self.logging:
                     self.text_box.append_html_text(f"{effect.name} on {self.name} has expired.\n")
                 fine_print(f"{effect.name} on {self.name} has expired.", mode=self.fineprint_mode)
-                self.removeEffect(effect)
-                effect.applyEffectOnExpire(self)
+                self.remove_effect(effect)
+                effect.apply_effect_on_expire(self)
     
-    # Every turn, calculate applyEffectOnTurn effect of all buffs and debuffs. ie. poison, burn, etc.
-    def statusEffects(self):
-        for effect in self.buffs + self.debuffs:
-            effect.applyEffectOnTurn(self)
+    # Every turn, calculate apply_effect_on_turn effect of all buffs and debuffs. ie. poison, burn, etc.
+    def status_effects_midturn(self):
+        buffs_copy = self.buffs.copy()
+        debuffs_copy = self.debuffs.copy()
+        for effect in buffs_copy + debuffs_copy:
+            effect.apply_effect_on_turn(self)
 
     def status_effects_at_end_of_turn(self):
-        for effect in self.buffs + self.debuffs:
+        buffs_copy = self.buffs.copy()
+        debuffs_copy = self.debuffs.copy()
+        for effect in buffs_copy + debuffs_copy:
             effect.apply_effect_at_end_of_turn(self)
 
     def update_cooldown(self):
@@ -780,47 +870,47 @@ class Character:
         return ""
 
     def get_equipment_set(self):
-        if len(self.equip) != 4:
+        if not self.equip or len(self.equip) != 4:
             return "None"
-        if len(set([item.eq_set for item in self.equip])) != 1:
-            return "None"
-        return self.equip[0].eq_set
+
+        sets = {item.eq_set for item in self.equip.values()}
+        return sets.pop() if len(sets) == 1 else "None"
 
     def set_up_equipment_set_effects(self):
-        # first, check if self.equip have 4 items. Then, check if the 4 items attribute .eq_set is the same string.
-        # After that, we grab that string and apply if if if if if if if if
-        # This function is called at the start of the battle. We expect it just do self.applyEffect(some_effect), the effect have -1 duration.
+        # This function is called at the start of the battle. We expect item set effect
+        # is just some status effect. just do self.apply_effect(some_effect), the effect have -1 duration.
         set_name = self.get_equipment_set()
         for effects in self.buffs + self.debuffs:
             if effects.is_set_effect:
-                self.removeEffect(effects)
+                self.remove_effect(effects)
         if set_name == "None":
             return
         elif set_name == "Arasaka": 
-            self.applyEffect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False, running=self.running, logging=self.logging, text_box=self.text_box))
+            self.apply_effect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False, running=self.running, logging=self.logging, text_box=self.text_box))
         elif set_name == "KangTao":
-            self.applyEffect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, self.atk * 6, False, running=self.running, logging=self.logging, text_box=self.text_box))
+            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, self.atk * 6, False, running=self.running, logging=self.logging, text_box=self.text_box))
         elif set_name == "Militech":
             def condition_func(self):
                 return self.hp <= self.maxhp * 0.25
-            self.applyEffect(EquipmentSetEffect_Militech("Militech Set", -1, True, {"spd": 2.0}, condition_func))
+            self.apply_effect(EquipmentSetEffect_Militech("Militech Set", -1, True, {"spd": 2.0}, condition_func))
         elif set_name == "NUSA":
             def stats_dict_function() -> dict:
                 allies_alive = len(self.ally) 
                 return {"atk": 0.06 * allies_alive + 1 , "defense": 0.06 * allies_alive + 1, "maxhp": 0.06 * allies_alive + 1}
-            self.applyEffect(EquipmentSetEffect_NUSA("NUSA Set", -1, True, {"atk": 1.30, "defense": 1.30, "maxhp": 1.30}, stats_dict_function))
+            self.apply_effect(EquipmentSetEffect_NUSA("NUSA Set", -1, True, {"atk": 1.30, "defense": 1.30, "maxhp": 1.30}, stats_dict_function))
         elif set_name == "Sovereign":
-            self.applyEffect(EquipmentSetEffect_Sovereign("Sovereign Set", -1, True, {"atk": 1.20}))
+            self.apply_effect(EquipmentSetEffect_Sovereign("Sovereign Set", -1, True, {"atk": 1.20}))
         elif set_name == "Snowflake":
-            self.applyEffect(EquipmentSetEffect_Snowflake("Snowflake Set", -1, True))
+            self.apply_effect(EquipmentSetEffect_Snowflake("Snowflake Set", -1, True))
         else:
             raise Exception("Effect not implemented.")
         
     def equipment_set_effects_tooltip(self):
-        set_name = self.equip[0].eq_set
+        set_name = self.get_equipment_set()
         str = "Equipment Set Effects:\n"
-        if len(self.equip) != 4 or len(set([item.eq_set for item in self.equip])) != 1:
+        if set_name == "None":
             str += "Equipment set effects is not active. Equip 4 items of the same set to receive benefits.\n"
+            return ""
         elif set_name == "Arasaka":
             str += "Arasaka\n" \
                 "Once per battle, leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 3 turns.\n"
@@ -835,7 +925,7 @@ class Character:
                 "Increase atk by 6%, def by 6%, and maxhp by 6% for each ally alive including self.\n"
         elif set_name == "Sovereign":
             str += "Sovereign\n" \
-                "Accumulate 1 stack of Sovereign when taking damage. Each stack increase atk by 20% and last 4 turns. Max 5 stacks.\n"
+                "Apply Sovereign effect when taking damage, Sovereign increases atk by 20% and last 4 turns. Max 5 active effects.\n"
         elif set_name == "Snowflake":
             str += "Snowflake\n" \
                 "Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 25% hp and gain the following effect for 6 turns:\n" \
@@ -857,10 +947,14 @@ class Character:
         return str
 
     def fake_dice(self, sides=6, weights=None):
-        sides = [i for i in range(1, sides+1)]
+        sides_list = [i for i in range(1, sides+1)]
         if weights is None:
-            weights = [1 for i in range(sides)]
-        return random.choices(sides, weights=weights, k=1)[0]
+            weights = [100 for i in range(sides)]
+        result = random.choices(sides_list, weights=weights, k=1)[0]
+        if self.running and self.logging:
+            self.text_box.append_html_text(f"{self.name} rolled {result} on a dice.\n")
+        fine_print(f"{self.name} rolled {result} on a dice.", mode=self.fineprint_mode)
+        return result
 
     def battle_entry_effects(self):
         # Plan: handles passive status effects applied when entering battle here.
@@ -875,38 +969,29 @@ class Lillia(Character):
         self.skill1_description = "12 hits on random enemies, 180% atk each hit. After 1 critical hit, all hits following will be critical and hit nearby targets for 30% of damage as status damage."
         self.skill2_description = "For 8 turns, cast Infinite Oasis on self gain immunity to CC and reduce damage taken by 35%."
         self.skill3_description = "Heal 8% of max hp on action when Infinite Oasis is active."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         def lillia_effect(self, target, final_damage, always_crit):
             always_crit = True
             for target in target.get_neighbor_allies_not_including_self():
-                if target.isAlive():
-                    target.takeStatusDamage(final_damage * 0.3 * random.uniform(0.8, 1.2), self)
+                if target.is_alive():
+                    target.take_status_damage(final_damage * 0.3 * random.uniform(0.8, 1.2), self)
             return final_damage, always_crit
         damage_dealt = self.attack(multiplier=1.8, repeat=12, func_after_crit=lillia_effect)
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
-        self.applyEffect(ReductionShield("Infinite Oasis", 8, True, 0.35, cc_immunity=True))
-        self.skill2_cooldown = 5
+    def skill2_logic(self):
+        self.apply_effect(ReductionShield("Infinite Oasis", 8, True, 0.35, cc_immunity=True))
+        return None
 
     def skill3(self):
-        if self.hasEffect("Infinite Oasis"):
-            self.healHp(self.maxhp * 0.08, self)
+        if self.has_effect_that_named("Infinite Oasis"):
+            self.heal_hp(self.maxhp * 0.08, self)
 
     def action(self):
         self.skill3()
@@ -920,39 +1005,29 @@ class Poppy(Character):
         self.skill1_description = "8 hits on random enemies, 280% atk each hit."
         self.skill2_description = "610% atk on random enemy. Target speed is decreased by 30% for 6 turns."
         self.skill3_description = "On taking normal attack or skill damage, 30% chance to inflict 50% atk continuous damage to attacker for 3 turns."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.8, repeat=8)      
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+    def skill2_logic(self):
         def decrease_speed(self, target):
             stat_dict = {"spd": 0.7}
-            target.applyEffect(StatsEffect("Purchased!", 6, False, stat_dict))
+            target.apply_effect(StatsEffect("Purchased!", 6, False, stat_dict))
         damage_dealt = self.attack(multiplier=6.1, repeat=1, func_after_dmg=decrease_speed)
-        self.skill2_cooldown = 5
         return damage_dealt
 
     def skill3(self):
         pass
 
-    def takeDamage_aftermath(self, damage, attacker):
+    def take_damage_aftermath(self, damage, attacker):
         if random.randint(1, 100) <= 30:
-            attacker.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5, self))
+            attacker.apply_effect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5, self))
 
 
 class Iris(Character):
@@ -962,30 +1037,20 @@ class Iris(Character):
         self.skill1_description = "320% atk on all enemies."
         self.skill2_description = "320% atk on all enemies, inflict 35% atk continuous damage for 3 turns."
         self.skill3_description = "At start of battle, apply Cancellation Shield to ally with highest atk. Cancellation shield: cancel 1 attack if attack damage exceed 10% of max hp. When the shield is active, gain immunity to CC."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.2, repeat=1)            
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+    def skill2_logic(self):
         def bleed(self, target):
-            target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.35, self))
+            target.apply_effect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.35, self))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.2, repeat=1, func_after_dmg=bleed)
-        self.skill2_cooldown = 5
         return damage_dealt
 
     def skill3(self):
@@ -993,7 +1058,7 @@ class Iris(Character):
 
     def battle_entry_effects(self):
         ally_with_highest_atk = mit.one(self.target_selection("n_highest_attr", "1", "atk", "ally"))
-        ally_with_highest_atk.applyEffect(CancellationShield("Cancellation Shield", -1, True, 0.1, cc_immunity=True, running=self.running, logging=self.logging, text_box=self.text_box))
+        ally_with_highest_atk.apply_effect(CancellationShield("Cancellation Shield", -1, True, 0.1, cc_immunity=True, running=self.running, logging=self.logging, text_box=self.text_box))
 
 
 class Freya(Character):
@@ -1003,36 +1068,25 @@ class Freya(Character):
         self.skill1_description = "620% atk on 1 enemy, 75% chance to silence for 3 turns, always target the enemy with highest ATK."
         self.skill2_description = "520% atk on 1 enemy, always target the enemy with lowest HP."
         self.skill3_description = "Apply Absorption Shield on self if target is fallen by skill 2. Shield will absorb up to 900% of ATK of damage."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         def silence_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 75:
-                target.applyEffect(Effect("Silence", 3, False))
+                target.apply_effect(SilenceEffect("Silence", 3, False))
         damage_dealt = self.attack(target_kw1="n_highest_attr",target_kw2="1",target_kw3="atk",target_kw4="enemy", multiplier=6.2, repeat=1, func_after_dmg=silence_effect)
-        self.skill1_cooldown = 4
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+    def skill2_logic(self):
         def apply_shield(self, target):
-            if target.isDead():
-                self.applyEffect(AbsorptionShield("Absorption Shield", -1, True, self.atk * 9, cc_immunity=False, running=self.running, logging=self.logging, text_box=self.text_box))
+            if target.is_dead():
+                self.apply_effect(AbsorptionShield("Absorption Shield", -1, True, self.atk * 9, cc_immunity=False, running=self.running, logging=self.logging, text_box=self.text_box))
         damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=5.2, repeat=1, func_after_dmg=apply_shield)
-
-        self.skill2_cooldown = 4
         return damage_dealt
 
     def skill3(self):
@@ -1047,32 +1101,22 @@ class Luna(Character):
         self.skill1_description = "Attack all targets with 300% atk, recover 10% of damage dealt as hp."
         self.skill2_description = "Attack all targets with 300% atk, apply Moonlight on self for next 3 turns, reduce damage taken by 90%."
         self.skill3_description = "Recover 8% hp of maxhp at start of action."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.0, repeat=1)
-        self.healHp(damage_dealt * 0.1, self)    
-        self.skill1_cooldown = 5
+        self.heal_hp(damage_dealt * 0.1, self)    
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+    def skill2_logic(self):
         def moonlight(self):
-            self.applyEffect(ReductionShield("Moonlight", 3, True, 0.9, cc_immunity=False))
+            self.apply_effect(ReductionShield("Moonlight", 3, True, 0.9, cc_immunity=False))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.0, repeat=1)
         moonlight(self)
-        self.skill2_cooldown = 5
         return damage_dealt
 
     def skill3(self):
@@ -1086,37 +1130,26 @@ class Clover(Character):
         self.skill1_description = "Target 1 ally with lowest hp and 1 random enemy, deal 460% atk damage to enemy and heal ally for 100% of damage dealt."
         self.skill2_description = "Target 1 ally with lowest hp, heal for 350% atk and grant Absorption Shield, absorb damage up to 350% atk."
         self.skill3_description = "Every time an ally is healed by Clover, heal Clover for 60% of that amount."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         damage_dealt = self.attack(multiplier=4.6, repeat=1)
         ally_to_heal = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
-        healing, x, y = ally_to_heal.healHp(damage_dealt, self)
-        self.healHp(healing * 0.6, self)
-
-        self.skill1_cooldown = 5
+        healing, x, y = ally_to_heal.heal_hp(damage_dealt, self)
+        self.heal_hp(healing * 0.6, self)
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+    def skill2_logic(self):
         ally_to_heal = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
-        healing, x, y = ally_to_heal.healHp(self.atk * 3.5, self)
-        self.healHp(healing * 0.6, self)
-        ally_to_heal.applyEffect(AbsorptionShield("Shield", -1, True, self.atk * 3.5, cc_immunity=False,running=self.running, logging=self.logging, text_box=self.text_box))
-        self.skill2_cooldown = 5
-        return 0
+        healing, x, y = ally_to_heal.heal_hp(self.atk * 3.5, self)
+        self.heal_hp(healing * 0.6, self)
+        ally_to_heal.apply_effect(AbsorptionShield("Shield", -1, True, self.atk * 3.5, cc_immunity=False,running=self.running, logging=self.logging, text_box=self.text_box))
+        return None
 
     def skill3(self):
         pass
@@ -1129,44 +1162,34 @@ class Ruby(Character):
         self.skill1_description = "400% atk on 3 enemies. 70% chance to inflict stun for 3 turns."
         self.skill2_description = "400% focus atk on 1 enemy for 3 times. Each attack has 50% chance to inflict stun for 3 turns."
         self.skill3_description = "Skill damage is increased by 30% on stunned targets."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 70:
-                target.applyEffect(StunEffect('Stun', duration=3, is_buff=False))
+                target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
         def stun_amplify(self, target, final_damage):
-            if target.hasEffect("Stun"):
+            if target.has_effect_that_named("Stun"):
                 final_damage *= 1.3
             return final_damage
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="3", multiplier=4.0, repeat=1, func_after_dmg=stun_effect, func_damage_step=stun_amplify)            
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+    def skill2_logic(self):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 50:
-                target.applyEffect(StunEffect('Stun', duration=3, is_buff=False))
+                target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
         def stun_amplify(self, target, final_damage):
-            if target.hasEffect("Stun"):
+            if target.has_effect_that_named("Stun"):
                 final_damage *= 1.3
             return final_damage
         damage_dealt = self.attack(multiplier=4.0, repeat_seq=3, func_after_dmg=stun_effect, func_damage_step=stun_amplify)
-        self.skill2_cooldown = 5
         return damage_dealt
 
     def skill3(self):
@@ -1177,40 +1200,29 @@ class Olive(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Olive"
-        self.skill1_description = "540% atk on 1 enemy. Decrease target's atk by 50% for 4 turns."
+        self.skill1_description = "570% atk on 1 enemy. Decrease target's atk by 50% for 4 turns."
         self.skill2_description = "Heal 3 allies with lowest hp by 270% atk and increase their speed by 40% for 4 turns. "
         self.skill3_description = "Normal attack deals 100% more damage if target has less speed than self."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         def effect(self, target):
             stat_dict = {"atk": 0.5}
-            target.applyEffect(StatsEffect("Weaken", 4, False, stat_dict))
-        damage_dealt = self.attack(multiplier=5.4, repeat=1, func_after_dmg=effect)             
-        self.skill1_cooldown = 5
+            target.apply_effect(StatsEffect("Weaken", 4, False, stat_dict))
+        damage_dealt = self.attack(multiplier=5.7, repeat=1, func_after_dmg=effect)             
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
+    def skill2_logic(self):
         ally_to_heal = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
         for ally in ally_to_heal:
-            ally.healHp(self.atk * 2.7, self)
+            ally.heal_hp(self.atk * 2.7, self)
             stat_dict = {"spd": 1.4}
-            ally.applyEffect(StatsEffect("Tailwind", 4, True, stat_dict))
-
-        self.skill2_cooldown = 5
-        return 0
+            ally.apply_effect(StatsEffect("Tailwind", 4, True, stat_dict))
+        return None
 
     def skill3(self):
         pass
@@ -1230,38 +1242,27 @@ class Fenrir(Character):
         self.skill1_description = "3 hits on random enemies, 220% atk each hit. Reduce skill cooldown for neighbor allies by 2 turns."
         self.skill2_description = "350% atk on a random enemy. Remove 2 debuffs for neighbor allies."
         self.skill3_description = "Fluffy protection is applied to neighbor allies. When the protected ally below 40% hp is about to take damage, heal the ally for 100% atk."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.2, repeat=3)
-
         neighbors = self.get_neighbor_allies_not_including_self() # list
         for ally in neighbors:
             ally.skill1_cooldown = max(ally.skill1_cooldown - 2, 0)
             ally.skill2_cooldown = max(ally.skill2_cooldown - 2, 0)
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{ally.name} skill cooldown reduced by 2.\n")                 
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+    def skill2_logic(self):
         damage_dealt = self.attack(multiplier=3.5, repeat=1)
         neighbors = self.get_neighbor_allies_not_including_self() # list
         for ally in neighbors:
-            ally.removeRandomDebuffs(2)
-        self.skill2_cooldown = 5
+            ally.remove_random_amount_of_debuffs(2)
         return damage_dealt
         
     def skill3(self):
@@ -1270,7 +1271,7 @@ class Fenrir(Character):
     def battle_entry_effects(self):
         neighbors = self.get_neighbor_allies_not_including_self()
         for ally in neighbors:
-            ally.applyEffect(EffectShield1("Fluffy Protection", -1, True, 0.4, self.atk, False))
+            ally.apply_effect(EffectShield1("Fluffy Protection", -1, True, 0.4, self.atk, False))
 
 
 
@@ -1283,6 +1284,8 @@ class Cerberus(Character):
         self.skill1_description = "5 hits on random enemies, 300% atk each hit. Decrease target's def by 10% for each hit. Effect last 3 turns."
         self.skill2_description = "290% focus atk on 1 enemy with lowest hp for 3 times. If target hp is less then 15% during the attack, execute the target."
         self.skill3_description = "On sucessfully executing a target, increase execution threshold by 3%, heal 30% of maxhp and increase atk and critdmg by 30%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def clear_others(self):
         self.execution_threshold = 0.15
@@ -1290,37 +1293,25 @@ class Cerberus(Character):
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n\nExecution threshold : {self.execution_threshold*100}%"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         def effect(self, target):
             stat_dict = {"defense": 0.9}
-            target.applyEffect(StatsEffect("Clawed", 3, False, stat_dict))
+            target.apply_effect(StatsEffect("Clawed", 3, False, stat_dict))
         damage_dealt = self.attack(multiplier=3.0, repeat=5, func_after_dmg=effect)             
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+    def skill2_logic(self):
         def effect(self, target):
-            if target.hp < target.maxhp * self.execution_threshold and not target.isDead():
-                target.takeBypassAllDamage(target.hp, self)
+            if target.hp < target.maxhp * self.execution_threshold and not target.is_dead():
+                target.take_bypass_status_effect_damage(target.hp, self)
                 if self.running and self.logging:
                     self.text_box.append_html_text(f"Biribiri! {target.name} is executed by {self.name}.\n")
                 fine_print(f"Biribiri! {target.name} is executed by {self.name}.", mode=self.fineprint_mode)
                 self.execution_threshold += 0.03
-                self.healHp(self.maxhp * 0.3, self)
+                self.heal_hp(self.maxhp * 0.3, self)
                 stats_dict = {"atk": 1.3, "critdmg": 0.3}
-                self.updateStats(stats_dict)
+                self.update_stats(stats_dict)
         damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=2.9, repeat=1, repeat_seq=3, func_after_dmg=effect)
-        self.skill2_cooldown = 5
         return damage_dealt
 
     def skill3(self):
@@ -1334,16 +1325,13 @@ class Pepper(Character):
         self.skill1_description = "800% atk on 1 enemy, 70% success rate, 20% chance to hit an ally with 300% atk, 10% chance to hit self with 300% atk."
         self.skill2_description = "Heal an ally with lowest hp percentage with 800% atk, 70% success rate, 20% chance to have no effect, 10% chance to damage the ally with 200% atk. A failed healing will not apply cooldown."
         self.skill3_description = "On a successful healing with skill 2, 80% chance to accidently revive a neighbor ally with 80% hp."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         dice = random.randint(1, 100)
         if dice <= 70:
             damage_dealt = self.attack(multiplier=8.0, repeat=1)
@@ -1351,7 +1339,6 @@ class Pepper(Character):
             damage_dealt = self.attack(target_kw1="n_random_ally", target_kw2="1", multiplier=3.0, repeat=1)
         else:
             damage_dealt = self.attack(target_kw1="yourself", multiplier=3.0, repeat=1)
-        self.skill1_cooldown = 4
         return damage_dealt
 
     def skill2(self):
@@ -1363,11 +1350,11 @@ class Pepper(Character):
         target = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
         pondice = random.randint(1, 100)
         if pondice <= 70:
-            target.healHp(self.atk * 8.0, self)
+            target.heal_hp(self.atk * 8.0, self)
             revivedice = random.randint(1, 100)
             if revivedice <= 80:
                 neighbors = self.get_neighbor_allies_not_including_self(False) 
-                dead_neighbors = [x for x in neighbors if x.isDead()]
+                dead_neighbors = [x for x in neighbors if x.is_dead()]
                 if dead_neighbors != []:
                     revive_target = random.choice(dead_neighbors)
                     revive_target.revive(1, 0.8)
@@ -1377,10 +1364,10 @@ class Pepper(Character):
             fine_print(f"No effect.", mode=self.fineprint_mode)
             return 0
         else:
-            target.takeDamage(self.atk * 2.0, self)
+            target.take_damage(self.atk * 2.0, self)
             return 0
 
-        self.skill2_cooldown = 4
+        self.update_skill_cooldown(2)
         return 0
         
 
@@ -1395,32 +1382,23 @@ class Cliffe(Character):
         self.skill1_description = "Attack 3 enemies with 300% atk, increase their damage taken by 20% for 3 turns."
         self.skill2_description = "Attack random enemies 4 times for 340% atk, each successful attack and successful additional attack has 40% chance to trigger an 270% atk additional attack."
         self.skill3_description = "Heal hp by 10% of maxhp multiplied by targets fallen by skill 2."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         def effect(self, target):
-            target.applyEffect(ReductionShield("Crystal Breaker", 3, False, 0.2, False))
+            target.apply_effect(ReductionShield("Crystal Breaker", 3, False, 0.2, False))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="3", multiplier=3.0, repeat=1, func_after_dmg=effect)            
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
-        if self.skill2_cooldown > 0:
-            raise Exception
+    def skill2_logic(self):
         downed_target = 0
         def more_attacks(self, target, is_crit):
             nonlocal downed_target
-            if target.isDead():
+            if target.is_dead():
                 downed_target += 1
             dice = random.randint(1, 100)
             if dice <= 40:
@@ -1431,9 +1409,8 @@ class Cliffe(Character):
             else:
                 return 0
         damage_dealt = self.attack(multiplier=3.4, repeat=4, additional_attack_after_dmg=more_attacks)      
-        self.skill2_cooldown = 5
         if downed_target > 0:
-            self.healHp(downed_target * 0.1 * self.maxhp, self)
+            self.heal_hp(downed_target * 0.1 * self.maxhp, self)
         return damage_dealt
         
     def skill3(self):
@@ -1448,6 +1425,8 @@ class Pheonix(Character):
         self.skill2_description = "First time cast: apply Reborn to all allies with 65% chance each, however, allies can only revive with 15% hp and receive no buff effects. Second and further cast: attack random enemy pair with 320% atk, 80% chance to inflict burn for 3 turns. Burn deals 50% atk damage per turn."
         self.skill3_description = "Revive with 40% hp the next turn after fallen. When revived, increase atk by 50% for 3 turns."
         self.first_time = True
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def clear_others(self):
         self.first_time = True
@@ -1455,39 +1434,26 @@ class Pheonix(Character):
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n\nFirst time on skill 2: {self.first_time}"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         def burn_effect(self, target):
             if random.randint(1, 100) <= 80:
-                target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5, self))
+                target.apply_effect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5, self))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.3, repeat=1, func_after_dmg=burn_effect)         
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
-        if self.skill2_cooldown > 0:
-            raise Exception
+    def skill2_logic(self):
         if self.first_time:
             self.first_time = False
             for ally in self.ally:
                 if ally != self:
                     if random.randint(1, 100) <= 65:
-                        ally.applyEffect(RebornEffect("Reborn", -1, True, 0.15, False))
-            self.skill2_cooldown = 5
+                        ally.apply_effect(RebornEffect("Reborn", -1, True, 0.15, False))
             return 0
         else:
             def burn_effect(self, target):
                 if random.randint(1, 100) <= 80:
-                    target.applyEffect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5, self))
+                    target.apply_effect(ContinuousDamageEffect("Burn", 3, False, self.atk * 0.5, self))
             damage_dealt = self.attack(target_kw1="random_enemy_pair", multiplier=3.2, repeat=1, func_after_dmg=burn_effect)         
-            self.skill2_cooldown = 5
             return damage_dealt   
 
     def skill3(self):
@@ -1495,10 +1461,10 @@ class Pheonix(Character):
 
     def after_revive(self):
         stat_dict = {"atk": 1.5}
-        self.applyEffect(StatsEffect("Reborn", 3, True, stat_dict))
+        self.apply_effect(StatsEffect("Reborn", 3, True, stat_dict))
 
     def battle_entry_effects(self):
-        self.applyEffect(RebornEffect("Reborn", -1, True, 0.4, False))
+        self.apply_effect(RebornEffect("Reborn", -1, True, 0.4, False))
 
 
 class Bell(Character):
@@ -1509,6 +1475,8 @@ class Bell(Character):
         self.skill2_description = "Attack 1 enemy with lowest hp 170% atk 6 times. This attack never misses. For each target fallen, trigger an additional attack. Maximum attacks: 8"
         self.skill3_description = "Once per battle, after taking damage, if hp is below 50%, apply absorption shield, absorb damage up to 400% of damage just taken. For 5 turns, damage taken cannot exceed 20% of maxhp."
         self.skill3_used = False
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
@@ -1516,26 +1484,15 @@ class Bell(Character):
     def clear_others(self):
         self.skill3_used = False
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         damage_dealt = self.attack(target_kw1="n_highest_attr",target_kw2="1",target_kw3="atk",target_kw4="enemy", multiplier=1.7, repeat=5)
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
+    def skill2_logic(self):
         downed_target = 0
         def additional_attacks(self, target, is_crit):
             nonlocal downed_target
-            if target.isDead() and downed_target < 3:
+            if target.is_dead() and downed_target < 3:
                 downed_target += 1
                 if self.running and self.logging:
                     self.text_box.append_html_text(f"{self.name} triggered additional attack.\n")
@@ -1544,19 +1501,18 @@ class Bell(Character):
             else:
                 return 0
         damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=1.7, repeat=6, additional_attack_after_dmg=additional_attacks, always_hit=True)
-        self.skill2_cooldown = 5    
         return damage_dealt
 
     def skill3(self):
         pass
 
-    def takeDamage_aftermath(self, damage, attacker):
+    def take_damage_aftermath(self, damage, attacker):
         if self.skill3_used:
             pass
         else:
             if self.hp < self.maxhp * 0.5:
-                self.applyEffect(CancellationShield2("Cancellation Shield", 5, True, 0.2, False))
-                self.applyEffect(AbsorptionShield("Shield", -1, True, damage * 4.0, cc_immunity=False, running=self.running, logging=self.logging, text_box=self.text_box))
+                self.apply_effect(CancellationShield2("Cancellation Shield", 5, True, 0.2, False))
+                self.apply_effect(AbsorptionShield("Shield", -1, True, damage * 4.0, cc_immunity=False, running=self.running, logging=self.logging, text_box=self.text_box))
                 self.skill3_used = True
             return damage
 
@@ -1570,34 +1526,24 @@ class Taily(Character):
         self.skill3_description = "At start of battle, apply Blessing of Firewood to all allies." \
         " When an ally is about to take normal attack or skill damage, take the damage instead. Damage taken is reduced by 40% when taking damage for an ally." \
         " Cannot protect against status effect and status damage."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         def stun_effect(self, target):
-            target.applyEffect(StunEffect('Stun', duration=2, is_buff=False))
+            target.apply_effect(StunEffect('Stun', duration=2, is_buff=False))
         damage_dealt = self.attack(target_kw1="random_enemy_pair", multiplier=3.5, repeat=1, func_after_dmg=stun_effect)     
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
-        if self.skill2_cooldown > 0:
-            raise Exception
+    def skill2_logic(self):
         def effect(self, target, final_damage):
             if target.hp > target.maxhp * 0.9:
                 final_damage *= 1.5
             return final_damage
         damage_dealt = self.attack(target_kw1="n_highest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=7.0, repeat=1, func_damage_step=effect)   
-        self.skill2_cooldown = 5
         return damage_dealt
         
     def skill3(self):
@@ -1606,7 +1552,7 @@ class Taily(Character):
     def battle_entry_effects(self):
         allies = [x for x in self.ally if x != self]
         for ally in allies:
-            ally.applyEffect(ProtectedEffect("Blessing of Firewood", -1, True, False, self, 0.6))
+            ally.apply_effect(ProtectedEffect("Blessing of Firewood", -1, True, False, self, 0.6))
 
 
 class Seth(Character):
@@ -1616,16 +1562,13 @@ class Seth(Character):
         self.skill1_description = "Attack random enemies 3 times with 280% atk. For each attack, a critical strike will trigger an additional attack. Maximum additional attacks: 3"
         self.skill2_description = "Attack all enemies with 250% atk."
         self.skill3_description = "Every turn, increase crit rate and crit dmg by 1%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         def additional_attack(self, target, is_crit):
             if is_crit:
                 if self.running and self.logging:
@@ -1635,24 +1578,17 @@ class Seth(Character):
             else:
                 return 0
         damage_dealt = self.attack(multiplier=2.8, repeat=3, additional_attack_after_dmg=additional_attack)
-        self.skill1_cooldown = 5
         return damage_dealt
 
-    def skill2(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
-        if self.skill2_cooldown > 0:
-            raise Exception
+    def skill2_logic(self):
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.5, repeat=1) 
-        self.skill2_cooldown = 5
         return damage_dealt
         
     def skill3(self):
         pass
 
     def battle_entry_effects(self):
-        self.applyEffect(SethEffect("Passive Effect", -1, True, 0.01))
+        self.apply_effect(SethEffect("Passive Effect", -1, True, 0.01))
 
 
 class Chiffon(Character):
@@ -1662,48 +1598,38 @@ class Chiffon(Character):
         self.skill1_description = "Increase def by 20%, atk by 10% for 5 turns for all allies. Apply a shield that absorbs damage up to 150% self atk for 3 turns."
         self.skill2_description = "Select random 5 targets, when target is an ally, heal 150% atk, when target is an enemy, attack with 400% atk and apply Sleep with a 50% chance."
         self.skill3_description = "When taking damage that would exceed 10% of maxhp, reduce damage above 10% of maxhp by 60%. For every turn passed, damage reduction effect is reduced by 2%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
-    def skill1(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 1.\n")
-        fine_print(f"{self.name} cast skill 1.", mode=self.fineprint_mode)
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         for ally in self.ally:
-            ally.applyEffect(StatsEffect("Woof! Woof! Woof!", 5, True, {"defense": 1.2, "atk": 1.1}))
-            ally.applyEffect(AbsorptionShield("Woof! Woof! Woof!", 3, True, self.atk * 1.5, cc_immunity=False, running=self.running, logging=self.logging, text_box=self.text_box))
-        self.skill1_cooldown = 5
+            ally.apply_effect(StatsEffect("Woof! Woof! Woof!", 5, True, {"defense": 1.2, "atk": 1.1}))
+            ally.apply_effect(AbsorptionShield("Woof! Woof! Woof!", 3, True, self.atk * 1.5, cc_immunity=False, running=self.running, logging=self.logging, text_box=self.text_box))
         return 0
 
-    def skill2(self):
-        if self.running and self.logging:
-            self.text_box.append_html_text(f"{self.name} cast skill 2.\n")
-        fine_print(f"{self.name} cast skill 2.", mode=self.fineprint_mode)
-        if self.skill2_cooldown > 0:
-            raise Exception
+    def skill2_logic(self):
         targets = list(self.target_selection(keyword="n_random_target", keyword2="5"))
         enemy_list = []
         for target in targets:
             if target in self.ally:
-                target.healHp(self.atk * 1.5, self)
+                target.heal_hp(self.atk * 1.5, self)
             else:
                 enemy_list.append(target)
         def sleep_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 50:
-                target.applyEffect(SleepEffect('Sleep', duration=-1, is_buff=False))
+                target.apply_effect(SleepEffect('Sleep', duration=-1, is_buff=False))
         damage_dealt = self.attack(target_list=enemy_list, multiplier=4.0, repeat=1, func_after_dmg=sleep_effect)
-        self.skill2_cooldown = 5
         return damage_dealt
         
     def skill3(self):
         pass
 
     def battle_entry_effects(self):
-        self.applyEffect(EffectShield2("Passive Effect", -1, True, False, damage_reduction=0.6))
+        self.apply_effect(EffectShield2("Passive Effect", -1, True, False, damage_reduction=0.6))
 
 
 class Ophelia(Character):
@@ -1721,6 +1647,8 @@ class Ophelia(Character):
         " Luck Card: Skill cooldown does not apply." \
         " Gains Love Card after this skill."
         self.skill3_description = "Normal attack and skills has 30% chance to gain Luck Card."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
@@ -1735,10 +1663,10 @@ class Ophelia(Character):
         def card_effect(self, target):
             for buff in self.buffs:
                 if buff.name == "Death Card":
-                    target.applyEffect(StunEffect('Stun', duration=3, is_buff=False))
+                    target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
                     buff_to_remove_list.append(buff)
                 if buff.name == "Love Card":
-                    target.applyEffect(StatsEffect("Unhealable", 3, False, {"heal_efficiency": -1.0}))
+                    target.apply_effect(StatsEffect("Unhealable", 3, False, {"heal_efficiency": -1.0}))
                     buff_to_remove_list.append(buff)
 
         def card_amplify(self, target, final_damage):
@@ -1754,14 +1682,14 @@ class Ophelia(Character):
                 lucky_card_found = True
                 break
         self.buffs = [buff for buff in self.buffs if buff not in buff_to_remove_list]
-        self.applyEffect(Effect("Death Card", -1, True, False))
+        self.apply_effect(Effect("Death Card", -1, True, False))
         if lucky_card_found:
             self.skill1_cooldown = 0
         else:
-            self.skill1_cooldown = 5
+            self.update_skill_cooldown(1)
         dice = random.randint(1, 100)
         if dice <= 30:
-            self.applyEffect(Effect("Luck Card", -1, True, False))
+            self.apply_effect(Effect("Luck Card", -1, True, False))
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{self.name} gained Luck Card.\n")
             fine_print(f"{self.name} gained Luck Card.", mode=self.fineprint_mode)
@@ -1776,13 +1704,13 @@ class Ophelia(Character):
             raise Exception
         buff_to_remove_list = []
         for ally in self.ally:
-            ally.applyEffect(ContinuousHealEffect("Regeneration", 4, True, 0.05, True))
+            ally.apply_effect(ContinuousHealEffect("Regeneration", 4, True, 0.05, True))
             for buff in self.buffs:
                 if buff.name == "Death Card":
-                    ally.applyEffect(StatsEffect("Crit Dmg Up", 3, True, {"critdmg": 0.3}))
+                    ally.apply_effect(StatsEffect("Crit Dmg Up", 3, True, {"critdmg": 0.3}))
                     buff_to_remove_list.append(buff)
                 if buff.name == "Love Card":
-                    ally.healHp(self.atk * 3.0, self)
+                    ally.heal_hp(self.atk * 3.0, self)
                     buff_to_remove_list.append(buff)
         lucky_card_found = False
         for buff in self.buffs:
@@ -1793,12 +1721,12 @@ class Ophelia(Character):
         if lucky_card_found:
             self.skill2_cooldown = 0
         else:
-            self.skill2_cooldown = 5
+            self.update_skill_cooldown(2)
         self.buffs = [buff for buff in self.buffs if buff not in buff_to_remove_list]
-        self.applyEffect(Effect("Love Card", -1, True, False))
+        self.apply_effect(Effect("Love Card", -1, True, False))
         dice = random.randint(1, 100)
         if dice <= 30:
-            self.applyEffect(Effect("Luck Card", -1, True, False))
+            self.apply_effect(Effect("Luck Card", -1, True, False))
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{self.name} gained Luck Card.\n")
             fine_print(f"{self.name} gained Luck Card.", mode=self.fineprint_mode)
@@ -1812,12 +1740,101 @@ class Ophelia(Character):
             # gain card
             dice = random.randint(1, 100)
             if dice <= 30:
-                self.applyEffect(Effect("Luck Card", -1, True, False))
+                self.apply_effect(Effect("Luck Card", -1, True, False))
                 if self.running and self.logging:
                     self.text_box.append_html_text(f"{self.name} gained Luck Card.\n")
                 fine_print(f"{self.name} gained Luck Card.", mode=self.fineprint_mode)
 
         self.attack(func_after_dmg=effect)
 
-# Other characters not yet implemented:
-# Chiffon Cake
+
+class Requina(Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Requina"
+        self.skill1_description = "Attack 3 random enemies with 300% atk, 50% chance to apply 6 stacks of Great Poison. 50% chance to apply 4 stacks." \
+        " Each stack of Great Poison reduces atk, defence, heal efficiency by 1%, Each turn, deals 0.5% maxhp status damage. " \
+        " Maximum stacks: 70" \
+        # " Each healing effect will remove 1 stack of Great Poison. " \
+        " Effect last 7 turns. Same effect applied refreshes the duration."
+        self.skill2_description = "Attack 2 random enemies with 360% atk, if target has Great Poison, deal 50% more damage and apply 5 stacks of Great Poison."
+        self.skill3_description = "Normal attack has 80% chance to apply 1 stack of Great Poison."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 50:
+                target.apply_effect(GreatPoisonEffect("Great Poison", 7, False, 0.005, {"atk": 1.00, "defense": 1.00, "heal_efficiency": 0.00}, self, 6))
+            else:
+                target.apply_effect(GreatPoisonEffect("Great Poison", 7, False, 0.005, {"atk": 1.00, "defense": 1.00, "heal_efficiency": 0.00}, self, 4))
+        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="3", multiplier=3.0, repeat=1, func_after_dmg=effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def damage_step_effect(self, target, final_damage):
+            if target.has_effect_that_named("Great Poison"):
+                final_damage *= 1.5
+                target.apply_effect(GreatPoisonEffect("Great Poison", 7, False, 0.005, {"atk": 1.00, "defense": 1.00, "heal_efficiency": 0.00}, self, 5))
+            return final_damage
+        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="2", multiplier=3.6, repeat=1, func_damage_step=damage_step_effect)
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 80:
+                target.apply_effect(GreatPoisonEffect("Great Poison", 7, False, 0.005, {"atk": 1.00, "defense": 1.00, "heal_efficiency": 0.00}, self, 1))
+        self.attack(func_after_dmg=effect)
+
+
+class Gabe(Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Gabe"
+        self.skill1_description = "Attack 3 random enemies with 420% atk. Damage increases by 20% if target has New Year Fireworks effect."
+        self.skill2_description = "Apply New Year Fireworks to self for 4 times and heal hp by 400% atk." \
+        " New Year Fireworks: Have 6 counters. Every turn, throw a dice, counter decreases by the dice number." \
+        " When counter reaches 0, deal 600% of applier atk as status damage to self." \
+        " At the end of the turn, this effect is applied to a random enemy." 
+        self.skill3_description = "Reduces chances of rolling 6 on dice by 50%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 4
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def damage_amplify(self, target, final_damage):
+            if target.has_effect_that_named("New Year Fireworks"):
+                final_damage *= 1.2
+            return final_damage
+        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="3", multiplier=4.2, repeat=1, func_damage_step=damage_amplify)
+        return damage_dealt
+
+    def skill2_logic(self):
+        self.apply_effect(NewYearFireworksEffect("New Year Fireworks", -1, False, 6, self, self.running, self.logging, self.text_box))
+        self.apply_effect(NewYearFireworksEffect("New Year Fireworks", -1, False, 6, self, self.running, self.logging, self.text_box))
+        self.apply_effect(NewYearFireworksEffect("New Year Fireworks", -1, False, 6, self, self.running, self.logging, self.text_box))
+        self.apply_effect(NewYearFireworksEffect("New Year Fireworks", -1, False, 6, self, self.running, self.logging, self.text_box))
+        for fireworks in self.debuffs:
+            if fireworks.name == "New Year Fireworks":
+                fireworks.apply_effect_on_trigger(self)
+        if self.is_alive():
+            self.heal_hp(self.atk * 4.0, self)
+        return 0
+        
+    def skill3(self):
+        pass
+
+    def fake_dice(self, sides=6, weights=None):
+        if sides == 6:
+            weights = [100, 100, 100, 100, 100, 50]
+        return super().fake_dice(sides, weights)
