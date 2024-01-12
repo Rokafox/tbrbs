@@ -1,5 +1,5 @@
 from character import *
-from monsters import *
+import monsters
 from equip import generate_equips_list
 import random, sys, csv, copy
 from fine_print import fine_print
@@ -12,8 +12,8 @@ def get_all_characters(also_test_monsters=False):
     all_characters = [eval(f"{name}('{name}', 40)") for name in character_names]
 
     if also_test_monsters:
-        monster_names = ["Thief"]
-        all_characters += [eval(f"{name}('{name}', 40)") for name in monster_names]
+        monster_names = ["Fanatic"]
+        all_characters += [eval(f"monsters.{name}('{name}', 40)") for name in monster_names]
 
     return all_characters
 

@@ -1,6 +1,6 @@
 import os, json
 from character import *
-from monsters import *
+import monsters
 from item import *
 from consumable import *
 import copy
@@ -411,22 +411,63 @@ def get_all_monsters():
                     "Samurai_A", "Samurai_B", "Samurai_C", "Samurai_D", "Samurai_E",
                     "Mummy_A", "Mummy_B", "Mummy_C", "Mummy_D", "Mummy_E", "Pharaoh",
                     "PoisonSlime_A", "PoisonSlime_B", "PoisonSlime_C", "PoisonSlime_D", "PoisonSlime_E",
-                    "Thief_A", "Thief_B", "Thief_C", "Thief_D", "Thief_E"]
+                    "Thief_A", "Thief_B", "Thief_C", "Thief_D", "Thief_E",
+                    "Ghost_A", "Ghost_B", "Ghost_C", "Ghost_D", "Ghost_E",
+                    "Mimic_A", "Mimic_B", "Mimic_C", "Mimic_D", "Mimic_E",
+                    "Ninja_A", "Ninja_B", "Ninja_C", "Ninja_D", "Ninja_E",
+                    "KillerBee_A", "KillerBee_B", "KillerBee_C", "KillerBee_D", "KillerBee_E",
+                    "Paladin_A", "Paladin_B", "Paladin_C", "Paladin_D", "Paladin_E",
+                    "Cockatorice_A", "Cockatorice_B", "Cockatorice_C", "Cockatorice_D", "Cockatorice_E",
+                    "Skeleton_A", "Skeleton_B", "Skeleton_C", "Skeleton_D", "Skeleton_E",
+                    "SoldierB_A", "SoldierB_B", "SoldierB_C", "SoldierB_D", "SoldierB_E",
+                    "SoldierA_A", "SoldierA_B", "SoldierA_C", "SoldierA_D", "SoldierA_E",
+                    "FutureSoldier_A", "FutureSoldier_B", "FutureSoldier_C", "FutureSoldier_D", "FutureSoldier_E", "FutureElite",
+                    "Kobold_A", "Kobold_B", "Kobold_C", "Kobold_D", "Kobold_E",
+                    "Father_A", "Father_B", "Father_C", "Father_D", "Father_E",
+                    "Fanatic_A", "Fanatic_B", "Fanatic_C", "Fanatic_D", "Fanatic_E"]
 
     for name in monster_names:
         match name:
             case name if name.startswith("Panda"):
-                monster = Panda(name, 1)
+                monster = monsters.Panda(name, 1)
             case name if name.startswith("Samurai"):
-                monster = Samurai(name, 1)
+                monster = monsters.Samurai(name, 1)
             case name if name.startswith("Mummy"):
-                monster = Mummy(name, 1)
+                monster = monsters.Mummy(name, 1)
             case name if name.startswith("Pharaoh"):
-                monster = Pharaoh(name, 1)
+                monster = monsters.Pharaoh(name, 1)
             case name if name.startswith("PoisonSlime"):
-                monster = PoisonSlime(name, 1)
+                monster = monsters.PoisonSlime(name, 1)
             case name if name.startswith("Thief"):
-                monster = Thief(name, 1)
+                monster = monsters.Thief(name, 1)
+            case name if name.startswith("Ghost"):
+                monster = monsters.Ghost(name, 1)
+            case name if name.startswith("Mimic"):
+                monster = monsters.Mimic(name, 1)
+            case name if name.startswith("Ninja"):
+                monster = monsters.Ninja(name, 1)
+            case name if name.startswith("KillerBee"):
+                monster = monsters.KillerBee(name, 1)
+            case name if name.startswith("Paladin"):
+                monster = monsters.Paladin(name, 1)
+            case name if name.startswith("Cockatorice"):
+                monster = monsters.Cockatorice(name, 1)
+            case name if name.startswith("Skeleton"):
+                monster = monsters.Skeleton(name, 1)
+            case name if name.startswith("SoldierB"):
+                monster = monsters.SoldierB(name, 1)
+            case name if name.startswith("SoldierA"):
+                monster = monsters.SoldierA(name, 1)
+            case name if name.startswith("FutureSoldier"):
+                monster = monsters.FutureSoldier(name, 1)
+            case name if name.startswith("FutureElite"):
+                monster = monsters.FutureElite(name, 1)
+            case name if name.startswith("Kobold"):
+                monster = monsters.Kobold(name, 1)
+            case name if name.startswith("Father"):
+                monster = monsters.Father(name, 1)
+            case name if name.startswith("Fanatic"):
+                monster = monsters.Fanatic(name, 1)
             case _:
                 raise ValueError(f"Invalid monster name: {name}")
         all_monsters.append(monster)
@@ -693,7 +734,7 @@ if __name__ == "__main__":
                                         text='Shuffle Party',
                                         manager=ui_manager,
                                         tool_tip_text = "Shuffle party and restart the battle")
-    button1.set_tooltip("Shuffle party and restart the battle", delay=0.1, wrap_width=300)
+    button1.set_tooltip("パーティをシャッフルしてバトルを再開する。", delay=0.1, wrap_width=300)
 
     button4 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 360), (156, 50)),
                                         text='Restart Battle',
@@ -705,7 +746,7 @@ if __name__ == "__main__":
                                         text='All Turns',
                                         manager=ui_manager,
                                         tool_tip_text = "Skip to the end of the battle.")
-    button3.set_tooltip("Skip to the end of battle, reward is disabled.", delay=0.1, wrap_width=300)
+    button3.set_tooltip("バトルの終わりまでスキップするが、報酬はなしです。", delay=0.1, wrap_width=300)
 
     button_left_clear_board = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
                                         text='Clear Board',
@@ -726,8 +767,8 @@ if __name__ == "__main__":
                                         text='Next Turn',
                                         manager=ui_manager,
                                         tool_tip_text = "Simulate the next turn")
-    next_turn_button_tooltip_str = "Next turn. In adventure mode, when the battle concludes, gain exp and cash as reward if victory."
-    next_turn_button_tooltip_str += " Reward is increased when enemy level is higher than average party level."
+    next_turn_button_tooltip_str = "次のターン。冒険モードでバトルが勝利した場合に経験値とCASHを獲得できる。"
+    next_turn_button_tooltip_str += "ステージレベルが平均パーティのレベルよりも高い場合、報酬が増える。"
     next_turn_button.set_tooltip(next_turn_button_tooltip_str, delay=0.1, wrap_width=300)
 
     button_auto_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 300), (156, 50)),
@@ -885,7 +926,7 @@ if __name__ == "__main__":
     label_reserve_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((870, 400), (25, 35)),
                                         "→",
                                         ui_manager)
-    label_reserve_character_selection_menu.set_tooltip("控えメンバー", delay=0.1)
+    label_reserve_character_selection_menu.set_tooltip("控えメンバー、キャラクターのレベルでソートされてる。", delay=0.1)
 
     character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 440), (156, 35)),
                                         text='Replace',
@@ -924,7 +965,7 @@ if __name__ == "__main__":
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c) 
-        print(f"use_item() Selected items: {selected_items}")
+        # print(f"use_item() Selected items: {selected_items}")
         if not selected_items:
             text_box.append_html_text("No item is selected.\n")
             return
@@ -1615,6 +1656,7 @@ if __name__ == "__main__":
         party2 = []
         list_of_characters = random.sample(all_characters, 10)
         remaining_characters = [character for character in all_characters if character not in list_of_characters]
+        remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
         random.shuffle(list_of_characters)
         party1 = list_of_characters[:5]
         party2 = list_of_characters[5:]
@@ -1647,6 +1689,7 @@ if __name__ == "__main__":
             party1 = random.sample(all_characters, 5)
         party2 = adventure_mode_stages[adventure_mode_current_stage]
         remaining_characters = [character for character in all_characters if character not in party1]
+        remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
 
         character_selection_menu.kill()
         character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1],
@@ -1689,6 +1732,7 @@ if __name__ == "__main__":
                                                                     ui_manager)
 
             remaining_characters = [character for character in all_characters if character not in party1]
+            remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
 
             reserve_character_selection_menu.kill()
             reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in remaining_characters],
@@ -2051,11 +2095,6 @@ if __name__ == "__main__":
     box_submenu_explore_funds_selection.hide()
 
     def explore_generate_package_of_items_to_desired_value(desired_market_value: float) -> list:
-        """
-        We currently only have Equip to generate, will implement Items and Consumables later.
-        """
-        # TODO: Implement Items and Consumables
-        # generate_equips_list() will generate an Equip
         package = []
         while True:
             while True:
@@ -2374,7 +2413,10 @@ if __name__ == "__main__":
                         auto_battle_active = True
                     elif instruction == "パーティシャッフル":
                         text_box.set_text("Welcome to the battle simulator!\n")
-                        party1, party2 = set_up_characters()
+                        if current_game_mode == "Training Mode":
+                            party1, party2 = set_up_characters()
+                        elif current_game_mode == "Adventure Mode":
+                            party1, party2 = set_up_characters_adventure_mode(True)
                         turn = 1
                         auto_battle_active = True
                 else:

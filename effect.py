@@ -54,9 +54,27 @@ class Effect:
     def apply_effect_on_remove(self, character):
         pass
 
-    def apply_effect_during_damage_step(self, character, damage):
-        # Allows applying effects on character.
+    def apply_effect_during_damage_step(self, character, damage, attacker):
+        """
+        Include both damage step and status damage step.
+        Allows applying effects on character.
+        """
         return damage
+
+    def apply_effect_after_damage_step(self, character, damage, attacker):
+        """
+        Only include damage step, does not include status damage step.
+        Allows applying effects on character.
+        """
+        pass
+
+    def apply_effect_after_status_damage_step(self, character, damage):
+        """
+        Only include status damage step, does not include damage step.
+        Allows applying effects on character.
+        Not implemented in Character class.
+        """
+        pass
 
     def __str__(self):
         return self.name
@@ -83,64 +101,11 @@ class Effect:
     
     def tooltip_description(self):
         return "No description available."
-    
-
-# Some common effects
-# ---------------------------------------------------------
-# New Year Fireworks effect
-# New Year Fireworks: Have 6 counters. Every turn, throw a dice, counter decreases by the dice number.
-# When counter reaches 0, deal 600% of applier atk as damage to self.
-# At the end of the turn, this effect is applied to a random enemy.
-class NewYearFireworksEffect(Effect):
-    def __init__(self, name, duration, is_buff, max_counters, imposter, running=False, logging=False, text_box=None):
-        super().__init__(name, duration, is_buff)
-        self.name = name
-        self.is_buff = is_buff
-        self.max_counters = max_counters
-        self.current_counters = max_counters
-        self.imposter = imposter
-        self.running = running
-        self.logging = logging
-        self.text_box = text_box
-        self.should_trigger_end_of_turn_effect = True # We only want to trigger once per end of turn.
-    
-    def apply_effect_on_trigger(self, character):
-        self.should_trigger_end_of_turn_effect = True
-        number = character.fake_dice()
-        self.current_counters -= number
-        self.current_counters = max(self.current_counters, 0)
-        if character.is_dead():
-            character.remove_effect(self)
-            return
-        if self.current_counters == 0:
-            damage = self.imposter.atk * 6
-            if self.running and self.logging:
-                self.text_box.append_html_text(f"{character.name} is about to take {int(damage)} damage from fireworks!\n")
-            fine_print(f"{character.name} is about to take {int(damage)} damage from fireworks!", mode=character.fineprint_mode)
-            character.take_status_damage(damage, self.imposter)
-            character.remove_effect(self)
-
-    def apply_effect_at_end_of_turn(self, character):
-        if not self.should_trigger_end_of_turn_effect:
-            return
-        available_enemies = character.enemy
-        if not available_enemies:
-            character.remove_effect(self)
-        else:
-            target = next(character.target_selection())
-            new_effect = NewYearFireworksEffect(self.name, self.duration, self.is_buff, self.max_counters, self.imposter)
-            new_effect.current_counters = self.current_counters
-            new_effect.running = target.running
-            new_effect.logging = target.logging
-            new_effect.text_box = target.text_box
-            new_effect.should_trigger_end_of_turn_effect = False
-            target.apply_effect(new_effect)
-            character.remove_effect(self)
-
-    def tooltip_description(self):
-        return f"Happy New Year! Get ready for some fireworks! The fireworks currently has {self.current_counters} counters." 
 
 
+# =========================================================
+# Protected effects
+# =========================================================
 
 # Protected effect
 # When a protected character is about to take damage, that damage is taken by the protector instead. Does not apply to status damage.
@@ -151,6 +116,7 @@ class ProtectedEffect(Effect):
         self.protector = protector
         self.multiplier = multiplier
         self.sort_priority = 100
+        self.is_protected_effect = True
 
     def protected_apply_effect_during_damage_step(self, character, damage, attacker, func_after_dmg):
         if self.protector is None:
@@ -174,6 +140,9 @@ class ProtectedEffect(Effect):
     def tooltip_description(self):
         return f"Protected by {self.protector.name}."
 
+
+# =========================================================
+# End of Protected effects
 # =========================================================
 # CC effects
 # =========================================================
@@ -227,16 +196,81 @@ class SleepEffect(Effect):
         self.apply_rule = "stack"
         self.is_cc_effect = True
     
-    def apply_effect_during_damage_step(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage, attacker):
         self.flag_for_remove = True
         return damage
 
     def tooltip_description(self):
         return "Cannot act, effect is removed when taking damage."
 
+
+# Fear effect
+# This effect is dynamic, the actual effect is determined by character.enemy.
+# If a enemy in character.enemy has attribue "fear_effect_dict", update self.stats_dict to that dict.
+# If the key is same, the value will be added.
+# Effects that update stats dynamically should use this as a template.
+class FearEffect(Effect):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
+        super().__init__(name, duration, is_buff)
+        self.name = "Fear"
+        self.is_buff = False
+        self.cc_immunity = cc_immunity
+        self.delay_trigger = delay_trigger
+        self.apply_rule = "stack"
+        self.is_cc_effect = True
+        self.stats_dict = {}
+
+    def stats_dict_function(self, character):
+        stats_dict = {}
+        for enemy in character.enemy:
+            if hasattr(enemy, "fear_effect_dict"):
+                for key, value in enemy.fear_effect_dict.items():
+                    if key in stats_dict:
+                        stats_dict[key] += value
+                    else:
+                        stats_dict[key] = value
+        return stats_dict
+
+    def apply_effect_on_remove(self, character):
+        character.update_stats(self.stats_dict, reversed=True)
+
+    def apply_effect_on_trigger(self, character):
+        old_stats_dict = self.stats_dict
+        new_stats_dict = self.stats_dict_function(character)
+        if old_stats_dict and new_stats_dict: # Both are not empty
+            if new_stats_dict != old_stats_dict:
+                character.update_stats(old_stats_dict, reversed=True)
+                self.stats_dict = new_stats_dict
+                character.update_stats(self.stats_dict, reversed=False)
+        elif old_stats_dict and not new_stats_dict: # old_stats_dict is not empty, new_stats_dict is empty
+            character.update_stats(old_stats_dict, reversed=True)
+            self.stats_dict = new_stats_dict
+        elif not old_stats_dict and new_stats_dict: # old_stats_dict is empty, new_stats_dict is not empty
+            character.update_stats(new_stats_dict, reversed=False)
+            self.stats_dict = new_stats_dict
+        else: # Both are empty
+            return
+
+    def tooltip_description(self):
+        str = "Consumed by fear.\n"
+        if not self.stats_dict:
+            return str + "No effect."
+        for key, value in self.stats_dict.items():
+            if key in ["maxhp", "hp", "atk", "defense", "spd"]:
+                str += f"{key} is scaled to {value*100}%."
+            else:
+                if value > 0:
+                    str += f"{key} is increased by {value*100}%."
+                else:
+                    str += f"{key} is decreased by {-value*100}%."
+        return str
+
 # =========================================================
 # End of CC effects
 # =========================================================
+# Stats effects
+# =========================================================
+
 
 class StatsEffect(Effect):
     def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True, stats_dict_function=None, is_set_effect=False):
@@ -332,9 +366,33 @@ class SethEffect(Effect):
     
     def tooltip_description(self):
         return f"Critical rate and critical damage is increased by {self.value*100}% each turn."
+    
+
+# Example : For 4 turns, if not taking damage, increase atk by 50% and spd by 50% for 4 turns used by Cockatorice.
+class NotTakingDamageEffect(Effect):
+    def __init__(self, name, duration, is_buff, stats_dict, apply_rule, require_turns_without_damage, 
+                 buff_name, buff_duration):
+        super().__init__(name, duration, is_buff)
+        self.stats_dict = stats_dict
+        self.apply_rule = apply_rule
+        self.require_turns_without_damage = require_turns_without_damage
+        self.buff_name = buff_name
+        if self.buff_name == self.name:
+            raise Exception("buff_name cannot be the same as name.")
+        self.buff_duration = buff_duration
+
+    def apply_effect_at_end_of_turn(self, character):
+        twd = character.get_num_of_turns_not_taken_damage()
+        if twd >= self.require_turns_without_damage and not character.has_effect_that_named(self.buff_name):
+            character.apply_effect(StatsEffect(self.buff_name, self.buff_duration, self.is_buff, self.stats_dict))
+
+# =========================================================
+# End of Stats effects
+# =========================================================
+# Continuous Damage/Healing effects
+# =========================================================
 
 
-# ---------------------------------------------------------
 # Continuous Damage effect
 class ContinuousDamageEffect(Effect):
     def __init__(self, name, duration, is_buff, value, imposter):
@@ -445,7 +503,12 @@ class ContinuousHealEffect(Effect):
             return f"Heal for {int(self.value)} hp each turn."
 
 
-#---------------------------------------------------------
+# =========================================================
+# End of Continuous Damage/Healing effects
+# =========================================================
+# Various Shield effects
+# =========================================================
+
 # Absorption Shield effect
 class AbsorptionShield(Effect):
     def __init__(self, name, duration, is_buff, shield_value, cc_immunity, running=False, logging=False, text_box=None):
@@ -457,7 +520,7 @@ class AbsorptionShield(Effect):
         self.logging = logging
         self.text_box = text_box
 
-    def apply_effect_during_damage_step(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage, attacker):
         if damage > self.shield_value:
             remaining_damage = damage - self.shield_value
             if self.running and self.logging:
@@ -484,7 +547,7 @@ class ReductionShield(Effect):
         self.effect_value = effect_value
         self.cc_immunity = cc_immunity
 
-    def apply_effect_during_damage_step(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage, attacker):
         if self.is_buff:
             damage = damage * (1 - self.effect_value)
         else:
@@ -514,7 +577,7 @@ class EffectShield1(Effect):
         if character.has_neighbor("Fenrir") == False:
             self.flag_for_remove = True
 
-    def apply_effect_during_damage_step(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage, attacker):
         if character.hp < character.maxhp * self.threshold:
             character.heal_hp(self.heal_value, self)
         return damage
@@ -536,7 +599,7 @@ class EffectShield2(Effect):
         self.shrink_rate = shrink_rate
         self.sort_priority = 150
 
-    def apply_effect_during_damage_step(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage, attacker):
         if damage > character.maxhp * 0.1:
             damage = character.maxhp * 0.1 + (damage - character.maxhp * 0.1) * self.damage_reduction
         return damage
@@ -550,25 +613,33 @@ class EffectShield2(Effect):
         return f"Current damage reduction: {self.damage_reduction*100}%."
 
 
-
 #---------------------------------------------------------
-# Reborn effect (revive with certain amount of hp)
-class RebornEffect(Effect):
-    def __init__(self, name, duration, is_buff, effect_value, cc_immunity):
+# Effect shield 3 (When taking damage that would exceed 10% of maxhp, reduce damage above 10% of maxhp by 50%, 
+# The attacker takes 30% of damage that is reduced by this effect.)
+# Used by monster Paladin
+class EffectShield3(Effect):
+    def __init__(self, name, duration, is_buff, cc_immunity, damage_reduction=0.5, damage_reflect=0.3):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
-        self.effect_value = effect_value
         self.cc_immunity = cc_immunity
-    
-    def apply_effect_on_trigger(self, character):
-        if character.is_dead():
-            character.revive(1, hp_percentage_to_revive=self.effect_value)
-            if hasattr(character, "after_revive"):
-                character.after_revive()
-            character.remove_effect(self)
+        self.damage_reduction = damage_reduction
+        self.damage_reflect = damage_reflect
+        self.sort_priority = 150
 
+        self.attacker = None
+        self.actual_reflect = 0
+
+    def apply_effect_during_damage_step(self, character, damage, attacker):
+        if damage > character.maxhp * 0.1:
+            old_damge = damage
+            damage = character.maxhp * 0.1 + (damage - character.maxhp * 0.1) * self.damage_reduction
+            damage_to_reflect = (old_damge - damage) * self.damage_reflect
+            attacker.take_status_damage(damage_to_reflect, character)
+        return damage
+    
     def tooltip_description(self):
-        return f"Revive with {self.effect_value*100}% hp the turn after fallen."
+        return f"Reduce damage above 10% of maxhp by {self.damage_reduction*100}%, reflect {self.damage_reflect*100}% of damage that is reduced."
+
 
 #---------------------------------------------------------
 # Cancellation Shield effect (cancel 1 attack if attack damage exceed certain amount of max hp)
@@ -583,7 +654,7 @@ class CancellationShield(Effect):
         self.text_box = text_box
         self.sort_priority = 150
 
-    def apply_effect_during_damage_step(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage, attacker):
         if damage > character.maxhp * self.threshold:
             character.remove_effect(self)
             if self.running and self.logging:
@@ -606,14 +677,139 @@ class CancellationShield2(Effect):
         self.cc_immunity = cc_immunity
         self.sort_priority = 180
 
-    def apply_effect_during_damage_step(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage, attacker):
         damage = min(damage, character.maxhp * self.threshold)
         return damage
         
     def tooltip_description(self):
         return f"Cancel the damage that exceed {self.threshold*100}% of max hp."
-    
 
+
+# Cancellation Shield effect (cancel 1 attack if attack damage lower than certain amount of max hp)
+class CancellationShield3(Effect):
+    def __init__(self, name, duration, is_buff, threshold, cc_immunity, running=False, logging=False, text_box=None):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.threshold = threshold
+        self.cc_immunity = cc_immunity
+        self.running = running
+        self.logging = logging
+        self.text_box = text_box
+        self.sort_priority = 150
+
+    def apply_effect_during_damage_step(self, character, damage, attacker):
+        if damage < character.maxhp * self.threshold:
+            character.remove_effect(self)
+            if self.running and self.logging:
+                self.text_box.append_html_text(f"{character.name} shielded the attack!\n")
+            fine_print(f"{character.name} shielded the attack!", mode=character.fineprint_mode)
+            return 0
+        else:
+            return damage
+        
+    def tooltip_description(self):
+        return f"Cancel 1 attack if damage lower than {self.threshold*100}% of max hp."
+
+
+# =========================================================
+# End of Various Shield effects
+# =========================================================
+# Special effects
+# Effects in this section need special handling, or does not seem to fit into any other category.
+# =========================================================
+# New Year Fireworks effect
+# New Year Fireworks: Have 6 counters. Every turn, throw a dice, counter decreases by the dice number.
+# When counter reaches 0, deal 600% of applier atk as damage to self.
+# At the end of the turn, this effect is applied to a random enemy.
+class NewYearFireworksEffect(Effect):
+    def __init__(self, name, duration, is_buff, max_counters, imposter, running=False, logging=False, text_box=None):
+        super().__init__(name, duration, is_buff)
+        self.name = name
+        self.is_buff = is_buff
+        self.max_counters = max_counters
+        self.current_counters = max_counters
+        self.imposter = imposter
+        self.running = running
+        self.logging = logging
+        self.text_box = text_box
+        self.should_trigger_end_of_turn_effect = True # We only want to trigger once per end of turn.
+    
+    def apply_effect_on_trigger(self, character):
+        self.should_trigger_end_of_turn_effect = True
+        number = character.fake_dice()
+        self.current_counters -= number
+        self.current_counters = max(self.current_counters, 0)
+        if character.is_dead():
+            character.remove_effect(self)
+            return
+        if self.current_counters == 0:
+            damage = self.imposter.atk * 6
+            if self.running and self.logging:
+                self.text_box.append_html_text(f"{character.name} is about to take {int(damage)} damage from fireworks!\n")
+            fine_print(f"{character.name} is about to take {int(damage)} damage from fireworks!", mode=character.fineprint_mode)
+            character.take_status_damage(damage, self.imposter)
+            character.remove_effect(self)
+
+    def apply_effect_at_end_of_turn(self, character):
+        if not self.should_trigger_end_of_turn_effect:
+            return
+        available_enemies = character.enemy
+        if not available_enemies:
+            character.remove_effect(self)
+        else:
+            target = next(character.target_selection())
+            new_effect = NewYearFireworksEffect(self.name, self.duration, self.is_buff, self.max_counters, self.imposter)
+            new_effect.current_counters = self.current_counters
+            new_effect.running = target.running
+            new_effect.logging = target.logging
+            new_effect.text_box = target.text_box
+            new_effect.should_trigger_end_of_turn_effect = False
+            target.apply_effect(new_effect)
+            character.remove_effect(self)
+
+    def tooltip_description(self):
+        return f"Happy New Year! Get ready for some fireworks! The fireworks currently has {self.current_counters} counters." 
+
+
+#---------------------------------------------------------
+# Reborn effect (revive with certain amount of hp)
+class RebornEffect(Effect):
+    def __init__(self, name, duration, is_buff, effect_value, cc_immunity):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.effect_value = effect_value
+        self.cc_immunity = cc_immunity
+    
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            character.revive(1, hp_percentage_to_revive=self.effect_value)
+            if hasattr(character, "after_revive"):
+                character.after_revive()
+            character.remove_effect(self)
+
+    def tooltip_description(self):
+        return f"Revive with {self.effect_value*100}% hp the turn after fallen."
+
+
+# Sting: every time target take damage, take value status damage.
+class StingEffect(Effect):
+    def __init__(self, name, duration, is_buff, value, imposter):
+        super().__init__(name, duration, is_buff)
+        self.name = name
+        self.is_buff = is_buff
+        self.value = value
+        self.imposter = imposter
+
+    def apply_effect_after_damage_step(self, character, damage, attacker):
+        character.take_status_damage(self.value, self.imposter)
+
+    def tooltip_description(self):
+        return f"Take {self.value} status damage every time after taking damage."
+    
+# =========================================================
+# End of Special effects
+# Effects in the above section need special handling.
+# =========================================================
 #---------------------------------------------------------
 # Equipment set effects
 #---------------------------------------------------------
@@ -631,7 +827,7 @@ class EquipmentSetEffect_Arasaka(Effect):
         self.text_box = text_box
         self.sort_priority = 2000
 
-    def apply_effect_during_damage_step(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage, attacker):
         if self.onehp_effect_triggered:
             return 0
         if damage >= character.hp:
@@ -664,7 +860,7 @@ class EquipmentSetEffect_KangTao(Effect):
         self.text_box = text_box
         self.sort_priority = 2000
 
-    def apply_effect_during_damage_step(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage, attacker):
         if damage > self.shield_value:
             remaining_damage = damage - self.shield_value
             if self.running and self.logging:
@@ -781,7 +977,7 @@ class EquipmentSetEffect_Sovereign(Effect):
         self.stats_dict_function = stats_dict_function
         self.sort_priority = 2000
 
-    def apply_effect_during_damage_step(self, character, damage):
+    def apply_effect_during_damage_step(self, character, damage, attacker):
         # count how many "Sovereign" in character.buffs, if less than 5, apply effect.
         if Counter([effect.name for effect in character.buffs])["Sovereign"] < 5:
             character.apply_effect(StatsEffect("Sovereign", 4, True, self.stats_dict, is_set_effect=True))

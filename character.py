@@ -95,6 +95,20 @@ class Character:
         self.healing_received_history.append(self.healing_received_this_turn)
         self.healing_received_this_turn = []
 
+    def get_num_of_turns_not_taken_damage(self) -> int:
+        # get the last few records of self.damage_taken_history, if are empty, return the number of records
+        count = 0
+        for record in self.damage_taken_history[::-1]:
+            if not record:
+                count += 1
+            else:
+                for (damage, attacker) in record:
+                    if damage > 0:
+                        count += 1
+                        break
+                break
+        return count
+                
     def calculate_equip_effect(self, resethp=True):
         if self.equip:
             for item in self.equip.values():
@@ -141,7 +155,7 @@ class Character:
                 raise Exception("Invalid skill number.")
 
     def normal_attack(self):
-        self.attack("n_random_enemy", "1", "Undefined", 2)
+        self.attack()
 
     def skill1(self):
         # Warning: Following characters have their own skill1 function:
@@ -185,92 +199,168 @@ class Character:
         if target_list:
             yield from target_list
 
-        if keyword == "yourself":
-            yield self
+        match (keyword, keyword2, keyword3, keyword4):
+            case ("yourself", _, _, _):
+                yield self
 
-        elif keyword == "Undefined":
-            yield random.choice(self.enemy)
+            case ("Undefined", _, _, _):
+                if self.is_charmed():
+                    yield random.choice(self.ally)
+                elif self.is_confused():
+                    yield random.choice(self.enemy + self.ally)
+                else:
+                    yield random.choice(self.enemy)
 
-        elif keyword == "n_random_enemy":
-            n = int(keyword2)
-            if n > len(self.enemy):
-                n = len(self.enemy)
-            if self.is_charmed():
-                yield from random.sample(self.ally, n)
-            elif self.is_confused():
-                yield from random.sample(self.enemy + self.ally, n)
-            else:
-                yield from random.sample(self.enemy, n)
-        
-        elif keyword == "n_random_ally":
-            n = int(keyword2)
-            if n > len(self.ally):
-                n = len(self.ally)
-            if self.is_charmed():
-                yield from random.sample(self.enemy, n)
-            elif self.is_confused():
-                yield from random.sample(self.enemy + self.ally, n)
-            else:
-                yield from random.sample(self.ally, n)
+            case ("n_random_enemy", n, _, _):
+                n = int(n)
+                if n > len(self.enemy):
+                    n = len(self.enemy)
+                if self.is_charmed():
+                    yield from random.sample(self.ally, n)
+                elif self.is_confused():
+                    yield from random.sample(self.enemy + self.ally, n)
+                else:
+                    yield from random.sample(self.enemy, n)
 
-        elif keyword == "n_random_target":
-            n = int(keyword2)
-            if n > len(self.ally) + len(self.enemy):
-                n = len(self.ally) + len(self.enemy)
-            yield from random.sample(self.ally + self.enemy, n)
+            case ("n_random_ally", n, _, _):
+                n = int(n)
+                if n > len(self.ally):
+                    n = len(self.ally)
+                if self.is_charmed():
+                    yield from random.sample(self.enemy, n)
+                elif self.is_confused():
+                    yield from random.sample(self.enemy + self.ally, n)
+                else:
+                    yield from random.sample(self.ally, n)
 
-        elif keyword == "n_lowest_attr":
-            n = int(keyword2)
-            attr = keyword3
-            party = keyword4
-            if party == "ally":
-                yield from sorted(self.ally, key=lambda x: getattr(x, attr))[:n]
-            elif party == "enemy":
-                yield from sorted(self.enemy, key=lambda x: getattr(x, attr))[:n]
+            case ("n_random_target", n, _, _):
+                n = int(n)
+                if n > len(self.ally) + len(self.enemy):
+                    n = len(self.ally) + len(self.enemy)
+                yield from random.sample(self.ally + self.enemy, n)
 
-        elif keyword == "n_highest_attr":
-            n = int(keyword2)
-            attr = keyword3
-            party = keyword4
-            if party == "ally":
-                yield from sorted(self.ally, key=lambda x: getattr(x, attr), reverse=True)[:n]
-            elif party == "enemy":
-                yield from sorted(self.enemy, key=lambda x: getattr(x, attr), reverse=True)[:n]
+            case ("n_lowest_attr", n, attr, party):
+                n = int(n)
+                if party == "ally":
+                    yield from sorted(self.ally, key=lambda x: getattr(x, attr))[:n]
+                elif party == "enemy":
+                    yield from sorted(self.enemy, key=lambda x: getattr(x, attr))[:n]
 
-        elif keyword == "n_dead_allies":
-            n = int(keyword2)
-            yield from mit.take(n, filter(lambda x: x.is_dead(), self.party))
+            case ("n_highest_attr", n, attr, party):
+                n = int(n)
+                if party == "ally":
+                    yield from sorted(self.ally, key=lambda x: getattr(x, attr), reverse=True)[:n]
+                elif party == "enemy":
+                    yield from sorted(self.enemy, key=lambda x: getattr(x, attr), reverse=True)[:n]
 
-        elif keyword == "n_dead_enemies":
-            n = int(keyword2)
-            yield from mit.take(n, filter(lambda x: x.is_dead(), self.enemyparty))
+            case ("n_enemy_with_effect", n, effect_name, _):
+                n = int(n)
+                list = mit.take(n, filter(lambda x: x.has_effect_that_named(effect_name), self.enemy))
+                if len(list) < n:
+                    list += random.sample(self.enemy, n - len(list))
+                yield from list
 
-        elif keyword == "random_enemy_pair":
-            if len(self.enemy) < 2:
-                yield from self.enemy
-            else:
-                yield from random.choice(list(mit.pairwise(self.enemy)))
+            case ("n_ally_with_effect", n, effect_name, _):
+                n = int(n)
+                list = mit.take(n, filter(lambda x: x.has_effect_that_named(effect_name), self.ally))
+                if len(list) < n:
+                    list += random.sample(self.ally, n - len(list))
+                yield from list
 
-        elif keyword == "random_ally_pair":
-            if len(self.ally) < 2:
-                yield from self.ally
-            else:
-                yield from random.choice(list(mit.pairwise(self.ally)))
+            case ("enemy_in_front", _, _, _):
+                # get the self position at self.party, then get the enemy at the same position at self.enemyparty
+                # if target.is_dead(), try index +- 1, +- 2, until a .is_alive target is found before self.enemyparty is exhausted
+                # get the self position at self.party
+                if len(self.enemy) == 1:
+                    yield from self.enemy
+                self_pos = 0
+                for i, char in enumerate(self.party):
+                    if char == self:
+                        self_pos = i
+                        break
+                # get the enemy at the same position at self.enemyparty
+                target = self.enemyparty[self_pos]
+                if target.is_dead():
+                    max_offset = min(self_pos, len(self.enemyparty) - self_pos - 1)
+                    for offset in range(1, max_offset + 1):
+                        if not self.enemyparty[self_pos + offset].is_dead():
+                            target = self.enemyparty[self_pos + offset]
+                            break
+                        elif not self.enemyparty[self_pos - offset].is_dead():
+                            target = self.enemyparty[self_pos - offset]
+                            break
+                yield target
 
-        elif keyword == "random_enemy_triple":
-            if len(self.enemy) < 3:
-                yield from self.enemy
-            else:
-                yield from random.choice(list(mit.triplewise(self.enemy)))
+            case ("n_enemy_in_front", n, _, _):
+                n = int(n)
+                if len(self.enemy) <= n:
+                    yield from self.enemy
+                else:
+                    self_pos = 0
+                    for i, char in enumerate(self.party):
+                        if char == self:
+                            self_pos = i
+                            break
+                    # get the enemy at the same position and closest at self.enemyparty until n is reached
+                    target = self.enemyparty[self_pos]
+                    list_to_yield = []
+                    if not target.is_dead():
+                        list_to_yield.append(target)
+                    max_offset = min(self_pos, len(self.enemyparty) - self_pos - 1)
+                    for offset in range(1, max_offset + 1):
+                        if len(list_to_yield) == n:
+                            break
+                        if not self.enemyparty[self_pos + offset].is_dead():
+                            list_to_yield.append(self.enemyparty[self_pos + offset])
+                        if len(list_to_yield) == n:
+                            break
+                        if not self.enemyparty[self_pos - offset].is_dead():
+                            list_to_yield.append(self.enemyparty[self_pos - offset])
+                    yield from list_to_yield
 
-        elif keyword == "random_ally_triple":
-            if len(self.ally) < 3:
-                yield from self.ally
-            else:
-                yield from random.choice(list(mit.triplewise(self.ally)))
 
-        else:
-            raise Exception("Keyword not found.")
+            case ("n_lowest_hp_percentage_ally", n, _, _):
+                n = int(n)
+                yield from sorted(self.ally, key=lambda x: x.hp/x.maxhp)[:n]
+
+            case ("n_lowest_hp_percentage_enemy", n, _, _):
+                n = int(n)
+                yield from sorted(self.enemy, key=lambda x: x.hp/x.maxhp)[:n]
+
+            case ("n_dead_allies", n, _, _):
+                n = int(n)
+                yield from mit.take(n, filter(lambda x: x.is_dead(), self.party))
+
+            case ("n_dead_enemies", n, _, _):
+                n = int(n)
+                yield from mit.take(n, filter(lambda x: x.is_dead(), self.enemyparty))
+
+            case ("random_enemy_pair", _, _, _):
+                if len(self.enemy) < 2:
+                    yield from self.enemy
+                else:
+                    yield from random.choice(list(mit.pairwise(self.enemy)))
+
+            case ("random_ally_pair", _, _, _):
+                if len(self.ally) < 2:
+                    yield from self.ally
+                else:
+                    yield from random.choice(list(mit.pairwise(self.ally)))
+
+            case ("random_enemy_triple", _, _, _):
+                if len(self.enemy) < 3:
+                    yield from self.enemy
+                else:
+                    yield from random.choice(list(mit.triplewise(self.enemy)))
+
+            case ("random_ally_triple", _, _, _):
+                if len(self.ally) < 3:
+                    yield from self.ally
+                else:
+                    yield from random.choice(list(mit.triplewise(self.ally)))
+
+            case (_, _, _, _):
+                raise Exception("Keyword not found.")
 
 
     def attack(self, target_kw1="Undefined", target_kw2="Undefined", 
@@ -298,7 +388,7 @@ class Character:
                 if self.running and self.logging:
                     self.text_box.append_html_text(f"{self.name} is targeting {target.name}.\n")
                 fine_print(f"{self.name} is targeting {target.name}.", mode=self.fineprint_mode)
-                damage = self.atk * multiplier - target.defense * (1-self.penetration)
+                damage = self.atk * multiplier - target.defense * (1 - self.penetration)
                 final_accuracy = self.acc - target.eva
                 dice = random.randint(1, 100)
                 miss = False if dice <= final_accuracy * 100 else True
@@ -322,7 +412,7 @@ class Character:
                         final_damage = 0
                     target.take_damage(final_damage, self)
                     damage_dealt += final_damage
-                    if func_after_dmg is not None:
+                    if func_after_dmg is not None and self.is_alive():
                         func_after_dmg(self, target)
                     if additional_attack_after_dmg is not None:
                         damage_dealt += additional_attack_after_dmg(self, target, is_crit=critical)
@@ -390,31 +480,6 @@ class Character:
             if not effect.is_set_effect:
                 str += effect.print_stats_html()
                 str += "\n"
-        return str
-
-    def get_equip_stats(self, equip_type: str): # ["Weapon", "Armor", "Accessory", "Boots"]
-        str = ""
-        if not any([x in self.equip for x in ["Weapon", "Armor", "Accessory", "Boots"]]) and len(self.equip) > 0:
-            raise Exception("There is an unknown item type in the equipment. Fix it.")
-        match equip_type:
-            case "Weapon":
-                if "Weapon" in self.equip:
-                    str += self.equip["Weapon"].print_stats_html()
-                    str += "\n"
-            case "Armor":
-                if "Armor" in self.equip:
-                    str += self.equip["Armor"].print_stats_html()
-                    str += "\n"
-            case "Accessory":
-                if "Accessory" in self.equip:
-                    str += self.equip["Accessory"].print_stats_html()
-                    str += "\n"
-            case "Boots":
-                if "Boots" in self.equip:
-                    str += self.equip["Boots"].print_stats_html()
-                    str += "\n"
-            case _:
-                raise Exception("Invalid equip type.")
         return str
 
     def calculate_maxexp(self):
@@ -647,16 +712,18 @@ class Character:
         value = max(0, value)
         # Attention: final_damage_taken_multipler is calculated before shields effects.
         damage = value * self.final_damage_taken_multipler
+
         if damage > 0:
             copyed_buffs = self.buffs.copy() # Some effect will try apply other effects during this step, see comments on Effect class for details.
             copyed_debuffs = self.debuffs.copy()
             for effect in copyed_buffs:
-                if isinstance(effect, ProtectedEffect):
+                if hasattr(effect, "is_protected_effect") and effect.is_protected_effect:
                     damage = effect.protected_apply_effect_during_damage_step(self, damage, attacker, func_after_dmg)
                 else:
-                    damage = effect.apply_effect_during_damage_step(self, damage)
+                    damage = effect.apply_effect_during_damage_step(self, damage, attacker)
             for effect in copyed_debuffs:
-                damage = effect.apply_effect_during_damage_step(self, damage)
+                damage = effect.apply_effect_during_damage_step(self, damage, attacker)
+                
         damage = int(damage)
         damage = max(0, damage)
         if self.hp - damage < 0:
@@ -665,6 +732,14 @@ class Character:
         if func_after_dmg is not None:
             func_after_dmg(self, damage, attacker)
         self.take_damage_aftermath(damage, attacker)
+
+        copyed_buffs = self.buffs.copy() 
+        copyed_debuffs = self.debuffs.copy()
+        for effect in copyed_buffs:
+            effect.apply_effect_after_damage_step(self, damage, attacker)
+        for effect in copyed_debuffs:
+            effect.apply_effect_after_damage_step(self, damage, attacker)
+
         if self.running and self.logging:
             self.text_box.append_html_text(f"{self.name} took {damage} damage.\n")
         fine_print(f"{self.name} took {damage} damage.", mode=self.fineprint_mode)
@@ -686,9 +761,9 @@ class Character:
             copyed_buffs = self.buffs.copy() 
             copyed_debuffs = self.debuffs.copy()
             for effect in copyed_buffs:
-                damage = effect.apply_effect_during_damage_step(self, damage)
+                damage = effect.apply_effect_during_damage_step(self, damage, attacker)
             for effect in copyed_debuffs:
-                damage = effect.apply_effect_during_damage_step(self, damage)
+                damage = effect.apply_effect_during_damage_step(self, damage, attacker)
         damage = int(damage)
         damage = max(0, damage)
         if self.hp - damage < 0:
@@ -720,13 +795,21 @@ class Character:
         self.damage_taken_this_turn.append((damage, attacker))
         return None
 
-    def has_effect_that_named(self, effect_name: str):
+    def has_effect_that_named(self, effect_name: str, additional_name: str=None):
         for effect in self.buffs:
             if effect.name == effect_name:
-                return True
+                if additional_name:
+                    if hasattr(effect, "additional_name") and effect.additional_name == additional_name:
+                        return True
+                else:
+                    return True
         for effect in self.debuffs:
             if effect.name == effect_name:
-                return True
+                if additional_name:
+                    if hasattr(effect, "additional_name") and effect.additional_name == additional_name:
+                        return True
+                else:
+                    return True
         return False
 
     def is_immune_to_cc(self):
@@ -1109,14 +1192,16 @@ class Luna(Character):
 
     def skill1_logic(self):
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.0, repeat=1)
-        self.heal_hp(damage_dealt * 0.1, self)    
+        if self.is_alive():
+            self.heal_hp(damage_dealt * 0.1, self)    
         return damage_dealt
 
     def skill2_logic(self):
         def moonlight(self):
             self.apply_effect(ReductionShield("Moonlight", 3, True, 0.9, cc_immunity=False))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.0, repeat=1)
-        moonlight(self)
+        if self.is_alive():
+            moonlight(self)
         return damage_dealt
 
     def skill3(self):
@@ -1140,8 +1225,10 @@ class Clover(Character):
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=4.6, repeat=1)
         ally_to_heal = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
-        healing, x, y = ally_to_heal.heal_hp(damage_dealt, self)
-        self.heal_hp(healing * 0.6, self)
+        if self.is_alive():
+            self.update_ally_and_enemy()
+            healing, x, y = ally_to_heal.heal_hp(damage_dealt, self)
+            self.heal_hp(healing * 0.6, self)
         return damage_dealt
 
     def skill2_logic(self):
@@ -1409,7 +1496,7 @@ class Cliffe(Character):
             else:
                 return 0
         damage_dealt = self.attack(multiplier=3.4, repeat=4, additional_attack_after_dmg=more_attacks)      
-        if downed_target > 0:
+        if downed_target > 0 and self.is_alive():
             self.heal_hp(downed_target * 0.1 * self.maxhp, self)
         return damage_dealt
         
