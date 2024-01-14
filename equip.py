@@ -1,5 +1,6 @@
 from itertools import cycle
 from block import *
+import random
 
 
 def normal_distribution(min_value, max_value, mean, std):
@@ -13,7 +14,7 @@ class Equip(Block):
         # lists, changing them likely wont give an error.
         super().__init__(name, "")
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
-        self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", "Snowflake"]
+        self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", "Snowflake", "Void"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -38,7 +39,7 @@ class Equip(Block):
         self.stars_rating = 0 # 0 to 15
         self.stars_rating_max = 15
         self.star_enhence_cost = self.upgrade_stars_rating_cost()
-        self.level_cost = 200
+        self.level_cost = self.level_up_cost()
         self.maxhp_extra = 0
         self.atk_extra = 0
         self.def_extra = 0
@@ -96,6 +97,8 @@ class Equip(Block):
         # string generated from self.eq_set and self.type, for example, NUSA_Armor
         if self.eq_set == "None":
             return "Generic" + "_" + self.type
+        elif self.eq_set == "Void":
+            return "void"
         else:
             return self.eq_set + "_" + self.type
 
@@ -137,6 +140,8 @@ class Equip(Block):
         return 1 + (self.stars_rating ** n) / (self.stars_rating_max ** n)
 
     def upgrade_stars_rating_cost(self) -> int:
+        if self.stars_rating == self.stars_rating_max:
+            return 0
         values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.60]
         rarity_values = {rarity: value for rarity, value in zip(self.rarity_list, values)}
         rarity_multiplier = rarity_values.get(self.rarity, 1.0)
@@ -167,26 +172,26 @@ class Equip(Block):
         weights = [60, 30, 10, 5, 2, 1]
         return random.choices(sides, weights=weights, k=1)[0]
 
-    def generate(self, level=40):
-        self.level = level
+    def generate(self):
+        level = self.level
         extra_lines_to_generate = self.fake_dice() - 1
         
         if self.type == self.type_list[2]:
             self.maxhp_flat = max(normal_distribution(1, 3000, 1000, 500), 1)
             self.maxhp_flat /= 40
-            self.maxhp_flat *= self.level
+            self.maxhp_flat *= level
         elif self.type == self.type_list[0]:
             self.atk_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
             self.atk_flat /= 40
-            self.atk_flat *= self.level
+            self.atk_flat *= level
         elif self.type == self.type_list[1]:
             self.def_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
             self.def_flat /= 40
-            self.def_flat *= self.level
+            self.def_flat *= level
         elif self.type == self.type_list[3]:
             self.spd_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
             self.spd_flat /= 40
-            self.spd_flat *= self.level
+            self.spd_flat *= level
         else:
             raise Exception("Invalid type")
         
@@ -195,6 +200,56 @@ class Equip(Block):
                 attr = random.choice(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
                                       "crit", "critdmg", "critdef", "penetration", "heal_efficiency"])
                 value = normal_distribution(1, 3000, 1000, 500) * 0.0001
+                setattr(self, attr, getattr(self, attr) + value)
+        
+        self.enhance_by_rarity()
+
+
+    def generate_void(self):
+        """
+        Only for Void Force on monsters
+        """
+        level = self.level
+        print(level)
+        if level < 200:
+            extra_lines_to_generate = 1
+        elif 200 <= level < 400:
+            extra_lines_to_generate = 2
+        elif 400 <= level < 600:
+            extra_lines_to_generate = 3
+        elif 600 <= level < 800:
+            extra_lines_to_generate = 4
+        elif 800 <= level:
+            extra_lines_to_generate = 5
+        else:
+            extra_lines_to_generate = 0
+        
+        if self.type == self.type_list[2]:
+            self.maxhp_flat = max(normal_distribution(1, 3000, 1000, 500), 1)
+            self.maxhp_flat /= 40
+            self.maxhp_flat *= level
+        elif self.type == self.type_list[0]:
+            self.atk_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.atk_flat /= 40
+            self.atk_flat *= level
+        elif self.type == self.type_list[1]:
+            self.def_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.def_flat /= 40
+            self.def_flat *= level
+        elif self.type == self.type_list[3]:
+            self.spd_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.spd_flat /= 40
+            self.spd_flat *= level
+        else:
+            raise Exception("Invalid type")
+        
+        attributes = ["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
+                      "crit", "critdmg", "critdef", "penetration", "heal_efficiency"]
+        if extra_lines_to_generate > 0:
+            selected_attributes = random.sample(attributes, extra_lines_to_generate)
+            
+            for attr in selected_attributes:
+                value = normal_distribution(1, 2000, 500, 500) * 0.0001
                 setattr(self, attr, getattr(self, attr) + value)
         
         self.enhance_by_rarity()
@@ -225,15 +280,27 @@ class Equip(Block):
         return prev_level, new_level
     
     def level_up_cost(self):
-        return int(200 * self.level)
+        if self.level == self.level_max:
+            return 0
+        return int(100 * self.level)
 
+    def level_up_as_possible(self, funds: int):
+        previous_funds = funds
+        cost = 0
+        while self.level_cost <= funds and self.level < self.level_max:
+            funds -= self.level_cost
+            self.level_change(1)
+        cost = previous_funds - funds
+        return funds, cost
 
     def estimate_market_price(self):
         base_value = sum([self.maxhp_flat, self.atk_flat * 20, self.def_flat * 20, self.spd_flat * 20])
         base_value_b = sum([self.maxhp_percent * 200, self.atk_percent * 4000, self.def_percent * 4000, self.spd * 4000, 
                             self.eva * 4000, self.acc * 4000, self.crit * 4000, 
                           self.critdmg * 4000, self.critdef * 4000, self.penetration * 6000, self.heal_efficiency * 3000])
-        base_value_c = sum([self.maxhp_extra * 0.5, self.atk_extra * 10, self.def_extra * 10, self.spd_extra * 10])
+        base_value_b /= 40
+        base_value_b *= self.level
+        base_value_c = sum([self.maxhp_extra * 0.6, self.atk_extra * 12, self.def_extra * 12, self.spd_extra * 12])
         rarity_values = [1.00, 1.10, 1.25, 1.45, 1.70, 2.00]
         rarity_multipliers = {rarity: value for rarity, value in zip(self.rarity_list, rarity_values)}
         rarity_multiplier = rarity_multipliers.get(self.rarity)
@@ -312,7 +379,10 @@ class Equip(Block):
             else:
                 return str(self.eq_set) + " "
 
-        stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>" + "lv" + str(self.level) + " " + eq_set_str() + self.rarity + " " + self.type + "</b></font></shadow>\n"
+        if not self.eq_set == "Void":
+            stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>" + "lv" + str(self.level) + " " + eq_set_str() + self.rarity + " " + self.type + "</b></font></shadow>\n"
+        else:
+            stats = f"Void Force\n"
         if self.stars_rating > 0:
             stats += "<font color=" + star_color + ">" + '★'*min(int(self.stars_rating), 5) + "</font>" 
         if self.stars_rating > 5:
@@ -372,7 +442,7 @@ class Equip(Block):
             stats += f"<font color=#702963>Level up cost: {self.level_cost} </font>\n"
         else:
             stats += f"<font color=#702963>Level up cost: MAX </font>\n"
-        if include_market_price:
+        if include_market_price and not self.eq_set == "Void":
             stats += "<font color=" + market_color + ">" + f"Market Price: {int(self.market_value)}" + "</font>\n"
         stats += "</font>"
 
@@ -380,9 +450,11 @@ class Equip(Block):
 
 
 def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rarity=None, random_full_eqset=False, 
-                         eq_level=40) -> list:
+                         eq_level=40, include_void=False) -> list:
     items = []
     rarity_pool, types, eq_set_pool = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
+    if not include_void:
+        eq_set_pool.remove("Void")
     types_cycle = cycle(types)
     if random_full_eqset:
         random_eq_set = random.choice(eq_set_pool[1:])
@@ -394,14 +466,18 @@ def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rar
             item_eq_set = locked_eq_set if locked_eq_set else random.choice(eq_set_pool)
         item_rarity = locked_rarity if locked_rarity else random.choice(rarity_pool)
 
-        item = Equip(f"Item_{i + 1}", item_type, item_rarity, item_eq_set)
-        item.generate(eq_level)
+        item = Equip(f"Item_{i + 1}", item_type, item_rarity, item_eq_set, level=eq_level)
+        if include_void and item_eq_set == "Void":
+            item.generate_void()
+        else:
+            item.generate()
         items.append(item)
 
     return items
 
 def adventure_generate_random_equip_with_weight() -> Equip:
     rarity_pool, types, eq_set_pool = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
+    eq_set_pool.remove("Void")
     rarity_weights = list(range(len(rarity_pool), 0, -1)) 
     eq_set_weights = [len(eq_set_pool)] + [1] * (len(eq_set_pool) - 1)
  
@@ -409,7 +485,7 @@ def adventure_generate_random_equip_with_weight() -> Equip:
     type = random.choice(types)
     eq_set = random.choices(eq_set_pool, weights=eq_set_weights, k=1)[0]
     item = Equip("Foo", type, rarity, eq_set, level=1)
-    item.generate(1)
+    item.generate()
     return item
 
 

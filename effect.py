@@ -1,5 +1,6 @@
 from collections import Counter
 from fine_print import fine_print
+import random
 
 
 class Effect:
@@ -36,13 +37,11 @@ class Effect:
             self.apply_effect_on_trigger(character)
 
     def apply_effect_on_trigger(self, character):
-        # Allows applying effects on character.
         pass
 
     def apply_effect_at_end_of_turn(self, character):
         # This method is usually used for effects that need to toggle flag_for_remove on.
         # As effect is removed at the beginning of the next turn.
-        # Allows applying effects on character.
         pass
 
     def apply_effect_when_adding_stacks(self, character, stats_income):
@@ -57,21 +56,18 @@ class Effect:
     def apply_effect_during_damage_step(self, character, damage, attacker):
         """
         Include both damage step and status damage step.
-        Allows applying effects on character.
         """
         return damage
 
     def apply_effect_after_damage_step(self, character, damage, attacker):
         """
         Only include damage step, does not include status damage step.
-        Allows applying effects on character.
         """
         pass
 
     def apply_effect_after_status_damage_step(self, character, damage):
         """
         Only include status damage step, does not include damage step.
-        Allows applying effects on character.
         Not implemented in Character class.
         """
         pass
@@ -123,7 +119,7 @@ class ProtectedEffect(Effect):
             raise Exception
         if self.protector.is_alive():
             damage = damage * self.multiplier
-            self.protector.take_damage(damage, attacker, func_after_dmg)
+            self.protector.take_damage(damage, attacker, func_after_dmg, disable_protected_effect=True)
             return 0
         else:
             return damage
@@ -131,11 +127,11 @@ class ProtectedEffect(Effect):
     def apply_effect_on_trigger(self, character):
         # Double check, the first is to handle cases of leaving party unexpectedly.
         if self.protector not in character.ally or self.protector.is_dead():
-            self.flag_for_remove = True
+            character.remove_effect(self)
 
     def apply_effect_at_end_of_turn(self, character):
         if self.protector.is_dead():
-            self.flag_for_remove = True
+            character.remove_effect(self)
 
     def tooltip_description(self):
         return f"Protected by {self.protector.name}."
@@ -197,11 +193,26 @@ class SleepEffect(Effect):
         self.is_cc_effect = True
     
     def apply_effect_during_damage_step(self, character, damage, attacker):
-        self.flag_for_remove = True
+        character.remove_effect(self)
         return damage
 
     def tooltip_description(self):
         return "Cannot act, effect is removed when taking damage."
+
+
+# Confusion effect
+class ConfuseEffect(Effect):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
+        super().__init__(name, duration, is_buff)
+        self.name = "Confuse"
+        self.is_buff = False
+        self.cc_immunity = cc_immunity
+        self.delay_trigger = delay_trigger
+        self.apply_rule = "stack"
+        self.is_cc_effect = True
+    
+    def tooltip_description(self):
+        return "Attack random ally or enemy."
 
 
 # Fear effect
@@ -413,7 +424,7 @@ class ContinuousDamageEffect(Effect):
 # A variant of ContinuousDamageEffect, takes damage based on maxhp.
 class PoisonDamageEffect(Effect):
     """
-    Takes damage based on maxhp, current hp, or lost hp.
+    base: "maxhp", "hp", "losthp"
     """
     def __init__(self, name, duration, is_buff, value, imposter, base):
         super().__init__(name, duration, is_buff)
@@ -435,6 +446,49 @@ class PoisonDamageEffect(Effect):
             case _:
                 raise Exception("Invalid base.")
     
+    def tooltip_description(self):
+        return f"Take {int(self.value*100)}% {self.base} status damage each turn."
+
+
+# ---------------------------------------------------------
+# Plague effect
+# A variant of PoisonDamageEffect, at end of turn, value% chance to apply the same effect to a neighbor ally
+class PlagueEffect(Effect):
+    """
+    base: "maxhp", "hp", "losthp"
+    transmission_chance: float, 0.0 to 1.0
+    """
+    def __init__(self, name, duration, is_buff, value, imposter, base, transmission_chance):
+        super().__init__(name, duration, is_buff)
+        self.original_duration = duration
+        self.value = float(value)
+        self.is_buff = is_buff
+        self.imposter = imposter # The character that applies this effect
+        self.base = base # "maxhp", "hp", "losthp"
+        self.transmission_chance = transmission_chance
+    
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            return
+        match self.base:
+            case "maxhp":
+                character.take_status_damage(self.value * character.maxhp, self.imposter)
+            case "hp":
+                character.take_status_damage(self.value * character.hp, self.imposter)
+            case "losthp":
+                character.take_status_damage(self.value * (character.maxhp - character.hp), self.imposter)
+            case _:
+                raise Exception("Invalid base.")
+    
+    def apply_effect_at_end_of_turn(self, character):
+        t = character.get_neighbor_allies_not_including_self()
+        if t:
+            a = random.choice(t)
+            if a.has_effect_that_named(self.name, None, "PlagueEffect"):
+                return
+            if random.random() < self.transmission_chance:
+                a.apply_effect(PlagueEffect(self.name, self.original_duration, self.is_buff, self.value, self.imposter, self.base, self.transmission_chance))
+
     def tooltip_description(self):
         return f"Take {int(self.value*100)}% {self.base} status damage each turn."
 
@@ -642,9 +696,9 @@ class EffectShield3(Effect):
 
 
 #---------------------------------------------------------
-# Cancellation Shield effect (cancel 1 attack if attack damage exceed certain amount of max hp)
+# Cancellation Shield effect (cancel the damage to 0 if damage exceed certain amount of max hp)
 class CancellationShield(Effect):
-    def __init__(self, name, duration, is_buff, threshold, cc_immunity, running=False, logging=False, text_box=None):
+    def __init__(self, name, duration, is_buff, threshold, cc_immunity, running=False, logging=False, text_box=None, uses=1):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.threshold = threshold
@@ -653,10 +707,15 @@ class CancellationShield(Effect):
         self.logging = logging
         self.text_box = text_box
         self.sort_priority = 150
+        self.uses = uses
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
         if damage > character.maxhp * self.threshold:
-            character.remove_effect(self)
+            self.uses -= 1
+            if self.uses == 0:
+                character.remove_effect(self)
+            elif self.uses < 0:
+                raise Exception("Logic Error")
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{character.name} shielded the attack!\n")
             fine_print(f"{character.name} shielded the attack!", mode=character.fineprint_mode)
@@ -665,7 +724,7 @@ class CancellationShield(Effect):
             return damage
         
     def tooltip_description(self):
-        return f"Cancel 1 attack if damage exceed {self.threshold*100}% of max hp."
+        return f"Cancel attack {str(self.uses)} times if damage exceed {self.threshold*100}% of max hp."
 
 
 # Cancellation Shield 2 effect (cancel the damage that exceed certain amount of max hp)
@@ -685,9 +744,9 @@ class CancellationShield2(Effect):
         return f"Cancel the damage that exceed {self.threshold*100}% of max hp."
 
 
-# Cancellation Shield effect (cancel 1 attack if attack damage lower than certain amount of max hp)
+# Cancellation Shield effect (cancel the damage to 0 if damage lower than certain amount of max hp)
 class CancellationShield3(Effect):
-    def __init__(self, name, duration, is_buff, threshold, cc_immunity, running=False, logging=False, text_box=None):
+    def __init__(self, name, duration, is_buff, threshold, cc_immunity, running=False, logging=False, text_box=None, uses=1):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.threshold = threshold
@@ -696,10 +755,15 @@ class CancellationShield3(Effect):
         self.logging = logging
         self.text_box = text_box
         self.sort_priority = 150
+        self.uses = uses
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
         if damage < character.maxhp * self.threshold:
-            character.remove_effect(self)
+            self.uses -= 1
+            if self.uses == 0:
+                character.remove_effect(self)
+            elif self.uses < 0:
+                raise Exception("Logic Error")
             if self.running and self.logging:
                 self.text_box.append_html_text(f"{character.name} shielded the attack!\n")
             fine_print(f"{character.name} shielded the attack!", mode=character.fineprint_mode)
@@ -708,7 +772,7 @@ class CancellationShield3(Effect):
             return damage
         
     def tooltip_description(self):
-        return f"Cancel 1 attack if damage lower than {self.threshold*100}% of max hp."
+        return f"Cancel attack {str(self.uses)} times if damage lower than {self.threshold*100}% of max hp."
 
 
 # =========================================================

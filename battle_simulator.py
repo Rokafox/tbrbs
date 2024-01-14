@@ -7,6 +7,7 @@ import copy
 running = False
 logging = True
 text_box = None
+start_with_max_level = True
 
 
 # NOTE:
@@ -48,6 +49,7 @@ def load_player(filename="player_data.json"):
                 for attr, value in item_data.items():
                     if hasattr(item, attr):
                         setattr(item, attr, value)
+                item.estimate_market_price()
             case (_, "Food"): 
                 item_class = globals().get(item_data['name'])
                 if item_class:
@@ -59,6 +61,7 @@ def load_player(filename="player_data.json"):
 
         player.inventory.append(item)
         player.get_cash()
+    player.cleared_stages = data["cleared_stages"]
     return player, dict_character_name_lvl_exp_equip
 
 def is_someone_alive(party):
@@ -97,6 +100,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         self.dict_image_slots_items = {}
         self.dict_image_slots_rects = {}
         self.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Block)}
+        self.cleared_stages = 0
 
         if cash > 0:
             self.add_cash(cash, False)
@@ -105,7 +109,8 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         return {
             "cash": self.cash,
             "owned_characters": [character.to_dict() for character in self.owned_characters],
-            "inventory": [item.to_dict() for item in self.inventory]
+            "inventory": [item.to_dict() for item in self.inventory],
+            "cleared_stages": self.cleared_stages
         }
 
     def build_inventory_slots(self):
@@ -205,20 +210,21 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             raise ValueError("Amount to remove must be positive")
 
         removed_count = 0
-        for inv_item in self.inventory:
+        # print(f"Removing {amount_to_remove} {item_type.__name__} from inventory...")
+        for inv_item in self.inventory.copy():
             if isinstance(inv_item, item_type):
                 if inv_item.can_be_stacked:
-                    # Remove from the stack
                     amount_removed = min(amount_to_remove - removed_count, inv_item.current_stack)
                     inv_item.current_stack -= amount_removed
                     removed_count += amount_removed
+                    # print(f"Removed {amount_removed} {item_type.__name__} from inventory...")
+                    # print(f"Total removed: {removed_count} {item_type.__name__} from inventory...")
 
                     # Remove the item from inventory if the stack is empty
                     if inv_item.current_stack == 0:
                         self.inventory.remove(inv_item)
 
                 else:
-                    # If the item doesn't stack, just remove the whole item
                     self.inventory.remove(inv_item)
                     removed_count += 1
 
@@ -229,6 +235,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             raise ValueError("Not enough items in inventory to remove")
         if rebuild_inventory_slots:
             self.build_inventory_slots()
+        print(f"Finished!")
 
     def remove_selected_item_from_inventory(self, rebuild_inventory_slots: bool):
         # self.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item)}
@@ -345,17 +352,19 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         return self.cash
 
     def add_cash(self, amount: int, rebuild_inventory_slots: bool = True):
-        if amount > 0 and amount < 100000:  
-            self.add_to_inventory(Cash(amount), rebuild_inventory_slots)
-        elif amount > 99999:
-            # because Cash(amount) can only be max 99999, so if amount > 99999, we have to add multiple Cash()
-            # e.g. amount = 100000, we add Cash(99999) and Cash(1)
-            self.add_to_inventory(Cash(99999), rebuild_inventory_slots)
-            self.add_cash(amount - 99999, rebuild_inventory_slots)
-        elif amount == 0:
-            return
-        else:
-            raise ValueError("Amount must be positive")
+        if amount <= 0:
+            if amount == 0:
+                return
+            else:
+                raise ValueError("Amount must be positive")
+
+        while amount > 0:
+            if amount <= 99999:
+                self.add_to_inventory(Cash(amount), rebuild_inventory_slots)
+                amount = 0
+            else:
+                self.add_to_inventory(Cash(99999), rebuild_inventory_slots)
+                amount -= 99999
 
     def lose_cash(self, amount: int, rebuild_inventory_slots: bool = True):
         self.remove_from_inventory(Cash, amount, rebuild_inventory_slots)
@@ -366,7 +375,12 @@ try:
     print("Player and character data loaded.")
 except FileNotFoundError:
     print("Player data not found, creating a new one...")
-    player = Nine(5000)
+    if start_with_max_level:
+        player = Nine(50000000)
+        player.cleared_stages = 1999
+    else:
+        player = Nine(50000)
+        player.cleared_stages = 0
 
 # =====================================
 # End of Player Section
@@ -375,10 +389,14 @@ except FileNotFoundError:
 # =====================================
 
 def get_all_characters():
+    global start_with_max_level
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe"]
 
-    all_characters = [eval(f"{name}('{name}', 1)") for name in character_names]
+    if start_with_max_level:
+        all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
+    else:
+        all_characters = [eval(f"{name}('{name}', 1)") for name in character_names]
     return all_characters
 
 all_characters = get_all_characters()
@@ -401,6 +419,7 @@ else:
                 for attr, value in d.items():
                     if hasattr(item, attr):
                         setattr(item, attr, value)
+                item.estimate_market_price()
                 c.equip_item(item)
                 print(f"Equipped {str(item)} to {c.name}.")
 
@@ -424,7 +443,16 @@ def get_all_monsters():
                     "FutureSoldier_A", "FutureSoldier_B", "FutureSoldier_C", "FutureSoldier_D", "FutureSoldier_E", "FutureElite",
                     "Kobold_A", "Kobold_B", "Kobold_C", "Kobold_D", "Kobold_E",
                     "Father_A", "Father_B", "Father_C", "Father_D", "Father_E",
-                    "Fanatic_A", "Fanatic_B", "Fanatic_C", "Fanatic_D", "Fanatic_E"]
+                    "Fanatic_A", "Fanatic_B", "Fanatic_C", "Fanatic_D", "Fanatic_E", "MadScientist",
+                    "MoHawk_A", "MoHawk_B", "MoHawk_C", "MoHawk_D", "MoHawk_E",
+                    "Ork_A", "Ork_B", "Ork_C", "Ork_D", "Ork_E",
+                    "Mage_A", "Mage_B", "Mage_C", "Mage_D", "Mage_E",
+                    "Merman_A", "Merman_B", "Merman_C", "Merman_D", "Merman_E", "Golem",
+                    "Earth_A", "Earth_B", "Earth_C", "Earth_D", "Earth_E", "Goliath",
+                    "Wyvern_A", "Wyvern_B", "Wyvern_C", "Wyvern_D", "Wyvern_E",
+                    "Minotaur_A", "Minotaur_B", "Minotaur_C", "Minotaur_D", "Minotaur_E",
+                    "Tanuki_A", "Tanuki_B", "Tanuki_C", "Tanuki_D", "Tanuki_E", "Death",
+                    "Werewolf_A", "Werewolf_B", "Werewolf_C", "Werewolf_D", "Werewolf_E", "Queen"]
 
     for name in monster_names:
         match name:
@@ -468,6 +496,34 @@ def get_all_monsters():
                 monster = monsters.Father(name, 1)
             case name if name.startswith("Fanatic"):
                 monster = monsters.Fanatic(name, 1)
+            case name if name.startswith("MadScientist"):
+                monster = monsters.MadScientist(name, 1)
+            case name if name.startswith("MoHawk"):
+                monster = monsters.MoHawk(name, 1)
+            case name if name.startswith("Ork"):
+                monster = monsters.Ork(name, 1)
+            case name if name.startswith("Mage"):
+                monster = monsters.Mage(name, 1)
+            case name if name.startswith("Merman"):
+                monster = monsters.Merman(name, 1)
+            case name if name.startswith("Golem"):
+                monster = monsters.Golem(name, 1)
+            case name if name.startswith("Earth"):
+                monster = monsters.Earth(name, 1)
+            case name if name.startswith("Goliath"):
+                monster = monsters.Goliath(name, 1)
+            case name if name.startswith("Wyvern"):
+                monster = monsters.Wyvern(name, 1)
+            case name if name.startswith("Minotaur"):
+                monster = monsters.Minotaur(name, 1)
+            case name if name.startswith("Tanuki"):
+                monster = monsters.Tanuki(name, 1)
+            case name if name.startswith("Death"):
+                monster = monsters.Death(name, 1)
+            case name if name.startswith("Werewolf"):
+                monster = monsters.Werewolf(name, 1)
+            case name if name.startswith("Queen"):
+                monster = monsters.Queen(name, 1)
             case _:
                 raise ValueError(f"Invalid monster name: {name}")
         all_monsters.append(monster)
@@ -680,6 +736,9 @@ if __name__ == "__main__":
     equip_set_slot_party1 = [equip_slota5, equip_slotsb5, equip_slotsc5, equip_slotsd5, equip_slotse5]
     equip_set_slot_party2 = [equip_slotsf5, equip_slotsg5, equip_slotsh5, equip_slotsi5, equip_slotsj5]                            
 
+    for slot in equip_set_slot_party1 + equip_set_slot_party2:
+        slot.set_image(images_item["KKKKK"])
+
     # Character Names and Level Labels
     # ==========================
     label1 = pygame_gui.elements.UILabel(pygame.Rect((75, 10), (200, 50)),
@@ -827,30 +886,38 @@ if __name__ == "__main__":
                                         manager=ui_manager,
                                         tool_tip_text = "Switch between Casual Training Mode and Adventure Mode")
     switch_game_mode_button.set_tooltip("アドベンチャーモードとトレーニングモードを切り替える。", delay=0.1, wrap_width=300)
-    adventure_mode_stages = {}
-    adventure_mode_current_stage = 1
-    adventure_mode_stages[1] = random.sample([x for x in all_monsters if not x.is_boss], k=5)
 
-    def adventure_mode_stage_increase():
+    def adventure_mode_generate_stage():
         global current_game_mode, adventure_mode_current_stage, adventure_mode_stages
-        if current_game_mode == "Training Mode":
-            raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
-        if adventure_mode_current_stage == 2000:
-            text_box.append_html_text("We have reached the end of the world.\n")
-            return
-        adventure_mode_current_stage += 1
         for m in all_monsters:
             m.lvl = adventure_mode_current_stage
         # Boss monsters have attribute is_boss = True, every 10 stages, starting from stage 10, summon a boss monster
         # There can only be 1 boss monster in a stage
-        if adventure_mode_current_stage % 10 == 0:
+        if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000:
             new_selection_of_monsters = random.sample([x for x in all_monsters if not x.is_boss], k=4)
             boss_monster = random.choice([x for x in all_monsters if x.is_boss])
-            new_selection_of_monsters.insert(2, boss_monster)  # Insert boss monster in the middle
+            new_selection_of_monsters.insert(2, boss_monster)
         else:
             new_selection_of_monsters = random.sample([x for x in all_monsters if not x.is_boss], k=5)
         if not adventure_mode_stages.get(adventure_mode_current_stage):
             adventure_mode_stages[adventure_mode_current_stage] = new_selection_of_monsters
+        if adventure_mode_current_stage > 1000:
+            for m in adventure_mode_stages[adventure_mode_current_stage]:
+                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Common", 
+                                                            eq_level=int(adventure_mode_current_stage - 1000)))
+
+    def adventure_mode_stage_increase():
+        global current_game_mode, adventure_mode_current_stage
+        if current_game_mode == "Training Mode":
+            raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
+        if adventure_mode_current_stage == 2000:
+            text_box.set_text("We have reached the end of the world.\n")
+            return
+        if player.cleared_stages < adventure_mode_current_stage:
+            text_box.set_text("We have not cleared the current stage.\n")
+            return
+        adventure_mode_current_stage += 1
+        adventure_mode_generate_stage()
         set_up_characters_adventure_mode()
 
     def adventure_mode_stage_decrease():
@@ -858,12 +925,21 @@ if __name__ == "__main__":
         if current_game_mode == "Training Mode":
             raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
         if adventure_mode_current_stage == 1:
-            text_box.append_html_text("This stage is the start of the journey.\n")
+            text_box.set_text("This stage is the start of the journey.\n")
             return
         adventure_mode_current_stage -= 1
-        for m in all_monsters:
-            m.lvl = adventure_mode_current_stage
+        adventure_mode_generate_stage()
         set_up_characters_adventure_mode()
+
+
+    adventure_mode_stages = {} # int : list of monsters
+    if player.cleared_stages > 0:
+        print(f"Loading adventure mode stages from player data. Current stage: {player.cleared_stages}")
+        adventure_mode_current_stage = min(player.cleared_stages + 1, 2000)
+    else:
+        adventure_mode_current_stage = 1
+    adventure_mode_generate_stage()
+
 
     def adventure_mode_exp_reward():
         global adventure_mode_current_stage, party1
@@ -885,7 +961,7 @@ if __name__ == "__main__":
         if enemy_average_level > average_party_level:
             cash_reward_multiplier = (enemy_average_level / average_party_level)
         random_factor = random.uniform(0.8, 1.2)
-        cash = adventure_mode_current_stage * random_factor * cash_reward_multiplier
+        cash = adventure_mode_current_stage * 2 * random_factor * cash_reward_multiplier
         if adventure_mode_current_stage % 10 == 0: # boss stage
             cash *= 1.5
         cash = max(1, cash)
@@ -916,7 +992,7 @@ if __name__ == "__main__":
     label_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((870, 360), (25, 35)),
                                         "→",
                                         ui_manager)
-    label_character_selection_menu.set_tooltip("選択したキャラクター", delay=0.1)
+    label_character_selection_menu.set_tooltip("選択したキャラクター。キャラクター画像をクリックしても選択できます。", delay=0.1)
 
     reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option1"],
                                                             "Option1",
@@ -957,6 +1033,7 @@ if __name__ == "__main__":
     def use_item():
         # Nine.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Equip|Consumable|Item)})}
         # get all selected items
+        text_box.set_text("==============================\n")
         selected_items = []
         # print(player.selected_item)
         if not player.selected_item:
@@ -974,7 +1051,7 @@ if __name__ == "__main__":
                 text_box.append_html_text("Cannot equip items when not in first turn or after the battle is concluded.\n")
                 return
             for character in all_characters:
-                if character.name == character_selection_menu.selected_option and character.is_alive():
+                if character.name == character_selection_menu.selected_option.split()[-1] and character.is_alive():
                     # check if selected items have more than 1 of the same type
                     item_types_seen = []
                     for item in selected_items:
@@ -996,12 +1073,12 @@ if __name__ == "__main__":
                         player.add_package_of_items_to_inventory(old_items)
                     else:
                         player.remove_selected_item_from_inventory(True)
-                elif character.name == character_selection_menu.selected_option and not character.is_alive():
+                elif character.name == character_selection_menu.selected_option.split()[-1] and not character.is_alive():
                     text_box.append_html_text(f"Can only equip items to alive characters.\n")
                     return
         elif cheap_inventory_show_current_option == "Consumable":
             for character in all_characters:
-                if character.name == character_selection_menu.selected_option:
+                if character.name == character_selection_menu.selected_option.split()[-1]:
                     for consumable in selected_items:
                         if not consumable.can_use_on_dead and not character.is_alive():
                             text_box.append_html_text(f"Cannot use {str(consumable)} on dead characters.\n")
@@ -1015,6 +1092,7 @@ if __name__ == "__main__":
 
 
     def item_sell_selected():
+        text_box.set_text("==============================\n")
         selected_items = []
         if not player.selected_item:
             text_box.append_html_text("No item is selected.\n")
@@ -1038,6 +1116,7 @@ if __name__ == "__main__":
         """
         Sell half stack of selected items in inventory
         """
+        text_box.set_text("==============================\n")
         selected_items = []
         if not player.selected_item:
             text_box.append_html_text("No item is selected.\n")
@@ -1093,11 +1172,12 @@ if __name__ == "__main__":
     character_eq_unequip_button.set_tooltip("選択したキャラクターから装備品を外す。", delay=0.1, wrap_width=300)
 
     def unequip_item():
+        text_box.set_text("==============================\n")
         if not is_in_manipulatable_game_states():
             text_box.append_html_text("Cannot unequip items when not in first turn or after the battle is concluded.\n")
             return
         for character in all_characters:
-            if character.name == character_selection_menu.selected_option and character.is_alive():
+            if character.name == character_selection_menu.selected_option.split()[-1] and character.is_alive():
                 item_type = eq_selection_menu.selected_option
                 unequipped_item = character.unequip_item(item_type, False)
                 if unequipped_item:
@@ -1107,7 +1187,7 @@ if __name__ == "__main__":
                     text_box.append_html_text(f"{character.name} does not have {item_type} equipped.\n")
                 redraw_ui(party1, party2)
                 return
-            elif character.name == character_selection_menu.selected_option and not character.is_alive():
+            elif character.name == character_selection_menu.selected_option.split()[-1] and not character.is_alive():
                 text_box.append_html_text(f"Can only unequip items from alive characters.\n")
                 return
 
@@ -1119,6 +1199,7 @@ if __name__ == "__main__":
     eq_stars_upgrade_button.set_tooltip("インベントリ内の選択した装備品のスターランクを上げる。", delay=0.1, wrap_width=300)
 
     def eq_stars_upgrade(is_upgrade: bool):
+        text_box.set_text("==============================\n")
         selected_items = []
         # print(player.selected_item)
         if not player.selected_item:
@@ -1149,8 +1230,10 @@ if __name__ == "__main__":
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_upgrade:
                     k.set_tooltip(item_to_upgrade.print_stats_html(), delay=0.1, wrap_width=300)
-        player.lose_cash(cost_total, False)
-        text_box.append_html_text(f"Upgraded {len(selected_items)} items for {cost_total} cash.\n")
+        if cost_total > 0:
+            print(f"Cost total: {cost_total}. Player cash: {player.get_cash()}")
+            player.lose_cash(cost_total, False)
+            text_box.append_html_text(f"Upgraded {len(selected_items)} items for {cost_total} cash.\n")
 
     eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (156, 35)),
                                         text='Level Up',
@@ -1159,6 +1242,7 @@ if __name__ == "__main__":
     eq_levelup_button.set_tooltip("インベントリ内の選択した装備品をレベルアップする。", delay=0.1, wrap_width=300)
 
     def eq_level_up(is_level_up: bool = True):
+        text_box.set_text("==============================\n")
         selected_items = []
         if not player.selected_item:
             text_box.append_html_text("No item is selected.\n")
@@ -1176,7 +1260,7 @@ if __name__ == "__main__":
             return
 
         for item_to_level_up in selected_items:
-            if item_to_level_up.level >= 1000 and is_level_up:
+            if item_to_level_up.level >= item_to_level_up.level_max and is_level_up:
                 text_box.append_html_text(f"Max level reached: {str(item_to_level_up)}\n")
                 continue
             if item_to_level_up.level <= 0 and not is_level_up:
@@ -1188,8 +1272,9 @@ if __name__ == "__main__":
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_level_up:
                     k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=300)
-        player.lose_cash(cost_total, False)
-        text_box.append_html_text(f"Leveled {len(selected_items)} items for {cost_total} cash.\n")
+        if cost_total > 0:
+            player.lose_cash(cost_total, False)
+            text_box.append_html_text(f"Leveled {len(selected_items)} items for {cost_total} cash.\n")
 
     
     eq_sell_selected_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 500), (156, 35)),
@@ -1199,6 +1284,7 @@ if __name__ == "__main__":
     eq_sell_selected_button.set_tooltip("インベントリ内の選択した装備品を売却する。", delay=0.1, wrap_width=300)
 
     def eq_sell_selected():
+        text_box.set_text("==============================\n")
         selected_items = []
         if not player.selected_item:
             text_box.append_html_text("No item is selected.\n")
@@ -1216,25 +1302,67 @@ if __name__ == "__main__":
             text_box.append_html_text(f"Sold {item_to_sell} in inventory and gained {eq_market_value} cash.\n")
         player.remove_selected_item_from_inventory(True)
 
-    eq_sell_half_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 540), (156, 35)),
-                                        text='Sell Half',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Sell the lower market value half of all equipment.")
-    eq_sell_half_button.set_tooltip("インベントリ内の装備品のうち、市場価値が低い半分を売却する。", delay=0.1, wrap_width=300)
+    eq_sell_low_value_selection_menu = pygame_gui.elements.UIDropDownMenu(["50", "60", "70", "80", "90", "100", "200", "500", "1000", "2000", "3000", "4000", "5000"],
+                                                            "50",
+                                                            pygame.Rect((1080, 540), (156, 35)),
+                                                            ui_manager)
 
-    def eq_sell_half():
+
+    eq_sell_low_value_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 580), (156, 35)),
+                                        text='Sell Low Value',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Sell all equipment that is below the selected market value.")
+    eq_sell_low_value_button.set_tooltip("インベントリ内の装備品が市場価値以下のものを売却する。", delay=0.1, wrap_width=300)
+
+
+    def eq_sell_low_value(sell_value_below: int):
         # sell half of all equipment, sorted by market value
-        all_equipment = [x for x in player.inventory if isinstance(x, Equip)]
-        all_equipment.sort(key=lambda x: x.market_value)
-        half = len(all_equipment) // 2
+        text_box.set_text("==============================\n")
+        eq_to_sell = [x for x in player.inventory if isinstance(x, Equip) and x.market_value <= sell_value_below]
         total_income = 0
-        for i in range(half):
-            eq_market_value = int(all_equipment[i].market_value)
-            total_income += eq_market_value
-            player.inventory.remove(all_equipment[i])
+        if not eq_to_sell:
+            text_box.append_html_text(f"No equipment below market value {sell_value_below} to sell.\n")
+            return
+        for eq in eq_to_sell.copy():
+            total_income += int(eq.market_value)
+            player.inventory.remove(eq)
         player.add_cash(total_income, False)
-        text_box.append_html_text(f"Sold {half} equipment for {total_income} cash.\n")
+        text_box.append_html_text(f"Sold {len(eq_to_sell)} equipment for {total_income} cash.\n")
         player.build_inventory_slots()
+
+
+    eq_level_up_to_max_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 620), (156, 35)),
+                                        text='Level Up To Max',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Try level up selected item to max level until Cash is exhausted.")
+    eq_level_up_to_max_button.set_tooltip("インベントリ内の選択した装備品を最大レベルまでレベルアップする。", delay=0.1, wrap_width=300)
+
+    def eq_level_up_to_max():
+        text_box.set_text("==============================\n")
+        selected_items = []
+        if not player.selected_item:
+            text_box.append_html_text("No item is selected.\n")
+            return
+        for a, b, c in player.selected_item.values():
+            if b:
+                selected_items.append(c)
+        if not selected_items:
+            text_box.append_html_text("No item is selected.\n")
+            return
+
+        for item_to_level_up in selected_items:
+            available_cash = player.get_cash()
+            remaining_funds, cost = item_to_level_up.level_up_as_possible(available_cash)
+            if cost:
+                player.lose_cash(cost, False)
+                text_box.append_html_text(f"Leveled up {item_to_level_up} in inventory for {cost} cash.\n")
+            else:
+                text_box.append_html_text(f"Cannot level up {item_to_level_up} in inventory.\n")
+            for k, (a, b, c) in player.selected_item.items():
+                if c == item_to_level_up:
+                    k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=300)
+
+
 
 
     # =====================================
@@ -1368,11 +1496,10 @@ if __name__ == "__main__":
 
 
     def next_turn(party1, party2):
-        global turn, text_box, current_game_mode, player
+        global turn, text_box, current_game_mode, player, adventure_mode_current_stage
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             return 0
         
-        text_box.set_text("Welcome to the battle simulator!\n")
         buff_before = {character.name: character.buffs for character in party1 + party2} # A dictionary of lists
         # character.buff is a list of objects, so we want to only get the buff.name
         buff_before = {k: [x.name for x in buff_before[k]] for k in buff_before.keys()}
@@ -1381,7 +1508,7 @@ if __name__ == "__main__":
         shield_value_before = {character.name: character.get_shield_value() for character in party1 + party2}
 
 
-        text_box.append_html_text("=====================================\n")
+        text_box.set_text("=====================================\n")
         text_box.append_html_text(f"Turn {turn}\n")
 
         reset_ally_enemy_attr(party1, party2)
@@ -1423,6 +1550,7 @@ if __name__ == "__main__":
             elif not is_someone_alive(party2):
                 if current_game_mode == "Adventure Mode":
                     text_box.append_html_text("Victory!\n")
+                    player.cleared_stages = adventure_mode_current_stage
                     # gain exp for alive characters in party 1
                     for character in party1:
                         if character.is_alive():
@@ -1479,6 +1607,7 @@ if __name__ == "__main__":
             elif not is_someone_alive(party2):
                 if current_game_mode == "Adventure Mode":
                     text_box.append_html_text("Victory!\n")
+                    player.cleared_stages = adventure_mode_current_stage
                     # gain exp for alive characters in party 1
                     for character in party1:
                         if character.is_alive():
@@ -1529,6 +1658,7 @@ if __name__ == "__main__":
             elif not is_someone_alive(party2):
                 if current_game_mode == "Adventure Mode":
                     text_box.append_html_text("Victory!\n")
+                    player.cleared_stages = adventure_mode_current_stage
                     # gain exp for alive characters in party 1
                     for character in party1:
                         if character.is_alive():
@@ -1602,8 +1732,7 @@ if __name__ == "__main__":
         logging = True
         for c in all_characters + all_monsters:
             c.logging = True
-        text_box.set_text("Welcome to the battle simulator!\n")
-        text_box.append_html_text("=====================================\n")
+        text_box.set_text("=====================================\n")
         text_box.append_html_text(f"Turn {turn}\n")
 
         if turn >= 300:
@@ -1628,9 +1757,9 @@ if __name__ == "__main__":
             character.reset_stats()
         reset_ally_enemy_attr(party1, party2)
         for character in party1:
-            character.battle_entry_effects()
+            character.battle_entry_effects_activate()
         for character in party2:
-            character.battle_entry_effects()
+            character.battle_entry_effects_activate()
         redraw_ui(party1, party2, redraw_eq_slots=False)
         turn = 1
 
@@ -1646,10 +1775,31 @@ if __name__ == "__main__":
             return True
         return False
 
+
+    def handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu, di=0):
+        """
+        remaining_characters_show_in_menu: Can be None, if so, it is not being rebuilt
+        di: Default option index
+        """
+        global character_selection_menu, reserve_character_selection_menu, ui_manager
+
+        character_selection_menu.kill()
+        character_selection_menu = pygame_gui.elements.UIDropDownMenu(party_show_in_menu,
+                                                                party_show_in_menu[di],
+                                                                pygame.Rect((900, 360), (156, 35)),
+                                                                ui_manager)
+
+        if remaining_characters_show_in_menu:
+            reserve_character_selection_menu.kill()
+            reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(remaining_characters_show_in_menu,
+                                                                    remaining_characters_show_in_menu[0],
+                                                                    pygame.Rect((900, 400), (156, 35)),
+                                                                    ui_manager)
+
     def set_up_characters(is_start_of_app=False):
         global character_selection_menu, reserve_character_selection_menu, all_characters, party2, party1, text_box
         if not is_start_of_app:
-            text_box.set_text("Welcome to the battle simulator!\n")
+            text_box.set_text("==============================\n")
         for character in all_characters:
             character.reset_stats()
         party1 = []
@@ -1660,29 +1810,23 @@ if __name__ == "__main__":
         random.shuffle(list_of_characters)
         party1 = list_of_characters[:5]
         party2 = list_of_characters[5:]
-        character_selection_menu.kill()
-        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
-                                                                party1[0].name,
-                                                                pygame.Rect((900, 360), (156, 35)),
-                                                                ui_manager)
 
-        reserve_character_selection_menu.kill()
-        reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in remaining_characters],
-                                                                remaining_characters[0].name,
-                                                                pygame.Rect((900, 400), (156, 35)),
-                                                                ui_manager)
+        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+        remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
+        handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu)
+
         reset_ally_enemy_attr(party1, party2)
         for character in party1:
-            character.battle_entry_effects()
+            character.battle_entry_effects_activate()
         for character in party2:
-            character.battle_entry_effects()
+            character.battle_entry_effects_activate()
         redraw_ui(party1, party2)
         return party1, party2
 
 
     def set_up_characters_adventure_mode(shuffle_characters=False):
         global character_selection_menu, reserve_character_selection_menu, all_characters, all_monsters, party2, party1, text_box
-        text_box.set_text("Welcome to the battle simulator!\n")
+        text_box.set_text("==============================\n")
         for character in all_characters + all_monsters:
             character.reset_stats()
         if shuffle_characters:
@@ -1690,74 +1834,52 @@ if __name__ == "__main__":
         party2 = adventure_mode_stages[adventure_mode_current_stage]
         remaining_characters = [character for character in all_characters if character not in party1]
         remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
+        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+        remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
+        handle_UIDropDownMenu(party1_show_in_menu, remaining_characters_show_in_menu)
 
-        character_selection_menu.kill()
-        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1],
-                                                                party1[0].name,
-                                                                pygame.Rect((900, 360), (156, 35)),
-                                                                ui_manager)
-
-        reserve_character_selection_menu.kill()
-        reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in remaining_characters],
-                                                                remaining_characters[0].name,
-                                                                pygame.Rect((900, 400), (156, 35)),
-                                                                ui_manager)
         reset_ally_enemy_attr(party1, party2)
         for character in party1:
-            character.battle_entry_effects()
+            character.battle_entry_effects_activate()
         for character in party2:
-            character.battle_entry_effects()
+            character.battle_entry_effects_activate()
         redraw_ui(party1, party2)
         return party1, party2
 
 
     def replace_character_with_reserve_member(character_name, new_character_name):
-        global party1, party2, all_characters, character_selection_menu, reserve_character_selection_menu,current_game_mode
+        global party1, party2, all_characters, character_selection_menu, reserve_character_selection_menu, current_game_mode
         def replace_in_party(party):
             for i, character in enumerate(party):
                 if character.name == character_name:
                     new_character = next((char for char in all_characters if char.name == new_character_name), None)
                     if new_character:
                         party[i] = new_character
-                        return True, new_character
+                        return True, new_character, i
             return False, None
-        replaced, new_character = replace_in_party(party1)
+        replaced, new_character, nci = replace_in_party(party1)
         if not replaced:
-            replaced, new_character = replace_in_party(party2)
+            replaced, new_character, nci = replace_in_party(party2)
+            nci += len(party1) # New character index
         if current_game_mode == "Adventure Mode":
-            character_selection_menu.kill()
-            character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1],
-                                                                    party1[0].name,
-                                                                    pygame.Rect((900, 360), (156, 35)),
-                                                                    ui_manager)
-
             remaining_characters = [character for character in all_characters if character not in party1]
             remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
+            party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+            remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
 
-            reserve_character_selection_menu.kill()
-            reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in remaining_characters],
-                                                                    remaining_characters[0].name,
-                                                                    pygame.Rect((900, 400), (156, 35)),
-                                                                    ui_manager)
+            handle_UIDropDownMenu(party1_show_in_menu, remaining_characters_show_in_menu, nci)
+        elif current_game_mode == "Training Mode":
+            remaining_characters = [character for character in all_characters if character not in party1 + party2]
+            remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
+            party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+            remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
+            handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu, nci)
         else:
-            character_selection_menu.kill()
-            character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
-                                                                    party1[0].name,
-                                                                    pygame.Rect((900, 360), (156, 35)),
-                                                                    ui_manager)
-
-            remaining_characters = [character for character in all_characters if character not in party1 and character not in party2]
-
-            reserve_character_selection_menu.kill()
-            reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in remaining_characters],
-                                                                    remaining_characters[0].name,
-                                                                    pygame.Rect((900, 400), (156, 35)),
-                                                                    ui_manager)
+            raise Exception(f"Unknown game mode: {current_game_mode} in replace_character_with_reserve_member()")
         reset_ally_enemy_attr(party1, party2)
-        new_character.battle_entry_effects()
+        new_character.battle_entry_effects_activate()
         redraw_ui(party1, party2)
         text_box.append_html_text(f"{character_name} has been replaced with {new_character_name}.\n")
-
 
     def add_outline_to_image(surface, outline_color, outline_thickness):
         """
@@ -2060,12 +2182,13 @@ if __name__ == "__main__":
     # Text Entry Box Section
     # =====================================
     text_box = pygame_gui.elements.UITextEntryBox(pygame.Rect((300, 300), (556, 295)),"", ui_manager)
-    text_box.set_text("Hover over character name to show skill information.\n")
-    text_box.append_html_text("If lower cased character_name.jpg or png file is not found in ./image/character directory, 404.png will be used instead.\n")
-    text_box.append_html_text("If lower cased item_name.jpg or png file is not found in ./image/item directory, 404.png will be used instead.\n")
-    text_box.append_html_text("If lower cased monster_original_name.jpg or png file is not found in ./image/monster directory, 404.png will be used instead.\n")
-    text_box.append_html_text("Hover over character image to show attributes.\n")
-    text_box.append_html_text("Hover over character health bar to show status effects.\n")
+    text_box_introduction_text = "Hover over character name to show skill information.\n"
+    text_box_introduction_text += "If lower cased character_name.jpg or png file is not found in ./image/character directory, 404.png will be used instead.\n"
+    text_box_introduction_text += "If lower cased item_name.jpg or png file is not found in ./image/item directory, 404.png will be used instead.\n"
+    text_box_introduction_text += "If lower cased monster_original_name.jpg or png file is not found in ./image/monster directory, 404.png will be used instead.\n"
+    text_box_introduction_text += "Hover over character image to show attributes.\n"
+    text_box_introduction_text += "Hover over character health bar to show status effects.\n"
+    text_box.set_text(text_box_introduction_text)
 
     box_submenu_previous_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((300, 560), (120, 35)),
                                                                     text='Previous Stage',
@@ -2075,7 +2198,7 @@ if __name__ == "__main__":
     box_submenu_next_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((425, 560), (120, 35)),
                                                                     text='Next Stage',
                                                                     manager=ui_manager)
-    box_submenu_next_stage_button.set_tooltip("Go to next stage.", delay=0.1)
+    box_submenu_next_stage_button.set_tooltip("次のステージに進む。現在のステージがクリアされている場合のみ進むことができます。", delay=0.1)
     box_submenu_previous_stage_button.hide()
     box_submenu_next_stage_button.hide()
     box_submenu_stage_info_label = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((550, 560), (80, 35)),
@@ -2088,7 +2211,7 @@ if __name__ == "__main__":
     box_submenu_explore_button.set_tooltip("選択した資金で世界を探索する。ランダムなアイテムを報酬として獲得しますが、1つのアイテムの価値は資金の2倍以上になることはない。", delay=0.1, wrap_width=300)
     box_submenu_explore_button.hide()
 
-    box_submenu_explore_funds_selection = pygame_gui.elements.UIDropDownMenu(["200", "1000", "2000", "5000", "10000", "20000", "50000"],
+    box_submenu_explore_funds_selection = pygame_gui.elements.UIDropDownMenu(["50", "100", "200", "500", "1000", "5000", "10000"],
                                                                     "200",
                                                                     pygame.Rect((760, 560), (100, 35)),
                                                                     ui_manager)
@@ -2116,17 +2239,19 @@ if __name__ == "__main__":
     def explore_brave_new_world():
         global player, text_box
         if player.get_cash() < int(box_submenu_explore_funds_selection.selected_option):
-            text_box.append_html_text("Not enough cash.\n")
+            text_box.set_text("Not enough cash.\n")
             return
 
-        desired_market_value = int(box_submenu_explore_funds_selection.selected_option) * 0.66 # 2/3 of the funds will be used to generate items, the rest is a fee for the service.
+        desired_market_value = int(box_submenu_explore_funds_selection.selected_option)
         package = explore_generate_package_of_items_to_desired_value(desired_market_value)
-        text_box.append_html_text("You have gained the following items:\n")
+        text_box.set_text("You have gained the following items:\n")
+        text_box_text = ""
         for item in package:
-            text_box.append_html_text(f"{str(item)}, which is worth {int(item.market_value)} cash.\n")
+            text_box_text += f"{str(item)}, which is worth {int(item.market_value)} cash.\n"
         player.add_package_of_items_to_inventory(package)
 
-        text_box.append_html_text(f"You have spent {int(box_submenu_explore_funds_selection.selected_option)} cash and the total value of the items you gained is {int(sum([x.market_value for x in package]))} cash.\n")
+        text_box_text += f"You have spent {int(box_submenu_explore_funds_selection.selected_option)} cash and the total value of the items you gained is {int(sum([x.market_value for x in package]))} cash.\n"
+        text_box.append_html_text(text_box_text)
         player.lose_cash(int(box_submenu_explore_funds_selection.selected_option))
 
 
@@ -2148,7 +2273,6 @@ if __name__ == "__main__":
     party2 = []
     party1, party2 = set_up_characters(is_start_of_app=True)
     player.build_inventory_slots()
-    # player.add_cash(1000000)
     turn = 1
 
     auto_battle_active = False
@@ -2174,75 +2298,60 @@ if __name__ == "__main__":
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 # print(event.pos)
                 if image_slot1.get_abs_rect().collidepoint(event.pos):
-                    if not current_game_mode == "Adventure Mode":
-                        character_selection_menu.kill()
-                        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
-                                                    party1[0].name,
-                                                    pygame.Rect((900, 360), (156, 35)),
-                                                    ui_manager)
+                    if current_game_mode == "Training Mode":
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        handle_UIDropDownMenu(party_show_in_menu, None, 0)
+                    elif current_game_mode == "Adventure Mode":
+                        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+                        handle_UIDropDownMenu(party1_show_in_menu, None, 0)
                 if image_slot2.get_abs_rect().collidepoint(event.pos):
-                    if not current_game_mode == "Adventure Mode":
-                        character_selection_menu.kill()
-                        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
-                                                    party1[1].name,
-                                                    pygame.Rect((900, 360), (156, 35)),
-                                                    ui_manager)
+                    if current_game_mode == "Training Mode":
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        handle_UIDropDownMenu(party_show_in_menu, None, 1)
+                    elif current_game_mode == "Adventure Mode":
+                        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+                        handle_UIDropDownMenu(party1_show_in_menu, None, 1)
                 if image_slot3.get_abs_rect().collidepoint(event.pos):
-                    if not current_game_mode == "Adventure Mode":
-                        character_selection_menu.kill()
-                        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
-                                                    party1[2].name,
-                                                    pygame.Rect((900, 360), (156, 35)),
-                                                    ui_manager)
+                    if current_game_mode == "Training Mode":
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        handle_UIDropDownMenu(party_show_in_menu, None, 2)
+                    elif current_game_mode == "Adventure Mode":
+                        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+                        handle_UIDropDownMenu(party1_show_in_menu, None, 2)
                 if image_slot4.get_abs_rect().collidepoint(event.pos):
-                    if not current_game_mode == "Adventure Mode":
-                        character_selection_menu.kill()
-                        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
-                                                    party1[3].name,
-                                                    pygame.Rect((900, 360), (156, 35)),
-                                                    ui_manager)
+                    if current_game_mode == "Training Mode":
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        handle_UIDropDownMenu(party_show_in_menu, None, 3)
+                    elif current_game_mode == "Adventure Mode":
+                        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+                        handle_UIDropDownMenu(party1_show_in_menu, None, 3)
                 if image_slot5.get_abs_rect().collidepoint(event.pos):
-                    if not current_game_mode == "Adventure Mode":
-                        character_selection_menu.kill()
-                        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
-                                                    party1[4].name,
-                                                    pygame.Rect((900, 360), (156, 35)),
-                                                    ui_manager)
+                    if current_game_mode == "Training Mode":
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        handle_UIDropDownMenu(party_show_in_menu, None, 4)
+                    elif current_game_mode == "Adventure Mode":
+                        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+                        handle_UIDropDownMenu(party1_show_in_menu, None, 4)
                 if image_slot6.get_abs_rect().collidepoint(event.pos):
-                    if not current_game_mode == "Adventure Mode":
-                        character_selection_menu.kill()
-                        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
-                                                    party2[0].name,
-                                                    pygame.Rect((900, 360), (156, 35)),
-                                                    ui_manager)
+                    if current_game_mode == "Training Mode":
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        handle_UIDropDownMenu(party_show_in_menu, None, 5)
                 if image_slot7.get_abs_rect().collidepoint(event.pos):
-                    if not current_game_mode == "Adventure Mode":
-                        character_selection_menu.kill()
-                        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
-                                                    party2[1].name,
-                                                    pygame.Rect((900, 360), (156, 35)),
-                                                    ui_manager)
+                    if current_game_mode == "Training Mode":
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        handle_UIDropDownMenu(party_show_in_menu, None, 6)
                 if image_slot8.get_abs_rect().collidepoint(event.pos):
-                    if not current_game_mode == "Adventure Mode":
-                        character_selection_menu.kill()
-                        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2],
-                                                    party2[2].name,
-                                                    pygame.Rect((900, 360), (156, 35)),
-                                                    ui_manager)
+                    if current_game_mode == "Training Mode":
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        handle_UIDropDownMenu(party_show_in_menu, None, 7)
                 if image_slot9.get_abs_rect().collidepoint(event.pos):
-                    if not current_game_mode == "Adventure Mode":
-                        character_selection_menu.kill()
-                        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party1] + [character.name for character in party2], 
-                                                    party2[3].name,
-                                                    pygame.Rect((900, 360), (156, 35)),
-                                                    ui_manager)
+                    if current_game_mode == "Training Mode":
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        handle_UIDropDownMenu(party_show_in_menu, None, 8)
                 if image_slot10.get_abs_rect().collidepoint(event.pos):
-                    if not current_game_mode == "Adventure Mode":
-                        character_selection_menu.kill()
-                        character_selection_menu = pygame_gui.elements.UIDropDownMenu([character.name for character in party2] + [character.name for character in party2],
-                                                    party2[4].name,
-                                                    pygame.Rect((900, 360), (156, 35)),
-                                                    ui_manager)
+                    if current_game_mode == "Training Mode":
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        handle_UIDropDownMenu(party_show_in_menu, None, 9)
 
                 for ui_image, rect in player.dict_image_slots_rects.items():
                     if rect.collidepoint(event.pos):
@@ -2260,9 +2369,9 @@ if __name__ == "__main__":
 
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == button_left_clear_board:
-                    text_box.set_text("Welcome to the battle simulator!\n")
+                    text_box.set_text("==============================\n")
                 if event.ui_element == button1: # Shuffle party
-                    text_box.set_text("Welcome to the battle simulator!\n")
+                    text_box.set_text("==============================\n")
                     if current_game_mode == "Training Mode":
                         party1, party2 = set_up_characters()
                     elif current_game_mode == "Adventure Mode":
@@ -2299,7 +2408,7 @@ if __name__ == "__main__":
                 if event.ui_element == button3:
                     all_turns(party1, party2)
                 if event.ui_element == button4: # Restart battle
-                    text_box.set_text("Welcome to the battle simulator!\n")
+                    text_box.set_text("==============================\n")
                     restart_battle()
                 if event.ui_element == button_quit_game:
                     save_player(player)
@@ -2307,13 +2416,15 @@ if __name__ == "__main__":
                 if event.ui_element == eq_stars_upgrade_button:
                     eq_stars_upgrade(True)
                 if event.ui_element == character_replace_button:
-                    replace_character_with_reserve_member(character_selection_menu.selected_option, reserve_character_selection_menu.selected_option)
+                    replace_character_with_reserve_member(character_selection_menu.selected_option.split()[-1], reserve_character_selection_menu.selected_option.split()[-1])
                 if event.ui_element == eq_levelup_button:
                     eq_level_up()
+                if event.ui_element == eq_level_up_to_max_button:
+                    eq_level_up_to_max()
                 if event.ui_element == eq_sell_selected_button:
                     eq_sell_selected()
-                if event.ui_element == eq_sell_half_button:
-                    eq_sell_half()
+                if event.ui_element == eq_sell_low_value_button:
+                    eq_sell_low_value(int(eq_sell_low_value_selection_menu.selected_option))
                 if event.ui_element == button_auto_battle:
                     if auto_battle_active:
                         auto_battle_active = False
@@ -2337,9 +2448,11 @@ if __name__ == "__main__":
                     eq_selection_menu.show()
                     character_eq_unequip_button.show()
                     eq_levelup_button.show()
+                    eq_level_up_to_max_button.show()
                     eq_stars_upgrade_button.show()
                     eq_sell_selected_button.show()
-                    eq_sell_half_button.show()
+                    eq_sell_low_value_selection_menu.show()
+                    eq_sell_low_value_button.show()
                     item_sell_button.hide()
                     item_sell_half_button.hide()
                 if event.ui_element == cheap_inventory_show_items_button:
@@ -2350,9 +2463,11 @@ if __name__ == "__main__":
                     eq_selection_menu.hide()
                     character_eq_unequip_button.hide()
                     eq_levelup_button.hide()
+                    eq_level_up_to_max_button.hide()
                     eq_stars_upgrade_button.hide()
                     eq_sell_selected_button.hide()
-                    eq_sell_half_button.hide()
+                    eq_sell_low_value_selection_menu.hide()
+                    eq_sell_low_value_button.hide()
                     item_sell_button.show()
                     item_sell_half_button.show()
                 if event.ui_element == cheap_inventory_show_consumables_button:
@@ -2363,9 +2478,11 @@ if __name__ == "__main__":
                     eq_selection_menu.hide()
                     character_eq_unequip_button.hide()
                     eq_levelup_button.hide()
+                    eq_level_up_to_max_button.hide()
                     eq_stars_upgrade_button.hide()
                     eq_sell_selected_button.hide()
-                    eq_sell_half_button.hide()
+                    eq_sell_low_value_selection_menu.hide()
+                    eq_sell_low_value_button.hide()
                     item_sell_button.show()
                     item_sell_half_button.show()
                 if event.ui_element == use_item_button:
@@ -2408,11 +2525,11 @@ if __name__ == "__main__":
                     if instruction == "何もしない":
                         pass
                     elif instruction == "バトル再開":
-                        text_box.set_text("Welcome to the battle simulator!\n")
+                        text_box.set_text("==============================\n")
                         restart_battle()
                         auto_battle_active = True
                     elif instruction == "パーティシャッフル":
-                        text_box.set_text("Welcome to the battle simulator!\n")
+                        text_box.set_text("==============================\n")
                         if current_game_mode == "Training Mode":
                             party1, party2 = set_up_characters()
                         elif current_game_mode == "Adventure Mode":

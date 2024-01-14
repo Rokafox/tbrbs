@@ -1,21 +1,32 @@
 from character import *
+import inspect
 import monsters
 from equip import generate_equips_list
 import random, sys, csv, copy
 from fine_print import fine_print
 
 
-def get_all_characters(also_test_monsters=False):
+def get_all_characters(test_mode):
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe"]
 
     all_characters = [eval(f"{name}('{name}', 40)") for name in character_names]
 
-    if also_test_monsters:
-        monster_names = ["Fanatic"]
-        all_characters += [eval(f"monsters.{name}('{name}', 40)") for name in monster_names]
+    # get all monsters class names in monsters.py, search for all classes that is a subclass of Character
+    monster_names = [name for name in dir(monsters) 
+                    if inspect.isclass(getattr(monsters, name)) and 
+                    issubclass(getattr(monsters, name), Character) and 
+                    name != "Character"]
+    print(monster_names)
+    all_monsters = [eval(f"monsters.{name}('{name}', 40)") for name in monster_names]
 
-    return all_characters
+    match test_mode:
+        case 1:
+            return all_characters
+        case 2:
+            return all_monsters
+        case 3:
+            return all_characters + all_monsters
 
 def is_someone_alive(party):
     for character in party:
@@ -224,7 +235,7 @@ if __name__ == "__main__":
         sample = int(sys.argv[1])
     else:
         sample = 4000
-    a, b = calculate_winrate_for_character(sample, get_all_characters(also_test_monsters=True), "suppress")
+    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze

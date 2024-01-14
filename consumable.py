@@ -8,7 +8,7 @@ import random
 # 2. Every time a new consumable is added, add it to get_1_random_consumable() in consumable.py
 
 
-# Price : common < uncommon < rare < epic < unique < legendary, 100, 200, 500, 1000, 2000, 5000
+# Price : common < uncommon < rare < epic < unique < legendary, 10, 20, 50, 100, 200, 500
 class Consumable(Block):
     def __init__(self, name, description):
         super().__init__(name, description)
@@ -23,7 +23,7 @@ class Banana(Consumable):
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 99
+        self.market_value = 9
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.2, self)
@@ -38,7 +38,7 @@ class Kiwi(Consumable):
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 164
+        self.market_value = 16
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.25, self)
@@ -54,7 +54,7 @@ class Strawberry(Consumable):
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 199
+        self.market_value = 20
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.05, self)
@@ -70,7 +70,7 @@ class Pancake(Consumable):
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 499
+        self.market_value = 49
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.5, self)
@@ -84,7 +84,7 @@ class Mantou(Consumable):
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 999
+        self.market_value = 99
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.75, self)

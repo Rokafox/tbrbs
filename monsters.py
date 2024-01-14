@@ -1,6 +1,7 @@
+from itertools import zip_longest
 import random
 from effect import *
-from character import Character
+import character
 
 
 # NOTE: use cw.py to estimate winrate
@@ -12,7 +13,7 @@ from character import Character
 # Heavy Attack Related Monsters
 # ====================================
 
-class Panda(Character):
+class Panda(character.Character):
     # 50% winrate after testing
     # tag: heavy attack, stun
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -48,7 +49,7 @@ class Panda(Character):
         self.hp = self.maxhp
 
 
-class Mimic(Character):
+class Mimic(character.Character):
     # Tag: Heavy attack, front attack
     # Winrate : near 49%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -84,13 +85,83 @@ class Mimic(Character):
         pass
 
 
+class MoHawk(character.Character):
+    # Tag: Heavy attack, bleed
+    # Winrate : 51.6%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "MoHawk"
+        self.skill1_description = "Attack 1 closest enemy with 680% atk and inflict bleed for 4 turns. Bleed: take 120% of applier atk as status damage each turn."
+        self.skill2_description = "Attack 1 closest enemy with 680% atk and inflict bleed for 4 turns."
+        self.skill3_description = "Increase atk by 20%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def bleed_effect(self, target):
+            target.apply_effect(ContinuousDamageEffect('Bleed', duration=4, is_buff=False, value=1.2 * self.atk, imposter=self))
+        damage_dealt = self.attack(multiplier=6.8, repeat=1, func_after_dmg=bleed_effect, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def bleed_effect(self, target):
+            target.apply_effect(ContinuousDamageEffect('Bleed', duration=4, is_buff=False, value=1.2 * self.atk, imposter=self))
+        damage_dealt = self.attack(multiplier=6.8, repeat=1, func_after_dmg=bleed_effect, target_kw1="enemy_in_front")
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('MoHawk Passive', -1, True, {'atk' : 1.2}))
+
+
+class Golem(character.Character):
+    # Tag: Heavy attack, front attack
+    # Winrate : 69%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Golem"
+        self.skill1_description = "Attack all enemies with 500% atk."
+        self.skill2_description = "Attack 1 closest enemy with 700% atk. Damage increased by target's hp percentage. Max bonus damage is 100%."
+        self.skill3_description = "Increase hp by 200%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=5.0, repeat=1, target_kw1="n_random_enemy", target_kw2="5")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def amplify(self, target, final_damage):
+            final_damage *= min(2.0, 1.0 + (1.0 - target.hp / target.maxhp))
+            return final_damage
+        damage_dealt = self.attack(multiplier=7.0, repeat=1, func_damage_step=amplify, target_kw1="enemy_in_front")
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Golem Passive', -1, True, {'maxhp' : 3.0}))
+        self.hp = self.maxhp
+
+
 # ====================================
 # End of Heavy Attack Related Monsters
 # ====================================
 # Negative Status Effect Related Monsters
 # ====================================
 
-class Mummy(Character):
+class Mummy(character.Character):
     # 45% winrate after testing
     # tag: negative status effect
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -130,7 +201,7 @@ class Mummy(Character):
             attacker.apply_effect(curse)
 
 
-class Pharaoh(Character):
+class Pharaoh(character.Character):
     # 65% winrate after testing, boss monsters in later designs should have similar winrate
     # tag: boss, negative status effect
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -183,8 +254,8 @@ class Pharaoh(Character):
         self.apply_effect(PharaohPassiveEffect('Passive Effect', -1, True, 1.3))
 
 
-class PoisonSlime(Character):
-    # tag: Strong status damage, low damage
+class PoisonSlime(character.Character):
+    # tag: Strong status damage, low damage, poison
     # 49.4% winrate after testing
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
@@ -222,7 +293,52 @@ class PoisonSlime(Character):
         self.apply_effect(StatsEffect('Slimy', -1, True, {'final_damage_taken_multipler' : -0.1}))
 
 
-class Ghost(Character):
+class MadScientist(character.Character):
+    # tag: Strong status damage, low damage, poison
+    # 70% winrate after testing
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "MadScientist"
+        self.skill1_description = "Attack all enemies with 200% atk and inflict plague for 12 turns with 50% chance each. Plague: at end of turn, 30% chance to apply the same effect to a neighbor ally, every turn, take 7% of lost hp as status damage."
+        self.skill2_description = "Attack 3 front enemies with 300% atk, if target is inflicted with plague, healing efficiency is reduced by 50% for 3 turns."
+        self.skill3_description = "Normal attack have 10% chance to inflict plague for 12 turns and deals 20% more damage."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def plague_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 50:
+                target.apply_effect(PlagueEffect('Plague', duration=12, is_buff=False, value=0.07, imposter=self, base="losthp", transmission_chance=0.3))
+        damage_dealt = self.attack(target_kw1="n_random_enemy", target_kw2="5", multiplier=2.0, repeat=1, func_after_dmg=plague_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def plague_effect(self, target):
+            if target.has_effect_that_named("Plague", None, "PlagueEffect"):
+                target.apply_effect(StatsEffect('Healing Down', duration=3, is_buff=False, stats_dict={'heal_efficiency' : -0.5}))
+        damage_dealt = self.attack(target_kw1="n_enemy_in_front", target_kw2="3", multiplier=3.0, repeat=1, func_after_dmg=plague_effect)
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def plague_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 10:
+                target.apply_effect(PlagueEffect('Plague', duration=12, is_buff=False, value=0.07, imposter=self, base="losthp", transmission_chance=0.3))
+        def amplify(self, target, final_damage):
+            final_damage *= 1.2
+            return final_damage
+        self.attack(func_after_dmg=plague_effect, func_damage_step=amplify)
+
+
+class Ghost(character.Character):
     # Tag: Negative status effect, fear
     # Winrate 42% after testing
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -230,17 +346,17 @@ class Ghost(Character):
         self.original_name = "Ghost"
         self.skill1_description = "Attack 5 enemies with 200% atk and apply Fear on targets for 5 turns. Apply chance is 100%, 80%, 60%, 40%, 20% for each enemy depending on how many allies the enemy has. The fewer allies the enemy has, the higher the chance."
         self.skill2_description = "Attack random enemies 4 times with 270% atk."
-        self.skill3_description = "Normal attack will try target enemy with Fear first. damage increased by 100% if target has Fear. As long as you are alive, Fear effect gain the following effect: accuracy - 10%."
+        self.skill3_description = "Normal attack will try target enemy with Fear first. damage increased by 100% if target has Fear. As long as you are alive, Fear effect gain the following effect: accuracy - 15%."
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
-        self.fear_effect_dict = {"acc": -0.1}
+        self.fear_effect_dict = {"acc": -0.15}
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        chance_dict = dict(zip(range(1, 6), [100, 80, 60, 40, 20]))
+        chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 40, 20], fillvalue=20))
         def fear_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= chance_dict[len(self.enemy)]:
@@ -263,6 +379,60 @@ class Ghost(Character):
         self.attack(func_damage_step=fear_amplify, target_kw1="n_enemy_with_effect", target_kw2="1", target_kw3="Fear")
 
 
+class Death(character.Character):
+    # Tag: Negative status effect, fear, execute
+    # Winrate 71% 
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Death"
+        self.skill1_description = "Attack 5 enemies with 400% atk and apply Fear on targets for 7 turns. Apply chance is 100%, 80%, 60%, 40%, 20% for each enemy depending on how many allies the enemy has. The fewer allies the enemy has, the higher the chance."
+        self.skill2_description = "Attack 3 enemies with lowest hp with 400% atk. If target hp is below 15%, execute target. If enemy survived the attack and has Fear, the enemy is confused for 4 turns."
+        self.skill3_description = "maxhp, defence and atk is increased by 20%. As long as you are alive, Fear effect gain the following effect: atk - 20%, accuracy - 30%. Normal attack have 10% chance to inflict Fear for 7 turns."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+        self.fear_effect_dict = {"acc": -0.30, "atk": 0.7}
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 40, 20], fillvalue=20))
+        def fear_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= chance_dict[len(self.enemy)]:
+                target.apply_effect(FearEffect('Fear', duration=3, is_buff=False))
+        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=4.0, repeat=1, func_after_dmg=fear_effect)
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def execute(self, target):
+            if target.hp < target.maxhp * 0.15 and not target.is_dead():
+                target.take_bypass_status_effect_damage(target.hp, self)
+            else:
+                if target.has_effect_that_named("Fear"):
+                    target.apply_effect(ConfuseEffect('Confuse', duration=4, is_buff=False))
+        damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="3",target_kw3="hp",target_kw4="enemy", multiplier=4.0, repeat=1, func_after_dmg=execute)
+        return damage_dealt
+
+        
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def fear_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 10:
+                target.apply_effect(FearEffect('Fear', duration=7, is_buff=False))
+        self.attack(func_after_dmg=fear_effect)
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Strong', -1, True, {'maxhp' : 1.2, 'atk' : 1.2, 'defense' : 1.2}))
+        self.hp = self.maxhp
+
+
+
 # ====================================
 # End of Negative Status Effect Related Monsters
 # ====================================
@@ -270,7 +440,7 @@ class Ghost(Character):
 # ====================================
 
 
-class Ninja(Character):
+class Ninja(character.Character):
     # Tag: Multi multi strike
     # Winrate: 45%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -309,7 +479,7 @@ class Ninja(Character):
         self.attack(func_after_dmg=reduce_cd)
 
 
-class KillerBee(Character):
+class KillerBee(character.Character):
     # Tag: Negative effect, multi multi strike buff, status damage
     # Winrate: 45%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -341,7 +511,7 @@ class KillerBee(Character):
         pass 
 
 
-class Samurai(Character):
+class Samurai(character.Character):
     # 46% winrate after testing
     # tag: multi strike, bleed, low hp strike
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -380,11 +550,91 @@ class Samurai(Character):
 # ====================================
 # End of Multistrike Related Monsters
 # ====================================
-# Counter High hp Releted Monsters
+# CC Related Monsters
+# ====================================    
+
+class MagicPot(character.Character):
+    # 49.5% winrate after testing
+    # tag: CC, sleep, evasion
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "MagicPot"
+        self.skill1_description = "Attack random enemies with 300% atk 5 times."
+        self.skill2_description = "50% chance to put all enemies to sleep."
+        self.skill3_description = "Evasion is increased by 50% for 10 turns."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=3.0, repeat=5)
+        return damage_dealt
+
+    def skill2_logic(self):
+        for t in self.enemy:
+            dice = random.randint(1, 100)
+            if dice <= 50:
+                t.apply_effect(SleepEffect('Sleep', duration=-1, is_buff=False))
+        pass
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('MagicPot Passive', 10, True, {'eva' : 0.5}))
+
+
+class Earth(character.Character):
+    # tag: CC, stun, high hp
+    # Winrate: 53%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Earth"
+        self.skill1_description = "Attack all enemies with 240% atk, 50% chance to inflict Stun for 3 turns."
+        self.skill2_description = "Attack 3 enemies with 260% atk, 30% chance to inflict Stun for 3 turns."
+        self.skill3_description = "hp is increased by 100%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def stun_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 50:
+                target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
+        damage_dealt = self.attack(multiplier=2.4, repeat=1, func_after_dmg=stun_effect, target_kw1="n_random_enemy", target_kw2="5")
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def stun_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 30:
+                target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
+        damage_dealt = self.attack(multiplier=2.6, repeat=1, func_after_dmg=stun_effect, target_kw1="n_random_enemy", target_kw2="3")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Earth Passive', -1, True, {'maxhp' : 2.0}))
+        self.hp = self.maxhp
+
+
+# ====================================
+# End of CC Related Monsters
+# ====================================
+# hp Related Monsters
 # ====================================
 
-
-class Skeleton(Character):
+class Skeleton(character.Character):
     # Tag: Strong damage against high hp target
     # Winrate: 44%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -393,7 +643,7 @@ class Skeleton(Character):
         self.skill1_description = "Attack enemy with highest hp with 300% atk 3 times."
         self.skill2_description = "Attack enemy with highest hp with 900%, 80% chance to Stun for 3 turns."
         self.skill3_description = "Normal attack has 5% chance to Stun for 2 turns."
-        self.skill1_cooldown_max = 3
+        self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
@@ -423,14 +673,178 @@ class Skeleton(Character):
         self.attack(func_after_dmg=stun_effect)
 
 
+class Ork(character.Character):
+    # Tag: Strong damage against low hp target
+    # Winrate: 48%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Ork"
+        self.skill1_description = "Attack enemy with lowest hp with 300% atk 2 times."
+        self.skill2_description = "Attack enemy with lowest hp with 300% atk 2 times."
+        self.skill3_description = "Skill attack inflict both Burn and Bleed for 3 turns, deals 30% of atk as status damage per turn."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def burn_effect(self, target):
+            target.apply_effect(ContinuousDamageEffect('Burn', duration=3, is_buff=False, value=0.3 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('Bleed', duration=3, is_buff=False, value=0.3 * self.atk, imposter=self))
+        damage_dealt = self.attack(multiplier=3.0, repeat=2, func_after_dmg=burn_effect, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def burn_effect(self, target):
+            target.apply_effect(ContinuousDamageEffect('Burn', duration=3, is_buff=False, value=0.3 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('Bleed', duration=3, is_buff=False, value=0.3 * self.atk, imposter=self))
+        damage_dealt = self.attack(multiplier=3.0, repeat=2, func_after_dmg=burn_effect, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
+        return damage_dealt
+    
+    def skill3(self):
+        pass
+
+
+class Minotaur(character.Character):
+    # Tag: Strong damage against low hp target
+    # Winrate: 46%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Minotaur"
+        self.skill1_description = "Attack enemy with lowest hp with 300% atk 2 times."
+        self.skill2_description = "Attack enemy with lowest hp with 200% atk 2 times. Damage increased by 10% of target lost hp."
+        self.skill3_description = "Skill damage increased by 50% if target has less than 50% hp."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def damage_increase(self, target, final_damage):
+            if target.hp < target.maxhp * 0.5:
+                final_damage *= 1.5
+            return final_damage
+        damage_dealt = self.attack(multiplier=3.0, repeat=2, func_damage_step=damage_increase, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def damage_increase(self, target, final_damage):
+            if target.hp < target.maxhp * 0.5:
+                final_damage *= 1.5
+            final_damage += 0.1 * (target.maxhp - target.hp)
+            return final_damage
+        damage_dealt = self.attack(multiplier=2.0, repeat=2, func_damage_step=damage_increase, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+
 # ====================================
-# End of Counter High hp Related Monsters
+# End of hp Related Monsters
+# ====================================
+# spd Related Monsters
+# ====================================
+
+class Merman(character.Character):
+    # Tag: Strong damage against low spd target
+    # Winrate: 53%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Merman"
+        self.skill1_description = "Target 1 enemy with the lowest spd, attack 3 times with 250% atk."
+        self.skill2_description = "Target 1 enemy, if it is the same enemy as in skill 1, attack 3 times with 250% atk and Stun the target for 4 turns. This skill has no effect otherwise."
+        self.skill3_description = "Normal attack attacks 2 times."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+        self.s1target = None
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        t = next(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="spd", keyword4="enemy"))
+        self.s1target = t
+        l = [t]
+        damage_dealt = self.attack(multiplier=2.5, repeat=3, target_list=l)
+        return damage_dealt
+
+    def skill2_logic(self):
+        if self.s1target is None:
+            return 0
+        else:
+            t = next(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="spd", keyword4="enemy"))
+            if t == self.s1target:
+                l = [t]
+                def stun_effect(self, target):
+                    target.apply_effect(StunEffect('Stun', duration=4, is_buff=False))
+                damage_dealt = self.attack(multiplier=2.5, repeat=3, target_list=l, func_after_dmg=stun_effect)
+                return damage_dealt
+            else:
+                return 0
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        self.attack(repeat=2)
+
+
+class Wyvern(character.Character):
+    # Tag: Strong damage against low spd target, high spd
+    # Winrate: 48.6%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Wyvern"
+        self.skill1_description = "Attack 3 enemies at front 2 times and deal 300% atk. For 70% chance each attack, reduce target spd by 30% for 4 turns."
+        self.skill2_description = "Attack all enemies with 200% atk, if target has lower spd than you, deal 120% more damage and reduce target spd by 30% for 4 turns."
+        self.skill3_description = "Increase spd by 30%."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def slow_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 70:
+                target.apply_effect(StatsEffect('Slow', duration=4, is_buff=False, stats_dict={'spd' : 0.7}))
+        damage_dealt = self.attack(multiplier=3.0, repeat=2, func_after_dmg=slow_effect, target_kw1="n_enemy_in_front", target_kw2="3")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def slow_effect(self, target):
+            target.apply_effect(StatsEffect('Slow', duration=4, is_buff=False, stats_dict={'spd' : 0.7}))
+        def spd_penalty(self, target, final_damage):
+            if target.spd < self.spd:
+                final_damage *= 2.2
+            return final_damage
+        damage_dealt = self.attack(multiplier=2.0, repeat=1, func_after_dmg=slow_effect, func_damage_step=spd_penalty)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Wyvern Passive', -1, True, {'spd' : 1.3}))
+
+
+# ====================================
+# End of spd Related Monsters
 # ====================================
 # Critical Related Monsters
 # ====================================
 
 
-class SoldierB(Character):
+class SoldierB(character.Character):
     # Tag: Strong critical damage
     # Winrate: 53%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -439,8 +853,8 @@ class SoldierB(Character):
         self.skill1_description = "Attack 4 times with 300% atk."
         self.skill2_description = "Attack 4 times with 270% atk, each attack will trigger the same attack if critical."
         self.skill3_description = "Increase critical rate and critical damage by 30%."
-        self.skill1_cooldown_max = 4
-        self.skill2_cooldown_max = 3
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
@@ -469,6 +883,43 @@ class SoldierB(Character):
         self.apply_effect(StatsEffect('SoldierB Passive', -1, True, {'crit' : 0.3, 'critdmg' : 0.3}))
 
 
+class Queen(character.Character):
+    # Tag: Strong critical damage
+    # Winrate: 66.66%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Queen"
+        self.skill1_description = "Attack random ememies with 240% atk 8 times, after each successful attack, increase critical damage by 35% for 1 turn."
+        self.skill2_description = "Attack 3 front enemies with 300% atk, decrease their critical defense by 30%, for 8 turns. After this skill, increase critical damage by 35% for 3 turns."
+        self.skill3_description = "Critical chance is increased by 50%. Speed is increased by 20%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 3
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def critdmg_increase(self, target):
+            self.apply_effect(StatsEffect('Control', 1, True, {'critdmg' : 0.35}))
+        damage_dealt = self.attack(multiplier=2.4, repeat=8, func_after_dmg=critdmg_increase)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def critdef_decrease(self, target):
+            target.apply_effect(StatsEffect('Compliance', 8, True, {'critdef' : -0.3}))
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=critdef_decrease, target_kw1="n_enemy_in_front", target_kw2="3")
+        if self.is_alive():
+            self.apply_effect(StatsEffect('Control', 3, True, {'critdmg' : 0.35}))
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Queen Passive', -1, True, {'crit' : 0.5, 'spd' : 1.2}))
+
+
 # ====================================
 # End of Critical Related Monsters
 # ====================================
@@ -476,7 +927,7 @@ class SoldierB(Character):
 # ====================================
         
 
-class Paladin(Character):
+class Paladin(character.Character):
     # Tag: Defense and Counter against high damage
     # Winrate: 48.6%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -485,8 +936,8 @@ class Paladin(Character):
         self.skill1_description = "Attack 1 enemy with 800% atk."
         self.skill2_description = "Attack 1 enemy 3 times with 300% atk."
         self.skill3_description = "When taking damage and damage is exceed 10% of maxhp, reduce damage taken by 50%. The attacker takes 30% of damage reduced."
-        self.skill1_cooldown_max = 4
-        self.skill2_cooldown_max = 4
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
@@ -507,17 +958,17 @@ class Paladin(Character):
         self.apply_effect(EffectShield3('Shielded', -1, True, 0.5, 0.3))
          
 
-class Father(Character):
+class Father(character.Character):
     # Tag: Buff: Cancellation shield against low damage
-    # Winrate: 44%
+    # Winrate: 51%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Father"
-        self.skill1_description = "Apply Cancellation Shield on 3 allies with lowest hp, all damage lower than 10% of maxhp is reduced to 0. Shield last 4 turns."
-        self.skill2_description = "Attack 3 random enemies with 500% atk."
-        self.skill3_description = "All damage taken is reduced by 20%, damage taken lower than 10% of maxhp is reduced to 0."
-        self.skill1_cooldown_max = 4
-        self.skill2_cooldown_max = 3
+        self.skill1_description = "Apply Cancellation Shield on 3 allies with lowest hp, all damage lower than 10% of maxhp is reduced to 0. Shield last 4 turns and provide 4 uses."
+        self.skill2_description = "Attack 3 random enemies with 450% atk."
+        self.skill3_description = "All damage taken is reduced by 20%, damage taken lower than 10% of maxhp is reduced to 0 for 300 times."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
@@ -526,21 +977,21 @@ class Father(Character):
     def skill1_logic(self):
         targets = self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally")
         for target in targets:
-            target.apply_effect(CancellationShield3('Cancellation Shield', 4, True, 0.1, False))
+            target.apply_effect(CancellationShield3('Cancellation Shield', 4, True, 0.1, False, uses=4))
 
     def skill2_logic(self):
-        damage_dealt = self.attack(multiplier=5.0, repeat=1, target_kw1="n_random_enemy", target_kw2="3")
+        damage_dealt = self.attack(multiplier=4.5, repeat=1, target_kw1="n_random_enemy", target_kw2="3")
         return damage_dealt
         
     def skill3(self):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(CancellationShield3('Father Passive', -1, True, 0.1, False))
+        self.apply_effect(CancellationShield3('Father Guidance', -1, True, 0.1, False, uses=300))
         self.apply_effect(StatsEffect('Father Passive', -1, True, {'final_damage_taken_multipler' : -0.20}))
          
 
-class Kobold(Character):
+class Kobold(character.Character):
     # Tag: High defence
     # Winrate: 44%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -549,8 +1000,8 @@ class Kobold(Character):
         self.skill1_description = "Recover hp by 30% of maxhp and increase defence by 50% for 5 turns. If you are the only one alive, effect is increased by 100%."
         self.skill2_description = "Attack 1 enemy with 800% atk, if you are the only one alive, increase damage by 100%."
         self.skill3_description = "Defence and maxhp is increased by 25%."
-        self.skill1_cooldown_max = 4
-        self.skill2_cooldown_max = 3
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
@@ -580,7 +1031,7 @@ class Kobold(Character):
         self.apply_effect(StatsEffect('Kobold Passive', -1, True, {'defense' : 1.25, 'maxhp' : 1.25}))
 
 
-class SoldierA(Character):
+class SoldierA(character.Character):
     # Tag: Defence Break
     # Winrate: 46%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -618,7 +1069,7 @@ class SoldierA(Character):
         pass
 
 
-class FutureSoldier(Character):
+class FutureSoldier(character.Character):
     # Tag: Against low defence target
     # Winrate: 48%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -659,7 +1110,7 @@ class FutureSoldier(Character):
         self.attack(func_damage_step=damage_amplify)
 
 
-class FutureElite(Character):
+class FutureElite(character.Character):
     # Tag: Against low defence target
     # Winrate: 70.6%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -700,53 +1151,62 @@ class FutureElite(Character):
 # ====================================
 # End of Defence Related Monsters
 # ====================================
-# Status Damage Burn Related Monsters
+# Negative Status Related Monsters
 # ====================================
         
-
-
-
-# ====================================
-# End of Status Damage Burn Related Monsters
-# ====================================
-# Unclassifiable Monsters
-# ====================================
-        
-
-class Cockatorice(Character):
-    # Tag: Buff when not receiving damage for 4 turns
-    # Winrate: 48.7%
+class Mage(character.Character):
+    # Tag: Strong damage against negative status
+    # Winrate: 53%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
-        self.original_name = "Cockatorice"
-        self.skill1_description = "Attack 3 enemies at front, with 330% atk."
-        self.skill2_description = "Attack random enemies 3 times with 330% atk."
-        self.skill3_description = "For 4 turns, if not taking damage, increase atk by 66% and spd by 66% for 4 turns at the end of turn. Same effect cannot be applied twice."
-        self.skill1_cooldown_max = 4
-        self.skill2_cooldown_max = 4
+        self.original_name = "Mage"
+        self.skill1_description = "Attack 3 random enemies with 300% atk and inflict Burn for 4 turns. Burn deals 40% of atk as status damage per turn. If target has negative status, inflict 3 Burn effects."
+        self.skill2_description = "Attack random enemies 3 times with 350% atk, if target has negative status, each attack inflict 3 Burn effects for 4 turns."
+        self.skill3_description = "Increase atk by 10%"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        damage_dealt = self.attack(multiplier=3.3, repeat=3, target_kw1="n_ememy_in_front", target_kw2="3")
+        def burn_effect(self, target):
+            if len(target.debuffs) > 0:
+                target.apply_effect(ContinuousDamageEffect('Burn', duration=4, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('Burn', duration=4, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('Burn', duration=4, is_buff=False, value=0.4 * self.atk, imposter=self))
+            else:
+                target.apply_effect(ContinuousDamageEffect('Burn', duration=4, is_buff=False, value=0.4 * self.atk, imposter=self))
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=burn_effect, target_kw1="n_random_enemy", target_kw2="3")
         return damage_dealt
 
     def skill2_logic(self):
-        damage_dealt = self.attack(multiplier=3.3, repeat=3)
+        def burn_effect(self, target):
+            if len(target.debuffs) > 0:
+                target.apply_effect(ContinuousDamageEffect('Burn', duration=4, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('Burn', duration=4, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('Burn', duration=4, is_buff=False, value=0.4 * self.atk, imposter=self))
+        damage_dealt = self.attack(multiplier=3.5, repeat=3, func_after_dmg=burn_effect)
         return damage_dealt
-        
+
     def skill3(self):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(NotTakingDamageEffect("Cockatorice Passive", -1, True, {'atk' : 1.66, 'spd' : 1.66}, "default", 4, "Cockatorice Fanatic", 4))
+        self.apply_effect(StatsEffect('Mage Passive', -1, True, {'atk' : 1.1}))
 
 
-class Thief(Character):
+# ====================================
+# Negative Status Related Monsters
+# ====================================
+# Positive Status Related Monsters
+# ====================================
+    
+
+class Thief(character.Character):
     # Tag: Strong damage on buffed targets
-    # Winrate 45% after testing
+    # Winrate 47% after testing
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Thief"
@@ -781,7 +1241,88 @@ class Thief(Character):
         pass
 
 
-class Fanatic(Character):
+
+class Goliath(character.Character):
+    # Tag: Strong damage on buffed targets
+    # Winrate 70%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Goliath"
+        self.skill1_description = "Strike the enemy with the most active buff effects with 600% atk, for each active buff effect, strike again with 400% atk."
+        self.skill2_description = "Reset skill cooldown of skill 1 and increase spd by 100% for 3 turns. Attack front enemy 3 times with 300% atk. For each active buff on target, increase damage by 30%."
+        self.skill3_description = "Increase atk, def, maxhp by 30%."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 2
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def buffed_target_amplify(self, target, is_crit):
+            buffs = len([e for e in target.buffs if not e.is_set_effect and not e.duration == -1])
+            return self.attack(multiplier=4.0, repeat=buffs, target_list=[target])
+        damage_dealt = self.attack(multiplier=6.0, repeat=1, target_kw1="n_enemy_with_most_buffs", target_kw2="1", additional_attack_after_dmg=buffed_target_amplify)
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        self.skill1_cooldown = 0
+        self.apply_effect(StatsEffect('Judgement', 3, True, {'spd' : 2.0}))
+        def buff_amplify(self, target, final_damage):
+            buffs = len([e for e in target.buffs if not e.is_set_effect and not e.duration == -1])
+            return final_damage * (1 + 0.3 * buffs)
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, target_kw1="enemy_in_front", func_damage_step=buff_amplify)
+        return damage_dealt
+
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Goliath Passive', -1, True, {'atk' : 1.3, 'defense' : 1.3, 'maxhp' : 1.3}))
+        self.hp = self.maxhp
+
+
+# ====================================
+# Positive Status Related Monsters
+# ====================================
+# Stealth Related Monsters
+# ====================================
+        
+
+class Cockatorice(character.Character):
+    # Tag: Buff when not receiving damage for 4 turns
+    # Winrate: 48.7%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Cockatorice"
+        self.skill1_description = "Attack 3 enemies at front, with 330% atk."
+        self.skill2_description = "Attack random enemies 3 times with 330% atk."
+        self.skill3_description = "For 4 turns, if not taking damage, increase atk by 66% and spd by 66% for 4 turns at the end of turn. Same effect cannot be applied twice."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=3.3, repeat=1, target_kw1="n_enemy_in_front", target_kw2=3)
+        return damage_dealt
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=3.3, repeat=3)
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(NotTakingDamageEffect("Cockatorice Passive", -1, True, {'atk' : 1.33, 'spd' : 1.33}, "default", 4, "Cockatorice Fanatic", 4))
+
+
+class Fanatic(character.Character):
     # Tag: Strong damage when not receiving damage for 4 turns
     # Winrate: 51%
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -790,8 +1331,8 @@ class Fanatic(Character):
         self.skill1_description = "Attack front enemy with 350% atk 3 times. If has not taken damage for 4 turns, land critical strikes."
         self.skill2_description = "Attack front enemy with 350% atk 3 times. If has not taken damage for 4 turns, damage is increased by 5% of target maxhp."
         self.skill3_description = "Recover hp by 30% of damage dealt in skill attacks."
-        self.skill1_cooldown_max = 4
-        self.skill2_cooldown_max = 4
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
@@ -822,5 +1363,83 @@ class Fanatic(Character):
 
 
 # ====================================
-# End of Unclassifiable Monsters
+# Stealth Related Monsters
+# ====================================
+# Attack Related Monsters
+# ====================================
+    
+
+class Tanuki(character.Character):
+    # Tag: Attack buff
+    # Winrate: 45%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Tanuki"
+        self.skill1_description = "Boost two allies with highest atk by 60% for 6 turns."
+        self.skill2_description = "Attack front enemy with 1 damage, increase self evasion by 50% for 5 turns."
+        self.skill3_description = "Normal attack resets cooldown of skill 1 and deals 400% atk damage instead of 200% and attack 2 times."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        self.update_ally_and_enemy()
+        targets = self.target_selection(keyword="n_highest_attr", keyword2="2", keyword3="atk", keyword4="ally")
+        for target in targets:
+            target.apply_effect(StatsEffect('Tanuki Buff', 6, True, {'atk' : 1.6}))
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(repeat=1, target_kw1="enemy_in_front", func_damage_step=lambda self, target, final_damage : 1)
+        self.apply_effect(StatsEffect('Tanuki Evasion', 5, True, {'eva' : 0.5}))
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        self.skill1_cooldown = 0
+        self.attack(multiplier=4.0, repeat=2)
+        
+
+class Werewolf(character.Character):
+    # Tag: Counter high attack target
+    # Winrate: 52.7%
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Werewolf"
+        self.skill1_description = "Attack 1 enemy with highest atk with 250% atk 3 times. Decrease target atk by 30% for 4 turns."
+        self.skill2_description = "Attack 3 enemies with highest atk with 220% atk 2 times. If target has lower atk than self, increase damage by 40%."
+        self.skill3_description = "Increase atk by 15%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def atk_down(self, target):
+            target.apply_effect(StatsEffect('Atk Down', 4, False, {'atk' : 0.7}))
+        damage_dealt = self.attack(multiplier=2.5, repeat=3, func_after_dmg=atk_down, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def damage_amplify(self, target, final_damage):
+            if target.atk < self.atk:
+                final_damage *= 1.4
+            return final_damage
+        damage_dealt = self.attack(multiplier=2.2, repeat=2, func_damage_step=damage_amplify, target_kw1="n_highest_attr", target_kw2="3", target_kw3="atk", target_kw4="enemy")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Werewolf Passive', -1, True, {'atk' : 1.15}))
+
+# ====================================
+# End of Attack Related Monsters
 # ====================================
