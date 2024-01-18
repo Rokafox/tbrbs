@@ -3,12 +3,22 @@ import inspect
 import monsters
 from equip import generate_equips_list
 import random, sys, csv, copy
-from fine_print import fine_print
+import global_vars
+
+
+def fine_print(*args, mode="default", **kwargs):
+    if mode == "file":
+        with open("logs.txt", "a") as f:
+            print(*args, file=f, **kwargs)
+    elif mode == "suppress":
+        pass
+    else:
+        print(*args, **kwargs)
 
 
 def get_all_characters(test_mode):
-    character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
-                       "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe"]
+    character_names = ["Lillia", "Poppy", "Iris", "Freya", "Luna", "Clover", "Ruby", "Olive", "Fenrir", "Cerberus", "Pepper",
+                       "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Chiffon", "Ophelia", "Requina", "Gabe", "BeastTamer"]
 
     all_characters = [eval(f"{name}('{name}', 40)") for name in character_names]
 
@@ -17,16 +27,20 @@ def get_all_characters(test_mode):
                     if inspect.isclass(getattr(monsters, name)) and 
                     issubclass(getattr(monsters, name), Character) and 
                     name != "Character"]
+    print("All monsters:")
     print(monster_names)
     all_monsters = [eval(f"monsters.{name}('{name}', 40)") for name in monster_names]
 
-    match test_mode:
-        case 1:
+    match (test_mode, type(test_mode)):
+        case (1, int):
             return all_characters
-        case 2:
+        case (2, int):
             return all_monsters
-        case 3:
+        case (3, int):
             return all_characters + all_monsters
+        case (_, str):
+            # Case of must include of certain monster, we can simply get rid of all others in all_monsters
+            return [x for x in all_monsters if x.name == test_mode] + all_characters 
 
 def is_someone_alive(party):
     for character in party:
@@ -112,6 +126,7 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
     while turn < 300 and is_someone_alive(party1) and is_someone_alive(party2):
         fine_print("=====================================", mode=fineprint_mode)
         fine_print(f"Turn {turn}", mode=fineprint_mode)
+        global_vars.turn_info_string = ""
 
         reset_ally_enemy_attr(party1, party2)
         for character in party1:
@@ -127,6 +142,7 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
             for character in party1 + party2:
                 character.record_damage_taken() 
                 character.record_healing_received() 
+            fine_print(global_vars.turn_info_string, mode=fineprint_mode)
             break
 
         for character in party1:
@@ -148,12 +164,13 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             for character in party1 + party2:
                 character.record_damage_taken() 
-                character.record_healing_received() 
+                character.record_healing_received()
+            fine_print(global_vars.turn_info_string, mode=fineprint_mode) 
             break
         alive_characters = [x for x in party1 + party2 if x.is_alive()]
         weight = [x.spd for x in alive_characters]
         the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
-        fine_print(f"{the_chosen_one.name}'s turn.", mode=fineprint_mode)
+        global_vars.turn_info_string += f"{the_chosen_one.name}'s turn.\n"
         the_chosen_one.action()
 
         for character in party1 + party2:
@@ -162,6 +179,8 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
         for character in party1 + party2:
             character.record_damage_taken()
             character.record_healing_received()
+
+        fine_print(global_vars.turn_info_string, mode=fineprint_mode)
 
         fine_print("", mode=fineprint_mode)
         fine_print("Party 1:", mode=fineprint_mode)
@@ -234,7 +253,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 4000
+        sample = 4567
     a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:

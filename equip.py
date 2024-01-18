@@ -210,7 +210,6 @@ class Equip(Block):
         Only for Void Force on monsters
         """
         level = self.level
-        print(level)
         if level < 200:
             extra_lines_to_generate = 1
         elif 200 <= level < 400:
@@ -434,6 +433,8 @@ class Equip(Block):
             stats += "Penetration: " + "{:.2f}%".format(self.penetration*100) + "\n"
         if self.heal_efficiency != 0:
             stats += "Heal Efficiency: " + "{:.2f}%".format(self.heal_efficiency*100) + "</font>\n"
+        if self.eq_set == "Void":
+            return stats
         if self.stars_rating < self.stars_rating_max:
             stats += f"<font color=#AF6E4D>Stars enhancement cost: {self.star_enhence_cost} </font>\n"
         else:
@@ -442,7 +443,7 @@ class Equip(Block):
             stats += f"<font color=#702963>Level up cost: {self.level_cost} </font>\n"
         else:
             stats += f"<font color=#702963>Level up cost: MAX </font>\n"
-        if include_market_price and not self.eq_set == "Void":
+        if include_market_price:
             stats += "<font color=" + market_color + ">" + f"Market Price: {int(self.market_value)}" + "</font>\n"
         stats += "</font>"
 

@@ -41,7 +41,10 @@ class Block:
 
     def E(self, user, player): # When item is being used, as a common shortcut in Counter-Strike
         """Returns a string describing what happened when the item is being used."""
-        return f"{user.name} used {self.name} but nothing happened."
+        if user:
+            return f"{user.name} used {self.name} but nothing happened."
+        else:
+            return f"Used {self.name} but nothing happened."
         
     def print_stats_html(self, include_market_price=True):
         match self.rarity:

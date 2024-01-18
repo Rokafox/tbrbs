@@ -12,7 +12,18 @@ import random
 class Consumable(Block):
     def __init__(self, name, description):
         super().__init__(name, description)
+        self.can_use_for_auto_battle = True
         self.can_use_on_dead = False
+
+    def auto_E_condition(self, user, player):
+        """
+        Returns True if the item should be used automatically.
+        """
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            return True
+
 
 
 class Banana(Consumable):
@@ -26,8 +37,15 @@ class Banana(Consumable):
         self.market_value = 9
 
     def E(self, user, player):
-        user.heal_hp(user.maxhp * 0.2, self)
-        return f"{user.name} healed 15% of max hp."
+        user.heal_hp(user.maxhp * 0.15, self)
+        return f"{user.name} healed 15% of max hp by {self.name}."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            return user.hp < user.maxhp * 0.5
+        
 
 
 class Kiwi(Consumable):
@@ -42,7 +60,13 @@ class Kiwi(Consumable):
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.25, self)
-        return f"{user.name} healed 25% of max hp."
+        return f"{user.name} healed 25% of max hp by {self.name}."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            return user.hp < user.maxhp * 0.5
 
 
 class Strawberry(Consumable):
@@ -59,7 +83,13 @@ class Strawberry(Consumable):
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.05, self)
         user.apply_effect(ContinuousHealEffect("Strawberry", 6, True, (user.maxhp - user.hp) * 0.05, False))
-        return f"{user.name} healed 5% of max hp, and will heal 5% of lost hp for 4 turns."
+        return f"{user.name} healed 5% of max hp, and will heal 5% of lost hp for 4 turns by {self.name}."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            return user.hp < user.maxhp * 0.5
 
 
 class Pancake(Consumable):
@@ -74,7 +104,14 @@ class Pancake(Consumable):
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.5, self)
-        return f"{user.name} healed 50% of max hp."
+        return f"{user.name} healed 50% of max hp by {self.name}."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            return user.hp < user.maxhp * 0.5
+        
 
 class Mantou(Consumable):
     def __init__(self, stack: int):
@@ -88,7 +125,13 @@ class Mantou(Consumable):
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.75, self)
-        return f"{user.name} healed 75% of max hp."
+        return f"{user.name} healed 75% of max hp by {self.name}."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            return user.hp < user.maxhp * 0.5
 
 
 def get_1_random_consumable():

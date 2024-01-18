@@ -1,3 +1,4 @@
+import inspect
 import os, json
 from character import *
 import monsters
@@ -5,7 +6,6 @@ from item import *
 from consumable import *
 import copy
 running = False
-logging = True
 text_box = None
 start_with_max_level = True
 
@@ -235,7 +235,6 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             raise ValueError("Not enough items in inventory to remove")
         if rebuild_inventory_slots:
             self.build_inventory_slots()
-        print(f"Finished!")
 
     def remove_selected_item_from_inventory(self, rebuild_inventory_slots: bool):
         # self.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item)}
@@ -391,7 +390,7 @@ except FileNotFoundError:
 def get_all_characters():
     global start_with_max_level
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
-                       "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe"]
+                       "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", "BeastTamer"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -423,110 +422,14 @@ else:
                 c.equip_item(item)
                 print(f"Equipped {str(item)} to {c.name}.")
 
-
 def get_all_monsters():
-    all_monsters = []
-    monster_names = ["Panda_A", "Panda_B", "Panda_C", "Panda_D", "Panda_E",
-                    "Samurai_A", "Samurai_B", "Samurai_C", "Samurai_D", "Samurai_E",
-                    "Mummy_A", "Mummy_B", "Mummy_C", "Mummy_D", "Mummy_E", "Pharaoh",
-                    "PoisonSlime_A", "PoisonSlime_B", "PoisonSlime_C", "PoisonSlime_D", "PoisonSlime_E",
-                    "Thief_A", "Thief_B", "Thief_C", "Thief_D", "Thief_E",
-                    "Ghost_A", "Ghost_B", "Ghost_C", "Ghost_D", "Ghost_E",
-                    "Mimic_A", "Mimic_B", "Mimic_C", "Mimic_D", "Mimic_E",
-                    "Ninja_A", "Ninja_B", "Ninja_C", "Ninja_D", "Ninja_E",
-                    "KillerBee_A", "KillerBee_B", "KillerBee_C", "KillerBee_D", "KillerBee_E",
-                    "Paladin_A", "Paladin_B", "Paladin_C", "Paladin_D", "Paladin_E",
-                    "Cockatorice_A", "Cockatorice_B", "Cockatorice_C", "Cockatorice_D", "Cockatorice_E",
-                    "Skeleton_A", "Skeleton_B", "Skeleton_C", "Skeleton_D", "Skeleton_E",
-                    "SoldierB_A", "SoldierB_B", "SoldierB_C", "SoldierB_D", "SoldierB_E",
-                    "SoldierA_A", "SoldierA_B", "SoldierA_C", "SoldierA_D", "SoldierA_E",
-                    "FutureSoldier_A", "FutureSoldier_B", "FutureSoldier_C", "FutureSoldier_D", "FutureSoldier_E", "FutureElite",
-                    "Kobold_A", "Kobold_B", "Kobold_C", "Kobold_D", "Kobold_E",
-                    "Father_A", "Father_B", "Father_C", "Father_D", "Father_E",
-                    "Fanatic_A", "Fanatic_B", "Fanatic_C", "Fanatic_D", "Fanatic_E", "MadScientist",
-                    "MoHawk_A", "MoHawk_B", "MoHawk_C", "MoHawk_D", "MoHawk_E",
-                    "Ork_A", "Ork_B", "Ork_C", "Ork_D", "Ork_E",
-                    "Mage_A", "Mage_B", "Mage_C", "Mage_D", "Mage_E",
-                    "Merman_A", "Merman_B", "Merman_C", "Merman_D", "Merman_E", "Golem",
-                    "Earth_A", "Earth_B", "Earth_C", "Earth_D", "Earth_E", "Goliath",
-                    "Wyvern_A", "Wyvern_B", "Wyvern_C", "Wyvern_D", "Wyvern_E",
-                    "Minotaur_A", "Minotaur_B", "Minotaur_C", "Minotaur_D", "Minotaur_E",
-                    "Tanuki_A", "Tanuki_B", "Tanuki_C", "Tanuki_D", "Tanuki_E", "Death",
-                    "Werewolf_A", "Werewolf_B", "Werewolf_C", "Werewolf_D", "Werewolf_E", "Queen"]
-
-    for name in monster_names:
-        match name:
-            case name if name.startswith("Panda"):
-                monster = monsters.Panda(name, 1)
-            case name if name.startswith("Samurai"):
-                monster = monsters.Samurai(name, 1)
-            case name if name.startswith("Mummy"):
-                monster = monsters.Mummy(name, 1)
-            case name if name.startswith("Pharaoh"):
-                monster = monsters.Pharaoh(name, 1)
-            case name if name.startswith("PoisonSlime"):
-                monster = monsters.PoisonSlime(name, 1)
-            case name if name.startswith("Thief"):
-                monster = monsters.Thief(name, 1)
-            case name if name.startswith("Ghost"):
-                monster = monsters.Ghost(name, 1)
-            case name if name.startswith("Mimic"):
-                monster = monsters.Mimic(name, 1)
-            case name if name.startswith("Ninja"):
-                monster = monsters.Ninja(name, 1)
-            case name if name.startswith("KillerBee"):
-                monster = monsters.KillerBee(name, 1)
-            case name if name.startswith("Paladin"):
-                monster = monsters.Paladin(name, 1)
-            case name if name.startswith("Cockatorice"):
-                monster = monsters.Cockatorice(name, 1)
-            case name if name.startswith("Skeleton"):
-                monster = monsters.Skeleton(name, 1)
-            case name if name.startswith("SoldierB"):
-                monster = monsters.SoldierB(name, 1)
-            case name if name.startswith("SoldierA"):
-                monster = monsters.SoldierA(name, 1)
-            case name if name.startswith("FutureSoldier"):
-                monster = monsters.FutureSoldier(name, 1)
-            case name if name.startswith("FutureElite"):
-                monster = monsters.FutureElite(name, 1)
-            case name if name.startswith("Kobold"):
-                monster = monsters.Kobold(name, 1)
-            case name if name.startswith("Father"):
-                monster = monsters.Father(name, 1)
-            case name if name.startswith("Fanatic"):
-                monster = monsters.Fanatic(name, 1)
-            case name if name.startswith("MadScientist"):
-                monster = monsters.MadScientist(name, 1)
-            case name if name.startswith("MoHawk"):
-                monster = monsters.MoHawk(name, 1)
-            case name if name.startswith("Ork"):
-                monster = monsters.Ork(name, 1)
-            case name if name.startswith("Mage"):
-                monster = monsters.Mage(name, 1)
-            case name if name.startswith("Merman"):
-                monster = monsters.Merman(name, 1)
-            case name if name.startswith("Golem"):
-                monster = monsters.Golem(name, 1)
-            case name if name.startswith("Earth"):
-                monster = monsters.Earth(name, 1)
-            case name if name.startswith("Goliath"):
-                monster = monsters.Goliath(name, 1)
-            case name if name.startswith("Wyvern"):
-                monster = monsters.Wyvern(name, 1)
-            case name if name.startswith("Minotaur"):
-                monster = monsters.Minotaur(name, 1)
-            case name if name.startswith("Tanuki"):
-                monster = monsters.Tanuki(name, 1)
-            case name if name.startswith("Death"):
-                monster = monsters.Death(name, 1)
-            case name if name.startswith("Werewolf"):
-                monster = monsters.Werewolf(name, 1)
-            case name if name.startswith("Queen"):
-                monster = monsters.Queen(name, 1)
-            case _:
-                raise ValueError(f"Invalid monster name: {name}")
-        all_monsters.append(monster)
+    monster_names = [name for name in dir(monsters) 
+                    if inspect.isclass(getattr(monsters, name)) and 
+                    issubclass(getattr(monsters, name), Character) and 
+                    name != "Character"]
+    print("All monsters:")
+    print(monster_names)
+    all_monsters = [eval(f"monsters.{name}('{name}', 1)") for name in monster_names]
     return all_monsters
 
 all_monsters = get_all_monsters()
@@ -552,6 +455,15 @@ if __name__ == "__main__":
     # =====================================
     # Load Images
     # =====================================
+    
+    if not os.path.exists("./image"):
+        os.mkdir("./image")
+    if not os.path.exists("./image/character"):
+        os.mkdir("./image/character")
+    if not os.path.exists("./image/monster"):
+        os.mkdir("./image/monster")
+    if not os.path.exists("./image/item"):
+        os.mkdir("./image/item")
 
     image_files_character = [x[:-4] for x in os.listdir("./image/character") if x.endswith((".jpg", ".png"))]
     image_files_monster = [x[:-4] for x in os.listdir("./image/monster") if x.endswith((".jpg", ".png"))]
@@ -1028,27 +940,42 @@ if __name__ == "__main__":
                                         tool_tip_text = "Sell half stack of selected item in inventory.")
     item_sell_half_button.set_tooltip("選択したアイテムの半分のスタックを売却する。", delay=0.1, wrap_width=300)
     item_sell_half_button.hide()
+    use_random_consumable_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 420), (156, 35)),
+                                        "Random Use:",
+                                        ui_manager)
+    use_random_consumable_label.set_tooltip("自動バトル中に毎ターン、ランダム一つの消耗品を使用する。", delay=0.1, wrap_width=300)
+    use_random_consumable_selection_menu = pygame_gui.elements.UIDropDownMenu(["True", "False"],
+                                                            "False",
+                                                            pygame.Rect((1080, 460), (156, 35)),
+                                                            ui_manager)
+    cash_burn_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 420), (156, 35)),
+                                        text='Burn Cash',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Cash Burn")
+    cash_burn_button.set_tooltip("Cashがありすぎて困ってる？ 100万ドルを焼き払おう。", delay=0.1, wrap_width=300)
+    cash_burn_button.hide()
 
 
     def use_item():
         # Nine.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Equip|Consumable|Item)})}
         # get all selected items
         text_box.set_text("==============================\n")
+        text_box_text_to_append = ""
         selected_items = []
         # print(player.selected_item)
         if not player.selected_item:
-            text_box.append_html_text("No item is selected.\n")
+            text_box_text_to_append += "No item is selected.\n"
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c) 
         # print(f"use_item() Selected items: {selected_items}")
         if not selected_items:
-            text_box.append_html_text("No item is selected.\n")
+            text_box_text_to_append += "No item is selected.\n"
             return
         if cheap_inventory_show_current_option == "Equip":
             if not is_in_manipulatable_game_states():
-                text_box.append_html_text("Cannot equip items when not in first turn or after the battle is concluded.\n")
+                text_box_text_to_append += "Cannot equip items when not in first turn or after the battle is concluded.\n"
                 return
             for character in all_characters:
                 if character.name == character_selection_menu.selected_option.split()[-1] and character.is_alive():
@@ -1056,39 +983,71 @@ if __name__ == "__main__":
                     item_types_seen = []
                     for item in selected_items:
                         if item.type in item_types_seen:
-                            text_box.append_html_text(f"Cannot equip multiple items of the same type at once.\n")
+                            text_box_text_to_append += f"Cannot equip multiple items of the same type at once.\n"
                             return
                         else:
                             item_types_seen.append(item.type)
 
                     for equip in selected_items:
-                        text_box.append_html_text(f"Equipped {str(equip)} for {character.name}.\n")
+                        text_box_text_to_append += f"Equipped {str(equip)} for {character.name}.\n"
                     old_items = character.equip_item_from_list(selected_items)
                     # remove all None in old_items, this happens when trying to equip to an empty slot, so None is returned
                     old_items = [x for x in old_items if x]
                     if old_items:
                         for items in old_items:
-                            text_box.append_html_text(f"{str(items)} is added to inventory.\n")
+                            text_box_text_to_append += f"{str(items)} is added to inventory.\n"
                         player.remove_selected_item_from_inventory(False) # False because handled next line
                         player.add_package_of_items_to_inventory(old_items)
                     else:
                         player.remove_selected_item_from_inventory(True)
                 elif character.name == character_selection_menu.selected_option.split()[-1] and not character.is_alive():
-                    text_box.append_html_text(f"Can only equip items to alive characters.\n")
+                    text_box_text_to_append += f"Can only equip items to alive characters.\n"
                     return
         elif cheap_inventory_show_current_option == "Consumable":
             for character in all_characters:
                 if character.name == character_selection_menu.selected_option.split()[-1]:
                     for consumable in selected_items:
                         if not consumable.can_use_on_dead and not character.is_alive():
-                            text_box.append_html_text(f"Cannot use {str(consumable)} on dead characters.\n")
+                            text_box_text_to_append += f"Cannot use {str(consumable)} on dead characters.\n"
                             return
                         event_str = consumable.E(character, player)
-                        text_box.append_html_text(event_str + "\n")
+                        text_box_text_to_append += event_str + "\n"
                     player.use_1_selected_item(True)
+        # Remember to change this if decided item can also be used on characters
+        elif cheap_inventory_show_current_option == "Item":
+            for item in selected_items:
+                event_str = item.E(None, player)
+                text_box_text_to_append += event_str + "\n"
+            player.use_1_selected_item(True)
 
         redraw_ui(party1, party2) # slow but necessary. We could also consider only redraw the character that is selected,
         # but some equipment set effect may affact other characters.
+        text_box.append_html_text(text_box_text_to_append)
+
+
+    def use_random_consumable():
+        """
+        Feature for using random consumable, for a random character in need.
+        """
+        if not auto_battle_active:
+            raise Exception("Can only use random consumable when auto battle is active.")   
+        characters_in_need = []
+        if current_game_mode == "Adventure Mode":
+            characters_in_need = [x for x in party1]
+        elif current_game_mode == "Training Mode":
+            characters_in_need = [x for x in party1 + party2]
+        try:
+            consumable = random.choice([x for x in player.inventory if isinstance(x, Consumable) and x.can_use_for_auto_battle])
+        except IndexError:
+            global_vars.turn_info_string += f"Random use failed: No consumable in inventory.\n"
+            return
+        random.shuffle(characters_in_need)
+        for character in characters_in_need:
+            if consumable.auto_E_condition(character, player):
+                event_str = consumable.E(character, player)
+                global_vars.turn_info_string += event_str + "\n"
+                break
+        player.remove_from_inventory(type(consumable), 1, True)
 
 
     def item_sell_selected():
@@ -1142,6 +1101,15 @@ if __name__ == "__main__":
         
         text_box.append_html_text(f"Total income: {total_income} cash.\n")
         player.add_cash(total_income, True)
+
+
+    def cash_burn():
+        text_box.set_text("==============================\n")
+        if player.get_cash() < 1000000:
+            text_box.append_html_text("Not enough cash to burn.\n")
+            return
+        player.lose_cash(1000000, True)
+        text_box.append_html_text("Burned a million dollars.\n")
 
 
     # =====================================
@@ -1200,40 +1168,41 @@ if __name__ == "__main__":
 
     def eq_stars_upgrade(is_upgrade: bool):
         text_box.set_text("==============================\n")
+        text_box_text_to_append = ""
         selected_items = []
         # print(player.selected_item)
         if not player.selected_item:
-            text_box.append_html_text("No item is selected.\n")
+            text_box_text_to_append += "No item is selected.\n"
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c) 
         if not selected_items:
-            text_box.append_html_text("No item is selected.\n")
+            text_box_text_to_append += "No item is selected.\n"
             return
         
         cost_total = int(sum([item_to_upgrade.star_enhence_cost for item_to_upgrade in selected_items]))
         if player.get_cash() < cost_total:
-            text_box.append_html_text(f"Not enough cash for star enhancement.\n")
+            text_box_text_to_append += f"Not enough cash for star enhancement.\n"
             return
         
         for item_to_upgrade in selected_items:
             if item_to_upgrade.stars_rating == item_to_upgrade.stars_rating_max and is_upgrade:
-                text_box.append_html_text(f"Max stars reached: {str(item_to_upgrade)}\n")
+                text_box_text_to_append += f"Max stars reached: {str(item_to_upgrade)}\n"
                 continue
             if item_to_upgrade.stars_rating == 0 and not is_upgrade:
-                text_box.append_html_text(f"Min stars reached: {str(item_to_upgrade)}\n")
+                text_box_text_to_append += f"Min stars reached: {str(item_to_upgrade)}\n"
                 continue
             a, b = item_to_upgrade.upgrade_stars_func(is_upgrade) 
-            text_box.append_html_text(f"Upgrading {item_to_upgrade} in inventory.\n")
-            text_box.append_html_text(f"Stars: {int(a)} -> {int(b)}\n")
+            text_box_text_to_append += f"Upgrading {item_to_upgrade} in inventory.\n"
+            text_box_text_to_append += f"Stars: {int(a)} -> {int(b)}\n"
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_upgrade:
                     k.set_tooltip(item_to_upgrade.print_stats_html(), delay=0.1, wrap_width=300)
         if cost_total > 0:
-            print(f"Cost total: {cost_total}. Player cash: {player.get_cash()}")
             player.lose_cash(cost_total, False)
-            text_box.append_html_text(f"Upgraded {len(selected_items)} items for {cost_total} cash.\n")
+            text_box_text_to_append += f"Upgraded {len(selected_items)} items for {cost_total} cash.\n"
+        text_box.append_html_text(text_box_text_to_append)
 
     eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (156, 35)),
                                         text='Level Up',
@@ -1243,38 +1212,40 @@ if __name__ == "__main__":
 
     def eq_level_up(is_level_up: bool = True):
         text_box.set_text("==============================\n")
+        text_box_text_to_append = ""
         selected_items = []
         if not player.selected_item:
-            text_box.append_html_text("No item is selected.\n")
+            text_box_text_to_append += "No item is selected.\n"
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c)
         if not selected_items:
-            text_box.append_html_text("No item is selected.\n")
+            text_box_text_to_append += "No item is selected.\n"
             return
 
         cost_total = int(sum([item_to_upgrade.level_cost for item_to_upgrade in selected_items]))
         if player.get_cash() < cost_total:
-            text_box.append_html_text(f"Not enough cash for leveling up equipment.\n")
+            text_box_text_to_append += "Not enough cash for leveling up equipment.\n"
             return
 
         for item_to_level_up in selected_items:
             if item_to_level_up.level >= item_to_level_up.level_max and is_level_up:
-                text_box.append_html_text(f"Max level reached: {str(item_to_level_up)}\n")
+                text_box_text_to_append += f"Max level reached: {str(item_to_level_up)}\n"
                 continue
             if item_to_level_up.level <= 0 and not is_level_up:
-                text_box.append_html_text(f"Min level reached: {str(item_to_level_up)}\n")
+                text_box_text_to_append += f"Min level reached: {str(item_to_level_up)}\n"
                 continue
-            text_box.append_html_text(f"Leveling {'up' if is_level_up else 'down'} {item_to_level_up} in inventory.\n")
+            text_box_text_to_append += f"Leveling {'up' if is_level_up else 'down'} {item_to_level_up} in inventory.\n"
             a, b = item_to_level_up.level_change(1 if is_level_up else -1)
-            text_box.append_html_text(f"Level: {int(a)} -> {int(b)}\n")
+            text_box_text_to_append += f"Level: {int(a)} -> {int(b)}\n"
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_level_up:
                     k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=300)
         if cost_total > 0:
             player.lose_cash(cost_total, False)
-            text_box.append_html_text(f"Leveled {len(selected_items)} items for {cost_total} cash.\n")
+            text_box_text_to_append += f"Leveled {len(selected_items)} items for {cost_total} cash.\n"
+        text_box.append_html_text(text_box_text_to_append)
 
     
     eq_sell_selected_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 500), (156, 35)),
@@ -1428,8 +1399,9 @@ if __name__ == "__main__":
                                                               ui_manager)
 
     cheap_inventory_page_label = pygame_gui.elements.UILabel(pygame.Rect((1372, 140), (72, 35)),
-                                        "Page 1/1",
+                                        "1/1",
                                         ui_manager)
+    cheap_inventory_cheap_label.set_tooltip("ページ/最大ページ", delay=0.1)
 
     cheap_inventory_skip_to_first_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1300, 140), (50, 35)),
                                         text='<<',
@@ -1488,7 +1460,7 @@ if __name__ == "__main__":
     show_n_slots_of_inventory_image_slots(0)
 
     def update_inventory_section(player):
-        cheap_inventory_page_label.set_text(f"Page {player.current_page + 1}/{player.max_pages + 1}")
+        cheap_inventory_page_label.set_text(f"{player.current_page + 1}/{player.max_pages + 1}")
 
     # =====================================
     # End of Cheap Inventory Section
@@ -1507,9 +1479,13 @@ if __name__ == "__main__":
         debuff_before = {k: [x.name for x in debuff_before[k]] for k in debuff_before.keys()}
         shield_value_before = {character.name: character.get_shield_value() for character in party1 + party2}
 
-
+        global_vars.turn_info_string = ""
         text_box.set_text("=====================================\n")
-        text_box.append_html_text(f"Turn {turn}\n")
+        global_vars.turn_info_string += f"Turn {turn}\n"
+
+        # Use random consumable
+        if auto_battle_active and use_random_consumable_selection_menu.selected_option == "True":
+            use_random_consumable()
 
         reset_ally_enemy_attr(party1, party2)
         for character in party1:
@@ -1544,24 +1520,24 @@ if __name__ == "__main__":
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
-                    text_box.append_html_text("Defeated.\n")
+                    global_vars.turn_info_string += "Defeated.\n"
                 else:
-                    text_box.append_html_text("Party 1 is defeated.\n")
+                    global_vars.turn_info_string += "Party 1 is defeated.\n"
             elif not is_someone_alive(party2):
                 if current_game_mode == "Adventure Mode":
-                    text_box.append_html_text("Victory!\n")
+                    global_vars.turn_info_string += "Victory!\n"
                     player.cleared_stages = adventure_mode_current_stage
                     # gain exp for alive characters in party 1
                     for character in party1:
                         if character.is_alive():
                             character.gain_exp(adventure_mode_exp_reward())
-                            text_box.append_html_text(f"{character.name} gained {adventure_mode_exp_reward()} exp.\n")
+                            global_vars.turn_info_string += f"{character.name} gained {adventure_mode_exp_reward()} exp.\n"
                     cash_reward = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
-                    text_box.append_html_text(f"Gained {cash_reward} cash.\n")
+                    global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
                 else:
-                    text_box.append_html_text("Party 2 is defeated.\n")
-
+                    global_vars.turn_info_string += "Party 2 is defeated.\n"
+            text_box.append_html_text(global_vars.turn_info_string)
             return False
         
         for character in party1:
@@ -1601,9 +1577,9 @@ if __name__ == "__main__":
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
-                    text_box.append_html_text("Defeated.\n")
+                    global_vars.turn_info_string += "Defeated.\n"
                 else:
-                    text_box.append_html_text("Party 1 is defeated.\n")
+                    global_vars.turn_info_string += "Party 1 is defeated.\n"    
             elif not is_someone_alive(party2):
                 if current_game_mode == "Adventure Mode":
                     text_box.append_html_text("Victory!\n")
@@ -1612,19 +1588,19 @@ if __name__ == "__main__":
                     for character in party1:
                         if character.is_alive():
                             character.gain_exp(adventure_mode_exp_reward())
-                            text_box.append_html_text(f"{character.name} gained {adventure_mode_exp_reward()} exp.\n")
+                            global_vars.turn_info_string += f"{character.name} gained {adventure_mode_exp_reward()} exp.\n"
                     cash_reward = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
-                    text_box.append_html_text(f"Gained {cash_reward} cash.\n")
+                    global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
                 else:
-                    text_box.append_html_text("Party 2 is defeated.\n")
-
+                    global_vars.turn_info_string += "Party 2 is defeated.\n"
+            text_box.append_html_text(global_vars.turn_info_string)
             return False
         
         alive_characters = [x for x in party1 + party2 if x.is_alive()]
         weight = [x.spd for x in alive_characters]
         the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
-        text_box.append_html_text(f"{the_chosen_one.name}'s turn.\n")
+        global_vars.turn_info_string += f"{the_chosen_one.name}'s turn.\n"
         the_chosen_one.action()
 
         for character in party1 + party2:
@@ -1652,12 +1628,12 @@ if __name__ == "__main__":
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
-                    text_box.append_html_text("Defeated.\n")
+                    global_vars.turn_info_string += "Defeated.\n"
                 else:
-                    text_box.append_html_text("Party 1 is defeated.\n")
+                    global_vars.turn_info_string += "Party 1 is defeated.\n"
             elif not is_someone_alive(party2):
                 if current_game_mode == "Adventure Mode":
-                    text_box.append_html_text("Victory!\n")
+                    global_vars.turn_info_string += "Victory!\n"
                     player.cleared_stages = adventure_mode_current_stage
                     # gain exp for alive characters in party 1
                     for character in party1:
@@ -1666,23 +1642,22 @@ if __name__ == "__main__":
                             text_box.append_html_text(f"{character.name} gained {adventure_mode_exp_reward()} exp.\n")
                     cash_reward = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
-                    text_box.append_html_text(f"Gained {cash_reward} cash.\n")
+                    global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
                 else:
-                    text_box.append_html_text("Party 2 is defeated.\n")
-
+                    global_vars.turn_info_string += "Party 2 is defeated.\n"
+            text_box.append_html_text(global_vars.turn_info_string)
             return False
+        text_box.append_html_text(global_vars.turn_info_string)
         return True
 
 
     def all_turns(party1, party2):
         # Warning: Constant logging on text_box is slowing down the simulation
-        global turn, logging, current_game_mode
+        global turn, current_game_mode
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             return 0
         while turn < 300 and is_someone_alive(party1) and is_someone_alive(party2):
-            logging = False
-            for c in all_characters + all_monsters:
-                c.logging = False
+            global_vars.turn_info_string = ""
 
             reset_ally_enemy_attr(party1, party2)
             for character in party1:
@@ -1729,9 +1704,6 @@ if __name__ == "__main__":
 
         redraw_ui(party1, party2, redraw_eq_slots=False)
 
-        logging = True
-        for c in all_characters + all_monsters:
-            c.logging = True
         text_box.set_text("=====================================\n")
         text_box.append_html_text(f"Turn {turn}\n")
 
@@ -1753,15 +1725,18 @@ if __name__ == "__main__":
 
     def restart_battle():
         global turn
+        global_vars.turn_info_string = ""
         for character in all_characters + all_monsters:
             character.reset_stats()
         reset_ally_enemy_attr(party1, party2)
+        global_vars.turn_info_string += "Battle entry effects:\n"
         for character in party1:
             character.battle_entry_effects_activate()
         for character in party2:
             character.battle_entry_effects_activate()
         redraw_ui(party1, party2, redraw_eq_slots=False)
         turn = 1
+        text_box.append_html_text(global_vars.turn_info_string)
 
     def is_in_manipulatable_game_states() -> bool:
         """
@@ -1815,12 +1790,15 @@ if __name__ == "__main__":
         remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
         handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu)
 
+        global_vars.turn_info_string = ""
         reset_ally_enemy_attr(party1, party2)
+        global_vars.turn_info_string += "Battle entry effects:\n"
         for character in party1:
             character.battle_entry_effects_activate()
         for character in party2:
             character.battle_entry_effects_activate()
         redraw_ui(party1, party2)
+        text_box.append_html_text(global_vars.turn_info_string)
         return party1, party2
 
 
@@ -1838,12 +1816,15 @@ if __name__ == "__main__":
         remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
         handle_UIDropDownMenu(party1_show_in_menu, remaining_characters_show_in_menu)
 
+        global_vars.turn_info_string = ""
         reset_ally_enemy_attr(party1, party2)
+        global_vars.turn_info_string += "Battle entry effects:\n"
         for character in party1:
             character.battle_entry_effects_activate()
         for character in party2:
             character.battle_entry_effects_activate()
         redraw_ui(party1, party2)
+        text_box.append_html_text(global_vars.turn_info_string)
         return party1, party2
 
 
@@ -1856,7 +1837,7 @@ if __name__ == "__main__":
                     if new_character:
                         party[i] = new_character
                         return True, new_character, i
-            return False, None
+            return False, None, 0
         replaced, new_character, nci = replace_in_party(party1)
         if not replaced:
             replaced, new_character, nci = replace_in_party(party2)
@@ -1900,7 +1881,7 @@ if __name__ == "__main__":
         return new_image
 
 
-    def create_yellow_text(surface, text, font_size, text_color=(255, 255, 0), offset=10, position_type='bottom'):
+    def create_yellow_text(surface, text, font_size, text_color=(255, 255, 0), offset=10, position_type='bottom', bold=False, italic=False):
         """
         Creates text on the given surface.
 
@@ -1913,6 +1894,10 @@ if __name__ == "__main__":
         position_type (str): The position type for the text ('bottom' or 'topleft').
         """
         font = pygame.font.Font(None, font_size)
+        if bold:
+            font.set_bold(True)
+        if italic:
+            font.set_italic(True)
         text_surface = font.render(text, True, text_color)
         text_rect = text_surface.get_rect()
 
@@ -2087,7 +2072,7 @@ if __name__ == "__main__":
                     equip_effect_slots[i].hide()
 
                 labels[i].set_text(f"lv {character.lvl} {character.name}")
-                labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=400)
+                labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=500)
                 labels[i].set_text_alpha(255) if character.is_alive() else labels[i].set_text_alpha(125)
                 healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value()))
                 healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=300)
@@ -2098,16 +2083,22 @@ if __name__ == "__main__":
                     new_image = add_outline_to_image(image, (255, 215, 0), 6)
                     image_slots[i].set_image(new_image)
 
-                # self.damage_taken_this_turn = [] # list of tuples (damage, attacker), damage is int, attacker is Character object
+                # self.damage_taken_this_turn = [] # list of tuples (damage, attacker, damage_type)
                 current_offset_for_damage_and_healing = 10
                 if character.damage_taken_this_turn:
                     image = image_slots[i].image
                     new_image = add_outline_to_image(image, (255, 0, 0), 4)
-                    # get all damage from list of tuples
-                    damage_list = [x[0] for x in character.damage_taken_this_turn]
-                    # show damage on image
-                    for damage in damage_list:
-                        create_yellow_text(new_image, str(damage), 25, (255, 0, 0), current_offset_for_damage_and_healing)
+                    for a, b, c in character.damage_taken_this_turn:
+                        match c:
+                            case "normal" | "bypass":
+                                create_yellow_text(new_image, str(a), 25, (255, 0, 0), current_offset_for_damage_and_healing)
+                            case "status":
+                                # orange text
+                                create_yellow_text(new_image, str(a), 25, (255, 165, 0), current_offset_for_damage_and_healing)
+                            case "normal_critical":
+                                create_yellow_text(new_image, str(a), 25, (255, 0, 0), current_offset_for_damage_and_healing, bold=True, italic=True)
+                            case _:
+                                raise Exception(f"Unknown damage type: {c}")
                         current_offset_for_damage_and_healing += 12
                     image_slots[i].set_image(new_image)
                 if character.healing_received_this_turn:
@@ -2262,11 +2253,7 @@ if __name__ == "__main__":
     # Event loop
     # ==========================
     running = True 
-    for c in all_characters + all_monsters:
-        c.running = running
-        c.logging = logging
-        c.text_box = text_box
-        c.fineprint_mode = "suppress"
+    # for c in all_characters + all_monsters:
         # c.equip_item_from_list(generate_equips_list(4, random_full_eqset=True)) 
 
     party1 = []
@@ -2455,6 +2442,9 @@ if __name__ == "__main__":
                     eq_sell_low_value_button.show()
                     item_sell_button.hide()
                     item_sell_half_button.hide()
+                    use_random_consumable_label.hide()
+                    use_random_consumable_selection_menu.hide()
+                    cash_burn_button.hide()
                 if event.ui_element == cheap_inventory_show_items_button:
                     player.current_page = 0
                     cheap_inventory_show_current_option = "Item"
@@ -2470,6 +2460,9 @@ if __name__ == "__main__":
                     eq_sell_low_value_button.hide()
                     item_sell_button.show()
                     item_sell_half_button.show()
+                    use_random_consumable_label.hide()
+                    use_random_consumable_selection_menu.hide()
+                    cash_burn_button.show()
                 if event.ui_element == cheap_inventory_show_consumables_button:
                     player.current_page = 0
                     cheap_inventory_show_current_option = "Consumable"
@@ -2485,12 +2478,17 @@ if __name__ == "__main__":
                     eq_sell_low_value_button.hide()
                     item_sell_button.show()
                     item_sell_half_button.show()
+                    use_random_consumable_label.show()
+                    use_random_consumable_selection_menu.show()
+                    cash_burn_button.hide()
                 if event.ui_element == use_item_button:
                     use_item()
                 if event.ui_element == item_sell_button:
                     item_sell_selected()
                 if event.ui_element == item_sell_half_button:
                     item_sell_half()
+                if event.ui_element == cash_burn_button:
+                    cash_burn()
                 if event.ui_element == character_eq_unequip_button:
                     unequip_item()
                 if event.ui_element == box_submenu_previous_stage_button:

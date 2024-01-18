@@ -34,13 +34,6 @@
             "normal_border": "#DDDDDD",
             "filled_bar":"#9B59B6",
             "unfilled_bar":"#D2B4DE"
-        },
-        "font":
-        {
-            "name": "montserrat",
-            "size": "12",
-            "bold": "0",
-            "italic": "1"
         }
     },
     "screen_space_health_bar":
@@ -52,13 +45,6 @@
             "normal_border": "#DDDDDD",
             "filled_bar":"#9B59B6",
             "unfilled_bar":"#D2B4DE"
-        },
-        "font":
-        {
-            "name": "montserrat",
-            "size": "12",
-            "bold": "0",
-            "italic": "1"
         }
     }
 }

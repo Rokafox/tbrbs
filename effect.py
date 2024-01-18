@@ -1,10 +1,10 @@
 from collections import Counter
-from fine_print import fine_print
 import random
+import global_vars
 
 
 class Effect:
-    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0, is_set_effect=False):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0, is_set_effect=False, tooltip_str=None):
         self.name = name
         self.duration = duration
         self.is_buff = bool(is_buff)
@@ -17,6 +17,7 @@ class Effect:
         self.stacks = 1 
         self.apply_rule = "default" # "default", "stack"
         self.is_cc_effect = False
+        self.tooltip_str = tooltip_str
     
     def is_permanent(self):
         return self.duration == -1
@@ -96,7 +97,10 @@ class Effect:
         return string
     
     def tooltip_description(self):
-        return "No description available."
+        if self.tooltip_str:
+            return self.tooltip_str
+        else:
+            return "No description available."
 
 
 # =========================================================
@@ -265,7 +269,7 @@ class FearEffect(Effect):
     def tooltip_description(self):
         str = "Consumed by fear.\n"
         if not self.stats_dict:
-            return str + "No effect."
+            return str + "Currently have no effect."
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
                 str += f"{key} is scaled to {value*100}%."
@@ -317,7 +321,6 @@ class StatsEffect(Effect):
             elif self.condition(character) and self.flag_is_active == True:
                 return
             elif not self.condition(character) and self.flag_is_active == False:
-                fine_print(f"The effect of {self.name} is not triggered because condition is not met.", mode=character.fineprint_mode)
                 return
             elif not self.condition(character) and self.flag_is_active == True:
                 character.update_stats(self.stats_dict, reversed=True)
@@ -565,28 +568,21 @@ class ContinuousHealEffect(Effect):
 
 # Absorption Shield effect
 class AbsorptionShield(Effect):
-    def __init__(self, name, duration, is_buff, shield_value, cc_immunity, running=False, logging=False, text_box=None):
+    def __init__(self, name, duration, is_buff, shield_value, cc_immunity):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.shield_value = shield_value
         self.is_buff = is_buff
         self.cc_immunity = cc_immunity
-        self.running = running
-        self.logging = logging
-        self.text_box = text_box
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
         if damage > self.shield_value:
             remaining_damage = damage - self.shield_value
-            if self.running and self.logging:
-                self.text_box.append_html_text(f"{character.name}'s shield is broken!\n{remaining_damage} damage is dealt to {character.name}.\n")
-            fine_print(f"{character.name}'s shield is broken! {remaining_damage} damage is dealt to {character.name}.", mode=character.fineprint_mode)
+            global_vars.turn_info_string += f"{character.name}'s shield is broken! {remaining_damage} damage is dealt to {character.name}.\n"
             character.remove_effect(self)
             return remaining_damage
         else:
             self.shield_value -= damage
-            if self.running and self.logging:
-                self.text_box.append_html_text(f"{character.name}'s shield absorbs {damage} damage.\nRemaining shield: {self.shield_value}\n")
-            fine_print(f"{character.name}'s shield absorbs {damage} damage. Remaining shield: {self.shield_value}", mode=character.fineprint_mode)
+            global_vars.turn_info_string += f"{character.name}'s shield absorbs {damage} damage.\nRemaining shield: {self.shield_value}\n"
             return 0
         
     def tooltip_description(self):
@@ -698,14 +694,11 @@ class EffectShield3(Effect):
 #---------------------------------------------------------
 # Cancellation Shield effect (cancel the damage to 0 if damage exceed certain amount of max hp)
 class CancellationShield(Effect):
-    def __init__(self, name, duration, is_buff, threshold, cc_immunity, running=False, logging=False, text_box=None, uses=1):
+    def __init__(self, name, duration, is_buff, threshold, cc_immunity, uses=1):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.threshold = threshold
         self.cc_immunity = cc_immunity
-        self.running = running
-        self.logging = logging
-        self.text_box = text_box
         self.sort_priority = 150
         self.uses = uses
 
@@ -716,9 +709,7 @@ class CancellationShield(Effect):
                 character.remove_effect(self)
             elif self.uses < 0:
                 raise Exception("Logic Error")
-            if self.running and self.logging:
-                self.text_box.append_html_text(f"{character.name} shielded the attack!\n")
-            fine_print(f"{character.name} shielded the attack!", mode=character.fineprint_mode)
+            global_vars.turn_info_string += f"{character.name} shielded the attack!\n"
             return 0
         else:
             return damage
@@ -746,14 +737,11 @@ class CancellationShield2(Effect):
 
 # Cancellation Shield effect (cancel the damage to 0 if damage lower than certain amount of max hp)
 class CancellationShield3(Effect):
-    def __init__(self, name, duration, is_buff, threshold, cc_immunity, running=False, logging=False, text_box=None, uses=1):
+    def __init__(self, name, duration, is_buff, threshold, cc_immunity, uses=1):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.threshold = threshold
         self.cc_immunity = cc_immunity
-        self.running = running
-        self.logging = logging
-        self.text_box = text_box
         self.sort_priority = 150
         self.uses = uses
 
@@ -764,9 +752,7 @@ class CancellationShield3(Effect):
                 character.remove_effect(self)
             elif self.uses < 0:
                 raise Exception("Logic Error")
-            if self.running and self.logging:
-                self.text_box.append_html_text(f"{character.name} shielded the attack!\n")
-            fine_print(f"{character.name} shielded the attack!", mode=character.fineprint_mode)
+            global_vars.turn_info_string += f"{character.name} shielded the attack!\n"
             return 0
         else:
             return damage
@@ -786,16 +772,13 @@ class CancellationShield3(Effect):
 # When counter reaches 0, deal 600% of applier atk as damage to self.
 # At the end of the turn, this effect is applied to a random enemy.
 class NewYearFireworksEffect(Effect):
-    def __init__(self, name, duration, is_buff, max_counters, imposter, running=False, logging=False, text_box=None):
+    def __init__(self, name, duration, is_buff, max_counters, imposter):
         super().__init__(name, duration, is_buff)
         self.name = name
         self.is_buff = is_buff
         self.max_counters = max_counters
         self.current_counters = max_counters
         self.imposter = imposter
-        self.running = running
-        self.logging = logging
-        self.text_box = text_box
         self.should_trigger_end_of_turn_effect = True # We only want to trigger once per end of turn.
     
     def apply_effect_on_trigger(self, character):
@@ -808,9 +791,7 @@ class NewYearFireworksEffect(Effect):
             return
         if self.current_counters == 0:
             damage = self.imposter.atk * 6
-            if self.running and self.logging:
-                self.text_box.append_html_text(f"{character.name} is about to take {int(damage)} damage from fireworks!\n")
-            fine_print(f"{character.name} is about to take {int(damage)} damage from fireworks!", mode=character.fineprint_mode)
+            global_vars.turn_info_string += f"{character.name} is about to take {int(damage)} damage from fireworks!\n"
             character.take_status_damage(damage, self.imposter)
             character.remove_effect(self)
 
@@ -824,9 +805,6 @@ class NewYearFireworksEffect(Effect):
             target = next(character.target_selection())
             new_effect = NewYearFireworksEffect(self.name, self.duration, self.is_buff, self.max_counters, self.imposter)
             new_effect.current_counters = self.current_counters
-            new_effect.running = target.running
-            new_effect.logging = target.logging
-            new_effect.text_box = target.text_box
             new_effect.should_trigger_end_of_turn_effect = False
             target.apply_effect(new_effect)
             character.remove_effect(self)
@@ -870,6 +848,43 @@ class StingEffect(Effect):
     def tooltip_description(self):
         return f"Take {self.value} status damage every time after taking damage."
     
+
+# Hide effect: cannot be targeted by enemy. Unless for n_random_targets and n_random_enemies where n >= 5.
+class HideEffect(Effect):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, remove_on_damage=False):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.name = "Hide"
+        self.is_buff = is_buff
+        self.cc_immunity = cc_immunity
+        self.sort_priority = 2000
+        self.is_active = True
+        self.remove_on_damage = remove_on_damage
+
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            character.remove_effect(self)
+            return
+        hidden_allies = [ally for ally in character.ally if ally.has_effect_that_named(self.name, None, "HideEffect")]
+        if len(hidden_allies) == len(character.ally):
+            self.is_active = False
+        if not self.is_active:
+            self.flag_for_remove = True
+        
+    def apply_effect_during_damage_step(self, character, damage, attacker):
+        if self.remove_on_damage:
+            global_vars.turn_info_string += f"{character.name} is no longer hidden!\n"
+            character.remove_effect(self)
+        return damage
+
+    def tooltip_description(self):
+        string = f"Enemy attack and skill that target less than 5 enemies will not target this character. "
+        string += f"Effect is no longer active when all allies are hidden and will be removed the start of the next turn. "
+        if self.remove_on_damage:
+            string += f"Effect is removed when taking damage."
+        return string
+
+
+
 # =========================================================
 # End of Special effects
 # Effects in the above section need special handling.
@@ -880,15 +895,12 @@ class StingEffect(Effect):
 # Arasaka
 # Leave with 1 hp when taking fatal damage. Immune to damage for 3 turns.
 class EquipmentSetEffect_Arasaka(Effect):
-    def __init__(self, name, duration, is_buff, cc_immunity, running=False, logging=False, text_box=None):
+    def __init__(self, name, duration, is_buff, cc_immunity):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.cc_immunity = cc_immunity
         self.is_set_effect = True
         self.onehp_effect_triggered = False
-        self.running = running
-        self.logging = logging
-        self.text_box = text_box
         self.sort_priority = 2000
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
@@ -896,9 +908,7 @@ class EquipmentSetEffect_Arasaka(Effect):
             return 0
         if damage >= character.hp:
             character.hp = 1
-            if self.running and self.logging:
-                self.text_box.append_html_text(f"{character.name} survived with 1 hp!\n")
-            fine_print(f"{character.name} survived with 1 hp!", mode=character.fineprint_mode)
+            global_vars.turn_info_string += f"{character.name} survived with 1 hp!\n"
             self.onehp_effect_triggered = True
             self.duration = 3
             return 0
@@ -913,30 +923,23 @@ class EquipmentSetEffect_Arasaka(Effect):
 # KangTao
 # Absorption Shield effect, separate from AbsorptionShield class to very slightly improve performance.
 class EquipmentSetEffect_KangTao(Effect):
-    def __init__(self, name, duration, is_buff, shield_value, cc_immunity, running=False, logging=False, text_box=None):
+    def __init__(self, name, duration, is_buff, shield_value, cc_immunity):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.shield_value = shield_value
         self.is_buff = is_buff
         self.cc_immunity = cc_immunity
         self.is_set_effect = True
-        self.running = running
-        self.logging = logging
-        self.text_box = text_box
         self.sort_priority = 2000
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
         if damage > self.shield_value:
             remaining_damage = damage - self.shield_value
-            if self.running and self.logging:
-                self.text_box.append_html_text(f"{character.name}'s shield is broken!\n{remaining_damage} damage is dealt to {character.name}.\n")
-            fine_print(f"{character.name}'s shield is broken! {remaining_damage} damage is dealt to {character.name}.", mode=character.fineprint_mode)
+            global_vars.turn_info_string += f"{character.name}'s shield is broken!\n{remaining_damage} damage is dealt to {character.name}.\n"
             character.remove_effect(self)
             return remaining_damage
         else:
             self.shield_value -= damage
-            if self.running and self.logging:
-                self.text_box.append_html_text(f"{character.name}'s shield absorbs {damage} damage.\nRemaining shield: {self.shield_value}\n")
-            fine_print(f"{character.name}'s shield absorbs {damage} damage. Remaining shield: {self.shield_value}", mode=character.fineprint_mode)
+            global_vars.turn_info_string += f"{character.name}'s shield absorbs {damage} damage.\nRemaining shield: {self.shield_value}\n"  
             return 0
         
     def tooltip_description(self):
@@ -963,7 +966,6 @@ class EquipmentSetEffect_Militech(Effect):
             elif self.condition(character) and self.flag_is_active:
                 return
             elif not self.condition(character) and not self.flag_is_active:
-                fine_print(f"The effect of {self.name} is not yet triggered because condition is not met.", mode=character.fineprint_mode)
                 return
             elif not self.condition(character) and self.flag_is_active:
                 character.update_stats(self.stats_dict, reversed=True)
@@ -1107,3 +1109,16 @@ class PharaohPassiveEffect(Effect):
     
     def tooltip_description(self):
         return f"At the end of turn, if there is a cursed enemy, increase atk by {self.value*100}% for 3 turns."
+    
+
+# ---------------------------------------------------------
+# End of Monster Passive effects and others
+#---------------------------------------------------------
+#---------------------------------------------------------
+# Consumable effects
+#---------------------------------------------------------
+    
+
+# ---------------------------------------------------------
+# End of Consumable effects
+#---------------------------------------------------------
