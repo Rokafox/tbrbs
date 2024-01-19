@@ -202,6 +202,7 @@ class Character:
 
         if target_list:
             yield from target_list
+            return
 
         match (keyword, keyword2, keyword3, keyword4):
             case ("yourself", _, _, _):
@@ -1890,22 +1891,22 @@ class Gabe(Character): # Damage dealer, close targets, status damage, special
         return super().fake_dice(sides, weights)
 
 
-class BeastTamer(Character):    # Damage dealer, close targets, normal attack, special
+class Yuri(Character):    # Damage dealer, close targets, normal attack, special
     # A reference to a dead game character
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
-        self.name = "BeastTamer"
-        self.skill1_description = "Summon Bear, Wolf, Eagle, Cat by order as status effects. Normal attack gain additional effects according to the summoned animal. \
-        Bear: 20% chance to Stun for 2 turns, normal attack damage increases by 100%. \
-        Wolf: Normal attack attack 3 closest enemies, each attack has 40% chance to inflict burn for 4 turns. Burn deals 50% atk status damage per turn \
-        Eagle: Each Normal attack gains 4 additional focus attacks on the same target, each attack deals 150% atk damage. \
-        Cat: After normal attack, an ally with highest atk gains 'Gold Card' effect for 4 turns. Gold Card: atk, def, critical damage is increased by 30% \
-        When all animals are summoned, this skill has no effect and cannot be used."
-        self.skill2_description = "This skill cannot be used. When an animal is summoned, gain buff effect according to the animal for 12 turns. \
-        Bear: atk increased by 35% \
-        Wolf: critical rate increased by 35% \
-        Eagle: speed increased by 35% \
-        Cat: heal efficiency increased by 35%"
+        self.name = "Yuri"
+        self.skill1_description = "Summon Bear, Wolf, Eagle, Cat by order as status effects. Normal attack gain additional effects according to the summoned animal." \
+        " Bear: 20% chance to Stun for 2 turns, normal attack damage increases by 100%." \
+        " Wolf: Normal attack attack 3 closest enemies, each attack has 40% chance to inflict burn for 4 turns. Burn deals 50% atk status damage per turn." \
+        " Eagle: Each Normal attack gains 4 additional focus attacks on the same target, each attack deals 150% atk damage." \
+        " Cat: After normal attack, an ally with highest atk gains 'Gold Card' effect for 4 turns. Gold Card: atk, def, critical damage is increased by 30%." \
+        " When all animals are summoned, this skill has no effect and cannot be used."
+        self.skill2_description = "This skill cannot be used. When an animal is summoned, gain buff effect according to the animal for 12 turns." \
+        " Bear: atk increased by 40%." \
+        " Wolf: critical rate increased by 40%." \
+        " Eagle: speed increased by 40%." \
+        " Cat: heal efficiency increased by 40%."
         self.skill3_description = "Normal attack targets closest enemy."
         self.skill1_cooldown_max = 2
         self.skill2_cooldown_max = 0
@@ -1934,35 +1935,35 @@ class BeastTamer(Character):    # Damage dealer, close targets, normal attack, s
         match (self.bt_bear, self.bt_wolf, self.bt_eagle, self.bt_cat) :
             case (False, False, False, False):
                 bear_effect = Effect("Bear", -1, True, False)
-                bear_effect.tooltip_str = "Bear is summoned."
+                bear_effect.tooltip_str = f"Bear is summoned to fight for {self.name}."
                 self.apply_effect(bear_effect)
                 global_vars.turn_info_string += f"{self.name} summoned Bear.\n"
                 self.bt_bear = True
-                self.apply_effect(StatsEffect("Bear", 12, True, {"atk": 1.35}))
+                self.apply_effect(StatsEffect("Bear", 12, True, {"atk": 1.40}))
                 return 0
             case (True, False, False, False):
                 wolf_effect = Effect("Wolf", -1, True, False)
-                wolf_effect.tooltip_str = "Wolf is summoned."
+                wolf_effect.tooltip_str = f"Wolf is summoned to fight for {self.name}."
                 self.apply_effect(wolf_effect)
                 global_vars.turn_info_string += f"{self.name} summoned Wolf.\n"
                 self.bt_wolf = True
-                self.apply_effect(StatsEffect("Wolf", 12, True, {"crit": 0.35}))
+                self.apply_effect(StatsEffect("Wolf", 12, True, {"crit": 0.40}))
                 return 0
             case (True, True, False, False):
                 eagle_effect = Effect("Eagle", -1, True, False)
-                eagle_effect.tooltip_str = "Eagle is summoned."
+                eagle_effect.tooltip_str = f"Eagle is summoned to fight for {self.name}."
                 self.apply_effect(eagle_effect)
                 global_vars.turn_info_string += f"{self.name} summoned Eagle.\n"
                 self.bt_eagle = True
-                self.apply_effect(StatsEffect("Eagle", 12, True, {"spd": 1.35}))
+                self.apply_effect(StatsEffect("Eagle", 12, True, {"spd": 1.40}))
                 return 0
             case (True, True, True, False):
                 cat_effect = Effect("Cat", -1, True, False)
-                cat_effect.tooltip_str = "Cat is summoned."
+                cat_effect.tooltip_str = f"Cat is summoned to fight for {self.name}."
                 self.apply_effect(cat_effect)
                 global_vars.turn_info_string += f"{self.name} summoned Cat.\n"
                 self.bt_cat = True
-                self.apply_effect(StatsEffect("Cat", 12, True, {"heal_efficiency": 0.35}))
+                self.apply_effect(StatsEffect("Cat", 12, True, {"heal_efficiency": 0.40}))
                 return 0
             case (True, True, True, True):
                 raise Exception("Skill can not be used. Should be already handled in status_effects_at_end_of_turn")
@@ -2037,6 +2038,7 @@ class BeastTamer(Character):    # Damage dealer, close targets, normal attack, s
                     final_damage *= 2.0
                     return final_damage
                 def additional_attacks(self, target, is_crit):
+                    global_vars.turn_info_string += f"{self.name} triggered additional attack.\n"
                     return self.attack(multiplier=1.5, repeat_seq=4, target_list=[target])
                 damage_dealt = self.attack(target_kw1="n_enemy_in_front", multiplier=2.0, repeat=1, func_after_dmg=extra_effect, 
                                            func_damage_step=damage_amplify, target_kw2="3", additional_attack_after_dmg=additional_attacks)

@@ -18,7 +18,7 @@ def fine_print(*args, mode="default", **kwargs):
 
 def get_all_characters(test_mode):
     character_names = ["Lillia", "Poppy", "Iris", "Freya", "Luna", "Clover", "Ruby", "Olive", "Fenrir", "Cerberus", "Pepper",
-                       "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Chiffon", "Ophelia", "Requina", "Gabe", "BeastTamer"]
+                       "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Chiffon", "Ophelia", "Requina", "Gabe", "Yuri"]
 
     all_characters = [eval(f"{name}('{name}', 40)") for name in character_names]
 
