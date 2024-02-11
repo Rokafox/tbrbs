@@ -73,6 +73,10 @@ class Effect:
         """
         pass
 
+    def apply_effect_after_heal_step(self, character, heal_value):
+        pass
+
+
     def __str__(self):
         return self.name
     
@@ -403,21 +407,50 @@ class NotTakingDamageEffect(Effect):
 # =========================================================
 # End of Stats effects
 # =========================================================
+# Timed bomb effects
+# Effect that trigger events when expired.
+# =========================================================
+
+
+class TimedBombEffect(Effect):
+    def __init__(self, name, duration, is_buff, damage, imposter, cc_immunity):
+        super().__init__(name, duration, is_buff)
+        self.damage = damage
+        self.imposter = imposter
+        self.cc_immunity = cc_immunity
+
+    def apply_effect_on_expire(self, character):
+        if character.is_alive():
+            character.take_status_damage(self.damage, self.imposter)
+
+    def tooltip_description(self):
+        return f"Deal {self.damage} status damage when expired."
+
+
+# =========================================================
+# End of Timed bomb effects
+# =========================================================
 # Continuous Damage/Healing effects
 # =========================================================
 
 
 # Continuous Damage effect
 class ContinuousDamageEffect(Effect):
-    def __init__(self, name, duration, is_buff, value, imposter):
+    def __init__(self, name, duration, is_buff, value, imposter, remove_by_heal=False):
         super().__init__(name, duration, is_buff)
         self.value = float(value)
         self.is_buff = is_buff
         self.imposter = imposter # The character that applies this effect
+        self.remove_by_heal = remove_by_heal
     
     def apply_effect_on_trigger(self, character):
         character.take_status_damage(self.value, self.imposter)
     
+    def apply_effect_after_heal_step(self, character, heal_value):
+        if self.remove_by_heal:
+            global_vars.turn_info_string += f"{character.name}'s {self.name} is removed by heal.\n"
+            character.remove_effect(self)
+
     def tooltip_description(self):
         return f"Take {int(self.value)} status damage each turn."
 
@@ -539,6 +572,10 @@ class GreatPoisonEffect(Effect):
 # ---------------------------------------------------------
 # Continuous Heal effect
 class ContinuousHealEffect(Effect):
+    """
+    value: float, 0.0 to 1.0
+    
+    """
     def __init__(self, name, duration, is_buff, value, is_percent=False):
         super().__init__(name, duration, is_buff)
         self.value = float(value)
@@ -614,13 +651,15 @@ class ReductionShield(Effect):
 # Effect shield 1 (before damage calculation, if character hp is below certain threshold, healhp for certain amount)
 # Only used by Fenrir
 class EffectShield1(Effect):
-    def __init__(self, name, duration, is_buff, threshold, heal_value, cc_immunity):
+    def __init__(self, name, duration, is_buff, threshold, heal_value, cc_immunity,
+                require_above_zero_dmg=False):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.threshold = threshold
         self.heal_value = heal_value
         self.cc_immunity = cc_immunity
         self.sort_priority = 120
+        self.require_above_zero_dmg = require_above_zero_dmg
 
     def apply_effect_at_end_of_turn(self, character):
         character.update_ally_and_enemy()
@@ -628,7 +667,7 @@ class EffectShield1(Effect):
             self.flag_for_remove = True
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
-        if character.hp < character.maxhp * self.threshold:
+        if character.hp < character.maxhp * self.threshold and (not self.require_above_zero_dmg or damage > 0):
             character.heal_hp(self.heal_value, self)
         return damage
     
@@ -639,19 +678,20 @@ class EffectShield1(Effect):
 #---------------------------------------------------------
 # Effect shield 2 (When taking damage that would exceed 10% of maxhp, reduce damage above 10% of maxhp by 50%. 
 # For every turn passed, damage reduction effect is reduced by 2%.)
-# Only used by Chiffon
+# Used by Chiffon
 class EffectShield2(Effect):
-    def __init__(self, name, duration, is_buff, cc_immunity, damage_reduction=0.5, shrink_rate=0.02):
+    def __init__(self, name, duration, is_buff, cc_immunity, damage_reduction=0.5, shrink_rate=0.02, threshold=0.1):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.cc_immunity = cc_immunity
         self.damage_reduction = damage_reduction
         self.shrink_rate = shrink_rate
         self.sort_priority = 150
+        self.threshold = threshold
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
-        if damage > character.maxhp * 0.1:
-            damage = character.maxhp * 0.1 + (damage - character.maxhp * 0.1) * self.damage_reduction
+        if damage > character.maxhp * self.threshold:
+            damage = character.maxhp * self.threshold + (damage - character.maxhp * self.threshold) * self.damage_reduction
         return damage
     
     def apply_effect_on_trigger(self, character):
@@ -718,7 +758,7 @@ class CancellationShield(Effect):
         return f"Cancel attack {str(self.uses)} times if damage exceed {self.threshold*100}% of max hp."
 
 
-# Cancellation Shield 2 effect (cancel the damage that exceed certain amount of max hp)
+# Cancellation Shield 2 effect (cancel the part of damage that exceed certain amount of max hp)
 class CancellationShield2(Effect):
     def __init__(self, name, duration, is_buff, threshold, cc_immunity):
         super().__init__(name, duration, is_buff, cc_immunity=False)
@@ -730,6 +770,7 @@ class CancellationShield2(Effect):
     def apply_effect_during_damage_step(self, character, damage, attacker):
         damage = min(damage, character.maxhp * self.threshold)
         return damage
+
         
     def tooltip_description(self):
         return f"Cancel the damage that exceed {self.threshold*100}% of max hp."
@@ -1082,12 +1123,105 @@ class EquipmentSetEffect_Snowflake(Effect):
             return
         if self.collected_pieces >= 6:
             self.activation_count += 1
-            character.apply_effect(StatsEffect("Snowflake", 6, True, self.get_new_bonus_dict(), is_set_effect=True))
+            sf = StatsEffect("Snowflake", 6, True, self.get_new_bonus_dict(), is_set_effect=True)
+            character.apply_effect(sf)
             character.heal_hp(character.maxhp * 0.25 * self.activation_count, self)
             self.collected_pieces = 0
 
     def tooltip_description(self):
         return f"Collected pieces: {self.collected_pieces}, Activation count: {self.activation_count}. Collect 6 pieces to activate effect."
+
+
+# ---------------------------------------------------------
+# Flute
+class EquipmentSetEffect_Flute(Effect):
+    def __init__(self, name, duration, is_buff):
+        super().__init__(name, duration, is_buff)
+        self.name = name
+        self.is_buff = is_buff
+        self.is_set_effect = True
+        self.sort_priority = 2000
+
+# ---------------------------------------------------------
+# Rainbow
+class EquipmentSetEffect_Rainbow(Effect):
+    def __init__(self, name, duration, is_buff):
+        super().__init__(name, duration, is_buff)
+        self.name = name
+        self.is_buff = is_buff
+        self.is_set_effect = True
+        self.sort_priority = 2000
+
+# ---------------------------------------------------------
+# Dawn
+# Atk increased by 24%, crit increased by 12% when hp is full.
+# One time only, when dealing damage, damage is increased by 120%.
+class EquipmentSetEffect_Dawn(Effect):
+    def __init__(self, name, duration, is_buff, stats_dict=None):
+        super().__init__(name, duration, is_buff)
+        self.is_set_effect = True
+        self.stats_dict = stats_dict
+        self.flag_is_active = True
+        self.flag_onetime_damage_bonus_active = True
+        self.sort_priority = 2000
+
+    def apply_effect_on_apply(self, character):
+        character.update_stats(self.stats_dict, reversed=False)
+
+    def apply_effect_on_remove(self, character):
+        character.update_stats(self.stats_dict, reversed=True)
+
+    def apply_effect_on_trigger(self, character):
+        if character.hp == character.maxhp and not self.flag_is_active:
+            character.update_stats(self.stats_dict, reversed=False)
+            self.flag_is_active = True
+        elif character.hp < character.maxhp and self.flag_is_active:
+            character.update_stats(self.stats_dict, reversed=True)
+            self.flag_is_active = False
+        else:
+            return
+
+    def tooltip_description(self):
+        string = ""
+        if self.flag_is_active:
+            string += "Atk and crit bonus is active.\n"
+        if self.flag_onetime_damage_bonus_active:
+            string += "Onetime damage bonus is active.\n"
+        if not self.flag_is_active and not self.flag_onetime_damage_bonus_active:
+            string += "Effect is not active."
+        return string
+
+# ---------------------------------------------------------
+# Bamboo
+# After taking down an enemy with normal or skill attack, for 5 turns,
+# regenerates 16% of max hp each turn and increases atk, def, spd by 32%
+    
+class EquipmentSetEffect_Bamboo(Effect):
+    def __init__(self, name, duration, is_buff, stats_dict=None):
+        super().__init__(name, duration, is_buff)
+        self.is_set_effect = True
+        self.stats_dict = stats_dict
+        self.flag_is_active = False
+        self.sort_priority = 2000
+
+    def apply_effect_custom(self, character):
+        if character.is_dead():
+            return
+        if not character.has_effect_that_named("Bamboo"):
+            character.apply_effect(StatsEffect("Bamboo", 5, True, self.stats_dict))
+            character.apply_effect(ContinuousHealEffect("Bamboo", 5, True, 0.16, True))
+
+# ---------------------------------------------------------
+# Rose
+# Heal efficiency is increased by 20%. Before heal, increase target's heal efficiency by 40% for 2 turns.
+# Cannot be triggered by hp recover.
+class EquipmentSetEffect_Rose(Effect):
+    def __init__(self, name, duration, is_buff, he_bonus_before_heal=0.4):
+        super().__init__(name, duration, is_buff)
+        self.is_set_effect = True
+        self.he_bonus_before_heal = he_bonus_before_heal
+        self.sort_priority = 2000
+
 
 #---------------------------------------------------------
 # End of Equipment set effects

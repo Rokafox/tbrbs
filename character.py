@@ -1,6 +1,7 @@
 from effect import *
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
+import itertools
 import global_vars
 
 
@@ -83,6 +84,8 @@ class Character:
         self.healing_received_history = [] # list of self.healing_received_this_turn
 
         self.battle_entry = False if reset_battle_entry else self.battle_entry
+        self.number_of_attacks = 0 # counts how many attacks the character has made
+        self.battle_turns = 0 # counts how many turns the character has been in battle
 
         self.clear_others()
 
@@ -109,7 +112,7 @@ class Character:
             if not record:
                 count += 1
             else:
-                for (damage, attacker) in record:
+                for (damage, *_) in record:
                     if damage > 0:
                         count += 1
                         break
@@ -292,6 +295,24 @@ class Character:
                     neif_t_d_t = sorted(neif_t_d_t, key=lambda x: x[1])
                     yield from [neif_t_d_t[i][0] for i in range(n)]
 
+            case ("n_enemy_in_middle", n, _, _):
+                n = int(n)
+                if len(ts_available_enemy) <= n:
+                    yield from ts_available_enemy
+                else:
+                    all_windows = list(mit.windowed(ts_available_enemy, n))
+                    # choose the middle window
+                    yield from all_windows[len(all_windows)//2]
+
+            case ("n_ally_in_middle", n, _, _):
+                n = int(n)
+                if len(self.ally) <= n:
+                    yield from self.ally
+                else:
+                    all_windows = list(mit.windowed(self.ally, n))
+                    # choose the middle window
+                    yield from all_windows[len(all_windows)//2]
+
             case ("n_lowest_hp_percentage_ally", n, _, _):
                 n = int(n)
                 yield from sorted(self.ally, key=lambda x: x.hp/x.maxhp)[:n]
@@ -339,7 +360,8 @@ class Character:
     def attack(self, target_kw1="Undefined", target_kw2="Undefined", 
                target_kw3="Undefined", target_kw4="Undefined", multiplier=2, repeat=1, func_after_dmg=None,
                func_damage_step=None, repeat_seq=1, func_after_miss=None, func_after_crit=None,
-               always_crit=False, additional_attack_after_dmg=None, always_hit=False, target_list=None) -> int:
+               always_crit=False, additional_attack_after_dmg=None, always_hit=False, target_list=None,
+               force_dmg=None) -> int:
         # Warning: DO NOT MESS WITH repeat and repeat_seq TOGETHER, otherwise the result will be confusing
         # -> damage dealt
         damage_dealt = 0
@@ -363,7 +385,7 @@ class Character:
                 if self.is_dead():
                     break
                 global_vars.turn_info_string += f"{self.name} is targeting {target.name}.\n"
-                damage = self.atk * multiplier - target.defense * (1 - self.penetration)
+                damage = self.atk * multiplier - target.defense * (1 - self.penetration) if not force_dmg else force_dmg
                 final_accuracy = self.acc - target.eva
                 dice = random.randint(1, 100)
                 miss = False if dice <= final_accuracy * 100 else True
@@ -381,10 +403,24 @@ class Character:
                     final_damage *= random.uniform(0.8, 1.2)
                     if func_damage_step is not None:
                         final_damage = func_damage_step(self, target, final_damage)
+                    if self.get_equipment_set() == "Rainbow":
+                        rainbow_amplifier_dict = {0: 1.36, 1: 1.18, 2: 1.00, 3: 0.82, 4: 0.64}
+                        self_target_index_diff = self.get_self_index() - target.get_self_index()
+                        self_target_index_diff = abs(self_target_index_diff)
+                        final_damage *= rainbow_amplifier_dict[self_target_index_diff]
+                    if self.get_equipment_set() == "Dawn":
+                        if self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active:
+                            final_damage *= 2.20
+                            global_vars.turn_info_string += f"Damage increased by 120% due to Dawn Set effect.\n"
+                            self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active = False
                     if final_damage < 0:
                         final_damage = 0
                     target.take_damage(final_damage, self, is_crit=critical)
                     damage_dealt += final_damage
+                    if target.is_dead():
+                        if self.get_equipment_set() == "Bamboo":
+                            self.get_effect_that_named("Bamboo Set", None, "EquipmentSetEffect_Bamboo").apply_effect_custom(self)
+                    self.add_number_of_attacks(1)
                     if func_after_dmg is not None and self.is_alive():
                         func_after_dmg(self, target)
                     if additional_attack_after_dmg is not None:
@@ -394,6 +430,35 @@ class Character:
 
         return damage_dealt
 
+
+    def add_number_of_attacks(self, n):
+        self.number_of_attacks += n
+        if self.get_equipment_set() == "Flute" and self.number_of_attacks % 4 == 0:
+            for e in self.enemy:
+                if e.is_alive():
+                    e.take_status_damage(self.atk, self)
+
+    def reset_number_of_attacks(self):
+        self.number_of_attacks = 0
+
+    def heal(self, target_kw1="Undefined", target_kw2="Undefined", target_kw3="Undefined", target_kw4="Undefined", 
+             value=0, repeat=1, func_after_each_heal=None, target_list=None, func_before_heal=None) -> int:
+        # -> healing done
+        healing_done = 0
+        targets = list(self.target_selection(target_kw1, target_kw2, target_kw3, target_kw4, target_list))
+        if func_before_heal is not None:
+            func_before_heal(self, targets)
+        if self.get_equipment_set() == "Rose":
+            for t in targets:
+                t.apply_effect(StatsEffect("Beloved Girl", 2, True, 
+                {"heal_efficiency": self.get_effect_that_named("Rose Set", None, "EquipmentSetEffect_Rose").he_bonus_before_heal}))
+        for i in range(repeat):
+            for t in targets:
+                healing, healer, overhealing = t.heal_hp(value, self)
+                healing_done += healing
+                if func_after_each_heal is not None:
+                    func_after_each_heal(self, t, healing, overhealing)
+        return healing_done
 
     # Action logic
     def action(self) -> None:
@@ -408,6 +473,8 @@ class Character:
                 self.normal_attack()
         else:
             global_vars.turn_info_string += f"{self.name} cannot act due to {reason}.\n"
+
+        self.reset_number_of_attacks()
         # Snowflake set effect
         set_name = self.get_equipment_set()
         if set_name == "Snowflake":
@@ -566,7 +633,7 @@ class Character:
                 return True
         return False
 
-    def can_take_action(self) -> (bool, str):
+    def can_take_action(self):
         if self.is_stunned():
             return False, "Stunned"
         if self.is_sleeping():
@@ -616,7 +683,7 @@ class Character:
     def is_only_one_alive(self):
         return len(self.ally) == 1
 
-    def update_stats(self, stats, reversed=False) -> (dict, dict, dict):
+    def update_stats(self, stats, reversed=False):
         prev = {}
         new = {}
         delta = {}
@@ -648,7 +715,8 @@ class Character:
     def heal_hp(self, value, healer):
         # Remember the healer can be a Character object or Consumable object or perhaps other objects
         if self.is_dead():
-            raise Exception("Cannot heal a dead character.")
+            print(global_vars.turn_info_string)
+            raise Exception(f"Cannot heal a dead character: {self.name}")
         if value < 0:
             value = 0
         healing = value * self.heal_efficiency
@@ -657,15 +725,36 @@ class Character:
         if self.hp + healing > self.maxhp:
             overhealing = self.hp + healing - self.maxhp
             healing = self.maxhp - self.hp
-        self.hp += healing
-        global_vars.turn_info_string += f"{self.name} is healed for {healing} HP.\n"
+        if healing < 0:
+            global_vars.turn_info_string += f"{self.name} failed to receive any healing.\n"
+            healing = 0
+        else:
+            self.hp += healing
+            global_vars.turn_info_string += f"{self.name} is healed for {healing} HP.\n"
         self.healing_received_this_turn.append((healing, healer))
+        for e in self.buffs.copy() + self.debuffs.copy():
+            e.apply_effect_after_heal_step(self, healing)
         return healing, healer, overhealing
+
+    def pay_hp(self, value):
+        if self.is_dead():
+            raise Exception("Cannot pay HP when dead.")
+        if value < 0:
+            value = 0
+        value = int(value)
+        if self.hp - value < 0:
+            raise Exception("Cannot pay more HP than current HP.")
+        self.hp -= value
+        global_vars.turn_info_string += f"{self.name} paid {value} HP.\n"
+        self.damage_taken_this_turn.append((value, self, "status"))
+        return value
 
     def revive(self, hp_to_revive, hp_percentage_to_revive=0):
         if self.is_dead():
             self.hp = hp_to_revive
             self.hp += self.maxhp * hp_percentage_to_revive
+            if self.hp > self.maxhp:
+                self.hp = self.maxhp
             self.hp = int(self.hp)
             self.healing_received_this_turn.append((self.hp, self))
             global_vars.turn_info_string += f"{self.name} is revived for {self.hp} hp.\n"
@@ -690,6 +779,7 @@ class Character:
     def take_damage(self, value, attacker=None, func_after_dmg=None, disable_protected_effect=False, is_crit=False):
         global_vars.turn_info_string += f"{self.name} is about to take {value} damage.\n"
         if self.is_dead():
+            print(global_vars.turn_info_string)
             raise Exception(f"Cannot take damage when dead. {self.name} is already dead. Attacker: {attacker.name}")
         value = max(0, value)
         # Attention: final_damage_taken_multipler is calculated before shields effects.
@@ -789,6 +879,26 @@ class Character:
                     type(effect).__name__ == class_name:
                         return True
         return False
+
+    def get_effect_that_named(self, effect_name: str, additional_name: str = None, class_name: str = None):
+        for effect in self.buffs + self.debuffs:
+            if effect.name != effect_name:
+                continue
+
+            match (additional_name, class_name):
+                case (None, None):
+                    return effect
+                case (_, None):
+                    if hasattr(effect, "additional_name") and effect.additional_name == additional_name:
+                        return effect
+                case (None, _):
+                    if type(effect).__name__ == class_name:
+                        return effect
+                case (_, _):
+                    if hasattr(effect, "additional_name") and effect.additional_name == additional_name and \
+                    type(effect).__name__ == class_name:
+                        return effect
+        return None
 
 
     def is_immune_to_cc(self):
@@ -905,7 +1015,7 @@ class Character:
     def status_effects_at_end_of_turn(self):
         # The following character/monster has a local implementation of this function:
         # Character: BeastTamer
-        # Monster: Security Guard
+        # Monster: Security Guard, Emperor
         buffs_copy = self.buffs.copy()
         debuffs_copy = self.debuffs.copy()
         for effect in buffs_copy + debuffs_copy:
@@ -934,7 +1044,7 @@ class Character:
         for effects in self.buffs + self.debuffs:
             if effects.is_set_effect:
                 self.remove_effect(effects)
-        if set_name == "None" or "Void":
+        if set_name == "None" or set_name == "Void":
             return
         elif set_name == "Arasaka": 
             self.apply_effect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False))
@@ -943,7 +1053,7 @@ class Character:
         elif set_name == "Militech":
             def condition_func(self):
                 return self.hp <= self.maxhp * 0.25
-            self.apply_effect(EquipmentSetEffect_Militech("Militech Set", -1, True, {"spd": 2.0}, condition_func))
+            self.apply_effect(EquipmentSetEffect_Militech("Militech Set", -1, True, {"spd": 2.2}, condition_func))
         elif set_name == "NUSA":
             def stats_dict_function() -> dict:
                 allies_alive = len(self.ally) 
@@ -953,13 +1063,26 @@ class Character:
             self.apply_effect(EquipmentSetEffect_Sovereign("Sovereign Set", -1, True, {"atk": 1.20}))
         elif set_name == "Snowflake":
             self.apply_effect(EquipmentSetEffect_Snowflake("Snowflake Set", -1, True))
+        elif set_name == "Flute":
+            self.apply_effect(EquipmentSetEffect_Flute("Flute Set", -1, True))
+        elif set_name == "Rainbow":
+            self.apply_effect(EquipmentSetEffect_Rainbow("Rainbow Set", -1, True))
+        elif set_name == "Dawn":
+            self.apply_effect(EquipmentSetEffect_Dawn("Dawn Set", -1, True, {"atk": 1.24, "crit": 0.12}))
+        elif set_name == "Bamboo":
+            self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.48, "defense": 1.48, "spd": 1.48, "crit": 0.24, "critdmg": 0.24}))
+        elif set_name == "Rose":
+            self.apply_effect(EquipmentSetEffect_Rose("Rose Set", -1, True, he_bonus_before_heal=0.88))
+            belove_girl_self_effect = StatsEffect("Beloved Girl", -1, True, {"heal_efficiency": 0.22})
+            belove_girl_self_effect.is_set_effect = True
+            self.apply_effect(belove_girl_self_effect)
         else:
             raise Exception("Effect not implemented.")
         
     def equipment_set_effects_tooltip(self):
         set_name = self.get_equipment_set()
         str = "Equipment Set Effects:\n"
-        if set_name == "None" or "Void":
+        if set_name == "None" or set_name == "Void":
             str += "Equipment set effects is not active. Equip 4 items of the same set to receive benefits.\n"
             return ""
         elif set_name == "Arasaka":
@@ -970,7 +1093,7 @@ class Character:
                 "At start of battle, apply absorption shield on self. Shield value is 600% of atk.\n"
         elif set_name == "Militech":
             str += "Militech\n" \
-                "Increase speed by 100% when hp falls below 25%.\n"
+                "Increase speed by 120% when hp falls below 25%.\n"
         elif set_name == "NUSA":
             str += "NUSA\n" \
                 "Increase atk by 6%, def by 6%, and maxhp by 6% for each ally alive including self.\n"
@@ -982,6 +1105,25 @@ class Character:
                 "Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 25% hp and gain the following effect for 6 turns:\n" \
                 "atk, def, maxhp, spd are increased by 25%.\n" \
                 "Each activation of this effect increases the stats bonus and healing by 25%.\n"
+        elif set_name == "Flute":
+            str += "Flute\n" \
+                "On one action, when successfully attacking enemy for 4 times, all enemies take status damage equal to 100% of self atk.\n"
+        elif set_name == "Rainbow":
+            str += "Rainbow\n" \
+                "While attacking, damage increases by 36%/18%/0%/-18%/-36% depending on the proximity of the target.\n"
+        elif set_name == "Dawn":
+            str += "Dawn\n" \
+                "Atk increased by 24%, crit increased by 12% when hp is full.\n" \
+                "One time only, when dealing normal or skill attack damage, damage is increased by 120%.\n" 
+        elif set_name == "Bamboo":
+            str += "Bamboo\n" \
+                "After taking down an enemy with normal or skill attack, for 5 turns," \
+                " regenerates 16% of max hp each turn and increases atk, def, spd by 48%, crit and crit damage by 24%." \
+                " Cannot be triggered when buff effect is active.\n"
+        elif set_name == "Rose":
+            str += "Rose\n" \
+                "Heal efficiency is increased by 22%. Before heal, increase target's heal efficiency by 88% for 2 turns." \
+                " Cannot be triggered by hp recover.\n"
         else:
             str += "Unknown set effect."
 
@@ -1014,6 +1156,9 @@ class Character:
         if not self.battle_entry:
             self.battle_entry_effects()
             self.battle_entry = True
+
+    def record_battle_turns(self, increment=1):
+        self.battle_turns += increment
 
 
 class Lillia(Character):    # Damage dealer, non close targets, multi strike, critical
@@ -1202,17 +1347,17 @@ class Clover(Character):    # Healer
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=4.6, repeat=1, target_kw1="enemy_in_front")
         self.update_ally_and_enemy()
-        ally_to_heal = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
+        healing_done_a = self.heal("n_lowest_attr", "1", "hp", "ally", damage_dealt, 1)
         if self.is_alive():
-            healing, x, y = ally_to_heal.heal_hp(damage_dealt, self)
-            self.heal_hp(healing * 0.6, self)
+            healing_done_b = self.heal("yourself", value=healing_done_a * 0.6)
         return damage_dealt
 
     def skill2_logic(self):
-        ally_to_heal = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
-        healing, x, y = ally_to_heal.heal_hp(self.atk * 3.5, self)
-        self.heal_hp(healing * 0.6, self)
-        ally_to_heal.apply_effect(AbsorptionShield("Shield", -1, True, self.atk * 3.5, cc_immunity=False))
+        def effect(self, target, healing, overhealing):
+            target.apply_effect(AbsorptionShield("Shield", -1, True, self.atk * 3.5, cc_immunity=False))
+        healing_done_a = self.heal("n_lowest_attr", "1", "hp", "ally", self.atk * 3.5, 1, func_after_each_heal=effect)
+        if self.is_alive():
+            healing_done_b = self.heal("yourself", value=healing_done_a * 0.6)
         return None
 
     def skill3(self):
@@ -1281,11 +1426,9 @@ class Olive(Character):     # Support
         return damage_dealt
 
     def skill2_logic(self):
-        ally_to_heal = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
-        for ally in ally_to_heal:
-            ally.heal_hp(self.atk * 2.7, self)
-            stat_dict = {"spd": 1.4}
-            ally.apply_effect(StatsEffect("Tailwind", 5, True, stat_dict))
+        def effect(self, target, healing, overhealing):
+            target.apply_effect(StatsEffect("Tailwind", 5, True, {"spd": 1.4}))
+        healing_done = self.heal("n_lowest_attr", "3", "hp", "ally", self.atk * 2.7, 1, func_after_each_heal=effect)
         return None
 
     def skill3(self):
@@ -1305,7 +1448,7 @@ class Fenrir(Character):    # Support
         self.name = "Fenrir"
         self.skill1_description = "Focus attack 3 times on closest enemy, 220% atk each hit. Reduce skill cooldown for neighbor allies by 2 turns."
         self.skill2_description = "350% atk on a closest enemy. Remove 2 debuffs for neighbor allies."
-        self.skill3_description = "Fluffy protection is applied to neighbor allies at start of battle. When the protected ally below 40% hp is about to take damage, heal the ally for 100% atk."
+        self.skill3_description = "Fluffy protection is applied to neighbor allies at start of battle. When the protected ally below 40% hp is about to take damage, the ally recovers hp by 100% of self base atk."
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -1345,7 +1488,7 @@ class Cerberus(Character):    # Damage dealer, non close targets, execution
 
         self.skill1_description = "5 hits on random enemies, 300% atk each hit. Decrease target's def by 12% for each hit. Effect last 4 turns."
         self.skill2_description = "Focus attack with 290% atk on 1 enemy with lowest hp for 3 times. If target hp is less then 15% during the attack, execute the target."
-        self.skill3_description = "On sucessfully executing a target, increase execution threshold by 3%, heal 30% of maxhp and increase atk and critdmg by 30%."
+        self.skill3_description = "On sucessfully executing a target, increase execution threshold by 3%, recover 30% of maxhp and increase atk and critdmg by 30%."
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -1381,7 +1524,7 @@ class Cerberus(Character):    # Damage dealer, non close targets, execution
         pass
 
 
-class Pepper(Character): # Support
+class Pepper(Character):    # Support
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Pepper"
@@ -1415,7 +1558,7 @@ class Pepper(Character): # Support
         target = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
         pondice = random.randint(1, 100)
         if pondice <= 70:
-            target.heal_hp(self.atk * 8.0, self)
+            self.heal(target_list=[target], value=self.atk * 8.0)
             revivedice = random.randint(1, 100)
             if revivedice <= 80:
                 neighbors = self.get_neighbor_allies_not_including_self(False) 
@@ -1446,7 +1589,7 @@ class Cliffe(Character):     # Damage dealer, close targets
         self.name = "Cliffe"
         self.skill1_description = "Attack 3 closest enemies with 300% atk, increase their damage taken by 20% for 3 turns."
         self.skill2_description = "Attack closest enemy 4 times for 340% atk, each successful attack and successful additional attack has 40% chance to trigger an 270% atk additional attack."
-        self.skill3_description = "Heal hp by 10% of maxhp multiplied by targets fallen by skill 2."
+        self.skill3_description = "Recover hp by 10% of maxhp multiplied by targets fallen by skill 2."
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -1672,12 +1815,14 @@ class Chiffon(Character):   # Support, healer, self damage reduction
 
     def skill2_logic(self):
         targets = list(self.target_selection(keyword="n_random_target", keyword2="5"))
+        ally_list = []
         enemy_list = []
         for target in targets:
             if target in self.ally:
-                target.heal_hp(self.atk * 1.5, self)
+                ally_list.append(target)
             else:
                 enemy_list.append(target)
+        self.heal(target_list=ally_list, value=self.atk * 1.5)
         def sleep_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 50:
@@ -1764,7 +1909,7 @@ class Ophelia(Character):   # Damage dealer, non close targets, healer
                     ally.apply_effect(StatsEffect("Crit Dmg Up", 3, True, {"critdmg": 0.3}))
                     buff_to_remove_list.append(buff)
                 if buff.name == "Love Card":
-                    ally.heal_hp(self.atk * 3.0, self)
+                    self.heal(target_list=[ally], value=self.atk * 3.0)
                     buff_to_remove_list.append(buff)
         lucky_card_found = False
         for buff in self.buffs:
@@ -1845,7 +1990,7 @@ class Requina(Character):   # Damage dealer, close targets, status damage
         self.attack(func_after_dmg=effect)
 
 
-class Gabe(Character): # Damage dealer, close targets, status damage, special
+class Gabe(Character):    # Damage dealer, close targets, status damage, special
     # skill is a reference to yu-gi-oh card
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
@@ -1879,7 +2024,7 @@ class Gabe(Character): # Damage dealer, close targets, status damage, special
             if fireworks.name == "New Year Fireworks":
                 fireworks.apply_effect_on_trigger(self)
         if self.is_alive():
-            self.heal_hp(self.atk * 4.0, self)
+            self.heal(target_kw1="yourself", value=self.atk * 4.0)
         return 0
         
     def skill3(self):
@@ -1896,13 +2041,13 @@ class Yuri(Character):    # Damage dealer, close targets, normal attack, special
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Yuri"
-        self.skill1_description = "Summon Bear, Wolf, Eagle, Cat by order as status effects. Normal attack gain additional effects according to the summoned animal." \
+        self.skill1_description = "Summon Bear, Wolf, Eagle, Cat in order. Normal attack gain additional effects according to the summon." \
         " Bear: 20% chance to Stun for 2 turns, normal attack damage increases by 100%." \
         " Wolf: Normal attack attack 3 closest enemies, each attack has 40% chance to inflict burn for 4 turns. Burn deals 50% atk status damage per turn." \
         " Eagle: Each Normal attack gains 4 additional focus attacks on the same target, each attack deals 150% atk damage." \
         " Cat: After normal attack, an ally with highest atk gains 'Gold Card' effect for 4 turns. Gold Card: atk, def, critical damage is increased by 30%." \
-        " When all animals are summoned, this skill has no effect and cannot be used."
-        self.skill2_description = "This skill cannot be used. When an animal is summoned, gain buff effect according to the animal for 12 turns." \
+        " After 4 summons above, this skill cannot be used."
+        self.skill2_description = "This skill cannot be used. For each summon, gain buff effect for 12 turns." \
         " Bear: atk increased by 40%." \
         " Wolf: critical rate increased by 40%." \
         " Eagle: speed increased by 40%." \

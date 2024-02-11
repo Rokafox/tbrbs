@@ -136,6 +136,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         # print(f"max_pages = {max_pages}")
         page = max(0, page)
         page = min(page, len(chunked_inventory) - 1)
+        self.current_page = page
         # print(f"Building page {page} of inventory...")
         try:
             amount_of_slots_to_build = len(chunked_inventory[page])
@@ -729,7 +730,7 @@ if __name__ == "__main__":
                                         text='Quit',
                                         manager=ui_manager,
                                         tool_tip_text = "Quit")
-    button_quit_game.set_tooltip("プレイヤーデータをplayer_data.jsonとして保存し、ゲームを終了する。", delay=0.1, wrap_width=300)
+    button_quit_game.set_tooltip("プレイヤーデータをplayer_data.jsonとして保存し、終了する。", delay=0.1, wrap_width=300)
 
     # =====================================
     # Right Side
@@ -861,7 +862,7 @@ if __name__ == "__main__":
         exp_reward_multiplier = 1
         if enemy_average_level > average_party_level:
             exp_reward_multiplier = (enemy_average_level / average_party_level)
-        if adventure_mode_current_stage % 10 == 0: # boss stage
+        if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # boss stage
             exp_reward_multiplier *= 1.5
         return int(adventure_mode_current_stage * exp_reward_multiplier)
 
@@ -874,7 +875,7 @@ if __name__ == "__main__":
             cash_reward_multiplier = (enemy_average_level / average_party_level)
         random_factor = random.uniform(0.8, 1.2)
         cash = adventure_mode_current_stage * 2 * random_factor * cash_reward_multiplier
-        if adventure_mode_current_stage % 10 == 0: # boss stage
+        if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # boss stage
             cash *= 1.5
         cash = max(1, cash)
         return int(cash)
@@ -884,7 +885,7 @@ if __name__ == "__main__":
         str = f"Current Stage: {adventure_mode_current_stage}\n"
         if adventure_mode_current_stage > sum([x.lvl for x in party1]) / 5:
             str += f"Enemy level is higher than average party level, reward is increased by {(adventure_mode_current_stage / (sum([x.lvl for x in party1]) / 5) - 1) * 100}%\n"
-        if adventure_mode_current_stage % 10 == 0: # boss stage
+        if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # boss stage
             str += "Boss Stage. Reward is increased by 50%.\n"
         str += f"Exp Reward: {adventure_mode_exp_reward()}\n"
         str += f"Cash Reward: approxmately {adventure_mode_cash_reward()}\n"
@@ -944,15 +945,17 @@ if __name__ == "__main__":
                                         "Random Use:",
                                         ui_manager)
     use_random_consumable_label.set_tooltip("自動バトル中に毎ターン、ランダム一つの消耗品を使用する。", delay=0.1, wrap_width=300)
+    use_random_consumable_label.hide()
     use_random_consumable_selection_menu = pygame_gui.elements.UIDropDownMenu(["True", "False"],
                                                             "False",
                                                             pygame.Rect((1080, 460), (156, 35)),
                                                             ui_manager)
+    use_random_consumable_selection_menu.hide()
     cash_burn_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 420), (156, 35)),
                                         text='Burn Cash',
                                         manager=ui_manager,
                                         tool_tip_text = "Cash Burn")
-    cash_burn_button.set_tooltip("Cashがありすぎて困ってる？ 100万ドルを焼き払おう。", delay=0.1, wrap_width=300)
+    cash_burn_button.set_tooltip("Cashがありすぎて困ってる？ 100万CASHを焼き払おう。", delay=0.1, wrap_width=300)
     cash_burn_button.hide()
 
 
@@ -965,6 +968,7 @@ if __name__ == "__main__":
         # print(player.selected_item)
         if not player.selected_item:
             text_box_text_to_append += "No item is selected.\n"
+            text_box.append_html_text(text_box_text_to_append)
             return
         for a, b, c in player.selected_item.values():
             if b:
@@ -972,10 +976,12 @@ if __name__ == "__main__":
         # print(f"use_item() Selected items: {selected_items}")
         if not selected_items:
             text_box_text_to_append += "No item is selected.\n"
+            text_box.append_html_text(text_box_text_to_append)
             return
         if cheap_inventory_show_current_option == "Equip":
             if not is_in_manipulatable_game_states():
                 text_box_text_to_append += "Cannot equip items when not in first turn or after the battle is concluded.\n"
+                text_box.append_html_text(text_box_text_to_append)
                 return
             for character in all_characters:
                 if character.name == character_selection_menu.selected_option.split()[-1] and character.is_alive():
@@ -984,6 +990,7 @@ if __name__ == "__main__":
                     for item in selected_items:
                         if item.type in item_types_seen:
                             text_box_text_to_append += f"Cannot equip multiple items of the same type at once.\n"
+                            text_box.append_html_text(text_box_text_to_append)
                             return
                         else:
                             item_types_seen.append(item.type)
@@ -1002,6 +1009,7 @@ if __name__ == "__main__":
                         player.remove_selected_item_from_inventory(True)
                 elif character.name == character_selection_menu.selected_option.split()[-1] and not character.is_alive():
                     text_box_text_to_append += f"Can only equip items to alive characters.\n"
+                    text_box.append_html_text(text_box_text_to_append)
                     return
         elif cheap_inventory_show_current_option == "Consumable":
             for character in all_characters:
@@ -1009,6 +1017,7 @@ if __name__ == "__main__":
                     for consumable in selected_items:
                         if not consumable.can_use_on_dead and not character.is_alive():
                             text_box_text_to_append += f"Cannot use {str(consumable)} on dead characters.\n"
+                            text_box.append_html_text(text_box_text_to_append)
                             return
                         event_str = consumable.E(character, player)
                         text_box_text_to_append += event_str + "\n"
@@ -1035,7 +1044,7 @@ if __name__ == "__main__":
         if current_game_mode == "Adventure Mode":
             characters_in_need = [x for x in party1]
         elif current_game_mode == "Training Mode":
-            characters_in_need = [x for x in party1 + party2]
+            characters_in_need = [x for x in itertools.chain(party1, party2)]
         try:
             consumable = random.choice([x for x in player.inventory if isinstance(x, Consumable) and x.can_use_for_auto_battle])
         except IndexError:
@@ -1173,17 +1182,20 @@ if __name__ == "__main__":
         # print(player.selected_item)
         if not player.selected_item:
             text_box_text_to_append += "No item is selected.\n"
+            text_box.append_html_text(text_box_text_to_append)
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c) 
         if not selected_items:
             text_box_text_to_append += "No item is selected.\n"
+            text_box.append_html_text(text_box_text_to_append)
             return
         
         cost_total = int(sum([item_to_upgrade.star_enhence_cost for item_to_upgrade in selected_items]))
         if player.get_cash() < cost_total:
             text_box_text_to_append += f"Not enough cash for star enhancement.\n"
+            text_box.append_html_text(text_box_text_to_append)
             return
         
         for item_to_upgrade in selected_items:
@@ -1216,17 +1228,20 @@ if __name__ == "__main__":
         selected_items = []
         if not player.selected_item:
             text_box_text_to_append += "No item is selected.\n"
+            text_box.append_html_text(text_box_text_to_append)
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c)
         if not selected_items:
             text_box_text_to_append += "No item is selected.\n"
+            text_box.append_html_text(text_box_text_to_append)
             return
 
         cost_total = int(sum([item_to_upgrade.level_cost for item_to_upgrade in selected_items]))
         if player.get_cash() < cost_total:
             text_box_text_to_append += "Not enough cash for leveling up equipment.\n"
+            text_box.append_html_text(text_box_text_to_append)
             return
 
         for item_to_level_up in selected_items:
@@ -1472,12 +1487,12 @@ if __name__ == "__main__":
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             return 0
         
-        buff_before = {character.name: character.buffs for character in party1 + party2} # A dictionary of lists
+        buff_before = {character.name: character.buffs for character in itertools.chain(party1, party2)} # A dictionary of lists
         # character.buff is a list of objects, so we want to only get the buff.name
         buff_before = {k: [x.name for x in buff_before[k]] for k in buff_before.keys()}
-        debuff_before = {character.name: character.debuffs for character in party1 + party2}
+        debuff_before = {character.name: character.debuffs for character in itertools.chain(party1, party2)}
         debuff_before = {k: [x.name for x in debuff_before[k]] for k in debuff_before.keys()}
-        shield_value_before = {character.name: character.get_shield_value() for character in party1 + party2}
+        shield_value_before = {character.name: character.get_shield_value() for character in itertools.chain(party1, party2)}
 
         global_vars.turn_info_string = ""
         text_box.set_text("=====================================\n")
@@ -1488,33 +1503,28 @@ if __name__ == "__main__":
             use_random_consumable()
 
         reset_ally_enemy_attr(party1, party2)
-        for character in party1:
+        for character in itertools.chain(party1, party2):
             character.update_ally_and_enemy()
-        for character in party2:
-            character.update_ally_and_enemy()
-
-        for character in party1:
-            character.status_effects_start_of_turn() # handle effect duration change and removal
-        for character in party2:
             character.status_effects_start_of_turn()
+            character.record_battle_turns()
 
         if not is_someone_alive(party1) or not is_someone_alive(party2):
 
-            buff_after = {character.name: character.buffs for character in party1 + party2} 
+            buff_after = {character.name: character.buffs for character in itertools.chain(party1, party2)} 
             buff_after = {k: [x.name for x in buff_after[k]] for k in buff_after.keys()}
             buff_applied_this_turn = {k: [x for x in buff_after[k] if x not in buff_before[k]] for k in buff_before.keys()}
             # buff_removed_this_turn = {k: [x for x in buff_before[k] if x not in buff_after[k]] for k in buff_before.keys()}
-            debuff_after = {character.name: character.debuffs for character in party1 + party2}
+            debuff_after = {character.name: character.debuffs for character in itertools.chain(party1, party2)}
             debuff_after = {k: [x.name for x in debuff_after[k]] for k in debuff_after.keys()}
             debuff_applied_this_turn = {k: [x for x in debuff_after[k] if x not in debuff_before[k]] for k in debuff_before.keys()}
-            shield_value_after = {character.name: character.get_shield_value() for character in party1 + party2}
+            shield_value_after = {character.name: character.get_shield_value() for character in itertools.chain(party1, party2)}
             shield_value_diff = {k: shield_value_after[k] - shield_value_before[k] for k in shield_value_before.keys()}
 
             redraw_ui(party1, party2, refill_image=True, main_char=None, 
                     buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
                     shield_value_diff_dict=shield_value_diff)
 
-            for character in party1 + party2:
+            for character in itertools.chain(party1, party2):
                 character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
                 character.record_healing_received() 
 
@@ -1540,11 +1550,7 @@ if __name__ == "__main__":
             text_box.append_html_text(global_vars.turn_info_string)
             return False
         
-        for character in party1:
-            character.status_effects_midturn() # for effects that have method apply_effect_on_trigger, trigger them
-            # if character.is_alive():
-            #     character.regen()
-        for character in party2:
+        for character in itertools.chain(party1, party2):
             character.status_effects_midturn()
             # if character.is_alive():
             #     character.regen()
@@ -1557,21 +1563,21 @@ if __name__ == "__main__":
 
         if not is_someone_alive(party1) or not is_someone_alive(party2):
 
-            buff_after = {character.name: character.buffs for character in party1 + party2} 
+            buff_after = {character.name: character.buffs for character in itertools.chain(party1, party2)} 
             buff_after = {k: [x.name for x in buff_after[k]] for k in buff_after.keys()}
             buff_applied_this_turn = {k: [x for x in buff_after[k] if x not in buff_before[k]] for k in buff_before.keys()}
             # buff_removed_this_turn = {k: [x for x in buff_before[k] if x not in buff_after[k]] for k in buff_before.keys()}
-            debuff_after = {character.name: character.debuffs for character in party1 + party2}
+            debuff_after = {character.name: character.debuffs for character in itertools.chain(party1, party2)}
             debuff_after = {k: [x.name for x in debuff_after[k]] for k in debuff_after.keys()}
             debuff_applied_this_turn = {k: [x for x in debuff_after[k] if x not in debuff_before[k]] for k in debuff_before.keys()}
-            shield_value_after = {character.name: character.get_shield_value() for character in party1 + party2}
+            shield_value_after = {character.name: character.get_shield_value() for character in itertools.chain(party1, party2)}
             shield_value_diff = {k: shield_value_after[k] - shield_value_before[k] for k in shield_value_before.keys()}
 
             redraw_ui(party1, party2, refill_image=True, main_char=None, 
                     buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
                     shield_value_diff_dict=shield_value_diff)
 
-            for character in party1 + party2:
+            for character in itertools.chain(party1, party2):
                 character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
                 character.record_healing_received() 
 
@@ -1597,30 +1603,30 @@ if __name__ == "__main__":
             text_box.append_html_text(global_vars.turn_info_string)
             return False
         
-        alive_characters = [x for x in party1 + party2 if x.is_alive()]
+        alive_characters = [x for x in itertools.chain(party1, party2) if x.is_alive()]
         weight = [x.spd for x in alive_characters]
         the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
         global_vars.turn_info_string += f"{the_chosen_one.name}'s turn.\n"
         the_chosen_one.action()
 
-        for character in party1 + party2:
+        for character in itertools.chain(party1, party2):
             character.status_effects_at_end_of_turn()
 
-        buff_after = {character.name: character.buffs for character in party1 + party2} 
+        buff_after = {character.name: character.buffs for character in itertools.chain(party1, party2)} 
         buff_after = {k: [x.name for x in buff_after[k]] for k in buff_after.keys()}
         buff_applied_this_turn = {k: [x for x in buff_after[k] if x not in buff_before[k]] for k in buff_before.keys()}
         # buff_removed_this_turn = {k: [x for x in buff_before[k] if x not in buff_after[k]] for k in buff_before.keys()}
-        debuff_after = {character.name: character.debuffs for character in party1 + party2}
+        debuff_after = {character.name: character.debuffs for character in itertools.chain(party1, party2)}
         debuff_after = {k: [x.name for x in debuff_after[k]] for k in debuff_after.keys()}
         debuff_applied_this_turn = {k: [x for x in debuff_after[k] if x not in debuff_before[k]] for k in debuff_before.keys()}
-        shield_value_after = {character.name: character.get_shield_value() for character in party1 + party2}
+        shield_value_after = {character.name: character.get_shield_value() for character in itertools.chain(party1, party2)}
         shield_value_diff = {k: shield_value_after[k] - shield_value_before[k] for k in shield_value_before.keys()}
 
         redraw_ui(party1, party2, refill_image=True, main_char=the_chosen_one, 
                   buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
                   shield_value_diff_dict=shield_value_diff, redraw_eq_slots=False)
 
-        for character in party1 + party2:
+        for character in itertools.chain(party1, party2):
             character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
             character.record_healing_received() 
 
@@ -1660,23 +1666,15 @@ if __name__ == "__main__":
             global_vars.turn_info_string = ""
 
             reset_ally_enemy_attr(party1, party2)
-            for character in party1:
+            for character in itertools.chain(party1, party2):
                 character.update_ally_and_enemy()
-            for character in party2:
-                character.update_ally_and_enemy()
+                character.status_effects_start_of_turn()
+                character.record_battle_turns()
 
-            for character in party1:
-                character.status_effects_start_of_turn()
-            for character in party2:
-                character.status_effects_start_of_turn()
             if not is_someone_alive(party1) or not is_someone_alive(party2):
                 break
 
-            for character in party1:
-                character.status_effects_midturn()
-                # if character.is_alive():
-                #     character.regen()
-            for character in party2:
+            for character in itertools.chain(party1, party2):
                 character.status_effects_midturn()
                 # if character.is_alive():
                 #     character.regen()
@@ -1687,16 +1685,18 @@ if __name__ == "__main__":
             for character in party2:
                 character.update_ally_and_enemy()
 
-            alive_characters = [x for x in party1 + party2 if x.is_alive()]
+            if not is_someone_alive(party1) or not is_someone_alive(party2):
+                break
+            
+            alive_characters = [x for x in itertools.chain(party1, party2) if x.is_alive()]
             weight = [x.spd for x in alive_characters]
             the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
-            text_box.append_html_text(f"{the_chosen_one.name}'s turn.\n")
             the_chosen_one.action()
 
-            for character in party1 + party2:
+            for character in itertools.chain(party1, party2):
                 character.status_effects_at_end_of_turn()
 
-            for character in party1 + party2:
+            for character in itertools.chain(party1, party2):
                 character.record_damage_taken()
                 character.record_healing_received()
 
@@ -1786,7 +1786,7 @@ if __name__ == "__main__":
         party1 = list_of_characters[:5]
         party2 = list_of_characters[5:]
 
-        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
         remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
         handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu)
 
@@ -1850,9 +1850,9 @@ if __name__ == "__main__":
 
             handle_UIDropDownMenu(party1_show_in_menu, remaining_characters_show_in_menu, nci)
         elif current_game_mode == "Training Mode":
-            remaining_characters = [character for character in all_characters if character not in party1 + party2]
+            remaining_characters = [character for character in all_characters if character not in itertools.chain(party1, party2)]
             remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
-            party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+            party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
             remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
             handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu, nci)
         else:
@@ -2065,7 +2065,7 @@ if __name__ == "__main__":
 
 
                 # This should always be redrawn
-                if character.equipment_set_effects_tooltip():
+                if character.equipment_set_effects_tooltip() != "":
                     equip_effect_slots[i].show()
                     equip_effect_slots[i].set_tooltip(character.equipment_set_effects_tooltip(), delay=0.1, wrap_width=300)
                 else:
@@ -2286,58 +2286,58 @@ if __name__ == "__main__":
                 # print(event.pos)
                 if image_slot1.get_abs_rect().collidepoint(event.pos):
                     if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 0)
                     elif current_game_mode == "Adventure Mode":
                         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
                         handle_UIDropDownMenu(party1_show_in_menu, None, 0)
                 if image_slot2.get_abs_rect().collidepoint(event.pos):
                     if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 1)
                     elif current_game_mode == "Adventure Mode":
                         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
                         handle_UIDropDownMenu(party1_show_in_menu, None, 1)
                 if image_slot3.get_abs_rect().collidepoint(event.pos):
                     if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 2)
                     elif current_game_mode == "Adventure Mode":
                         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
                         handle_UIDropDownMenu(party1_show_in_menu, None, 2)
                 if image_slot4.get_abs_rect().collidepoint(event.pos):
                     if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 3)
                     elif current_game_mode == "Adventure Mode":
                         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
                         handle_UIDropDownMenu(party1_show_in_menu, None, 3)
                 if image_slot5.get_abs_rect().collidepoint(event.pos):
                     if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 4)
                     elif current_game_mode == "Adventure Mode":
                         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
                         handle_UIDropDownMenu(party1_show_in_menu, None, 4)
                 if image_slot6.get_abs_rect().collidepoint(event.pos):
                     if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 5)
                 if image_slot7.get_abs_rect().collidepoint(event.pos):
                     if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 6)
                 if image_slot8.get_abs_rect().collidepoint(event.pos):
                     if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 7)
                 if image_slot9.get_abs_rect().collidepoint(event.pos):
                     if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 8)
                 if image_slot10.get_abs_rect().collidepoint(event.pos):
                     if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1 + party2]
+                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 9)
 
                 for ui_image, rect in player.dict_image_slots_rects.items():

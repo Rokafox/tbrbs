@@ -14,7 +14,8 @@ class Equip(Block):
         # lists, changing them likely wont give an error.
         super().__init__(name, "")
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
-        self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", "Snowflake", "Void"]
+        self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
+                            "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose"]
         self.level = level
         self.level_max = 1000
         self.type = type

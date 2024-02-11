@@ -2,7 +2,7 @@ from character import *
 import inspect
 import monsters
 from equip import generate_equips_list
-import random, sys, csv, copy
+import random, sys, csv, copy, time
 import global_vars
 
 
@@ -40,6 +40,7 @@ def get_all_characters(test_mode):
             return all_characters + all_monsters
         case (_, str):
             # Case of must include of certain monster, we can simply get rid of all others in all_monsters
+            print(f"Testing all characters and {test_mode} only")
             return [x for x in all_monsters if x.name == test_mode] + all_characters 
 
 def is_someone_alive(party):
@@ -114,14 +115,14 @@ def calculate_win_loss_rate(wins_data, losses_data, write_csv=False):
     return sorted_result
 
 
-def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (list, int, list):
+def simulate_battle_between_party(party1, party2, fineprint_mode="default"):
     # -> (winner_party, turns, loser_party)
     turn = 1
     if party1 == [] or party2 == []:
         fine_print("One of the party is empty.", mode=fineprint_mode)
         return None
     reset_ally_enemy_attr(party1, party2)
-    for c in party1 + party2:
+    for c in itertools.chain(party1, party2):
         c.battle_entry_effects()
     while turn < 300 and is_someone_alive(party1) and is_someone_alive(party2):
         fine_print("=====================================", mode=fineprint_mode)
@@ -129,17 +130,13 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
         global_vars.turn_info_string = ""
 
         reset_ally_enemy_attr(party1, party2)
-        for character in party1:
+        for character in itertools.chain(party1, party2):
             character.update_ally_and_enemy()
-        for character in party2:
-            character.update_ally_and_enemy()
+            character.status_effects_start_of_turn()
+            character.record_battle_turns()
 
-        for character in party1:
-            character.status_effects_start_of_turn()
-        for character in party2:
-            character.status_effects_start_of_turn()
         if not is_someone_alive(party1) or not is_someone_alive(party2):
-            for character in party1 + party2:
+            for character in itertools.chain(party1, party2):
                 character.record_damage_taken() 
                 character.record_healing_received() 
             fine_print(global_vars.turn_info_string, mode=fineprint_mode)
@@ -162,21 +159,21 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
             character.update_ally_and_enemy()
 
         if not is_someone_alive(party1) or not is_someone_alive(party2):
-            for character in party1 + party2:
+            for character in itertools.chain(party1, party2):
                 character.record_damage_taken() 
                 character.record_healing_received()
             fine_print(global_vars.turn_info_string, mode=fineprint_mode) 
             break
-        alive_characters = [x for x in party1 + party2 if x.is_alive()]
+        alive_characters = [x for x in itertools.chain(party1, party2) if x.is_alive()]
         weight = [x.spd for x in alive_characters]
         the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
         global_vars.turn_info_string += f"{the_chosen_one.name}'s turn.\n"
         the_chosen_one.action()
 
-        for character in party1 + party2:
+        for character in itertools.chain(party1, party2):
             character.status_effects_at_end_of_turn()
 
-        for character in party1 + party2:
+        for character in itertools.chain(party1, party2):
             character.record_damage_taken()
             character.record_healing_received()
 
@@ -205,7 +202,8 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default") -> (
         return None, turn, None
 
 
-def calculate_winrate_for_character(sample, character_list, fineprint_mode="default"): 
+def calculate_winrate_for_character(sample, character_list, fineprint_mode="default"):
+    start_time = time.time()  
     win_counts = {c.name: 0 for c in character_list}
     total_games = {c.name: 0 for c in character_list}
     turns_total = 0
@@ -222,7 +220,7 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
         party1 = character_list[:5]
         party2 = character_list[5:10]
 
-        for character in party1 + party2:
+        for character in itertools.chain(party1, party2):
             total_games[character.name] += 1
 
         winner_party, turns, loser_party = simulate_battle_between_party(party1, party2, fineprint_mode=fineprint_mode)
@@ -242,6 +240,9 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
         except Exception:
             pass
 
+    elapsed_time = time.time() - start_time  # Calculate the elapsed time
+    print("=====================================")
+    print(f"Elapsed time: {elapsed_time} seconds")
     print("=====================================")
     print(f"Average turns: {turns_total / sample}") # Ideal range: 55-60
     print("=====================================")
@@ -253,7 +254,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 4567
+        sample = 8000
     a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:

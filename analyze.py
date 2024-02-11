@@ -10,14 +10,16 @@ def create_report():
     equipment_performance = data.groupby('equipment_set')['winrate'].mean().sort_values(ascending=False)
     with open('./reports/performance.txt', 'w') as file:
         file.write("Character Performance:\n")
-        file.write(str(character_performance))
-        file.write("\n\nEquipment Performance:\n")
-        file.write(str(equipment_performance))
+        for character, performance in character_performance.items():
+            file.write(f"{character}: {performance}\n")
+        file.write("\nEquipment Performance:\n")
+        for equipment, performance in equipment_performance.items():
+            file.write(f"{equipment}: {performance}\n")
     return data
 
 def generate_heatmap(data):
     heatmap_data = data.pivot(index='character_name', columns='equipment_set', values='winrate')
-    plt.figure(figsize=(15, 16))
+    plt.figure(figsize=(15, 32))
     sns.heatmap(heatmap_data, annot=True, fmt=".1f", cmap="coolwarm")
     plt.title("Win Rates of Characters with Different Equipment Sets")
     plt.xlabel("Equipment Set")
