@@ -1,2 +1,2 @@
 turn_info_string = ""
-turn = 1
+turn = 1 # Not used

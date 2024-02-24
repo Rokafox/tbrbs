@@ -15,7 +15,8 @@ class Equip(Block):
         super().__init__(name, "")
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
-                            "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose"]
+                            "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
+                            "Liquidation"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -219,8 +220,10 @@ class Equip(Block):
             extra_lines_to_generate = 3
         elif 600 <= level < 800:
             extra_lines_to_generate = 4
-        elif 800 <= level:
+        elif 800 <= level < 1000:
             extra_lines_to_generate = 5
+        elif 1000 <= level:
+            extra_lines_to_generate = 6
         else:
             extra_lines_to_generate = 0
         

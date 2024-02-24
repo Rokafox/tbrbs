@@ -4,7 +4,8 @@ import global_vars
 
 
 class Effect:
-    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0, is_set_effect=False, tooltip_str=None):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0, is_set_effect=False, 
+                 tooltip_str=None, can_be_removed_by_skill=True):
         self.name = name
         self.duration = duration
         self.is_buff = bool(is_buff)
@@ -18,6 +19,7 @@ class Effect:
         self.apply_rule = "default" # "default", "stack"
         self.is_cc_effect = False
         self.tooltip_str = tooltip_str
+        self.can_be_removed_by_skill = can_be_removed_by_skill
     
     def is_permanent(self):
         return self.duration == -1
@@ -54,8 +56,12 @@ class Effect:
     def apply_effect_on_remove(self, character):
         pass
 
+    def apply_effect_in_attack_before_damage_step(self, character, target, final_damage):
+        return final_damage
+
     def apply_effect_during_damage_step(self, character, damage, attacker):
         """
+        Triggers when character with this effect is about to take damage.
         Include both damage step and status damage step.
         """
         return damage
@@ -66,7 +72,7 @@ class Effect:
         """
         pass
 
-    def apply_effect_after_status_damage_step(self, character, damage):
+    def apply_effect_after_status_damage_step(self, character, damage, attacker):
         """
         Only include status damage step, does not include damage step.
         Not implemented in Character class.
@@ -94,7 +100,9 @@ class Effect:
             else:
                 string = "<font color=" + color_debuff + ">" + self.name + ": " + str(self.duration) + " turn(s) remaining</font>" + "\n"
         if self.cc_immunity:
-            string += "This effect grants CC immunity.\n"
+            string += "Grants CC immunity.\n"
+        if not self.can_be_removed_by_skill or self.is_set_effect:
+            string += "Cannot be removed by skill.\n"
         if self.delay_trigger > 0:
             string += "Trigger in " + str(self.delay_trigger) + " turn(s)\n"
         string += self.tooltip_description()
@@ -171,7 +179,7 @@ class StunEffect(Effect):
         character.update_stats(stats_dict, reversed=False)
     
     def tooltip_description(self):
-        return "Cannot take action and evade is reduced by 100%."
+        return "Cannot take action and evasion is reduced by 100%."
 
 
 # Silence effect
@@ -204,8 +212,16 @@ class SleepEffect(Effect):
         character.remove_effect(self)
         return damage
 
+    def apply_effect_on_apply(self, character):
+        stats_dict = {"eva": -1.00}
+        character.update_stats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
+
+    def apply_effect_on_remove(self, character):
+        stats_dict = {"eva": 1.00}
+        character.update_stats(stats_dict, reversed=False)
+
     def tooltip_description(self):
-        return "Cannot act, effect is removed when taking damage."
+        return "Cannot act, effect is removed when taking damage, evasion is reduced by 100%."
 
 
 # Confusion effect
@@ -292,29 +308,43 @@ class FearEffect(Effect):
 
 
 class StatsEffect(Effect):
-    def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True, stats_dict_function=None, is_set_effect=False):
+    def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True, 
+                 stats_dict_function=None, is_set_effect=False, can_be_removed_by_skill=True):
+        """
+        Initializes a StatsEffect object.
+
+        Args:
+            name (str): The name of the effect.
+            duration (int): The duration of the effect.
+            is_buff (bool): Indicates whether the effect is a buff or a debuff.
+            stats_dict (dict, optional): A dictionary containing the stats to be modified and their corresponding values. Defaults to None.
+            condition (function, optional): A condition function that determines when the effect should be triggered. Defaults to None.
+            condition(character) -> bool: A function that returns True if the condition is met, and False otherwise.
+            use_active_flag (bool, optional): Indicates whether the stats update should be triggered only when the condition is met. Defaults to True.
+            stats_dict_function (function, optional): A function that dynamically updates the stats_dict when use_active_flag is False. Defaults to None.
+            is_set_effect (bool, optional): Indicates whether the effect is a set effect. Defaults to False.
+            can_be_removed_by_skill (bool, optional): Indicates whether the effect can be removed by a skill. Defaults to True.
+        """
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
         self.stats_dict = stats_dict
-        # Condition function. If condition is not None, effect applys normally, but will not immediately trigger until condition is met,
-        # triggers if a line cross is detected.
         self.condition = condition
         self.flag_is_active = False
-        # If use_active_flag is False, effect applys normally, trigger every turn as long as condition is met.
         self.use_active_flag = use_active_flag
-        # Stats dict manipulation function. For when use_active_flag is False, dynamiclly update stats_dict.
         self.stats_dict_function = stats_dict_function
-        # Pay attention here:
         if self.stats_dict_function:
+            if not condition or use_active_flag:
+                raise Exception("stats_dict_function can only be used when condition func is provided and use_active_flag are False.")
             self.stats_dict = self.stats_dict_function()
         self.is_set_effect = is_set_effect
+        self.can_be_removed_by_skill = can_be_removed_by_skill
 
     def apply_effect_on_apply(self, character):
-        if self.condition is None:
+        if self.condition is None or self.condition(character):
             character.update_stats(self.stats_dict, reversed=False)
             self.flag_is_active = True
 
     def apply_effect_on_remove(self, character):
-        if self.condition is None:
+        if self.condition is None or self.condition(character):
             character.update_stats(self.stats_dict, reversed=True)
 
     def apply_effect_on_trigger(self, character):
@@ -357,8 +387,6 @@ class StatsEffect(Effect):
                 string += "Effect is active.\n"
             else:
                 string += "Effect is not active.\n"
-            if not self.use_active_flag:
-                string += "Effect applys every turn as long as being active.\n"
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
                 string += f"{key} is scaled to {value*100}%."
@@ -425,6 +453,24 @@ class TimedBombEffect(Effect):
 
     def tooltip_description(self):
         return f"Deal {self.damage} status damage when expired."
+
+
+class TimedStunBombEffect(Effect):
+    def __init__(self, name, duration, is_buff, damage, imposter, cc_immunity, stun_duration):
+        super().__init__(name, duration, is_buff)
+        self.damage = damage
+        self.imposter = imposter
+        self.cc_immunity = cc_immunity
+        self.stun_duration = stun_duration
+
+    def apply_effect_on_expire(self, character):
+        if character.is_alive():
+            if self.damage > 0:
+                character.take_status_damage(self.damage, self.imposter)
+            character.apply_effect(StunEffect("Stun", self.stun_duration, False))
+
+    def tooltip_description(self):
+        return "Stun for 1 turn when expired."
 
 
 # =========================================================
@@ -592,9 +638,9 @@ class ContinuousHealEffect(Effect):
     
     def tooltip_description(self):
         if self.is_percent:
-            return f"Heal for {int(self.value*100)}% hp each turn."
+            return f"Recovers {int(self.value*100)}% hp each turn."
         else:
-            return f"Heal for {int(self.value)} hp each turn."
+            return f"Recovers {int(self.value)} hp each turn."
 
 
 # =========================================================
@@ -925,6 +971,39 @@ class HideEffect(Effect):
         return string
 
 
+# Sin Effect: when defeated, all allies take status damage equal to {value}.
+class SinEffect(StatsEffect):
+    def __init__(self, name, duration, is_buff, value, stats_dict):
+        super().__init__(name, duration, is_buff, stats_dict)
+        self.value = value
+        self.sort_priority = 2000
+        self.can_be_removed_by_skill = False
+
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            for ally in character.ally:
+                if ally.is_dead():
+                    continue
+                ally.take_status_damage(self.value, character)
+            global_vars.turn_info_string += f"Justice is served, {character.name} has been defeated!\n"
+            character.remove_effect(self)
+        return super().apply_effect_on_trigger(character)
+
+    def apply_effect_at_end_of_turn(self, character):
+        if character.is_dead():
+            for ally in character.ally:
+                if ally.is_dead():
+                    continue
+                ally.take_status_damage(self.value, character)
+            global_vars.turn_info_string += f"Justice is served, {character.name} has been defeated!\n"
+            character.remove_effect(self)
+        return super().apply_effect_at_end_of_turn(character)
+
+    def tooltip_description(self):
+        string = super().tooltip_description()
+        return string + f"When defeated, all allies take status damage equal to {self.value}."
+
+
 
 # =========================================================
 # End of Special effects
@@ -1184,9 +1263,9 @@ class EquipmentSetEffect_Dawn(Effect):
     def tooltip_description(self):
         string = ""
         if self.flag_is_active:
-            string += "Atk and crit bonus is active.\n"
+            string += "Atk and crit bonus is active."
         if self.flag_onetime_damage_bonus_active:
-            string += "Onetime damage bonus is active.\n"
+            string += "Onetime damage bonus is active."
         if not self.flag_is_active and not self.flag_onetime_damage_bonus_active:
             string += "Effect is not active."
         return string
@@ -1208,8 +1287,10 @@ class EquipmentSetEffect_Bamboo(Effect):
         if character.is_dead():
             return
         if not character.has_effect_that_named("Bamboo"):
-            character.apply_effect(StatsEffect("Bamboo", 5, True, self.stats_dict))
-            character.apply_effect(ContinuousHealEffect("Bamboo", 5, True, 0.16, True))
+            character.apply_effect(StatsEffect("Bamboo", 5, True, self.stats_dict, is_set_effect=True))
+            e = ContinuousHealEffect("Bamboo", 5, True, 0.16, True)
+            e.is_set_effect = True
+            character.apply_effect(e)
 
 # ---------------------------------------------------------
 # Rose
@@ -1221,6 +1302,37 @@ class EquipmentSetEffect_Rose(Effect):
         self.is_set_effect = True
         self.he_bonus_before_heal = he_bonus_before_heal
         self.sort_priority = 2000
+
+
+# ---------------------------------------------------------
+# OldRusty
+# See character.py for implementation.
+class EquipmentSetEffect_OldRusty(Effect):
+    def __init__(self, name, duration, is_buff):
+        super().__init__(name, duration, is_buff)
+        self.is_set_effect = True
+        self.sort_priority = 2000
+
+
+# ---------------------------------------------------------
+# Liquidation
+# When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 30%: hp, atk, def, spd.
+class EquipmentSetEffect_Liquidation(Effect):
+    def __init__(self, name, duration, is_buff, damage_reduction):
+        super().__init__(name, duration, is_buff)
+        self.is_set_effect = True
+        self.sort_priority = 2000
+        self.damage_reduction = damage_reduction
+
+    def apply_effect_during_damage_step(self, character, damage, attacker):
+        if damage == 0:
+            return 0
+        for key in ["hp", "atk", "defense", "spd"]:
+            if getattr(character, key) < getattr(attacker, key):
+                damage = damage * (1 - self.damage_reduction)
+                global_vars.turn_info_string += f"{character.name}'s {key} is lower than {attacker.name}'s, damage is reduced by {int(self.damage_reduction*100)}%.\n"
+        return damage
+
 
 
 #---------------------------------------------------------
@@ -1244,6 +1356,44 @@ class PharaohPassiveEffect(Effect):
     def tooltip_description(self):
         return f"At the end of turn, if there is a cursed enemy, increase atk by {self.value*100}% for 3 turns."
     
+
+class BakeNekoSupressionEffect(Effect):
+    # During damage calculation,
+    # damage increased by the ratio of self hp to target hp if self has more hp than target. Max bonus damage: 1000%.
+    def __init__(self, name, duration, is_buff):
+        super().__init__(name, duration, is_buff)
+
+    def apply_effect_in_attack_before_damage_step(self, character, target, final_damage):
+        if character.hp > target.hp:
+            new_dmg = final_damage * min(character.hp / target.hp, 10)
+            global_vars.turn_info_string += f"Supression effect increased damage by {int(min(character.hp / target.hp, 10)*100)}%.\n"
+        else:
+            new_dmg = final_damage
+        return new_dmg
+
+    def tooltip_description(self):
+        return f"Attack damage increased by the ratio of self hp to target hp if self has more hp than target. Max bonus damage: 1000%."
+
+
+class TrialofDragonEffect(StatsEffect):
+    def __init__(self, name, duration, is_buff, stats_dict, damage, imposter, stun_duration):
+        super().__init__(name, duration, is_buff, stats_dict)
+        self.sort_priority = 2000
+        self.damage = damage
+        self.imposter = imposter
+        self.stun_duration = stun_duration
+        self.can_be_removed_by_skill = False
+
+    def apply_effect_on_expire(self, character):
+        if character.is_alive():
+            if self.damage > 0:
+                character.take_status_damage(self.damage, self.imposter)
+            character.apply_effect(StunEffect("Stun", self.stun_duration, False))
+        
+    def tooltip_description(self):
+        string = super().tooltip_description()
+        return string + f"Deal {self.damage} status damage to self and stun for {self.stun_duration} turns when effect expires."
+
 
 # ---------------------------------------------------------
 # End of Monster Passive effects and others

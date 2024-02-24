@@ -44,6 +44,10 @@ def load_player(filename="player_data.json"):
         match (item_data["object"], item_data["type"]):
             case ("<class 'item.Cash'>", _):
                 item = Cash(item_data["current_stack"])
+            case ("<class 'item.SliverIngot'>", _):
+                item = SliverIngot(item_data["current_stack"])
+            case ("<class 'item.GoldIngot'>", _):
+                item = GoldIngot(item_data["current_stack"])
             case ("<class 'equip.Equip'>", _):
                 item = Equip("foo", "Weapon", "Common")
                 for attr, value in item_data.items():
@@ -161,7 +165,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                         image_to_process = images_item[item.image].copy()
                     except KeyError:
                         image_to_process = images_item["404"].copy()
-                    create_yellow_text(image_to_process, str(item.current_stack), 400, (0, 0, 0))
+                    create_yellow_text(image_to_process, str(item.current_stack), 310, (0, 0, 0), add_background=True)
                     ui_image.set_image(image_to_process)
                 else:
                     try:
@@ -359,12 +363,12 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                 raise ValueError("Amount must be positive")
 
         while amount > 0:
-            if amount <= 99999:
+            if amount <= 999999:
                 self.add_to_inventory(Cash(amount), rebuild_inventory_slots)
                 amount = 0
             else:
-                self.add_to_inventory(Cash(99999), rebuild_inventory_slots)
-                amount -= 99999
+                self.add_to_inventory(Cash(999999), False)
+                amount -= 999999
 
     def lose_cash(self, amount: int, rebuild_inventory_slots: bool = True):
         self.remove_from_inventory(Cash, amount, rebuild_inventory_slots)
@@ -377,7 +381,7 @@ except FileNotFoundError:
     print("Player data not found, creating a new one...")
     if start_with_max_level:
         player = Nine(50000000)
-        player.cleared_stages = 1999
+        player.cleared_stages = 2199
     else:
         player = Nine(50000)
         player.cleared_stages = 0
@@ -391,7 +395,8 @@ except FileNotFoundError:
 def get_all_characters():
     global start_with_max_level
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
-                       "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", "Yuri"]
+                       "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
+                       "Yuri", "Dophine", "Tian", "Don"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -823,7 +828,7 @@ if __name__ == "__main__":
         global current_game_mode, adventure_mode_current_stage
         if current_game_mode == "Training Mode":
             raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
-        if adventure_mode_current_stage == 2000:
+        if adventure_mode_current_stage == 2200:
             text_box.set_text("We have reached the end of the world.\n")
             return
         if player.cleared_stages < adventure_mode_current_stage:
@@ -848,7 +853,7 @@ if __name__ == "__main__":
     adventure_mode_stages = {} # int : list of monsters
     if player.cleared_stages > 0:
         print(f"Loading adventure mode stages from player data. Current stage: {player.cleared_stages}")
-        adventure_mode_current_stage = min(player.cleared_stages + 1, 2000)
+        adventure_mode_current_stage = min(player.cleared_stages + 1, 2200)
     else:
         adventure_mode_current_stage = 1
     adventure_mode_generate_stage()
@@ -874,11 +879,13 @@ if __name__ == "__main__":
         if enemy_average_level > average_party_level:
             cash_reward_multiplier = (enemy_average_level / average_party_level)
         random_factor = random.uniform(0.8, 1.2)
-        cash = adventure_mode_current_stage * 2 * random_factor * cash_reward_multiplier
+        cash_before_random = adventure_mode_current_stage * 2 * cash_reward_multiplier
+        cash = cash_before_random * random_factor
         if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # boss stage
             cash *= 1.5
+            cash_before_random *= 1.5
         cash = max(1, cash)
-        return int(cash)
+        return int(cash), int(cash_before_random)
     
     def adventure_mode_info_tooltip() -> str:
         global adventure_mode_current_stage
@@ -888,7 +895,8 @@ if __name__ == "__main__":
         if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # boss stage
             str += "Boss Stage. Reward is increased by 50%.\n"
         str += f"Exp Reward: {adventure_mode_exp_reward()}\n"
-        str += f"Cash Reward: approxmately {adventure_mode_cash_reward()}\n"
+        a, b = adventure_mode_cash_reward()
+        str += f"Cash Reward: approxmately {b}\n"
         return str
 
     # =====================================
@@ -933,7 +941,7 @@ if __name__ == "__main__":
                                         text='Sell Item',
                                         manager=ui_manager,
                                         tool_tip_text = "Sell selected item in inventory.")
-    item_sell_button.set_tooltip("選択したアイテムをインベントリから売却する。", delay=0.1, wrap_width=300)
+    item_sell_button.set_tooltip("選択したアイテムをインベントリから一つ売却する。", delay=0.1, wrap_width=300)
     item_sell_button.hide()
     item_sell_half_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 560), (156, 35)),
                                         text='Sell Half',
@@ -944,19 +952,25 @@ if __name__ == "__main__":
     use_random_consumable_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 420), (156, 35)),
                                         "Random Use:",
                                         ui_manager)
-    use_random_consumable_label.set_tooltip("自動バトル中に毎ターン、ランダム一つの消耗品を使用する。", delay=0.1, wrap_width=300)
+    use_random_consumable_label.set_tooltip("自動バトル中に毎ターン、一つの適切な消耗品を使用する。", delay=0.1, wrap_width=300)
     use_random_consumable_label.hide()
     use_random_consumable_selection_menu = pygame_gui.elements.UIDropDownMenu(["True", "False"],
                                                             "False",
                                                             pygame.Rect((1080, 460), (156, 35)),
                                                             ui_manager)
     use_random_consumable_selection_menu.hide()
-    cash_burn_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 420), (156, 35)),
-                                        text='Burn Cash',
+    sliver_ingot_exchange_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 420), (156, 35)),
+                                        text='Buy Sliver Ingot',
                                         manager=ui_manager,
-                                        tool_tip_text = "Cash Burn")
-    cash_burn_button.set_tooltip("Cashがありすぎて困ってる？ 100万CASHを焼き払おう。", delay=0.1, wrap_width=300)
-    cash_burn_button.hide()
+                                        tool_tip_text = "Exchange Sliver Ingot")
+    sliver_ingot_exchange_button.set_tooltip("Buy sliver ingot with cash, price: 111000", delay=0.1, wrap_width=300)
+    sliver_ingot_exchange_button.hide()
+    gold_ingot_exchange_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (156, 35)),
+                                        text='Buy Gold Ingot',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Exchange Gold Ingot")
+    gold_ingot_exchange_button.set_tooltip("Buy gold ingot with cash, price: 9820000", delay=0.1, wrap_width=300)
+    gold_ingot_exchange_button.hide()
 
 
     def use_item():
@@ -1036,7 +1050,7 @@ if __name__ == "__main__":
 
     def use_random_consumable():
         """
-        Feature for using random consumable, for a random character in need.
+        Feature for using one suitable consumable, for a random character in need.
         """
         if not auto_battle_active:
             raise Exception("Can only use random consumable when auto battle is active.")   
@@ -1045,18 +1059,19 @@ if __name__ == "__main__":
             characters_in_need = [x for x in party1]
         elif current_game_mode == "Training Mode":
             characters_in_need = [x for x in itertools.chain(party1, party2)]
-        try:
-            consumable = random.choice([x for x in player.inventory if isinstance(x, Consumable) and x.can_use_for_auto_battle])
-        except IndexError:
-            global_vars.turn_info_string += f"Random use failed: No consumable in inventory.\n"
-            return
         random.shuffle(characters_in_need)
         for character in characters_in_need:
-            if consumable.auto_E_condition(character, player):
-                event_str = consumable.E(character, player)
-                global_vars.turn_info_string += event_str + "\n"
-                break
-        player.remove_from_inventory(type(consumable), 1, True)
+            all_consumables = [x for x in player.inventory if isinstance(x, Consumable) and x.can_use_for_auto_battle]
+            if not all_consumables:
+                global_vars.turn_info_string += f"Random use failed: No consumable in inventory.\n"
+                return
+            for consumable in all_consumables:
+                if consumable.auto_E_condition(character, player):
+                    event_str = consumable.E(character, player)
+                    global_vars.turn_info_string += event_str + "\n"
+                    player.remove_from_inventory(type(consumable), 1, True)
+                    return
+        global_vars.turn_info_string += f"Random use failed: No consumable suitable for any character.\n"
 
 
     def item_sell_selected():
@@ -1112,13 +1127,25 @@ if __name__ == "__main__":
         player.add_cash(total_income, True)
 
 
-    def cash_burn():
+    def item_trade(item: str, amount: int=1):
         text_box.set_text("==============================\n")
-        if player.get_cash() < 1000000:
-            text_box.append_html_text("Not enough cash to burn.\n")
-            return
-        player.lose_cash(1000000, True)
-        text_box.append_html_text("Burned a million dollars.\n")
+        match item:
+            case "Sliver Ingot":
+                if player.get_cash() < 111000 * amount:
+                    text_box.append_html_text(f"Not enough cash to buy {amount} Sliver Ingot.\n")
+                    return
+                player.add_to_inventory(SliverIngot(amount), False)
+                player.lose_cash(111000 * amount, True)
+                text_box.append_html_text(f"Bought {amount} Sliver Ingot for {111000 * amount} cash.\n")
+            case "Gold Ingot":
+                if player.get_cash() < 9820000 * amount:
+                    text_box.append_html_text(f"Not enough cash to buy {amount} Gold Ingot.\n")
+                    return
+                player.add_to_inventory(GoldIngot(amount), False)
+                player.lose_cash(9820000 * amount, True)
+                text_box.append_html_text(f"Bought {amount} Gold Ingot for {9820000 * amount} cash.\n")
+            case _:
+                raise ValueError(f"Invalid item: {item}")
 
 
     # =====================================
@@ -1542,7 +1569,7 @@ if __name__ == "__main__":
                         if character.is_alive():
                             character.gain_exp(adventure_mode_exp_reward())
                             global_vars.turn_info_string += f"{character.name} gained {adventure_mode_exp_reward()} exp.\n"
-                    cash_reward = adventure_mode_cash_reward()
+                    cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
                     global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
                 else:
@@ -1595,7 +1622,7 @@ if __name__ == "__main__":
                         if character.is_alive():
                             character.gain_exp(adventure_mode_exp_reward())
                             global_vars.turn_info_string += f"{character.name} gained {adventure_mode_exp_reward()} exp.\n"
-                    cash_reward = adventure_mode_cash_reward()
+                    cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
                     global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
                 else:
@@ -1646,7 +1673,7 @@ if __name__ == "__main__":
                         if character.is_alive():
                             character.gain_exp(adventure_mode_exp_reward())
                             text_box.append_html_text(f"{character.name} gained {adventure_mode_exp_reward()} exp.\n")
-                    cash_reward = adventure_mode_cash_reward()
+                    cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
                     global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
                 else:
@@ -1881,10 +1908,9 @@ if __name__ == "__main__":
         return new_image
 
 
-    def create_yellow_text(surface, text, font_size, text_color=(255, 255, 0), offset=10, position_type='bottom', bold=False, italic=False):
+    def create_yellow_text(surface, text, font_size, text_color=(255, 255, 0), offset=10, 
+                           position_type='bottom', bold=False, italic=False, add_background=False):
         """
-        Creates text on the given surface.
-
         Parameters:
         surface (pygame.Surface): The surface on which to draw the text.
         text (str): The text to be rendered.
@@ -1892,6 +1918,7 @@ if __name__ == "__main__":
         text_color (tuple): RGB color of the text. Default is yellow (255, 255, 0).
         offset (int): The offset from the edge of the surface.
         position_type (str): The position type for the text ('bottom' or 'topleft').
+        add_background (bool): If True, adds a white background behind the text. Default is False.
         """
         font = pygame.font.Font(None, font_size)
         if bold:
@@ -1900,6 +1927,10 @@ if __name__ == "__main__":
             font.set_italic(True)
         text_surface = font.render(text, True, text_color)
         text_rect = text_surface.get_rect()
+
+        if add_background:
+            background_surface = pygame.Surface(text_rect.size)
+            background_surface.fill((255, 255, 255))
 
         if position_type == 'bottom':
             text_rect.centerx = surface.get_rect().centerx
@@ -1922,6 +1953,8 @@ if __name__ == "__main__":
         elif position_type == 'center':
             text_rect.center = surface.get_rect().center
 
+        if add_background:
+            surface.blit(background_surface, text_rect)
         surface.blit(text_surface, text_rect)
 
 
@@ -2444,7 +2477,8 @@ if __name__ == "__main__":
                     item_sell_half_button.hide()
                     use_random_consumable_label.hide()
                     use_random_consumable_selection_menu.hide()
-                    cash_burn_button.hide()
+                    sliver_ingot_exchange_button.hide()
+                    gold_ingot_exchange_button.hide()
                 if event.ui_element == cheap_inventory_show_items_button:
                     player.current_page = 0
                     cheap_inventory_show_current_option = "Item"
@@ -2462,7 +2496,8 @@ if __name__ == "__main__":
                     item_sell_half_button.show()
                     use_random_consumable_label.hide()
                     use_random_consumable_selection_menu.hide()
-                    cash_burn_button.show()
+                    sliver_ingot_exchange_button.show()
+                    gold_ingot_exchange_button.show()
                 if event.ui_element == cheap_inventory_show_consumables_button:
                     player.current_page = 0
                     cheap_inventory_show_current_option = "Consumable"
@@ -2480,15 +2515,18 @@ if __name__ == "__main__":
                     item_sell_half_button.show()
                     use_random_consumable_label.show()
                     use_random_consumable_selection_menu.show()
-                    cash_burn_button.hide()
+                    sliver_ingot_exchange_button.hide()
+                    gold_ingot_exchange_button.hide()
                 if event.ui_element == use_item_button:
                     use_item()
                 if event.ui_element == item_sell_button:
                     item_sell_selected()
                 if event.ui_element == item_sell_half_button:
                     item_sell_half()
-                if event.ui_element == cash_burn_button:
-                    cash_burn()
+                if event.ui_element == sliver_ingot_exchange_button:
+                    item_trade("Sliver Ingot")
+                if event.ui_element == gold_ingot_exchange_button:
+                    item_trade("Gold Ingot")
                 if event.ui_element == character_eq_unequip_button:
                     unequip_item()
                 if event.ui_element == box_submenu_previous_stage_button:

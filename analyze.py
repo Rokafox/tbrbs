@@ -19,7 +19,7 @@ def create_report():
 
 def generate_heatmap(data):
     heatmap_data = data.pivot(index='character_name', columns='equipment_set', values='winrate')
-    plt.figure(figsize=(15, 32))
+    plt.figure(figsize=(20, 32))
     sns.heatmap(heatmap_data, annot=True, fmt=".1f", cmap="coolwarm")
     plt.title("Win Rates of Characters with Different Equipment Sets")
     plt.xlabel("Equipment Set")

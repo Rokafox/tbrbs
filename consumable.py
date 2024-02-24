@@ -8,7 +8,7 @@ import random
 # 2. Every time a new consumable is added, add it to get_1_random_consumable() in consumable.py
 
 
-# Price : common < uncommon < rare < epic < unique < legendary, 10, 20, 50, 100, 200, 500
+# Price : common < uncommon < rare < epic < unique < legendary, 50, 100, 250, 500, 1000, 2500
 class Consumable(Block):
     def __init__(self, name, description):
         super().__init__(name, description)
@@ -34,7 +34,7 @@ class Banana(Consumable):
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 9
+        self.market_value = 45
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.15, self)
@@ -44,7 +44,7 @@ class Banana(Consumable):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            return user.hp < user.maxhp * 0.5
+            return user.hp < user.maxhp * 0.8
         
 
 
@@ -56,7 +56,7 @@ class Kiwi(Consumable):
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 16
+        self.market_value = 80
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.25, self)
@@ -66,7 +66,7 @@ class Kiwi(Consumable):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            return user.hp < user.maxhp * 0.5
+            return user.hp < user.maxhp * 0.7
 
 
 class Strawberry(Consumable):
@@ -78,7 +78,7 @@ class Strawberry(Consumable):
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 20
+        self.market_value = 100
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.05, self)
@@ -89,7 +89,7 @@ class Strawberry(Consumable):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            return user.hp < user.maxhp * 0.5
+            return user.hp < user.maxhp * 0.7
 
 
 class Pancake(Consumable):
@@ -100,7 +100,7 @@ class Pancake(Consumable):
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 49
+        self.market_value = 245
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.5, self)
@@ -121,7 +121,7 @@ class Mantou(Consumable):
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 99
+        self.market_value = 499
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.75, self)
@@ -131,7 +131,7 @@ class Mantou(Consumable):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            return user.hp < user.maxhp * 0.5
+            return user.hp < user.maxhp * 0.3
 
 
 def get_1_random_consumable():

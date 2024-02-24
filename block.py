@@ -18,7 +18,7 @@ class Block:
         self.image = None
         self.can_be_stacked = True
         self.current_stack = 1
-        self.max_stack = 99999 # If too high, cannot be shown on icon.
+        self.max_stack = 999999 # If too high, cannot be shown on icon.
 
     def __str__(self):
         return self.name
