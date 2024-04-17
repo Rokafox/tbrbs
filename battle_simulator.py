@@ -165,7 +165,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                         image_to_process = images_item[item.image].copy()
                     except KeyError:
                         image_to_process = images_item["404"].copy()
-                    create_yellow_text(image_to_process, str(item.current_stack), 310, (0, 0, 0), add_background=True)
+                    create_yellow_text(image_to_process, str(item.current_stack), 215, (0, 0, 0), add_background=True)
                     ui_image.set_image(image_to_process)
                 else:
                     try:
@@ -717,7 +717,7 @@ if __name__ == "__main__":
                                         text='Restart Battle',
                                         manager=ui_manager,
                                         tool_tip_text = "Restart battle")
-    button4.set_tooltip("Restart battle", delay=0.1)
+    button4.set_tooltip("バトル再開", delay=0.1)
 
     button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 420), (156, 50)),
                                         text='All Turns',
@@ -829,10 +829,10 @@ if __name__ == "__main__":
         if current_game_mode == "Training Mode":
             raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
         if adventure_mode_current_stage == 2200:
-            text_box.set_text("We have reached the end of the world.\n")
+            text_box.set_text("世界の終末に到達した。\n")
             return
         if player.cleared_stages < adventure_mode_current_stage:
-            text_box.set_text("We have not cleared the current stage.\n")
+            text_box.set_text("現在のステージはクリアしていない。\n")
             return
         adventure_mode_current_stage += 1
         adventure_mode_generate_stage()
@@ -843,7 +843,7 @@ if __name__ == "__main__":
         if current_game_mode == "Training Mode":
             raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
         if adventure_mode_current_stage == 1:
-            text_box.set_text("This stage is the start of the journey.\n")
+            text_box.set_text("このステージが旅の始まりだ。\n")
             return
         adventure_mode_current_stage -= 1
         adventure_mode_generate_stage()
@@ -889,14 +889,14 @@ if __name__ == "__main__":
     
     def adventure_mode_info_tooltip() -> str:
         global adventure_mode_current_stage
-        str = f"Current Stage: {adventure_mode_current_stage}\n"
+        str = f"現在のステージ: {adventure_mode_current_stage}\n"
         if adventure_mode_current_stage > sum([x.lvl for x in party1]) / 5:
-            str += f"Enemy level is higher than average party level, reward is increased by {(adventure_mode_current_stage / (sum([x.lvl for x in party1]) / 5) - 1) * 100}%\n"
-        if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # boss stage
-            str += "Boss Stage. Reward is increased by 50%.\n"
-        str += f"Exp Reward: {adventure_mode_exp_reward()}\n"
+            str += f"敵のレベルが平均パーティのレベルよりも高いため、報酬が{(adventure_mode_current_stage / (sum([x.lvl for x in party1]) / 5) - 1) * 100:2f}%増加します\n"
+        if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # ボスステージ
+            str += "ボスステージです。報酬が50%増加します。\n"
+        str += f"経験値報酬: {adventure_mode_exp_reward()}\n"
         a, b = adventure_mode_cash_reward()
-        str += f"Cash Reward: approxmately {b}\n"
+        str += f"Cash報酬: 約{b}\n"
         return str
 
     # =====================================
@@ -963,13 +963,13 @@ if __name__ == "__main__":
                                         text='Buy Sliver Ingot',
                                         manager=ui_manager,
                                         tool_tip_text = "Exchange Sliver Ingot")
-    sliver_ingot_exchange_button.set_tooltip("Buy sliver ingot with cash, price: 111000", delay=0.1, wrap_width=300)
+    sliver_ingot_exchange_button.set_tooltip("スライバー・インゴットをCASHで買う、価格：111000", delay=0.1, wrap_width=300)
     sliver_ingot_exchange_button.hide()
     gold_ingot_exchange_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (156, 35)),
                                         text='Buy Gold Ingot',
                                         manager=ui_manager,
                                         tool_tip_text = "Exchange Gold Ingot")
-    gold_ingot_exchange_button.set_tooltip("Buy gold ingot with cash, price: 9820000", delay=0.1, wrap_width=300)
+    gold_ingot_exchange_button.set_tooltip("CASHで金のインゴットを買う, 価格: 9820000", delay=0.1, wrap_width=300)
     gold_ingot_exchange_button.hide()
 
 
@@ -981,7 +981,7 @@ if __name__ == "__main__":
         selected_items = []
         # print(player.selected_item)
         if not player.selected_item:
-            text_box_text_to_append += "No item is selected.\n"
+            text_box_text_to_append += "アイテムが選択されていない。\n"
             text_box.append_html_text(text_box_text_to_append)
             return
         for a, b, c in player.selected_item.values():
@@ -989,7 +989,7 @@ if __name__ == "__main__":
                 selected_items.append(c) 
         # print(f"use_item() Selected items: {selected_items}")
         if not selected_items:
-            text_box_text_to_append += "No item is selected.\n"
+            text_box_text_to_append += "アイテムが選択されていない。\n"
             text_box.append_html_text(text_box_text_to_append)
             return
         if cheap_inventory_show_current_option == "Equip":
@@ -1078,13 +1078,13 @@ if __name__ == "__main__":
         text_box.set_text("==============================\n")
         selected_items = []
         if not player.selected_item:
-            text_box.append_html_text("No item is selected.\n")
+            text_box.append_html_text("アイテムが選択されていない。\n")
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c)
         if not selected_items:
-            text_box.append_html_text("No item is selected.\n")
+            text_box.append_html_text("アイテムが選択されていない。\n")
             return
 
         for item_to_sell in selected_items:
@@ -1102,13 +1102,13 @@ if __name__ == "__main__":
         text_box.set_text("==============================\n")
         selected_items = []
         if not player.selected_item:
-            text_box.append_html_text("No item is selected.\n")
+            text_box.append_html_text("アイテムが選択されていない。\n")
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c)
         if not selected_items:
-            text_box.append_html_text("No item is selected.\n")
+            text_box.append_html_text("アイテムが選択されていない。\n")
             return
 
         total_income = 0
@@ -1132,18 +1132,18 @@ if __name__ == "__main__":
         match item:
             case "Sliver Ingot":
                 if player.get_cash() < 111000 * amount:
-                    text_box.append_html_text(f"Not enough cash to buy {amount} Sliver Ingot.\n")
+                    text_box.append_html_text(f"スライバー・インゴットを{amount}個買うのに十分なCASHがありません。\n")
                     return
                 player.add_to_inventory(SliverIngot(amount), False)
                 player.lose_cash(111000 * amount, True)
-                text_box.append_html_text(f"Bought {amount} Sliver Ingot for {111000 * amount} cash.\n")
+                text_box.append_html_text(f"{amount}個のスライバー・インゴットを{111000 * amount}CASHで購入しました。\n")
             case "Gold Ingot":
                 if player.get_cash() < 9820000 * amount:
-                    text_box.append_html_text(f"Not enough cash to buy {amount} Gold Ingot.\n")
+                    text_box.append_html_text(f"金のインゴットを{amount}個買うのに十分なCASHがありません。\n")
                     return
                 player.add_to_inventory(GoldIngot(amount), False)
                 player.lose_cash(9820000 * amount, True)
-                text_box.append_html_text(f"Bought {amount} Gold Ingot for {9820000 * amount} cash.\n")
+                text_box.append_html_text(f"{amount}個の金のインゴットを{9820000 * amount}CASHで購入しました。\n")
             case _:
                 raise ValueError(f"Invalid item: {item}")
 
@@ -1208,14 +1208,14 @@ if __name__ == "__main__":
         selected_items = []
         # print(player.selected_item)
         if not player.selected_item:
-            text_box_text_to_append += "No item is selected.\n"
+            text_box_text_to_append += "アイテムが選択されていない。\n"
             text_box.append_html_text(text_box_text_to_append)
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c) 
         if not selected_items:
-            text_box_text_to_append += "No item is selected.\n"
+            text_box_text_to_append += "アイテムが選択されていない。\n"
             text_box.append_html_text(text_box_text_to_append)
             return
         
@@ -1254,14 +1254,14 @@ if __name__ == "__main__":
         text_box_text_to_append = ""
         selected_items = []
         if not player.selected_item:
-            text_box_text_to_append += "No item is selected.\n"
+            text_box_text_to_append += "アイテムが選択されていない。\n"
             text_box.append_html_text(text_box_text_to_append)
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c)
         if not selected_items:
-            text_box_text_to_append += "No item is selected.\n"
+            text_box_text_to_append += "アイテムが選択されていない。\n"
             text_box.append_html_text(text_box_text_to_append)
             return
 
@@ -1300,13 +1300,13 @@ if __name__ == "__main__":
         text_box.set_text("==============================\n")
         selected_items = []
         if not player.selected_item:
-            text_box.append_html_text("No item is selected.\n")
+            text_box.append_html_text("アイテムが選択されていない。\n")
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c)
         if not selected_items:
-            text_box.append_html_text("No item is selected.\n")
+            text_box.append_html_text("アイテムが選択されていない。\n")
             return
 
         for item_to_sell in selected_items:
@@ -1354,13 +1354,13 @@ if __name__ == "__main__":
         text_box.set_text("==============================\n")
         selected_items = []
         if not player.selected_item:
-            text_box.append_html_text("No item is selected.\n")
+            text_box.append_html_text("アイテムが選択されていない。\n")
             return
         for a, b, c in player.selected_item.values():
             if b:
                 selected_items.append(c)
         if not selected_items:
-            text_box.append_html_text("No item is selected.\n")
+            text_box.append_html_text("アイテムが選択されていない。\n")
             return
 
         for item_to_level_up in selected_items:
@@ -1557,23 +1557,23 @@ if __name__ == "__main__":
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
-                    global_vars.turn_info_string += "Defeated.\n"
+                    global_vars.turn_info_string += "失敗。\n"
                 else:
-                    global_vars.turn_info_string += "Party 1 is defeated.\n"
+                    global_vars.turn_info_string += "パーティ1が敗北しました。\n"
             elif not is_someone_alive(party2):
                 if current_game_mode == "Adventure Mode":
-                    global_vars.turn_info_string += "Victory!\n"
+                    global_vars.turn_info_string += "勝利！\n"
                     player.cleared_stages = adventure_mode_current_stage
-                    # gain exp for alive characters in party 1
+                    # パーティ1の生存キャラクターに経験値を与える
                     for character in party1:
                         if character.is_alive():
                             character.gain_exp(adventure_mode_exp_reward())
-                            global_vars.turn_info_string += f"{character.name} gained {adventure_mode_exp_reward()} exp.\n"
+                            global_vars.turn_info_string += f"{character.name}は{adventure_mode_exp_reward()}の経験値を獲得しました。\n"
                     cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
-                    global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
+                    global_vars.turn_info_string += f"{cash_reward}のCASHを獲得しました。\n"
                 else:
-                    global_vars.turn_info_string += "Party 2 is defeated.\n"
+                    global_vars.turn_info_string += "パーティ2が敗北しました。\n"
             text_box.append_html_text(global_vars.turn_info_string)
             return False
         
@@ -1610,30 +1610,30 @@ if __name__ == "__main__":
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
-                    global_vars.turn_info_string += "Defeated.\n"
+                    global_vars.turn_info_string += "失敗。\n"
                 else:
-                    global_vars.turn_info_string += "Party 1 is defeated.\n"    
+                    global_vars.turn_info_string += "パーティ1が敗北しました。\n"    
             elif not is_someone_alive(party2):
                 if current_game_mode == "Adventure Mode":
-                    text_box.append_html_text("Victory!\n")
+                    text_box.append_html_text("勝利！\n")
                     player.cleared_stages = adventure_mode_current_stage
                     # gain exp for alive characters in party 1
                     for character in party1:
                         if character.is_alive():
                             character.gain_exp(adventure_mode_exp_reward())
-                            global_vars.turn_info_string += f"{character.name} gained {adventure_mode_exp_reward()} exp.\n"
+                            global_vars.turn_info_string += f"{character.name}は{adventure_mode_exp_reward()}の経験値を獲得しました。\n"
                     cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
-                    global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
+                    global_vars.turn_info_string += f"{cash_reward}のCASHを獲得しました。\n"
                 else:
-                    global_vars.turn_info_string += "Party 2 is defeated.\n"
+                    global_vars.turn_info_string += "パーティ2が敗北しました。\n"
             text_box.append_html_text(global_vars.turn_info_string)
             return False
         
         alive_characters = [x for x in itertools.chain(party1, party2) if x.is_alive()]
         weight = [x.spd for x in alive_characters]
         the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
-        global_vars.turn_info_string += f"{the_chosen_one.name}'s turn.\n"
+        global_vars.turn_info_string += f"{the_chosen_one.name}のターン.\n"
         the_chosen_one.action()
 
         for character in itertools.chain(party1, party2):
@@ -1661,23 +1661,23 @@ if __name__ == "__main__":
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
-                    global_vars.turn_info_string += "Defeated.\n"
+                    global_vars.turn_info_string += "失敗。\n"
                 else:
-                    global_vars.turn_info_string += "Party 1 is defeated.\n"
+                    global_vars.turn_info_string += "パーティ1が敗北しました。\n"
             elif not is_someone_alive(party2):
                 if current_game_mode == "Adventure Mode":
-                    global_vars.turn_info_string += "Victory!\n"
+                    global_vars.turn_info_string += "勝利！\n"
                     player.cleared_stages = adventure_mode_current_stage
                     # gain exp for alive characters in party 1
                     for character in party1:
                         if character.is_alive():
                             character.gain_exp(adventure_mode_exp_reward())
-                            text_box.append_html_text(f"{character.name} gained {adventure_mode_exp_reward()} exp.\n")
+                            text_box.append_html_text(f"{character.name}は{adventure_mode_exp_reward()}の経験値を獲得しました。\n")
                     cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
-                    global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
+                    global_vars.turn_info_string += f"{cash_reward}のCASHを獲得しました。\n"
                 else:
-                    global_vars.turn_info_string += "Party 2 is defeated.\n"
+                    global_vars.turn_info_string += "パーティ2が敗北しました。\n"
             text_box.append_html_text(global_vars.turn_info_string)
             return False
         text_box.append_html_text(global_vars.turn_info_string)
@@ -1740,14 +1740,14 @@ if __name__ == "__main__":
             text_box.append_html_text("Both parties are defeated.\n")
         elif not is_someone_alive(party1):
             if current_game_mode == "Adventure Mode":
-                text_box.append_html_text("Defeated.\n")
+                text_box.append_html_text("失敗。\n")
             else:
-                text_box.append_html_text("Party 1 is defeated.\n")
+                text_box.append_html_text("パーティー1が敗れた。\n")
         elif not is_someone_alive(party2):
             if current_game_mode == "Adventure Mode":
-                text_box.append_html_text("Victory!\n")
+                text_box.append_html_text("勝利！\n")
             else:
-                text_box.append_html_text("Party 2 is defeated.\n")
+                text_box.append_html_text("パーティー2が敗れた。\n")
 
 
     def restart_battle():
@@ -1756,7 +1756,7 @@ if __name__ == "__main__":
         for character in all_characters + all_monsters:
             character.reset_stats()
         reset_ally_enemy_attr(party1, party2)
-        global_vars.turn_info_string += "Battle entry effects:\n"
+        global_vars.turn_info_string += "戦闘開始効果：\n"
         for character in party1:
             character.battle_entry_effects_activate()
         for character in party2:
@@ -1819,7 +1819,7 @@ if __name__ == "__main__":
 
         global_vars.turn_info_string = ""
         reset_ally_enemy_attr(party1, party2)
-        global_vars.turn_info_string += "Battle entry effects:\n"
+        global_vars.turn_info_string += "戦闘開始効果：\n"
         for character in party1:
             character.battle_entry_effects_activate()
         for character in party2:
@@ -1845,7 +1845,7 @@ if __name__ == "__main__":
 
         global_vars.turn_info_string = ""
         reset_ally_enemy_attr(party1, party2)
-        global_vars.turn_info_string += "Battle entry effects:\n"
+        global_vars.turn_info_string += "戦闘開始効果：\n"
         for character in party1:
             character.battle_entry_effects_activate()
         for character in party2:
@@ -1887,7 +1887,7 @@ if __name__ == "__main__":
         reset_ally_enemy_attr(party1, party2)
         new_character.battle_entry_effects_activate()
         redraw_ui(party1, party2)
-        text_box.append_html_text(f"{character_name} has been replaced with {new_character_name}.\n")
+        text_box.append_html_text(f"{character_name}は{new_character_name}に置き換えられました。\n")
 
     def add_outline_to_image(surface, outline_color, outline_thickness):
         """
@@ -1920,7 +1920,7 @@ if __name__ == "__main__":
         position_type (str): The position type for the text ('bottom' or 'topleft').
         add_background (bool): If True, adds a white background behind the text. Default is False.
         """
-        font = pygame.font.Font(None, font_size)
+        font = pygame.font.Font('./NotoSansJP-Regular.ttf', font_size)
         if bold:
             font.set_bold(True)
         if italic:
@@ -2001,7 +2001,7 @@ if __name__ == "__main__":
             shield_bar_rect = pygame.Rect((hp_bar_width, 0), (shield_bar_width, shield_bar_height))
             pygame.draw.rect(surface, shield_bar_color, shield_bar_rect)
 
-        create_yellow_text(surface, f"{hp}/{maxhp}", 25, position_type='center', text_color=(0, 0, 0))
+        create_yellow_text(surface, f"{hp}/{maxhp}", 20, position_type='center', text_color=(0, 0, 0))
 
         return surface
 
@@ -2124,12 +2124,12 @@ if __name__ == "__main__":
                     for a, b, c in character.damage_taken_this_turn:
                         match c:
                             case "normal" | "bypass":
-                                create_yellow_text(new_image, str(a), 25, (255, 0, 0), current_offset_for_damage_and_healing)
+                                create_yellow_text(new_image, str(a), 20, (255, 0, 0), current_offset_for_damage_and_healing)
                             case "status":
                                 # orange text
-                                create_yellow_text(new_image, str(a), 25, (255, 165, 0), current_offset_for_damage_and_healing)
+                                create_yellow_text(new_image, str(a), 20, (255, 165, 0), current_offset_for_damage_and_healing)
                             case "normal_critical":
-                                create_yellow_text(new_image, str(a), 25, (255, 0, 0), current_offset_for_damage_and_healing, bold=True, italic=True)
+                                create_yellow_text(new_image, str(a), 20, (255, 0, 0), current_offset_for_damage_and_healing, bold=True, italic=True)
                             case _:
                                 raise Exception(f"Unknown damage type: {c}")
                         current_offset_for_damage_and_healing += 12
@@ -2141,7 +2141,7 @@ if __name__ == "__main__":
                     healing_list = [x[0] for x in character.healing_received_this_turn]
                     # show healing on image
                     for healing in healing_list:
-                        create_yellow_text(new_image, str(healing), 25, (0, 255, 0), current_offset_for_damage_and_healing)
+                        create_yellow_text(new_image, str(healing), 20, (0, 255, 0), current_offset_for_damage_and_healing)
                         current_offset_for_damage_and_healing += 12
                     image_slots[i].set_image(new_image)
 
@@ -2172,27 +2172,27 @@ if __name__ == "__main__":
                 if shield_value_diff_dict:
                     value = shield_value_diff_dict[character.name]
                     if value != 0:
-                        create_yellow_text(image_slots[i].image, str(int(value)), 25, (192, 192, 192), 10, 'bottomleft')
+                        create_yellow_text(image_slots[i].image, str(int(value)), 20, (192, 192, 192), 10, 'bottomleft')
 
                 if character.is_alive():
                     top_right_offset = 10
                     if character.is_charmed():
-                        create_yellow_text(image_slots[i].image, "Charmed", 15, (255, 0, 0), top_right_offset, 'topright')
+                        create_yellow_text(image_slots[i].image, "魅了", 15, (255, 0, 0), top_right_offset, 'topright')
                         top_right_offset += 10
                     if character.is_confused():
-                        create_yellow_text(image_slots[i].image, "Confused", 15, (255, 0, 0), top_right_offset, 'topright')
+                        create_yellow_text(image_slots[i].image, "混乱", 15, (255, 0, 0), top_right_offset, 'topright')
                         top_right_offset += 10
                     if character.is_stunned():
-                        create_yellow_text(image_slots[i].image, "Stunned", 15, (255, 0, 0), top_right_offset, 'topright')
+                        create_yellow_text(image_slots[i].image, "スタン", 15, (255, 0, 0), top_right_offset, 'topright')
                         top_right_offset += 10
                     if character.is_silenced():
-                        create_yellow_text(image_slots[i].image, "Silenced", 15, (255, 0, 0), top_right_offset, 'topright')
+                        create_yellow_text(image_slots[i].image, "沈黙", 15, (255, 0, 0), top_right_offset, 'topright')
                         top_right_offset += 10
                     if character.is_sleeping():
-                        create_yellow_text(image_slots[i].image, "Sleeping", 15, (255, 0, 0), top_right_offset, 'topright')
+                        create_yellow_text(image_slots[i].image, "睡眠", 15, (255, 0, 0), top_right_offset, 'topright')
                         top_right_offset += 10
                     if character.is_frozed():
-                        create_yellow_text(image_slots[i].image, "Frozen", 15, (255, 0, 0), top_right_offset, 'topright')
+                        create_yellow_text(image_slots[i].image, "凍結", 15, (255, 0, 0), top_right_offset, 'topright')
                         top_right_offset += 10
 
 
@@ -2206,18 +2206,18 @@ if __name__ == "__main__":
     # Text Entry Box Section
     # =====================================
     text_box = pygame_gui.elements.UITextEntryBox(pygame.Rect((300, 300), (556, 295)),"", ui_manager)
-    text_box_introduction_text = "Hover over character name to show skill information.\n"
-    text_box_introduction_text += "If lower cased character_name.jpg or png file is not found in ./image/character directory, 404.png will be used instead.\n"
-    text_box_introduction_text += "If lower cased item_name.jpg or png file is not found in ./image/item directory, 404.png will be used instead.\n"
-    text_box_introduction_text += "If lower cased monster_original_name.jpg or png file is not found in ./image/monster directory, 404.png will be used instead.\n"
-    text_box_introduction_text += "Hover over character image to show attributes.\n"
-    text_box_introduction_text += "Hover over character health bar to show status effects.\n"
+    text_box_introduction_text = "キャラクター名にカーソルを合わせるとスキル情報が表示されます。\n"
+    text_box_introduction_text += "小文字の character_name.jpg または png ファイルが ./image/character ディレクトリに見つからない場合、404.png が使用されます。\n"
+    text_box_introduction_text += "小文字の item_name.jpg または png ファイルが ./image/item ディレクトリに見つからない場合、404.png が使用されます。\n"
+    text_box_introduction_text += "小文字の monster_original_name.jpg または png ファイルが ./image/monster ディレクトリに見つからない場合、404.png が使用されます。\n"
+    text_box_introduction_text += "キャラクター画像にカーソルを合わせると属性が表示されます。\n"
+    text_box_introduction_text += "キャラクターのHPバーにカーソルを合わせると異常状態効果が表示されます。\n"
     text_box.set_text(text_box_introduction_text)
 
     box_submenu_previous_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((300, 560), (120, 35)),
                                                                     text='Previous Stage',
                                                                     manager=ui_manager)
-    box_submenu_previous_stage_button.set_tooltip("Go to previous stage.", delay=0.1)
+    box_submenu_previous_stage_button.set_tooltip("前のステージに戻る。", delay=0.1)
 
     box_submenu_next_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((425, 560), (120, 35)),
                                                                     text='Next Stage',

@@ -18,16 +18,16 @@ class Panda(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Panda"
-        self.skill1_description = "Attack 1 closest enemy with 800% atk."
-        self.skill2_description = "Attack 1 closest enemy with 700% atk and 70% chance to stun the target for 5 turns."
-        self.skill3_description = "Increase maxhp by 50%."
+        self.skill1_description = "最も近い敵1体に攻撃力の800%のダメージを与える。"
+        self.skill2_description = "最も近い敵1体に攻撃力の700%のダメージを与え、70%の確率で対象を5ターンの間スタン状態にする。"
+        self.skill3_description = "最大HPを50%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
         self.monster_role = "Heavy Attack"
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=8.0, repeat=1, target_kw1="enemy_in_front")
@@ -53,16 +53,16 @@ class Mimic(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Mimic"
-        self.skill1_description = "Attack 1 closest enemy with 1000% atk."
-        self.skill2_description = "Attack 1 closest enemy with 1000% atk."
-        self.skill3_description = "Skill attack have 10% chance to inflict Stun for 3 turns."
+        self.skill1_description = "最も近い敵1体に攻撃力の1000%のダメージを与える。"
+        self.skill2_description = "最も近い敵1体に攻撃力の1000%のダメージを与える。"
+        self.skill3_description = "スキル攻撃に10%の確率で対象を3ターンの間スタンさせる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
         self.monster_role = "Heavy Attack"
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def stun_effect(self, target):
@@ -88,16 +88,16 @@ class MoHawk(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "MoHawk"
-        self.skill1_description = "Attack 1 closest enemy with 680% atk and inflict bleed for 4 turns. Bleed: take 120% of applier atk as status damage each turn."
-        self.skill2_description = "Attack 1 closest enemy with 680% atk and inflict bleed for 4 turns."
-        self.skill3_description = "Increase atk by 20%."
+        self.skill1_description = "最も近い敵1体に攻撃し、攻撃力の680%を与え、4ターンの出血効果を与える。出血効果: 毎ターン、発動者の攻撃力の120%を状態ダメージとして受ける。"
+        self.skill2_description = "最も近い敵1体に攻撃し、攻撃力の680%を与え、4ターンの出血効果を与える。"
+        self.skill3_description = "攻撃力を20%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
         self.monster_role = "Heavy Attack"
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def bleed_effect(self, target):
@@ -122,16 +122,16 @@ class Earth(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Earth"
-        self.skill1_description = "Attack all enemies with 240% atk, 50% chance to inflict Stun for 3 turns."
-        self.skill2_description = "Attack 1 closest enemy with 700% atk, 70% chance to inflict Stun for 3 turns."
-        self.skill3_description = "hp is increased by 100%."
+        self.skill1_description = "全ての敵に攻撃力の240%のダメージを与え、50%の確率で3ターンの間、スタンを与える。"
+        self.skill2_description = "最も近い敵1体に攻撃力の700%のダメージを与え、70%の確率で3ターンの間、スタンを与える。"
+        self.skill3_description = "HPが100%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
         self.monster_role = "Heavy Attack"
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def stun_effect(self, target):
@@ -162,16 +162,16 @@ class Golem(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Golem"
-        self.skill1_description = "Attack all enemies with 500% atk."
-        self.skill2_description = "Attack 1 closest enemy with 700% atk. Damage increased by target's hp percentage. Max bonus damage: 100%."
-        self.skill3_description = "Increase hp by 200%."
+        self.skill1_description = "全ての敵に攻撃力の500%のダメージを与える。"
+        self.skill2_description = "最も近い敵1体に攻撃力の700%のダメージを与える。ダメージは対象のHP割合によって増加する。最大ボーナスダメージ：100%。"
+        self.skill3_description = "HPを200%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
         self.monster_role = "Heavy Attack"
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=5.0, repeat=1, target_kw1="n_random_enemy", target_kw2="5")
@@ -203,15 +203,15 @@ class Mummy(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Mummy"
-        self.skill1_description = "Attack 3 closest enemies with 300% atk."
-        self.skill2_description = "Attack 5 enemies with 200% atk and 50% chance to inflict Curse for 6 turns. Curse: atk is reduced by 40%, unstackable."
-        self.skill3_description = "When taking damage, 30% chance to inflict Curse on attacker for 4 turns. Curse: atk is reduced by 40%, unstackable."
+        self.skill1_description = "最も近い3体の敵に攻撃力の300%のダメージを与える。"
+        self.skill2_description = "5体の敵に攻撃力の200%のダメージを与え、50%の確率で6ターンの間、呪いを付与する。呪い：攻撃力が40%減少し、重複不可。"
+        self.skill3_description = "ダメージを受けた時、30%の確率で攻撃者に4ターンの間、呪いを付与する。呪い：攻撃力が40%減少し、重複不可。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=3.0, repeat=1)
@@ -241,15 +241,15 @@ class Pharaoh(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Pharaoh"
-        self.skill1_description = "Attack 3 closest enemies with 320% atk. If target is cursed, damage is increased by 100%."
-        self.skill2_description = "Attack 3 closest enemies with 320% atk and 80% chance to inflict Curse for 8 turns. If target is cursed, damage is increased by 100%. Curse: atk is reduced by 40%, unstackable."
-        self.skill3_description = "hp, atk, def, spd is increased by 20%. When taking damage, 40% chance to inflict Curse on attacker for 3 turns. At the end of turn, if there is a cursed enemy, increase atk by 30% for 3 turns."
+        self.skill1_description = "最も近い3体の敵に攻撃力の320%で攻撃する。対象が呪い状態の場合、ダメージが100%増加する。"
+        self.skill2_description = "最も近い3体の敵に攻撃力の320%で攻撃し、80%の確率で8ターンの間呪いを付与する。対象が呪い状態の場合、ダメージが100%増加する。呪い：攻撃力が40%減少する、重複なし。"
+        self.skill3_description = "HP、攻撃力、防御力、速度が20%増加する。ダメージを受けたとき、40%の確率で攻撃者に3ターンの間呪いを付与する。ターンの終わりに、呪い状態の敵がいる場合、3ターンの間攻撃力を30%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def curse_amplify(self, target, final_damage):
@@ -294,15 +294,15 @@ class PoisonSlime(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Poison_Slime"
-        self.skill1_description = "Attack 5 enemies with 150% atk and 66% chance to inflict Poison for 6 turns. Poison: takes 7% of current hp status damage per turn."
-        self.skill2_description = "Attack 5 enemies with 150% atk and 66% chance to inflict Poison for 6 turns. Poison: takes 7% of lost hp status damage per turn."
-        self.skill3_description = "Reduce damage taken by 10%."
+        self.skill1_description = "5体の敵に攻撃力の150%のダメージを与え、66%の確率で6ターンの間、毒を付与する。毒：ターンごとに現在のHPの7%の状態ダメージを受ける。"
+        self.skill2_description = "5体の敵に攻撃力の150%のダメージを与え、66%の確率で6ターンの間、毒を付与する。毒：ターンごとに失ったHPの7%の状態ダメージを受ける。"
+        self.skill3_description = "受けるダメージを10%減少させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def poison_effect(self, target):
@@ -331,27 +331,27 @@ class MadScientist(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "MadScientist"
-        self.skill1_description = "Attack all enemies with 210% atk and inflict plague for 12 turns with 50% chance each. Plague: at end of turn, 30% chance to apply the same effect to a neighbor ally, every turn, take 7% of lost hp as status damage."
-        self.skill2_description = "Attack 3 closest enemies with 300% atk, if target is inflicted with plague, healing efficiency is reduced by 50% for 12 turns."
-        self.skill3_description = "Normal attack have 10% chance to inflict plague for 12 turns and deals 30% more damage."
+        self.skill1_description = "全ての敵に攻撃力の210%のダメージを与え、50%の確率で12ターンの間、疫病を感染させる。疫病：ターン終了時、30%の確率で隣接する味方に同じ効果を適用する。毎ターン、失われたHPの7%に相当する状態ダメージを受ける。"
+        self.skill2_description = "最も近い3体の敵に攻撃力の300%のダメージを与える。対象が疫病に感染している場合、12ターンの間、回復効率が50%減少する。"
+        self.skill3_description = "通常攻撃ダメージが30%増加、10%の確率で12ターンの間、疫病を付与する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def plague_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 50:
-                target.apply_effect(PlagueEffect('Plague', duration=12, is_buff=False, value=0.07, imposter=self, base="losthp", transmission_chance=0.3))
+                target.apply_effect(PlagueEffect('疫病', duration=12, is_buff=False, value=0.07, imposter=self, base="losthp", transmission_chance=0.3))
         damage_dealt = self.attack(target_kw1="n_random_enemy", target_kw2="5", multiplier=2.1, repeat=1, func_after_dmg=plague_effect)
         return damage_dealt
 
     def skill2_logic(self):
         def plague_effect(self, target):
-            if target.has_effect_that_named("Plague", None, "PlagueEffect"):
+            if target.has_effect_that_named("疫病", None, "PlagueEffect"):
                 target.apply_effect(StatsEffect('Healing Down', duration=12, is_buff=False, stats_dict={'heal_efficiency' : -0.5}))
         damage_dealt = self.attack(target_kw1="n_enemy_in_front", target_kw2="3", multiplier=3.0, repeat=1, func_after_dmg=plague_effect)
         return damage_dealt
@@ -363,7 +363,7 @@ class MadScientist(character.Character):
         def plague_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 10:
-                target.apply_effect(PlagueEffect('Plague', duration=12, is_buff=False, value=0.07, imposter=self, base="losthp", transmission_chance=0.3))
+                target.apply_effect(PlagueEffect('疫病', duration=12, is_buff=False, value=0.07, imposter=self, base="losthp", transmission_chance=0.3))
         def amplify(self, target, final_damage):
             final_damage *= 1.3
             return final_damage
@@ -374,23 +374,24 @@ class Ghost(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Ghost"
-        self.skill1_description = "Attack 5 enemies with 200% atk and apply Fear on targets for 7 turns. Apply chance is 100%, 80%, 60%, 30%, 0% for each enemy depending on how many allies the enemy has. The fewer allies the enemy has, the higher the chance."
-        self.skill2_description = "Attack closest enemy 4 times with 200% atk. For 8 turns, all allies takes 40% less damage."
-        self.skill3_description = "Normal attack will try target enemy with Fear first. damage increased by 100% if target has Fear. As long as you are alive, Fear effect gain the following effect: accuracy - 20%."
+        self.skill1_description = "5体の敵に対して攻撃力の200%で攻撃し、7ターンの間、恐怖を適用する。適用確率は敵の味方の数に応じて100%、80%、60%、30%、0%であり、敵の味方が少ないほど確率は高くなる。"
+        self.skill2_description = "最も近い敵に対して攻撃力の200%で4回攻撃する。8ターンの間、全味方は受けるダメージが40%減少する。"
+        self.skill3_description = "通常攻撃は恐怖のある敵を優先的に狙う。ターゲットが恐怖を持っている場合、ダメージが100%増加する。自分が生存している限り、敵の恐怖効果は次の効果を得る：命中率 - 20%。"
+
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
         self.fear_effect_dict = {"acc": -0.20}
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 30, 0], fillvalue=0))
         def fear_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= chance_dict[len(self.enemy)]:
-                target.apply_effect(FearEffect('Fear', duration=7, is_buff=False))
+                target.apply_effect(FearEffect('恐怖', duration=7, is_buff=False))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.0, repeat=1, func_after_dmg=fear_effect)
         return damage_dealt
 
@@ -406,7 +407,7 @@ class Ghost(character.Character):
 
     def normal_attack(self):
         def fear_amplify(self, target, final_damage):
-            if target.has_effect_that_named("Fear"):
+            if target.has_effect_that_named("恐怖"):
                 final_damage *= 2.0
             return final_damage
         self.attack(func_damage_step=fear_amplify, target_kw1="n_enemy_with_effect", target_kw2="1", target_kw3="Fear")
@@ -416,23 +417,23 @@ class Death(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Death"
-        self.skill1_description = "Attack 5 enemies with 360% atk and apply Fear on targets for 9 turns. Apply chance is 100%, 80%, 60%, 30%, 0% for each enemy depending on how many allies the enemy has. The fewer allies the enemy has, the higher the chance."
-        self.skill2_description = "Attack 3 enemies with lowest hp with 400% atk. If target hp is below 15%, execute target and recover for 20% hp of maxhp. If enemy survived the attack and has Fear, the enemy is confused for 5 turns."
-        self.skill3_description = "Normal attack have 15% chance to inflict Fear for 9 turns. maxhp, defense and atk is increased by 20%. As long as you are alive, Fear effect gain the following effect: atk - 40%, accuracy - 40%."
+        self.skill1_description = "攻撃力の360%で5体の敵を攻撃し、対象に9ターンの間、恐怖を適用する。適用確率は敵の味方の数に応じて100%、80%、60%、30%、0%となる。敵の味方が少ないほど、確率が高くなる。"
+        self.skill2_description = "最もHPが低い3体の敵を攻撃力の400%で攻撃する。対象のHPが15%以下の場合、対象を即死させ、最大HPの20%に相当するHPを回復する。敵が攻撃を生き延び、恐怖状態にある場合、敵は5ターンの間混乱状態になる。"
+        self.skill3_description = "通常攻撃が恐怖を9ターンの間付与するチャンスが15%あり、最大HP、防御力、攻撃力が20%増加する。自身が生存している限り、恐怖効果は次の効果を得る：攻撃力-40%、命中率-40%。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
         self.fear_effect_dict = {"acc": -0.40, "atk": 0.6}
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 30, 0], fillvalue=0))
         def fear_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= chance_dict[len(self.enemy)]:
-                target.apply_effect(FearEffect('Fear', duration=9, is_buff=False))
+                target.apply_effect(FearEffect('恐怖', duration=9, is_buff=False))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.6, repeat=1, func_after_dmg=fear_effect)
         return damage_dealt
 
@@ -444,8 +445,8 @@ class Death(character.Character):
                 if self.is_alive():
                     self.heal_hp(self.maxhp * 0.2, self)
             else:
-                if target.has_effect_that_named("Fear"):
-                    target.apply_effect(ConfuseEffect('Confuse', duration=5, is_buff=False))
+                if target.has_effect_that_named("恐怖"):
+                    target.apply_effect(ConfuseEffect('混乱', duration=5, is_buff=False))
         damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="3",target_kw3="hp",target_kw4="enemy", multiplier=4.0, repeat=1, func_after_dmg=execute)
         return damage_dealt
 
@@ -457,7 +458,7 @@ class Death(character.Character):
         def fear_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 15:
-                target.apply_effect(FearEffect('Fear', duration=9, is_buff=False))
+                target.apply_effect(FearEffect('恐怖', duration=9, is_buff=False))
         self.attack(func_after_dmg=fear_effect)
 
     def battle_entry_effects(self):
@@ -469,15 +470,15 @@ class Gargoyle(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Gargoyle"
-        self.skill1_description = "Attack closest enemy 3 times with 210% atk."
-        self.skill2_description = "Attack closest enemy 3 times with 210% atk."
-        self.skill3_description = "Reduce damage taken by 10%. When taking damage, 60% chance to inflict Bleed and Poison on attacker for 5 turns. Bleed: take 80% of applier atk as status damage each turn. Poison: takes 5% of current hp as status damage per turn."
+        self.skill1_description = "最も近い敵を攻撃力の210%で3回攻撃する。"
+        self.skill2_description = "最も近い敵を攻撃力の210%で3回攻撃する。"
+        self.skill3_description = "被ダメージを10%軽減する。ダメージを受けると、60%の確率で攻撃者に5ターンの間出血と毒の効果を付与する。出血：ターンごとに適用者の攻撃力の80%の状態ダメージを受ける。毒：ターンごとに現在HPの5%の状態ダメージを受ける。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.1, repeat=3, target_kw1="enemy_in_front")
@@ -495,36 +496,36 @@ class Gargoyle(character.Character):
 
     def take_damage_aftermath(self, damage, attacker):
         if random.randint(1, 100) <= 60:
-            attacker.apply_effect(PoisonDamageEffect('Poison', duration=5, is_buff=False, value=0.05, imposter=self, base="hp"))
+            attacker.apply_effect(PoisonDamageEffect('毒', duration=5, is_buff=False, value=0.05, imposter=self, base="hp"))
         if random.randint(1, 100) <= 60:
-            attacker.apply_effect(ContinuousDamageEffect('Bleed', duration=5, is_buff=False, value=0.8 * self.atk, imposter=self))
+            attacker.apply_effect(ContinuousDamageEffect('出血', duration=5, is_buff=False, value=0.8 * self.atk, imposter=self))
 
 
 class MachineGolem(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "MachineGolem"
-        self.skill1_description = "Install 2 timed bombs on all enemies. Bomb will explode after 8 turns, dealing 400% self atk as status damage."
-        self.skill2_description = "Attack all enemies with 275% atk, 75% chance to inflict Burn for 8 turns. Burn deals 25% of self atk as status damage each turn."
-        self.skill3_description = "Increase atk by 20%, maxhp by 20%."
+        self.skill1_description = "全ての敵に2つの時限爆弾を設置する。爆弾は8ターン後に爆発し、自身の攻撃力の400%に相当する状態ダメージを与える。"
+        self.skill2_description = "全ての敵に攻撃力の275%で攻撃し、75%の確率で8ターンの間燃焼を付与する。燃焼は毎ターン自身の攻撃力の25%の状態ダメージを与える。"
+        self.skill3_description = "攻撃力を20%、最大HPを20%増加させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         for e in self.enemy:
-            e.apply_effect(TimedBombEffect('Timed Bomb', duration=8, is_buff=False, damage=4.00 * self.atk, imposter=self, cc_immunity=False))
-            e.apply_effect(TimedBombEffect('Timed Bomb', duration=8, is_buff=False, damage=4.00 * self.atk, imposter=self, cc_immunity=False))
+            e.apply_effect(TimedBombEffect('時限爆弾', duration=8, is_buff=False, damage=4.00 * self.atk, imposter=self, cc_immunity=False))
+            e.apply_effect(TimedBombEffect('時限爆弾', duration=8, is_buff=False, damage=4.00 * self.atk, imposter=self, cc_immunity=False))
         return 0
     
     def skill2_logic(self):
         def burn_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 75:
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=8, is_buff=False, value=0.25 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=8, is_buff=False, value=0.25 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=2.75, repeat=1, func_after_dmg=burn_effect, target_kw1="n_random_enemy", target_kw2="5")
         return damage_dealt
         
@@ -540,31 +541,30 @@ class Dullahan(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Dullahan"
-        self.skill1_description = "Attack 3 closest enemies with 300% atk. Inflict Deep Wound on target for 8 turns. Deep Wound: take 200% of applier atk as status damage each turn, can be removed by healing." \
-        " If target hp is below 50%, inflict 2 Deep Wound instead."
-        self.skill2_description = "Attack 3 closest enemies with 300% atk, if target hp is below 50%, reduce their healing efficiency by 30% for 8 turns."
-        self.skill3_description = "Increase spd by 20%."
+        self.skill1_description = "最も近い3体の敵に攻撃力の300%で攻撃し、対象に重傷を8ターンの間付与する。重傷：ターンごとに適用者の攻撃力の200%の状態ダメージを受けるが、治療によって除去可能。対象のHPが50%以下の場合、重傷を2つ付与する。"
+        self.skill2_description = "最も近い3体の敵に攻撃力の300%で攻撃し、対象のHPが50%以下の場合、8ターンの間、その回復効率を30%減少させる。"
+        self.skill3_description = "スピードを20%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def wound(self, target):
             if target.hp < target.maxhp * 0.5:
-                target.apply_effect(ContinuousDamageEffect('Deep Wound', duration=8, is_buff=False, value=2.0 * self.atk, imposter=self, remove_by_heal=True))
-                target.apply_effect(ContinuousDamageEffect('Deep Wound', duration=8, is_buff=False, value=2.0 * self.atk, imposter=self, remove_by_heal=True))
+                target.apply_effect(ContinuousDamageEffect('重傷', duration=8, is_buff=False, value=2.0 * self.atk, imposter=self, remove_by_heal=True))
+                target.apply_effect(ContinuousDamageEffect('重傷', duration=8, is_buff=False, value=2.0 * self.atk, imposter=self, remove_by_heal=True))
             else:
-                target.apply_effect(ContinuousDamageEffect('Deep Wound', duration=8, is_buff=False, value=2.0 * self.atk, imposter=self, remove_by_heal=True))
+                target.apply_effect(ContinuousDamageEffect('重傷', duration=8, is_buff=False, value=2.0 * self.atk, imposter=self, remove_by_heal=True))
         damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=wound, target_kw1="n_enemy_in_front", target_kw2="3")
         return damage_dealt
     
     def skill2_logic(self):
         def wound(self, target):
             if target.hp < target.maxhp * 0.5:
-                target.apply_effect(StatsEffect('Healing Down', duration=8, is_buff=False, stats_dict={'heal_efficiency' : -0.3}))
+                target.apply_effect(StatsEffect('治癒効率減少', duration=8, is_buff=False, stats_dict={'heal_efficiency' : -0.3}))
         damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=wound, target_kw1="n_enemy_in_front", target_kw2="3")
         return damage_dealt
 
@@ -579,22 +579,21 @@ class Salamander(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Salamander"
-        self.skill1_description = "Attack enemies with 170% atk 8 times, each attack has a 66% chance to inflict Burn for 6 turns." \
-        " Burn deals 33% of self atk as status damage each turn."
-        self.skill2_description = "Attack all enemies with 170% atk, each attack has a 75% chance to inflict Burn for 6 turns."
-        self.skill3_description = "Recover hp by 3% of maxhp each turn."
+        self.skill1_description = "攻撃力の170%で敵に8回攻撃する。各攻撃には66%の確率で6ターンの間、燃焼を付与する。燃焼はターンごとに自身の攻撃力の33%に相当する状態ダメージを与える。"
+        self.skill2_description = "全ての敵に攻撃力の170%で攻撃し、各攻撃には75%の確率で6ターンの間、燃焼を付与する。"
+        self.skill3_description = "毎ターン、最大HPの3%に相当するHPを回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def burn_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 66:
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=6, is_buff=False, value=0.33 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=6, is_buff=False, value=0.33 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=1.7, repeat=8, func_after_dmg=burn_effect)
         return damage_dealt
 
@@ -602,7 +601,7 @@ class Salamander(character.Character):
         def burn_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 75:
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=6, is_buff=False, value=0.33 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=6, is_buff=False, value=0.33 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=1.7, repeat=1, func_after_dmg=burn_effect, target_kw1="n_random_enemy", target_kw2="5")
         return damage_dealt
 
@@ -626,22 +625,22 @@ class Ninja(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Ninja"
-        self.skill1_description = "Attack closest enemy 12 times with 150% atk."
-        self.skill2_description = "For 4 turns, increase evasion by 50%. Attack closest enemy 8 times with 150% atk."
-        self.skill3_description = "Normal attack have 30% chance to reduce all skill cooldown by 1 turn."
+        self.skill1_description = "最も近い敵に攻撃力の150%で12回攻撃する。"
+        self.skill2_description = "4ターンの間、回避率を50%増加させる。最も近い敵に攻撃力の150%で8回攻撃する。"
+        self.skill3_description = "通常攻撃は30%の確率で全スキルのクールダウンを1ターン短縮する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=1.5, repeat=12, target_kw1="enemy_in_front")
         return damage_dealt
 
     def skill2_logic(self):
-        self.apply_effect(StatsEffect('Evasion', 4, True, {'eva' : 0.5}))
+        self.apply_effect(StatsEffect('回避率増加', 4, True, {'eva' : 0.5}))
         damage_dealt = self.attack(multiplier=1.5, repeat=8, target_kw1="enemy_in_front")
         return damage_dealt
         
@@ -663,25 +662,25 @@ class KillerBee(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Killerbee"
-        self.skill1_description = "Attack closest enemy 4 times with 250% atk"
-        self.skill2_description = "Attack 5 enemies with 200% atk"
-        self.skill3_description = "Skill attack inflict Sting on target for 6 turns. Sting: every time target take damage, take 35% of applier atk as status damage. Does not trigger for status damage."
+        self.skill1_description = "最も近い敵に攻撃力の250%で4回攻撃する。"
+        self.skill2_description = "敵5体に攻撃力の200%で攻撃する。"
+        self.skill3_description = "スキル攻撃はターゲットに6ターンの間、スティングを付与する。スティング：ターゲットがダメージを受けるたびに、付与者の攻撃力の35%に相当する状態ダメージを受ける。状態ダメージによる発動はしない。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def sting_effect(self, target):
-            target.apply_effect(StingEffect('Sting', duration=6, is_buff=False, value=0.35 * self.atk, imposter=self))
+            target.apply_effect(StingEffect('スティング', duration=6, is_buff=False, value=0.35 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=3.0, repeat=4, func_after_dmg=sting_effect, target_kw1="enemy_in_front")
         return damage_dealt
 
     def skill2_logic(self):
         def sting_effect(self, target):
-            target.apply_effect(StingEffect('Sting', duration=6, is_buff=False, value=0.35 * self.atk, imposter=self))
+            target.apply_effect(StingEffect('スティング', duration=6, is_buff=False, value=0.35 * self.atk, imposter=self))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.0, repeat=1, func_after_dmg=sting_effect)
         return damage_dealt
         
@@ -693,21 +692,21 @@ class Samurai(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Samurai"
-        self.skill1_description = "Attack closest enemy 7 times with 200% atk."
-        self.skill2_description = "Attack enemy with lowest hp 3 times with 300% atk."
-        self.skill3_description = "Skill have 30% chance to inflict bleed on target for 6 turns. Bleed deals 30% of atk as damage per turn."
+        self.skill1_description = "攻撃力の200%で一番近い敵に7回攻撃する。"
+        self.skill2_description = "攻撃力の300%で最もHPが低い敵に3回攻撃する。"
+        self.skill3_description = "スキル攻撃は30%の確率で対象に6ターンの間出血を付与する。出血はターンごとに攻撃力の30%のダメージを与える。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def bleed_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 30:
-                target.apply_effect(ContinuousDamageEffect('Bleed', duration=6, is_buff=False, value=0.3 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('出血', duration=6, is_buff=False, value=0.3 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=2.0, repeat=7, func_after_dmg=bleed_effect, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -715,7 +714,7 @@ class Samurai(character.Character):
         def bleed_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 30:
-                target.apply_effect(ContinuousDamageEffect('Bleed', duration=6, is_buff=False, value=0.3 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('出血', duration=6, is_buff=False, value=0.3 * self.atk, imposter=self))
         damage_dealt = damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=3.0, repeat=3, func_after_dmg=bleed_effect)
         return damage_dealt
         
@@ -727,27 +726,26 @@ class BlackKnight(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "BlackKnight"
-        self.skill1_description = "Attack random enemies 12 times with 250% atk. At the end of all attack, if hp is below 40%," \
-        " Increase atk and crit rate by 40% for self and neighboring allies, effect last for 6 turns."
-        self.skill2_description = "For 4 turns, increase atk by 30%. Attack closest enemy 6 times with 220% atk."
-        self.skill3_description = "atk increased by 40% if hp is below 40%."
+        self.skill1_description = "攻撃力の250%でランダムな敵に12回攻撃する。全ての攻撃終了後、HPが40%以下の場合、自身と隣接する味方の攻撃力とクリティカル率を40%増加させる。効果は6ターン続く。"
+        self.skill2_description = "4ターンの間、攻撃力を30%増加する。最も近い敵に対して攻撃力の220%で6回攻撃する。"
+        self.skill3_description = "HPが40%以下の場合、攻撃力が40%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.5, repeat=12)
         if self.is_alive() and self.hp < self.maxhp * 0.4:
-            self.apply_effect(StatsEffect('Atk Up', 6, True, {'atk' : 1.4, 'crit' : 0.4}))
+            self.apply_effect(StatsEffect('攻撃力増加', 6, True, {'atk' : 1.4, 'crit' : 0.4}))
             for n in self.get_neighbor_allies_not_including_self():
-                n.apply_effect(StatsEffect('Atk Up', 6, True, {'atk' : 1.4, 'crit' : 0.4}))
+                n.apply_effect(StatsEffect('攻撃力増加', 6, True, {'atk' : 1.4, 'crit' : 0.4}))
         return damage_dealt
 
     def skill2_logic(self):
-        self.apply_effect(StatsEffect('Atk Up', 4, True, {'atk' : 1.3}))
+        self.apply_effect(StatsEffect('攻撃力増加', 4, True, {'atk' : 1.3}))
         damage_dealt = self.attack(multiplier=2.2, repeat=6, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -769,15 +767,15 @@ class MagicPot(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "MagicPot"
-        self.skill1_description = "Attack all enemies with 300% atk."
-        self.skill2_description = "Each enemy has a 50% chance to be put asleep."
-        self.skill3_description = "Evasion is increased by 50% for 10 turns."
+        self.skill1_description = "全ての敵に攻撃力の300%で攻撃する。"
+        self.skill2_description = "全ての敵に50%の確率で睡眠を付与する。"
+        self.skill3_description = "10ターンの間、回避率を50%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, target_kw1="n_random_enemy",target_kw2="5", repeat=1)
@@ -787,14 +785,14 @@ class MagicPot(character.Character):
         for t in self.enemy:
             dice = random.randint(1, 100)
             if dice <= 50:
-                t.apply_effect(SleepEffect('Sleep', duration=-1, is_buff=False))
+                t.apply_effect(SleepEffect('睡眠', duration=-1, is_buff=False))
         pass
         
     def skill3(self):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Smoke', 10, True, {'eva' : 0.5}))
+        self.apply_effect(StatsEffect('煙', 10, True, {'eva' : 0.5}))
 
 
 # Stun machine
@@ -802,21 +800,24 @@ class MultiLegTank(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "MultiLegTank"
-        self.skill1_description = "Attack all enemies with 130% atk and 80% chance to Stun for 4 turns."
-        self.skill2_description = "Attack 3 closest enemies with 190% atk and 80% chance to Stun for 4 turns."
-        self.skill3_description = "Normal attack target closest enemy with 270% atk and 80% chance to Stun for 4 turns."
+        # self.skill1_description = "Attack all enemies with 130% atk and 80% chance to Stun for 4 turns."
+        # self.skill2_description = "Attack 3 closest enemies with 190% atk and 80% chance to Stun for 4 turns."
+        # self.skill3_description = "Normal attack target closest enemy with 270% atk and 80% chance to Stun for 4 turns."
+        self.skill1_description = "全ての敵に攻撃力の130%で攻撃し、80%の確率で4ターンの間、スタンを付与する。"
+        self.skill2_description = "最も近い敵3体に攻撃力の190%で攻撃し、80%の確率で4ターンの間、スタンを付与する。"
+        self.skill3_description = "通常攻撃は最も近い敵にターゲットし、攻撃力の270%で攻撃し、80%の確率で4ターンの間、スタンを付与する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 80:
-                target.apply_effect(StunEffect('Stun', duration=4, is_buff=False))
+                target.apply_effect(StunEffect('スタン', duration=4, is_buff=False))
         damage_dealt = self.attack(multiplier=1.3, repeat=1, func_after_dmg=stun_effect, target_kw1="n_random_enemy",target_kw2="5")
         return damage_dealt
 
@@ -824,7 +825,7 @@ class MultiLegTank(character.Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 80:
-                target.apply_effect(StunEffect('Stun', duration=4, is_buff=False))
+                target.apply_effect(StunEffect('スタン', duration=4, is_buff=False))
         damage_dealt = self.attack(multiplier=1.9, repeat=1, func_after_dmg=stun_effect, target_kw1="n_enemy_in_front",target_kw2="3")
         return damage_dealt
         
@@ -835,7 +836,7 @@ class MultiLegTank(character.Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 80:
-                target.apply_effect(StunEffect('Stun', duration=4, is_buff=False))
+                target.apply_effect(StunEffect('スタン', duration=4, is_buff=False))
         self.attack(multiplier=2.7, func_after_dmg=stun_effect, target_kw1="enemy_in_front")
 
 
@@ -843,25 +844,24 @@ class Assassin(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Assassin"
-        self.skill1_description = "Increase atk and spd by 15% for 7 turns, recover hp by 200% atk."
-        self.skill2_description = "Attack closest enemy with 321% atk 8 times, target is confused for 6 turns if target has lower spd than you." \
-        " If target is confused, damage is increased by 100%."
-        self.skill3_description = "Normal attack target closest enemy and attack 2 times, 40% chance to inflict Bleed for 6 turns. Bleed deals 40% of atk as damage per turn."
+        self.skill1_description = "7ターンの間、攻撃力と速度を15%増加させ、攻撃力の200%に相当するHPを回復する。"
+        self.skill2_description = "最も近い敵に攻撃力の321%で8回攻撃し、対象が自分より速度が低い場合、6ターンの間混乱状態にする。対象が混乱状態の場合、ダメージが100%増加する。"
+        self.skill3_description = "通常攻撃で最も近い敵を対象に2回攻撃し、40%の確率で6ターンの間出血を付与する。出血はターンごとに攻撃力の40%のダメージを与える。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        self.apply_effect(StatsEffect('Fast', 7, True, {'atk' : 1.15, 'spd' : 1.15}))
+        self.apply_effect(StatsEffect('速い', 7, True, {'atk' : 1.15, 'spd' : 1.15}))
         self.heal_hp(2.0 * self.atk, self)
 
     def skill2_logic(self):
         def confuse_effect(self, target):
             if target.spd < self.spd:
-                target.apply_effect(ConfuseEffect('Confuse', duration=6, is_buff=False))
+                target.apply_effect(ConfuseEffect('混乱', duration=6, is_buff=False))
         def amplify(self, target, final_damage):
             if target.is_confused():
                 final_damage *= 2.0
@@ -884,22 +884,22 @@ class Shenlong(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Shenlong"
-        self.skill1_description = "All enemies are stunned for 4 turns. Attack all enemies 3 times with 220%/240%/260% atk each."
-        self.skill2_description = "Increase atk and accuracy for all allies by 30% for 6 turns." \
-        " Apply Trial of the Dragon on closest enemy for 12 turns if the same effect is not already on the target." \
-        " Trial of the Dragon: atk and crit rate increased by 30%. If this effect expires, target takes 1 status damage is stunned for 12 turns." \
-        " Trial of the Dragon cannot be removed by skill."
-        self.skill3_description = "Increase hp by 222%."
+        self.skill1_description = "全ての敵を4ターンの間、スタン状態にする。全ての敵に対して220%/240%/260%の攻撃力で3回攻撃する。"
+        self.skill2_description = "全ての味方の攻撃力と命中率を6ターンの間、30%増加させる。" \
+        "最も近い敵に対して、同じ効果が既に適用されていない場合、12ターンの間「龍の試練」を適用する。" \
+        "「龍の試練」: 攻撃力とクリティカル率が30%増加する。この効果が終了すると、対象は状態ダメージを1受け、12ターンの間スタンする。" \
+        "「龍の試練」はスキルによって解除されない。"
+        self.skill3_description = "HPを222%増加させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         for e in self.enemy:
-            e.apply_effect(StunEffect('Stun', duration=4, is_buff=False))
+            e.apply_effect(StunEffect('スタン', duration=4, is_buff=False))
         damage_dealt = self.attack(multiplier=2.2, repeat=1, target_kw1="n_random_enemy",target_kw2="5")
         damage_dealt += self.attack(multiplier=2.4, repeat=1, target_kw1="n_random_enemy",target_kw2="5")
         damage_dealt += self.attack(multiplier=2.6, repeat=1, target_kw1="n_random_enemy",target_kw2="5")
@@ -908,10 +908,10 @@ class Shenlong(character.Character):
 
     def skill2_logic(self):
         for a in self.ally:
-            a.apply_effect(StatsEffect('Atk Acc Up', 6, True, {'atk' : 1.3, 'acc' : 1.3}))
+            a.apply_effect(StatsEffect('攻撃命中増加', 6, True, {'atk' : 1.3, 'acc' : 1.3}))
         target = next(self.target_selection("enemy_in_front"))
-        if not target.has_effect_that_named("Trial of the Dragon"):
-            target.apply_effect(TrialofDragonEffect('Trial of the Dragon', duration=12, is_buff=False, stats_dict={'atk' : 1.3, 'crit' : 0.3},
+        if not target.has_effect_that_named("龍の試練"):
+            target.apply_effect(TrialofDragonEffect('龍の試練', duration=12, is_buff=False, stats_dict={'atk' : 1.3, 'crit' : 0.3},
                                                     damage=1, imposter=self, stun_duration=12))
 
     def skill3(self):
@@ -932,15 +932,15 @@ class Skeleton(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Skeleton"
-        self.skill1_description = "Attack enemy with highest hp with 300% atk 3 times."
-        self.skill2_description = "Attack enemy with highest hp with 900%, 80% chance to Stun for 3 turns."
-        self.skill3_description = "Normal attack has 5% chance to Stun for 2 turns."
+        self.skill1_description = "最大HPが最も高い敵に攻撃力の300%で3回攻撃する。"
+        self.skill2_description = "最大HPが最も高い敵に攻撃力の900%で攻撃し、80%の確率で3ターンの間、スタン状態にする。"
+        self.skill3_description = "通常攻撃は、スタンを引き起こす確率が5%で、そのスタンは2ターン持続する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
@@ -950,7 +950,7 @@ class Skeleton(character.Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 80:
-                target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
+                target.apply_effect(StunEffect('スタン', duration=3, is_buff=False))
         damage_dealt = self.attack(multiplier=9.0, repeat=1, func_after_dmg=stun_effect, target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
         return damage_dealt
         
@@ -961,7 +961,7 @@ class Skeleton(character.Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 5:
-                target.apply_effect(StunEffect('Stun', duration=2, is_buff=False))
+                target.apply_effect(StunEffect('スタン', duration=2, is_buff=False))
         self.attack(func_after_dmg=stun_effect)
 
 
@@ -969,27 +969,27 @@ class Ork(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Ork"
-        self.skill1_description = "Focus attack on enemy with lowest hp with 300% atk 2 times."
-        self.skill2_description = "Focus attack on enemy with lowest hp with 300% atk 2 times."
-        self.skill3_description = "Skill attack inflict both Burn and Bleed for 5 turns, deals 30% of atk as status damage per turn."
+        self.skill1_description = "最もHPが低い敵に集中攻撃し攻撃力の300%のダメージを2回与える。"
+        self.skill2_description = "最もHPが低い敵に集中攻撃し攻撃力の300%のダメージを2回与える。"
+        self.skill3_description = "スキル攻撃は燃焼と出血を同時に引き起こし、5ターンの間、攻撃力の30%に相当する状態ダメージを毎ターン与える。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def burn_effect(self, target):
-            target.apply_effect(ContinuousDamageEffect('Burn', duration=5, is_buff=False, value=0.3 * self.atk, imposter=self))
-            target.apply_effect(ContinuousDamageEffect('Bleed', duration=5, is_buff=False, value=0.3 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('燃焼', duration=5, is_buff=False, value=0.3 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('出血', duration=5, is_buff=False, value=0.3 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=3.0, repeat_seq=2, func_after_dmg=burn_effect, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
         return damage_dealt
 
     def skill2_logic(self):
         def burn_effect(self, target):
-            target.apply_effect(ContinuousDamageEffect('Burn', duration=5, is_buff=False, value=0.3 * self.atk, imposter=self))
-            target.apply_effect(ContinuousDamageEffect('Bleed', duration=5, is_buff=False, value=0.3 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('燃焼', duration=5, is_buff=False, value=0.3 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('出血', duration=5, is_buff=False, value=0.3 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=3.0, repeat_seq=2, func_after_dmg=burn_effect, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
         return damage_dealt
     
@@ -1001,15 +1001,15 @@ class Minotaur(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Minotaur"
-        self.skill1_description = "Focus attack enemy with lowest hp with 300% atk 2 times."
-        self.skill2_description = "Focus attack enemy with lowest hp with 200% atk 2 times. Damage increased by 10% of target lost hp."
-        self.skill3_description = "Skill damage increased by 50% if target has less than 50% hp."
+        self.skill1_description = "最もHPが低い敵に攻撃力の300%で2回集中攻撃する。"
+        self.skill2_description = "最もHPが低い敵に攻撃力の200%で2回集中攻撃する。ダメージは対象の失われたHPの10%分増加する。"
+        self.skill3_description = "対象のHPが50%未満の場合、スキルダメージが50%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def damage_increase(self, target, final_damage):
@@ -1036,30 +1036,30 @@ class BlackDragon(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "BlackDragon"
-        self.skill1_description = "Attack enemy with lowest hp with 340% atk 2 times and inflict Bleed for 5 turns. Bleed deals 50% of atk as status damage per turn."
-        self.skill2_description = "Attack all enemies with 220% atk, inflict Burn on all enemies with hp lower than 50% for 5 turns." \
-        "If target hp is lower than 25%, inflict an additional Burn for 10 turns."
-        "Burn deals 100% of atk as status damage per turn. This attack does not miss."
-        self.skill3_description = "Increase hp by 200%"
+        self.skill1_description = "最もHPが低い敵に対して攻撃力の340%で2回攻撃し、5ターンの間出血効果を付与する。出血効果はターンごとに攻撃力の50%の状態ダメージを与える。"
+        self.skill2_description = "全ての敵に攻撃力の220%で攻撃し、HPが50%未満の全ての敵に5ターンの間燃焼を付与する。" \
+        "対象のHPが25%未満の場合、追加で10ターンの燃焼を付与する。" \
+        "燃焼はターンごとに攻撃力の100%の状態ダメージを与える。この攻撃は必ず命中する。"
+        self.skill3_description = "HPを200%増加させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def bleed_effect(self, target):
-            target.apply_effect(ContinuousDamageEffect('Bleed', duration=5, is_buff=False, value=0.5 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('出血', duration=5, is_buff=False, value=0.5 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=3.4, repeat_seq=2, func_after_dmg=bleed_effect, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
         return damage_dealt
 
     def skill2_logic(self):
         def burn_effect(self, target):
             if target.hp < target.maxhp * 0.5:
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=5, is_buff=False, value=1.0 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=5, is_buff=False, value=1.0 * self.atk, imposter=self))
             if target.hp < target.maxhp * 0.25:
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=10, is_buff=False, value=1.0 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=10, is_buff=False, value=1.0 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=2.2, repeat=1, func_after_dmg=burn_effect, target_kw1="n_random_enemy", target_kw2="5", always_hit=True)
         return damage_dealt
 
@@ -1075,27 +1075,25 @@ class BakeNeko(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "BakeNeko"
-        self.skill1_description = "Increase maxhp by 30% for all allies for 8 turns and Heal all allies by 300% atk."
-        self.skill2_description = "Heal 1 ally with lowest hp by 200% atk." \
-        " Apply Supression on all allies for 6 turns. Supression: During damage calculation," \
-        " damage increased by the ratio of self hp to target hp if self has more hp than target. Max bonus damage: 1000%."
-        self.skill3_description = "Increase maxhp and def by 30%, evasion by 15%."
+        self.skill1_description = "8ターンの間、全ての味方の最大HPを30%増加させ、攻撃力の300%でHPを回復される。"
+        self.skill2_description = "最もHPが低い味方1人を攻撃力の200%で回復する。全ての味方に6ターンの間、抑制を適用する。抑制：ダメージ計算時、自分のHPが対象のHPより多い場合、HPの比率に応じてダメージが増加する。最大ボーナスダメージ：1000%。"
+        self.skill3_description = "最大HPと防御力を30%、回避率を15%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         for a in self.ally:
-            a.apply_effect(StatsEffect('Maxhp Up', 8, True, {'maxhp' : 1.3}))
+            a.apply_effect(StatsEffect('最大HP増加', 8, True, {'maxhp' : 1.3}))
         self.heal("n_random_ally", "5", value=3.0 * self.atk)
 
     def skill2_logic(self):
         self.heal("n_lowest_attr", "1", "hp", "ally", value=2.0 * self.atk)
         for a in self.ally:
-            a.apply_effect(BakeNekoSupressionEffect('Supression', 6, True))
+            a.apply_effect(BakeNekoSupressionEffect('抑制', 6, True))
     
     def skill3(self):
         pass
@@ -1115,16 +1113,16 @@ class Merman(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Merman"
-        self.skill1_description = "Target 1 enemy with the lowest spd, attack 3 times with 250% atk."
-        self.skill2_description = "Target 1 enemy, if it is the same enemy as in skill 1, attack 3 times with 250% atk and Stun the target for 4 turns. This skill has no effect otherwise."
-        self.skill3_description = "Normal attack attacks 2 times."
+        self.skill1_description = "最も速度が低い敵1体を対象に、攻撃力の250%で3回攻撃する。"
+        self.skill2_description = "最も速度が低い敵1体を対象に、それがスキル1で対象とした同じ敵である場合、攻撃力の250%で3回攻撃し、対象を4ターンの間、スタン状態にする。それ以外の場合、このスキルは効果がない。"
+        self.skill3_description = "通常攻撃が2回攻撃する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
         self.s1target = None
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         t = next(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="spd", keyword4="enemy"))
@@ -1141,7 +1139,7 @@ class Merman(character.Character):
             if t == self.s1target:
                 l = [t]
                 def stun_effect(self, target):
-                    target.apply_effect(StunEffect('Stun', duration=4, is_buff=False))
+                    target.apply_effect(StunEffect('スタン', duration=4, is_buff=False))
                 damage_dealt = self.attack(multiplier=2.5, repeat=3, target_list=l, func_after_dmg=stun_effect)
                 return damage_dealt
             else:
@@ -1158,28 +1156,28 @@ class Wyvern(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Wyvern"
-        self.skill1_description = "Attack 3 closest enemies 2 times and deal 265% atk. For 70% chance each attack, reduce target spd by 30% for 6 turns."
-        self.skill2_description = "Attack closest enemy with 200% atk, if target has lower spd than you, deal 120% more damage and reduce target spd by 30% for 6 turns."
-        self.skill3_description = "Increase spd by 20%. Nearby allies have their spd increased by 20% for 15 turns."
+        self.skill1_description = "最も近い3体の敵を2回攻撃し、攻撃力の265%のダメージを与える。各攻撃に70%の確率で、対象の速度を6ターンの間30%減少させる。"
+        self.skill2_description = "最も近い敵に攻撃力の200%で攻撃し、対象の速度が自分より低い場合、さらに120%のダメージを追加で与え、対象の速度を6ターンの間30%減少させる。"
+        self.skill3_description = "速度を20%増加する。隣の味方は15ターンの間、速度が20%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def slow_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 70:
-                target.apply_effect(StatsEffect('Slow', duration=6, is_buff=False, stats_dict={'spd' : 0.7}))
+                target.apply_effect(StatsEffect('スロー', duration=6, is_buff=False, stats_dict={'spd' : 0.7}))
         damage_dealt = self.attack(multiplier=2.65, repeat_seq=2, func_after_dmg=slow_effect, target_kw1="n_enemy_in_front", target_kw2="3")
         return damage_dealt
 
     def skill2_logic(self):
         def slow_effect(self, target):
             if target.spd < self.spd:
-                target.apply_effect(StatsEffect('Slow', duration=6, is_buff=False, stats_dict={'spd' : 0.7}))
+                target.apply_effect(StatsEffect('スロー', duration=6, is_buff=False, stats_dict={'spd' : 0.7}))
         def spd_penalty(self, target, final_damage):
             if target.spd < self.spd:
                 final_damage *= 2.2
@@ -1193,31 +1191,31 @@ class Wyvern(character.Character):
     def battle_entry_effects(self):
         self.apply_effect(StatsEffect('Wyvern Passive', -1, True, {'spd' : 1.2}, can_be_removed_by_skill=False))
         for neighbor in self.get_neighbor_allies_not_including_self():
-            neighbor.apply_effect(StatsEffect('Spd Up', 15, True, {'spd' : 1.2}))
+            neighbor.apply_effect(StatsEffect('速度増加', 15, True, {'spd' : 1.2}))
 
 
 class Agent(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Agent"
-        self.skill1_description = "Attack 1 enemy with lowest spd with 330% atk 3 times, each attack has 100% chance to inflict Bleed for 6 turns. Bleed deals 80% of atk as status damage per turn."
-        self.skill2_description = "Increase evasion and accuracy by 50% for 5 turns."
-        self.skill3_description = "Normal attack target enemy with lowest spd and deals 100% more damage."
+        self.skill1_description = "最も速度が低い敵1体に対して、攻撃力の330%で3回攻撃する。各攻撃は出血効果を6ターンの間付与する。出血効果はターンごとに攻撃力の80%の状態ダメージを与える。"
+        self.skill2_description = "5ターンの間、回避率と命中率を50%増加させる。"
+        self.skill3_description = "最も速度が低い敵を通常攻撃し、ダメージを100%増加させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def bleed_effect(self, target):
-            target.apply_effect(ContinuousDamageEffect('Bleed', duration=6, is_buff=False, value=0.8 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('出血', duration=6, is_buff=False, value=0.8 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=3.3, repeat=3, func_after_dmg=bleed_effect, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="spd", target_kw4="enemy")
         return damage_dealt
 
     def skill2_logic(self):
-        self.apply_effect(StatsEffect('Ready Up', 5, True, {'eva' : 0.5, 'acc' : 0.5}))
+        self.apply_effect(StatsEffect('準備完了', 5, True, {'eva' : 0.5, 'acc' : 0.5}))
         return 0
 
     def skill3(self):
@@ -1241,15 +1239,15 @@ class SoldierB(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "SoldierB"
-        self.skill1_description = "Attack random enemies 4 times with 300% atk."
-        self.skill2_description = "Attack random enemies 4 times with 270% atk, each attack will trigger the same attack if critical."
-        self.skill3_description = "Increase critical rate and critical damage by 30%."
+        self.skill1_description = "攻撃力の300%でランダムな敵を4回攻撃する。"
+        self.skill2_description = "攻撃力の270%でランダムな敵を4回攻撃し、各攻撃がクリティカルだった場合、同じ攻撃を追加攻撃として発動する。"
+        self.skill3_description = "クリティカル率とクリティカルダメージを30%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat=4)
@@ -1258,7 +1256,7 @@ class SoldierB(character.Character):
     def skill2_logic(self):
         def additional_attack(self, target, is_crit):
             if is_crit:
-                global_vars.turn_info_string += f"{self.name} triggered additional attack.\n"
+                global_vars.turn_info_string += f"{self.name}が追加攻撃を誘発しました。\n"
                 return self.attack(multiplier=2.7, repeat=1)
             else:
                 return 0
@@ -1277,28 +1275,28 @@ class Queen(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Queen"
-        self.skill1_description = "Attack random ememies with 260% atk 8 times, after each successful attack, increase critical damage by 20% for 3 turns."
-        self.skill2_description = "Attack 3 front enemies with 300% atk, decrease their critical defense by 30%, for 8 turns. After this skill, increase critical damage by 20% for 6 turns."
-        self.skill3_description = "Critical chance is increased by 60%. Speed is increased by 20%."
+        self.skill1_description = "ランダムな敵に攻撃力の260%で8回攻撃し、成功した攻撃の後にクリティカルダメージを3ターンの間20%増加する。"
+        self.skill2_description = "最も近い3体の敵に攻撃力の300%で攻撃し、クリティカル防御を8ターンの間30%低下させる。このスキルの後、クリティカルダメージを6ターンの間20%増加させる。"
+        self.skill3_description = "クリティカル確率が60%増加し、スピードが20%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def critdmg_increase(self, target):
-            self.apply_effect(StatsEffect('Control', 3, True, {'critdmg' : 0.20}))
+            self.apply_effect(StatsEffect('支配', 3, True, {'critdmg' : 0.20}))
         damage_dealt = self.attack(multiplier=2.6, repeat=8, func_after_dmg=critdmg_increase)
         return damage_dealt
 
     def skill2_logic(self):
         def critdef_decrease(self, target):
-            target.apply_effect(StatsEffect('Compliance', 8, True, {'critdef' : -0.3}))
+            target.apply_effect(StatsEffect('順守', 8, True, {'critdef' : -0.3}))
         damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=critdef_decrease, target_kw1="n_enemy_in_front", target_kw2="3")
         if self.is_alive():
-            self.apply_effect(StatsEffect('Control', 6, True, {'critdmg' : 0.20}))
+            self.apply_effect(StatsEffect('支配', 6, True, {'critdmg' : 0.20}))
         return damage_dealt
 
     def skill3(self):
@@ -1321,7 +1319,7 @@ class KungFuA(character.Character):
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def critdmg_increase(self, target):
@@ -1364,7 +1362,7 @@ class Paladin(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=8.0, repeat=1, target_kw1="enemy_in_front")
@@ -1395,7 +1393,7 @@ class Father(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         targets = self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally")
@@ -1428,7 +1426,7 @@ class Kobold(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         if len(self.ally) == 1:
@@ -1466,7 +1464,7 @@ class SoldierA(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def bleed_effect_defence_break(self, target):
@@ -1502,7 +1500,7 @@ class FutureSoldier(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def defence_break(self, target):
@@ -1543,7 +1541,7 @@ class FutureElite(character.Character):
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def defence_break(self, target):
@@ -1579,7 +1577,7 @@ class Mandrake(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         neighbors = self.get_neighbor_allies_not_including_self()
@@ -1624,7 +1622,7 @@ class Gryphon(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         self_and_neighbor = self.get_neighbor_allies_including_self() # list
@@ -1661,7 +1659,7 @@ class Hermit(character.Character):
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
@@ -1703,7 +1701,7 @@ class KungFuB(character.Character):
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('KungFu', 1, True, {'acc' : 0.25}))
@@ -1743,7 +1741,7 @@ class HauntedTree(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         targets = self.target_selection("n_enemy_in_front", "3")
@@ -1796,7 +1794,7 @@ class Mage(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def burn_effect(self, target):
@@ -1838,7 +1836,7 @@ class Orklord(character.Character):
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         target = next(self.target_selection(keyword="enemy_in_front"))
@@ -1896,7 +1894,7 @@ class Thief(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def buffed_target_amplify(self, target, final_damage):
@@ -1932,7 +1930,7 @@ class Goliath(character.Character):
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def buffed_target_amplify(self, target, is_crit):
@@ -1981,7 +1979,7 @@ class ReconMecha(character.Character):
         self.enemycounter = len(self.enemy)
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
@@ -2023,7 +2021,7 @@ class SecurityRobot(character.Character):
         self.enemycounter = len(self.enemy)
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         for e in self.enemy:
@@ -2066,7 +2064,7 @@ class Cockatorice(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.3, repeat=1, target_kw1="n_enemy_in_front", target_kw2=3)
@@ -2095,7 +2093,7 @@ class Fanatic(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         if self.get_num_of_turns_not_taken_damage() < 4:
@@ -2133,7 +2131,7 @@ class Emperor(character.Character):
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
@@ -2179,7 +2177,7 @@ class Tanuki(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         self.update_ally_and_enemy()
@@ -2212,7 +2210,7 @@ class Werewolf(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def atk_down(self, target):
@@ -2252,7 +2250,7 @@ class Kunoichi(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Acc Up', 4, True, {'acc' : 0.2}))
@@ -2289,7 +2287,7 @@ class ArabianSoldier(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Atk Up', 10, True, {'atk' : 1.20}))
@@ -2328,7 +2326,7 @@ class Mushroom(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.4, repeat_seq=2, target_kw1="n_enemy_in_front", target_kw2="3")
@@ -2359,7 +2357,7 @@ class Vampire(character.Character):
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat_seq=2, target_kw1="n_enemy_in_front", target_kw2="3")
@@ -2398,7 +2396,7 @@ class Lich(character.Character):
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=4.0, repeat=3, target_kw1="enemy_in_front")
@@ -2431,7 +2429,7 @@ class Cleric(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         targets = list(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="3"))
@@ -2470,7 +2468,7 @@ class Infantry(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def atk_down(self, target):
@@ -2510,7 +2508,7 @@ class Biobird(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def def_down(self, target):
@@ -2560,7 +2558,7 @@ class ArchAngel(character.Character):
         self.is_boss = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         self.update_ally_and_enemy()
@@ -2596,7 +2594,7 @@ class Unicorn(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def deep_wound(self, target):
@@ -2628,7 +2626,7 @@ class Zhenniao(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
@@ -2665,7 +2663,7 @@ class YataGarasu(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
@@ -2702,7 +2700,7 @@ class Anubis(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.7, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3")
@@ -2745,7 +2743,7 @@ class FootSoldier(character.Character):
         self.is_boss = False
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.5, repeat=3, target_kw1="enemy_in_front")
@@ -2789,7 +2787,7 @@ class Daji(character.Character):
         self.current_shield_bonus = 3
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def clear_others(self):
         self.current_atk_bonus = 1.11
