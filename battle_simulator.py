@@ -452,7 +452,7 @@ if __name__ == "__main__":
     deep_dark_blue = pygame.Color("#000022")
     light_yellow = pygame.Color("#FFFFE0")
 
-    display_surface = pygame.display.set_mode((1600, 900), flags=pygame.SCALED)
+    display_surface = pygame.display.set_mode((1600, 900), flags=pygame.RESIZABLE)
     ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
     debug_ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
 

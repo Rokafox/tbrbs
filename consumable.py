@@ -40,7 +40,7 @@ class Banana(Consumable):
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.15, self)
-        return f"{user.name} healed 15% of max hp by {self.name}."
+        return f"{user.name}は{self.name}によって最大HPの15%を回復した。"
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
@@ -64,7 +64,7 @@ class Kiwi(Consumable):
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.25, self)
-        return f"{user.name} healed 25% of max hp by {self.name}."
+        return f"{user.name}は{self.name}によって最大HPの25%を回復した。"
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
@@ -89,7 +89,7 @@ class Strawberry(Consumable):
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.05, self)
         user.apply_effect(ContinuousHealEffect("Strawberry", 6, True, (user.maxhp - user.hp) * 0.05, False))
-        return f"{user.name} healed 5% of max hp, and will heal 5% of lost hp for 4 turns by {self.name}."
+        return f"{user.name}は{self.name}によって最大HPの5%を回復し、4ターンの間、毎ターン最大HPの5%分の失われたHPを回復する。"
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
@@ -112,7 +112,7 @@ class Pancake(Consumable):
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.5, self)
-        return f"{user.name} healed 50% of max hp by {self.name}."
+        return f"{user.name}は{self.name}によって最大HPの50%を回復した。"
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
@@ -135,7 +135,7 @@ class Mantou(Consumable):
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.75, self)
-        return f"{user.name} healed 75% of max hp by {self.name}."
+        return f"{user.name}は{self.name}によって最大HPの75%を回復した。"
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
