@@ -1,6 +1,7 @@
 from itertools import cycle
 from block import *
 import random
+import global_vars
 
 
 def normal_distribution(min_value, max_value, mean, std):
@@ -384,8 +385,9 @@ class Equip(Block):
 
         if not self.eq_set == "Void":
             stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>" + "lv" + str(self.level) + " " + eq_set_str() + self.rarity + " " + self.type + "</b></font></shadow>\n"
+            stats = global_vars.translate_to_jp(stats)
         else:
-            stats = f"Void Force\n"
+            stats = f"ヴォイド・フォース\n"
         if self.stars_rating > 0:
             stats += "<font color=" + star_color + ">" + '★'*min(int(self.stars_rating), 5) + "</font>" 
         if self.stars_rating > 5:
@@ -408,47 +410,47 @@ class Equip(Block):
             return stat_name + ": " + str(stat_value) + "<font color=" + star_font_color() + ">" + f" (+{stat_extra})" + "</font>" + "\n"
 
         if self.maxhp_flat != 0:
-            stats += add_stat_with_color("Max HP", round(self.maxhp_flat, 3), self.maxhp_extra)
+            stats += add_stat_with_color("最大HP", round(self.maxhp_flat, 3), self.maxhp_extra)
         if self.atk_flat != 0:
-            stats += add_stat_with_color("Attack", round(self.atk_flat, 3), self.atk_extra)
+            stats += add_stat_with_color("攻撃力", round(self.atk_flat, 3), self.atk_extra)
         if self.def_flat != 0:
-            stats += add_stat_with_color("Defense", round(self.def_flat, 3), self.def_extra)
+            stats += add_stat_with_color("防御力", round(self.def_flat, 3), self.def_extra)
         if self.spd_flat != 0:
-            stats += add_stat_with_color("Speed", round(self.spd_flat, 3), self.spd_extra)
+            stats += add_stat_with_color("速度", round(self.spd_flat, 3), self.spd_extra)
         if self.maxhp_percent != 0:
-            stats += "Max HP: " + "{:.2f}%".format(self.maxhp_percent*100) + "\n"
+            stats += "最大HP：" + "{:.2f}%".format(self.maxhp_percent*100) + "\n"
         if self.atk_percent != 0:
-            stats += "Attack: " + "{:.2f}%".format(self.atk_percent*100) + "\n"
+            stats += "攻撃力：" + "{:.2f}%".format(self.atk_percent*100) + "\n"
         if self.def_percent != 0:
-            stats += "Defense: " + "{:.2f}%".format(self.def_percent*100) + "\n"
+            stats += "防御力：" + "{:.2f}%".format(self.def_percent*100) + "\n"
         if self.spd != 0:
-            stats += "Speed: " + "{:.2f}%".format(self.spd*100) + "\n"
+            stats += "速度：" + "{:.2f}%".format(self.spd*100) + "\n"
         if self.eva != 0:
-            stats += "Evasion: " + "{:.2f}%".format(self.eva*100) + "\n"
+            stats += "回避率：" + "{:.2f}%".format(self.eva*100) + "\n"
         if self.acc != 0:
-            stats += "Accuracy: " + "{:.2f}%".format(self.acc*100) + "\n"
+            stats += "命中率：" + "{:.2f}%".format(self.acc*100) + "\n"
         if self.crit != 0:
-            stats += "Critical Chance: " + "{:.2f}%".format(self.crit*100) + "\n"
+            stats += "クリティカル率：" + "{:.2f}%".format(self.crit*100) + "\n"
         if self.critdmg != 0:
-            stats += "Critical Damage: " + "{:.2f}%".format(self.critdmg*100) + "\n"
+            stats += "クリティカルダメージ：" + "{:.2f}%".format(self.critdmg*100) + "\n"
         if self.critdef != 0:
-            stats += "Critical Defense: " + "{:.2f}%".format(self.critdef*100) + "\n"
+            stats += "クリティカル防御力：" + "{:.2f}%".format(self.critdef*100) + "\n"
         if self.penetration != 0:
-            stats += "Penetration: " + "{:.2f}%".format(self.penetration*100) + "\n"
+            stats += "貫通率：" + "{:.2f}%".format(self.penetration*100) + "\n"
         if self.heal_efficiency != 0:
-            stats += "Heal Efficiency: " + "{:.2f}%".format(self.heal_efficiency*100) + "</font>\n"
+            stats += "回復効率：" + "{:.2f}%".format(self.heal_efficiency*100) + "</font>\n"
         if self.eq_set == "Void":
             return stats
         if self.stars_rating < self.stars_rating_max:
-            stats += f"<font color=#AF6E4D>Stars enhancement cost: {self.star_enhence_cost} </font>\n"
+            stats += f"<font color=#AF6E4D>スターランク強化費用：{self.star_enhence_cost} </font>\n"
         else:
-            stats += f"<font color=#AF6E4D>Stars enhancement cost: MAX </font>\n"
+            stats += f"<font color=#AF6E4D>スターランク強化費用：MAX </font>\n"
         if self.level < self.level_max:
-            stats += f"<font color=#702963>Level up cost: {self.level_cost} </font>\n"
+            stats += f"<font color=#702963>レベルアップ費用：{self.level_cost} </font>\n"
         else:
-            stats += f"<font color=#702963>Level up cost: MAX </font>\n"
+            stats += f"<font color=#702963>レベルアップ費用：MAX </font>\n"
         if include_market_price:
-            stats += "<font color=" + market_color + ">" + f"Market Price: {int(self.market_value)}" + "</font>\n"
+            stats += "<font color=" + market_color + ">" + f"市場価格：{int(self.market_value)}" + "</font>\n"
         stats += "</font>"
 
         return stats

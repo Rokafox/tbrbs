@@ -845,7 +845,7 @@ class CancellationShield3(Effect):
                 character.remove_effect(self)
             elif self.uses < 0:
                 raise Exception("Logic Error")
-            global_vars.turn_info_string += f"{character.name} shielded the attack!\n"
+            global_vars.turn_info_string += f"{character.name}が攻撃を防いだ！\n"
             return 0
         else:
             return damage
@@ -1074,7 +1074,7 @@ class EquipmentSetEffect_KangTao(Effect):
             return 0
         
     def tooltip_description(self):
-        return f"{self.shield_value}ダメージを吸収するシールド。"
+        return f"シールド：{self.shield_value}ダメージを吸収する。"
     
 
 #---------------------------------------------------------
@@ -1221,7 +1221,7 @@ class EquipmentSetEffect_Snowflake(Effect):
             self.collected_pieces = 0
 
     def tooltip_description(self):
-        return f"集めたかけら: {self.collected_pieces}, 発動回数: {self.activation_count}。6つ集めると効果が発動する。"
+        return f"集めた雪華の欠片：{self.collected_pieces}, 発動回数: {self.activation_count}。6つ集めると効果が発動する。"
 
 
 # ---------------------------------------------------------

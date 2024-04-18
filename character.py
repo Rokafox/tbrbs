@@ -176,7 +176,7 @@ class Character:
         damage_dealt = self.skill1_logic()
         self.update_skill_cooldown(1)
         if self.get_equipment_set() == "OldRusty" and random.random() < 0.65:
-            global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Old Rusty set effect.\n"
+            global_vars.turn_info_string += f"古錆の装備セット効果により、{self.name}のスキルのクールダウンがリセットされた。\n"
             self.skill1_cooldown = 0
         return None # for now
 
@@ -419,7 +419,7 @@ class Character:
                     if self.get_equipment_set() == "Dawn":
                         if self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active:
                             final_damage *= 2.20
-                            global_vars.turn_info_string += f"Damage increased by 120% due to Dawn Set effect.\n"
+                            global_vars.turn_info_string += f"夜明装備セットの効果によりダメージが120%増加した。\n"
                             self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active = False
                     if final_damage < 0:
                         final_damage = 0
@@ -1080,89 +1080,89 @@ class Character:
         if set_name == "None" or set_name == "Void":
             return
         elif set_name == "Arasaka": 
-            self.apply_effect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False))
+            self.apply_effect(EquipmentSetEffect_Arasaka(global_vars.translate_to_jp("Arasaka Set"), -1, True, False))
         elif set_name == "KangTao":
-            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, self.atk * 6, False))
+            self.apply_effect(EquipmentSetEffect_KangTao(global_vars.translate_to_jp("KangTao Set"), -1, True, self.atk * 6, False))
         elif set_name == "Militech":
             def condition_func(self):
                 return self.hp <= self.maxhp * 0.30
-            self.apply_effect(EquipmentSetEffect_Militech("Militech Set", -1, True, {"spd": 2.2}, condition_func))
+            self.apply_effect(EquipmentSetEffect_Militech(global_vars.translate_to_jp("Militech Set"), -1, True, {"spd": 2.2}, condition_func))
         elif set_name == "NUSA":
             def stats_dict_function() -> dict:
                 allies_alive = len(self.ally)
                 return {"atk": 0.06 * allies_alive + 1 , "defense": 0.06 * allies_alive + 1, "maxhp": 0.06 * allies_alive + 1}
-            self.apply_effect(EquipmentSetEffect_NUSA("NUSA Set", -1, True, {"atk": 1.30, "defense": 1.30, "maxhp": 1.30}, stats_dict_function))
+            self.apply_effect(EquipmentSetEffect_NUSA(global_vars.translate_to_jp("NUSA Set"), -1, True, {"atk": 1.30, "defense": 1.30, "maxhp": 1.30}, stats_dict_function))
         elif set_name == "Sovereign":
-            self.apply_effect(EquipmentSetEffect_Sovereign("Sovereign Set", -1, True, {"atk": 1.20}))
+            self.apply_effect(EquipmentSetEffect_Sovereign(global_vars.translate_to_jp("Sovereign Set"), -1, True, {"atk": 1.20}))
         elif set_name == "Snowflake":
-            self.apply_effect(EquipmentSetEffect_Snowflake("Snowflake Set", -1, True))
+            self.apply_effect(EquipmentSetEffect_Snowflake(global_vars.translate_to_jp("Snowflake Set"), -1, True))
         elif set_name == "Flute":
-            self.apply_effect(EquipmentSetEffect_Flute("Flute Set", -1, True))
+            self.apply_effect(EquipmentSetEffect_Flute(global_vars.translate_to_jp("Flute Set"), -1, True))
         elif set_name == "Rainbow":
-            self.apply_effect(EquipmentSetEffect_Rainbow("Rainbow Set", -1, True))
+            self.apply_effect(EquipmentSetEffect_Rainbow(global_vars.translate_to_jp("Rainbow Set"), -1, True))
         elif set_name == "Dawn":
-            self.apply_effect(EquipmentSetEffect_Dawn("Dawn Set", -1, True, {"atk": 1.24, "crit": 0.12}))
+            self.apply_effect(EquipmentSetEffect_Dawn(global_vars.translate_to_jp("Dawn Set"), -1, True, {"atk": 1.24, "crit": 0.12}))
         elif set_name == "Bamboo":
-            self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.66, "defense": 1.66, "spd": 1.66, "crit": 0.33, "critdmg": 0.33}))
+            self.apply_effect(EquipmentSetEffect_Bamboo(global_vars.translate_to_jp("Bamboo Set"), -1, True, {"atk": 1.66, "defense": 1.66, "spd": 1.66, "crit": 0.33, "critdmg": 0.33}))
         elif set_name == "Rose":
-            self.apply_effect(EquipmentSetEffect_Rose("Rose Set", -1, True, he_bonus_before_heal=0.88))
+            self.apply_effect(EquipmentSetEffect_Rose(global_vars.translate_to_jp("Rose Set"), -1, True, he_bonus_before_heal=0.88))
             belove_girl_self_effect = StatsEffect("Beloved Girl", -1, True, {"heal_efficiency": 0.22, "defense": 1.11})
             belove_girl_self_effect.is_set_effect = True
             self.apply_effect(belove_girl_self_effect)
         elif set_name == "OldRusty":
-            self.apply_effect(EquipmentSetEffect_OldRusty("OldRusty Set", -1, True))
+            self.apply_effect(EquipmentSetEffect_OldRusty(global_vars.translate_to_jp("OldRusty Set"), -1, True))
         elif set_name == "Liquidation":
-            self.apply_effect(EquipmentSetEffect_Liquidation("Liquidation Set", -1, True, 0.20))
+            self.apply_effect(EquipmentSetEffect_Liquidation(global_vars.translate_to_jp("Liquidation Set"), -1, True, 0.20))
         else:
             raise Exception("Effect not implemented.")
         
     def equipment_set_effects_tooltip(self):
         set_name = self.get_equipment_set()
-        str = "Equipment Set Effects:\n"
+        str = "設備セット効果：\n"
         if set_name == "None" or set_name == "Void":
             str += "装備セットの効果は発動していない。同じセットアイテムを4つ装備すると効果を受ける。\n"
             return ""
         elif set_name == "Arasaka":
-            str += "Arasaka\n" \
+            str += global_vars.translate_to_jp("Arasaka") + "\n" \
                 "戦闘1回につき、致命的なダメージを受けた時、HPが1のまま残り、発動すると3ターンの間ダメージ免疫効果が得る。\n"
         elif set_name == "KangTao":
-            str += "Kang Tao\n" \
+            str += global_vars.translate_to_jp("KangTao") + "\n" \
                 "戦闘開始時、自身に攻撃力の600%のダメージ吸収シールドを張る。\n"
         elif set_name == "Militech":
-            str += "Militech\n" \
+            str += global_vars.translate_to_jp("Militech") + "\n" \
                 "HPが30%以下になると速度が120%増加する。\n"
         elif set_name == "NUSA":
-            str += "NUSA\n" \
+            str += global_vars.translate_to_jp("NUSA") + "\n" \
                 "自分を含む生存している味方が1体につき、攻撃力を6%、防御力を6%、最大HPを6%増加する。\n"
         elif set_name == "Sovereign":
-            str += "Sovereign\n" \
+            str += global_vars.translate_to_jp("Sovereign") + "\n" \
                 "ダメージを受けると主権の効果が適用され、4ターンの間Atkが20%増加する。最大5つのアクティブ効果同時に存在できる。\n"
         elif set_name == "Snowflake":
-            str += "Snowflake\n" \
-                "行動終了時に雪花の欠片を1つ獲得する。6つが蓄積されると、HPを25%回復し、次の効果を6ターン得る：攻撃力、防御力、最大HP、速度が25%増加する。この効果の発動ごとにステータスボーナスと回復量が25%増加する。"
+            str += global_vars.translate_to_jp("Snowflake") + "\n" \
+                "行動終了時に雪華の欠片を1つ獲得する。6つが蓄積されると、HPを25%回復し、次の効果を6ターン得る：攻撃力、防御力、最大HP、速度が25%増加する。この効果の発動ごとにステータスボーナスと回復量が25%増加する。"
         elif set_name == "Flute":
-            str += "Flute\n" \
+            str += global_vars.translate_to_jp("Flute") + "\n" \
                 "1回の行動で、敵に4回攻撃が成功すると、全ての敵が自身の攻撃力の130%の状態ダメージを受ける。\n"
         elif set_name == "Rainbow":
-            str += "Rainbow\n" \
+            str += global_vars.translate_to_jp("Rainbow") + "\n" \
                 "攻撃中、ターゲットとの距離に応じてダメージが60%/30%/0%/-30%/-60%増加する。\n"
         elif set_name == "Dawn":
-            str += "Dawn\n" \
+            str += global_vars.translate_to_jp("Dawn") + "\n" \
                 "HPが満タンの時、攻撃力が24%増加し、クリティカル率が12%増加する。1回限り、通常攻撃またはスキル攻撃ダメージを与える際、ダメージが120%増加する。" 
         elif set_name == "Bamboo":
-            str += "Bamboo\n" \
+            str += global_vars.translate_to_jp("Bamboo") + "\n" \
                 "通常攻撃またはスキル攻撃で敵を倒した後、5ターンの間、毎ターン最大HPの16%を回復し、攻撃力、防御力、速度を66%増加、クリティカル率とクリティカルダメージを33%増加する。バフ効果が発動中の場合は発動しない。"
         elif set_name == "Rose":
-            str += "Rose\n" \
+            str += global_vars.translate_to_jp("Rose") + "\n" \
                 "回復効率が22%増加し、防御力が11%増加する。治療前に対象の回復効率を2ターンの間88%増加する。HP持続回復させる時は発動しない。"
         elif set_name == "OldRusty":
-            str += "Old Rusty\n" \
+            str += global_vars.translate_to_jp("OldRusty") + "\n" \
                 "スキル1使用後、そのスキルのクールダウンをリセットする確率が65%になる。\n"
         elif set_name == "Liquidation":
-            str += "Liquidation\n" \
+            str += global_vars.translate_to_jp("Liquidation") + "\n" \
                 "ダメージを受ける際、以下のステータスが攻撃者より低い場合、ステータス一つにつきにダメージが20%軽減する：HP、攻撃力、防御力、速度。\n"
         else:
-            str += "セット効果は不明。"
+            str += "セット効果不明。"
 
         str += "=" * 20 + "\n"
         for effect in self.buffs:
@@ -1577,7 +1577,7 @@ class Pepper(Character):    # Support
         return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1(self):
-        global_vars.turn_info_string += f"{self.name} cast skill 1.\n"
+        global_vars.turn_info_string += f"{self.name}がスキル1をキャストした。\n"
         if self.skill1_cooldown > 0:
             raise Exception
         dice = random.randint(1, 100)
@@ -1593,14 +1593,14 @@ class Pepper(Character):    # Support
             global_vars.turn_info_string += f"{self.name}が事故で自分にダメージを与えた。\n"
             self.skill1_cooldown = 0
         if self.get_equipment_set() == "OldRusty" and random.random() < 0.65:
-            global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Old Rusty set effect.\n"
+            global_vars.turn_info_string += f"古錆の装備セット効果により、{self.name}のスキルのクールダウンがリセットされた。\n"
             self.skill1_cooldown = 0
         return damage_dealt
 
     def skill2(self):
         if self.skill2_cooldown > 0:
             raise Exception
-        global_vars.turn_info_string += f"{self.name} cast skill 2.\n"
+        global_vars.turn_info_string += f"{self.name}がスキル2をキャストした。\n"
         target = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
         pondice = random.randint(1, 100)
         if pondice <= 70:
@@ -2029,7 +2029,7 @@ class Ophelia(Character):   # Damage dealer, non close targets, healer
             self.apply_effect(Effect("運のカード", -1, True, False, can_be_removed_by_skill=False))
             global_vars.turn_info_string += f"{self.name}が運のカードを獲得しました。\n"
         if self.get_equipment_set() == "OldRusty" and random.random() < 0.65:
-            global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Old Rusty set effect.\n"
+            global_vars.turn_info_string += f"古錆の装備セット効果により、{self.name}のスキルのクールダウンがリセットされた。\n"
             self.skill1_cooldown = 0
         return damage_dealt
 

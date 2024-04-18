@@ -1010,7 +1010,7 @@ if __name__ == "__main__":
                             item_types_seen.append(item.type)
 
                     for equip in selected_items:
-                        text_box_text_to_append += f"{str(equip)}が{character.name}に装備した.\n"
+                        text_box_text_to_append += f"{str(equip)}が{character.name}に装備した。\n"
                     old_items = character.equip_item_from_list(selected_items)
                     # remove all None in old_items, this happens when trying to equip to an empty slot, so None is returned
                     old_items = [x for x in old_items if x]
