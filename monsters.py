@@ -88,7 +88,7 @@ class MoHawk(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "MoHawk"
-        self.skill1_description = "最も近い敵1体に攻撃し、攻撃力の680%を与え、4ターンの出血効果を与える。出血効果: 毎ターン、発動者の攻撃力の120%を状態ダメージとして受ける。"
+        self.skill1_description = "最も近い敵1体に攻撃し、攻撃力の680%を与え、4ターンの出血効果を与える。出血効果:毎ターン、発動者の攻撃力の120%を状態ダメージとして受ける。"
         self.skill2_description = "最も近い敵1体に攻撃し、攻撃力の680%を与え、4ターンの出血効果を与える。"
         self.skill3_description = "攻撃力を20%増加する。"
         self.skill1_cooldown_max = 5
@@ -492,7 +492,7 @@ class Gargoyle(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Gargoyle Passive', -1, True, {'final_damage_taken_multipler' : -0.1}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'final_damage_taken_multipler' : -0.1}, can_be_removed_by_skill=False))
 
     def take_damage_aftermath(self, damage, attacker):
         if random.randint(1, 100) <= 60:
@@ -1189,7 +1189,7 @@ class Wyvern(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Wyvern Passive', -1, True, {'spd' : 1.2}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'spd' : 1.2}, can_be_removed_by_skill=False))
         for neighbor in self.get_neighbor_allies_not_including_self():
             neighbor.apply_effect(StatsEffect('速度増加', 15, True, {'spd' : 1.2}))
 
@@ -1303,7 +1303,7 @@ class Queen(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Queen Passive', -1, True, {'crit' : 0.6, 'spd' : 1.2}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'crit' : 0.6, 'spd' : 1.2}, can_be_removed_by_skill=False))
 
 
 class KungFuA(character.Character):
@@ -1680,7 +1680,7 @@ class Hermit(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Hermit Passive', -1, True, {'eva' : 0.5, 'final_damage_taken_multipler' : -0.15}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'eva' : 0.5, 'final_damage_taken_multipler' : -0.15}, can_be_removed_by_skill=False))
 
 
 class KungFuB(character.Character):

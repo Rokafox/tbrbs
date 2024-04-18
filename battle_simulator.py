@@ -744,7 +744,7 @@ if __name__ == "__main__":
                                         text='Next Turn',
                                         manager=ui_manager,
                                         tool_tip_text = "Simulate the next turn")
-    next_turn_button_tooltip_str = "次のターン。冒険モードでバトルが勝利した場合に経験値とCASHを獲得できる。"
+    next_turn_button_tooltip_str = "次のターン。冒険モードでバトルが勝利した場合に経験値と現金を獲得できる。"
     next_turn_button_tooltip_str += "ステージレベルが平均パーティのレベルよりも高い場合、報酬が増える。"
     next_turn_button.set_tooltip(next_turn_button_tooltip_str, delay=0.1, wrap_width=300)
 
@@ -891,12 +891,12 @@ if __name__ == "__main__":
         global adventure_mode_current_stage
         str = f"現在のステージ: {adventure_mode_current_stage}\n"
         if adventure_mode_current_stage > sum([x.lvl for x in party1]) / 5:
-            str += f"敵のレベルが平均パーティのレベルよりも高いため、報酬が{(adventure_mode_current_stage / (sum([x.lvl for x in party1]) / 5) - 1) * 100:2f}%増加します\n"
+            str += f"敵のレベルが平均パーティのレベルよりも高いため、報酬が{(adventure_mode_current_stage / (sum([x.lvl for x in party1]) / 5) - 1) * 100:.2f}%増加します\n"
         if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # ボスステージ
             str += "ボスステージです。報酬が50%増加します。\n"
         str += f"経験値報酬: {adventure_mode_exp_reward()}\n"
         a, b = adventure_mode_cash_reward()
-        str += f"Cash報酬: 約{b}\n"
+        str += f"現金報酬: 約{b}\n"
         return str
 
     # =====================================
@@ -963,13 +963,13 @@ if __name__ == "__main__":
                                         text='Buy Sliver Ingot',
                                         manager=ui_manager,
                                         tool_tip_text = "Exchange Sliver Ingot")
-    sliver_ingot_exchange_button.set_tooltip("スライバー・インゴットをCASHで買う、価格：111000", delay=0.1, wrap_width=300)
+    sliver_ingot_exchange_button.set_tooltip("スライバー・インゴットを現金で買う、価格：111000", delay=0.1, wrap_width=300)
     sliver_ingot_exchange_button.hide()
     gold_ingot_exchange_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (156, 35)),
                                         text='Buy Gold Ingot',
                                         manager=ui_manager,
                                         tool_tip_text = "Exchange Gold Ingot")
-    gold_ingot_exchange_button.set_tooltip("CASHで金のインゴットを買う, 価格: 9820000", delay=0.1, wrap_width=300)
+    gold_ingot_exchange_button.set_tooltip("現金で金のインゴットを買う, 価格: 9820000", delay=0.1, wrap_width=300)
     gold_ingot_exchange_button.hide()
 
 
@@ -994,7 +994,7 @@ if __name__ == "__main__":
             return
         if cheap_inventory_show_current_option == "Equip":
             if not is_in_manipulatable_game_states():
-                text_box_text_to_append += "Cannot equip items when not in first turn or after the battle is concluded.\n"
+                text_box_text_to_append += "最初のターンでないときや戦闘終了後はアイテムを装備できない。\n"
                 text_box.append_html_text(text_box_text_to_append)
                 return
             for character in all_characters:
@@ -1003,26 +1003,26 @@ if __name__ == "__main__":
                     item_types_seen = []
                     for item in selected_items:
                         if item.type in item_types_seen:
-                            text_box_text_to_append += f"Cannot equip multiple items of the same type at once.\n"
+                            text_box_text_to_append += f"同じ種類のアイテムを一度に複数装備することはできない。\n"
                             text_box.append_html_text(text_box_text_to_append)
                             return
                         else:
                             item_types_seen.append(item.type)
 
                     for equip in selected_items:
-                        text_box_text_to_append += f"Equipped {str(equip)} for {character.name}.\n"
+                        text_box_text_to_append += f"{str(equip)}が{character.name}に装備した.\n"
                     old_items = character.equip_item_from_list(selected_items)
                     # remove all None in old_items, this happens when trying to equip to an empty slot, so None is returned
                     old_items = [x for x in old_items if x]
                     if old_items:
                         for items in old_items:
-                            text_box_text_to_append += f"{str(items)} is added to inventory.\n"
+                            text_box_text_to_append += f"{str(items)}が在庫に追加された。\n"
                         player.remove_selected_item_from_inventory(False) # False because handled next line
                         player.add_package_of_items_to_inventory(old_items)
                     else:
                         player.remove_selected_item_from_inventory(True)
                 elif character.name == character_selection_menu.selected_option.split()[-1] and not character.is_alive():
-                    text_box_text_to_append += f"Can only equip items to alive characters.\n"
+                    text_box_text_to_append += f"アイテムは生きているキャラクターにしか装備できない。\n"
                     text_box.append_html_text(text_box_text_to_append)
                     return
         elif cheap_inventory_show_current_option == "Consumable":
@@ -1030,7 +1030,7 @@ if __name__ == "__main__":
                 if character.name == character_selection_menu.selected_option.split()[-1]:
                     for consumable in selected_items:
                         if not consumable.can_use_on_dead and not character.is_alive():
-                            text_box_text_to_append += f"Cannot use {str(consumable)} on dead characters.\n"
+                            text_box_text_to_append += f"死んだキャラクターに{str(consumable)}は使えない。\n"
                             text_box.append_html_text(text_box_text_to_append)
                             return
                         event_str = consumable.E(character, player)
@@ -1063,7 +1063,7 @@ if __name__ == "__main__":
         for character in characters_in_need:
             all_consumables = [x for x in player.inventory if isinstance(x, Consumable) and x.can_use_for_auto_battle]
             if not all_consumables:
-                global_vars.turn_info_string += f"Random use failed: No consumable in inventory.\n"
+                global_vars.turn_info_string += f"ランダム使用失敗：インベントリに消耗品が不足している。\n"
                 return
             for consumable in all_consumables:
                 if consumable.auto_E_condition(character, player):
@@ -1071,7 +1071,7 @@ if __name__ == "__main__":
                     global_vars.turn_info_string += event_str + "\n"
                     player.remove_from_inventory(type(consumable), 1, True)
                     return
-        global_vars.turn_info_string += f"Random use failed: No consumable suitable for any character.\n"
+        global_vars.turn_info_string += f"ランダム使用失敗： どのキャラクターにも適した消耗品がない。\n"
 
 
     def item_sell_selected():
@@ -1090,7 +1090,7 @@ if __name__ == "__main__":
         for item_to_sell in selected_items:
             eq_market_value = int(item_to_sell.market_value)
             player.add_cash(eq_market_value, False)
-            text_box.append_html_text(f"在庫の{item_to_sell.name}が売り、{eq_market_value}Cashが入手した。\n")
+            text_box.append_html_text(f"在庫の{item_to_sell.name}が売り、{eq_market_value}現金が入手した。\n")
             player.remove_from_inventory(type(item_to_sell), 1, False)
         player.build_inventory_slots()
 
@@ -1120,10 +1120,10 @@ if __name__ == "__main__":
             item_market_value = int(item_to_sell.market_value)
             this_item_income = item_market_value * amount_to_sell
             total_income += this_item_income
-            text_box.append_html_text(f"在庫の{amount_to_sell}{item_to_sell.name}が売り、{this_item_income}のCashを得た。\n")
+            text_box.append_html_text(f"在庫の{amount_to_sell}{item_to_sell.name}が売り、{this_item_income}の現金を得た。\n")
             player.remove_from_inventory(type(item_to_sell), amount_to_sell, False)
         
-        text_box.append_html_text(f"合計所得：{total_income}Cash.\n")
+        text_box.append_html_text(f"合計所得：{total_income}現金。\n")
         player.add_cash(total_income, True)
 
 
@@ -1132,18 +1132,18 @@ if __name__ == "__main__":
         match item:
             case "Sliver Ingot":
                 if player.get_cash() < 111000 * amount:
-                    text_box.append_html_text(f"スライバー・インゴットを{amount}個買うのに十分なCASHがありません。\n")
+                    text_box.append_html_text(f"スライバー・インゴットを{amount}個買うのに十分な現金がありません。\n")
                     return
                 player.add_to_inventory(SliverIngot(amount), False)
                 player.lose_cash(111000 * amount, True)
-                text_box.append_html_text(f"{amount}個のスライバー・インゴットを{111000 * amount}CASHで購入しました。\n")
+                text_box.append_html_text(f"{amount}個のスライバー・インゴットを{111000 * amount}現金で購入しました。\n")
             case "Gold Ingot":
                 if player.get_cash() < 9820000 * amount:
-                    text_box.append_html_text(f"金のインゴットを{amount}個買うのに十分なCASHがありません。\n")
+                    text_box.append_html_text(f"金のインゴットを{amount}個買うのに十分な現金がありません。\n")
                     return
                 player.add_to_inventory(GoldIngot(amount), False)
                 player.lose_cash(9820000 * amount, True)
-                text_box.append_html_text(f"{amount}個の金のインゴットを{9820000 * amount}CASHで購入しました。\n")
+                text_box.append_html_text(f"{amount}個の金のインゴットを{9820000 * amount}現金で購入しました。\n")
             case _:
                 raise ValueError(f"Invalid item: {item}")
 
@@ -1178,21 +1178,21 @@ if __name__ == "__main__":
     def unequip_item():
         text_box.set_text("==============================\n")
         if not is_in_manipulatable_game_states():
-            text_box.append_html_text("Cannot unequip items when not in first turn or after the battle is concluded.\n")
+            text_box.append_html_text("最初のターンでないときや戦闘終了後はアイテムを外せない。\n")
             return
         for character in all_characters:
             if character.name == character_selection_menu.selected_option.split()[-1] and character.is_alive():
                 item_type = eq_selection_menu.selected_option
                 unequipped_item = character.unequip_item(item_type, False)
                 if unequipped_item:
-                    text_box.append_html_text(f"Unequipped {item_type} from {character.name}.\n")
+                    text_box.append_html_text(f"{character.name}から{item_type}を外した。\n")
                     player.add_to_inventory(unequipped_item)
                 else:
-                    text_box.append_html_text(f"{character.name} does not have {item_type} equipped.\n")
+                    text_box.append_html_text(f"{character.name}が{item_type}を装備していない。\n")
                 redraw_ui(party1, party2)
                 return
             elif character.name == character_selection_menu.selected_option.split()[-1] and not character.is_alive():
-                text_box.append_html_text(f"Can only unequip items from alive characters.\n")
+                text_box.append_html_text(f"生きているキャラクターからしかアイテムを装備解除できない。\n")
                 return
 
 
@@ -1221,26 +1221,26 @@ if __name__ == "__main__":
         
         cost_total = int(sum([item_to_upgrade.star_enhence_cost for item_to_upgrade in selected_items]))
         if player.get_cash() < cost_total:
-            text_box_text_to_append += "星の強化に必要な現金が足りません。\n"
+            text_box_text_to_append += "スターランクの強化に必要な現金が足りません。\n"
             text_box.append_html_text(text_box_text_to_append)
             return
         
         for item_to_upgrade in selected_items:
             if item_to_upgrade.stars_rating == item_to_upgrade.stars_rating_max and is_upgrade:
-                text_box_text_to_append += f"最大星数に達しました: {str(item_to_upgrade)}\n"
+                text_box_text_to_append += f"最大スターランクに到達した: {str(item_to_upgrade)}\n"
                 continue
             if item_to_upgrade.stars_rating == 0 and not is_upgrade:
-                text_box_text_to_append += f"最小星数に達しました: {str(item_to_upgrade)}\n"
+                text_box_text_to_append += f"最小スターランクに到達した: {str(item_to_upgrade)}\n"
                 continue
             a, b = item_to_upgrade.upgrade_stars_func(is_upgrade) 
-            text_box_text_to_append += f"{item_to_upgrade}をアップグレードします。\n"
-            text_box_text_to_append += f"星: {int(a)} -> {int(b)}\n"
+            text_box_text_to_append += f"{item_to_upgrade}をアップグレードする。\n"
+            text_box_text_to_append += f"スターランク: {int(a)} -> {int(b)}\n"
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_upgrade:
                     k.set_tooltip(item_to_upgrade.print_stats_html(), delay=0.1, wrap_width=300)
         if cost_total > 0:
             player.lose_cash(cost_total, False)
-            text_box_text_to_append += f"{cost_total}Cashで{len(selected_items)}アイテムをアップグレードしました。\n"
+            text_box_text_to_append += f"{cost_total}現金で{len(selected_items)}個のアイテムをアップグレードした。\n"
         text_box.append_html_text(text_box_text_to_append)
 
     eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (156, 35)),
@@ -1267,26 +1267,26 @@ if __name__ == "__main__":
 
         cost_total = int(sum([item_to_upgrade.level_cost for item_to_upgrade in selected_items]))
         if player.get_cash() < cost_total:
-            text_box_text_to_append += "Not enough cash for leveling up equipment.\n"
+            text_box_text_to_append += "装備のレベルアップのための資金が足りない。\n"
             text_box.append_html_text(text_box_text_to_append)
             return
 
         for item_to_level_up in selected_items:
             if item_to_level_up.level >= item_to_level_up.level_max and is_level_up:
-                text_box_text_to_append += f"Max level reached: {str(item_to_level_up)}\n"
+                text_box_text_to_append += f"最大レベルに到達した：{str(item_to_level_up)}\n"
                 continue
             if item_to_level_up.level <= 0 and not is_level_up:
-                text_box_text_to_append += f"Min level reached: {str(item_to_level_up)}\n"
+                text_box_text_to_append += f"最少レベルに到達した：{str(item_to_level_up)}\n"
                 continue
-            text_box_text_to_append += f"Leveling {'up' if is_level_up else 'down'} {item_to_level_up} in inventory.\n"
+            text_box_text_to_append += f"レベリング{'アップ' if is_level_up else 'ダウン'} {item_to_level_up}。\n"
             a, b = item_to_level_up.level_change(1 if is_level_up else -1)
-            text_box_text_to_append += f"Level: {int(a)} -> {int(b)}\n"
+            text_box_text_to_append += f"レベル：{int(a)} -> {int(b)}\n"
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_level_up:
                     k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=300)
         if cost_total > 0:
             player.lose_cash(cost_total, False)
-            text_box_text_to_append += f"Leveled {len(selected_items)} items for {cost_total} cash.\n"
+            text_box_text_to_append += f"{len(selected_items)}個のアイテムが{cost_total}現金でレベルアップした。\n"
         text_box.append_html_text(text_box_text_to_append)
 
     
@@ -1334,13 +1334,13 @@ if __name__ == "__main__":
         eq_to_sell = [x for x in player.inventory if isinstance(x, Equip) and x.market_value <= sell_value_below]
         total_income = 0
         if not eq_to_sell:
-            text_box.append_html_text(f"No equipment below market value {sell_value_below} to sell.\n")
+            text_box.append_html_text(f"市場価格{sell_value_below}以下の装備品がない。\n")
             return
         for eq in eq_to_sell.copy():
             total_income += int(eq.market_value)
             player.inventory.remove(eq)
         player.add_cash(total_income, False)
-        text_box.append_html_text(f"Sold {len(eq_to_sell)} equipment for {total_income} cash.\n")
+        text_box.append_html_text(f"{len(eq_to_sell)}装備品が{total_income}現金で売却された。\n")
         player.build_inventory_slots()
 
 
@@ -1368,9 +1368,9 @@ if __name__ == "__main__":
             remaining_funds, cost = item_to_level_up.level_up_as_possible(available_cash)
             if cost:
                 player.lose_cash(cost, False)
-                text_box.append_html_text(f"Leveled up {item_to_level_up} in inventory for {cost} cash.\n")
+                text_box.append_html_text(f"インベントリ内の{item_to_level_up}を{cost}現金でレベルアップしました。\n")
             else:
-                text_box.append_html_text(f"Cannot level up {item_to_level_up} in inventory.\n")
+                text_box.append_html_text(f"インベントリ内の{item_to_level_up}をレベルアップできません。\n")
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_level_up:
                     k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=300)
@@ -1571,7 +1571,7 @@ if __name__ == "__main__":
                             global_vars.turn_info_string += f"{character.name}は{adventure_mode_exp_reward()}の経験値を獲得しました。\n"
                     cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
-                    global_vars.turn_info_string += f"{cash_reward}のCASHを獲得しました。\n"
+                    global_vars.turn_info_string += f"{cash_reward}現金を獲得しました。\n"
                 else:
                     global_vars.turn_info_string += "パーティ2が敗北しました。\n"
             text_box.append_html_text(global_vars.turn_info_string)
@@ -1624,7 +1624,7 @@ if __name__ == "__main__":
                             global_vars.turn_info_string += f"{character.name}は{adventure_mode_exp_reward()}の経験値を獲得しました。\n"
                     cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
-                    global_vars.turn_info_string += f"{cash_reward}のCASHを獲得しました。\n"
+                    global_vars.turn_info_string += f"{cash_reward}現金を獲得しました。\n"
                 else:
                     global_vars.turn_info_string += "パーティ2が敗北しました。\n"
             text_box.append_html_text(global_vars.turn_info_string)
@@ -1675,7 +1675,7 @@ if __name__ == "__main__":
                             text_box.append_html_text(f"{character.name}は{adventure_mode_exp_reward()}の経験値を獲得しました。\n")
                     cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
-                    global_vars.turn_info_string += f"{cash_reward}のCASHを獲得しました。\n"
+                    global_vars.turn_info_string += f"{cash_reward}現金を獲得しました。\n"
                 else:
                     global_vars.turn_info_string += "パーティ2が敗北しました。\n"
             text_box.append_html_text(global_vars.turn_info_string)
@@ -2210,7 +2210,7 @@ if __name__ == "__main__":
     text_box_introduction_text += "小文字の character_name.jpg または png ファイルが ./image/character ディレクトリに見つからない場合、404.png が使用されます。\n"
     text_box_introduction_text += "小文字の item_name.jpg または png ファイルが ./image/item ディレクトリに見つからない場合、404.png が使用されます。\n"
     text_box_introduction_text += "小文字の monster_original_name.jpg または png ファイルが ./image/monster ディレクトリに見つからない場合、404.png が使用されます。\n"
-    text_box_introduction_text += "キャラクター画像にカーソルを合わせると属性が表示されます。\n"
+    text_box_introduction_text += "キャラクター画像にカーソルを合わせるとキャラクターステータスが表示されます。\n"
     text_box_introduction_text += "キャラクターのHPバーにカーソルを合わせると異常状態効果が表示されます。\n"
     text_box.set_text(text_box_introduction_text)
 
@@ -2263,18 +2263,18 @@ if __name__ == "__main__":
     def explore_brave_new_world():
         global player, text_box
         if player.get_cash() < int(box_submenu_explore_funds_selection.selected_option):
-            text_box.set_text("Not enough cash.\n")
+            text_box.set_text("現金が足りない。\n")
             return
 
         desired_market_value = int(box_submenu_explore_funds_selection.selected_option)
         package = explore_generate_package_of_items_to_desired_value(desired_market_value)
-        text_box.set_text("You have gained the following items:\n")
+        text_box.set_text("下記のアイテムを獲得した：\n")
         text_box_text = ""
         for item in package:
-            text_box_text += f"{str(item)}, which is worth {int(item.market_value)} cash.\n"
+            text_box_text += f"{str(item)}、価値：現金{int(item.market_value)}。\n"
         player.add_package_of_items_to_inventory(package)
 
-        text_box_text += f"You have spent {int(box_submenu_explore_funds_selection.selected_option)} cash and the total value of the items you gained is {int(sum([x.market_value for x in package]))} cash.\n"
+        text_box_text += f"{int(box_submenu_explore_funds_selection.selected_option)}現金を消費し、獲得したアイテムの合計価値は現金{int(sum([x.market_value for x in package]))}。\n"
         text_box.append_html_text(text_box_text)
         player.lose_cash(int(box_submenu_explore_funds_selection.selected_option))
 

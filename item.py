@@ -13,6 +13,8 @@ class Cash(Item):
         self.current_stack = min(self.current_stack, self.max_stack)
         self.image = "cash"
         self.rarity = "Common"
+        self.name_jp = "現金"
+        self.description_jp = "世界で最も一般的な通貨。"
 
     def to_dict(self):
         return {
@@ -30,6 +32,8 @@ class SliverIngot(Item):
         self.image = "sliver_ingot_111000"
         self.rarity = "Rare"
         self.market_value = 111000
+        self.name_jp = "銀のインゴット"
+        self.description_jp = "輝く銀のインゴット。"
 
     def to_dict(self):
         return {
@@ -47,6 +51,8 @@ class GoldIngot(Item):
         self.image = "gold_ingot_9820000"
         self.rarity = "Epic"
         self.market_value = 9820000
+        self.name_jp = "金のインゴット"
+        self.description_jp = "輝く金のインゴット。"
 
     def to_dict(self):
         return {

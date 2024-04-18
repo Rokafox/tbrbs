@@ -1550,7 +1550,7 @@ class Cerberus(Character):    # Damage dealer, non close targets, execution
                 return
             if target.hp < target.maxhp * self.execution_threshold and not target.is_dead():
                 target.take_bypass_status_effect_damage(target.hp, self)
-                global_vars.turn_info_string += f"{target.name} is executed by {self.name}.\n"
+                global_vars.turn_info_string += f"{target.name}が{self.name}に処刑された。\n"
                 self.execution_threshold += 0.03
                 self.heal_hp(self.maxhp * 0.3, self)
                 stats_dict = {"atk": 1.3, "critdmg": 0.3}

@@ -6,7 +6,9 @@ import random
 class Block:
     def __init__(self, name, description):
         self.name = name
+        self.name_jp = "未設定"
         self.description = description
+        self.description_jp = "未設定"
         self.rarity_list = ["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]
         self.type_list = ["None"]
         self.eq_set_list = ["None"]
@@ -21,7 +23,7 @@ class Block:
         self.max_stack = 999999 # If too high, cannot be shown on icon.
 
     def __str__(self):
-        return self.name
+        return self.name_jp
 
     def to_dict(self):
         return {
@@ -61,10 +63,10 @@ class Block:
             case "Legendary":
                 color = "#21d6ff"
         market_color = "#202d82" # blue
-        str = f"<font color={color}>{self.name}</font>\n"
-        str += f"{self.description} \nCurrent stack: {self.current_stack}\n"
+        str = f"<font color={color}>{self.name_jp}</font>\n"
+        str += f"{self.description_jp} \n現在のスタック：{self.current_stack}\n"
         if include_market_price:
-            str += f"<font color={market_color}>Market price: {self.market_value}</font>\n"
+            str += f"<font color={market_color}>市場価格：{self.market_value}</font>\n"
         return str
     
     def is_full(self):

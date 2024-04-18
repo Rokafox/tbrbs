@@ -35,6 +35,8 @@ class Banana(Consumable):
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.market_value = 45
+        self.name_jp = "バナナ"
+        self.description_jp = "最大HPの15%分HPを回復する。"
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.15, self)
@@ -57,6 +59,8 @@ class Kiwi(Consumable):
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.market_value = 80
+        self.name_jp = "キウイ"
+        self.description_jp = "最大HPの25%分HPを回復する。"
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.25, self)
@@ -79,6 +83,8 @@ class Strawberry(Consumable):
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.market_value = 100
+        self.name_jp = "イチゴ"
+        self.description_jp = "最大HPの5%分HPを回復し、6ターンの間、毎ターン最大HPの5%分HPを回復する。"
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.05, self)
@@ -101,6 +107,8 @@ class Pancake(Consumable):
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.market_value = 245
+        self.name_jp = "パンケーキ"
+        self.description_jp = "最大HPの50%分HPを回復する。"
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.5, self)
@@ -122,6 +130,8 @@ class Mantou(Consumable):
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.market_value = 499
+        self.name_jp = "饅頭"
+        self.description_jp = "最大HPの75%分HPを回復する。"
 
     def E(self, user, player):
         user.heal_hp(user.maxhp * 0.75, self)

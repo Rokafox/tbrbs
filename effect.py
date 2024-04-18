@@ -292,12 +292,12 @@ class FearEffect(Effect):
             return str + "現在は何の効果もない。"
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                str += f"{key}は{value*100}%に調整される。"
+                str += f"{global_vars.translate_to_jp(key)}は{value*100}%に調整される。"
             else:
                 if value > 0:
-                    str += f"{key}は{value*100}%増加する。"
+                    str += f"{global_vars.translate_to_jp(key)}は{value*100}%増加する。"
                 else:
-                    str += f"{key}は{-value*100}%減少する。"
+                    str += f"{global_vars.translate_to_jp(key)}は{-value*100}%減少する。"
         return str
 
 # =========================================================
@@ -389,12 +389,12 @@ class StatsEffect(Effect):
                 string += "効果が無効。\n"
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                string += f"{key}が{(value*100):.2f}%に調整される。"
+                string += f"{global_vars.translate_to_jp(key)}が{(value*100):.2f}%に調整される。"
             else:
                 if value > 0:
-                    string += f"{key}を{(value*100):.2f}%増加する。"
+                    string += f"{global_vars.translate_to_jp(key)}を{(value*100):.2f}%増加する。"
                 else:
-                    string += f"{key}を{(-value*100):.2f}%減少する。"
+                    string += f"{global_vars.translate_to_jp(key)}を{(-value*100):.2f}%減少する。"
         return string
 
 
@@ -432,6 +432,9 @@ class NotTakingDamageEffect(Effect):
         twd = character.get_num_of_turns_not_taken_damage()
         if twd >= self.require_turns_without_damage and not character.has_effect_that_named(self.buff_name):
             character.apply_effect(StatsEffect(self.buff_name, self.buff_duration, self.is_buff, self.stats_dict))
+
+    def tooltip_description(self):
+        return f"{self.require_turns_without_damage}ターンの間ダメージを受けないと、{self.buff_duration}ターンの間、{self.buff_name}を付与する。"
 
 # =========================================================
 # End of Stats effects
@@ -1114,9 +1117,9 @@ class EquipmentSetEffect_Militech(Effect):
                 string += "効果無効。\n"
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                string += f"{key}は条件に応じて{value*100}%に調整される。"
+                string += f"{global_vars.translate_to_jp(key)}は条件に応じて{value*100}%に調整される。"
             else:
-                string += f"{key}は条件に応じて{value*100}%増加する。"
+                string += f"{global_vars.translate_to_jp(key)}は条件に応じて{value*100}%増加する。"
         return string
 
 
@@ -1154,10 +1157,10 @@ class EquipmentSetEffect_NUSA(Effect):
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
                 # string += f"{key} is scaled to {value*100}%."
-                string += f"{key}は{value*100:.2f}%に調整される。"
+                string += f"{global_vars.translate_to_jp(key)}は{value*100:.2f}%に調整される。"
             else:
                 # string += f"{key} is increased by {value*100}%."
-                string += f"{key}は{value*100:.2f}%増加する。"
+                string += f"{global_vars.translate_to_jp(key)}は{value*100:.2f}%増加する。"
         return string
 
 
@@ -1340,7 +1343,7 @@ class EquipmentSetEffect_Liquidation(Effect):
         for key in ["hp", "atk", "defense", "spd"]:
             if getattr(character, key) < getattr(attacker, key):
                 damage = damage * (1 - self.damage_reduction)
-                global_vars.turn_info_string += f"{character.name}の{key}が{attacker.name}の{key}より低いため、ダメージが{int(self.damage_reduction*100)}%減少した。\n"
+                global_vars.turn_info_string += f"{character.name}の{global_vars.translate_to_jp(key)}が{attacker.name}の{global_vars.translate_to_jp(key)}より低いため、ダメージが{int(self.damage_reduction*100)}%減少した。\n"
         return damage
 
 
