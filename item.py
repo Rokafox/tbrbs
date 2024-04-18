@@ -8,7 +8,7 @@ class Item(Block):
 
 class Cash(Item):
     def __init__(self, stack: int):
-        super().__init__("Cash", "The most common currency in the world.")
+        super().__init__("Cash", "世界で最も一般的な通貨。")
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.image = "cash"
@@ -24,7 +24,7 @@ class Cash(Item):
 
 class SliverIngot(Item):
     def __init__(self, stack: int):
-        super().__init__("Sliver Ingot", "A shiny piece of silver ingot.")
+        super().__init__("Sliver Ingot", "輝く銀のインゴット。")
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.image = "sliver_ingot_111000"
@@ -41,7 +41,7 @@ class SliverIngot(Item):
 
 class GoldIngot(Item):
     def __init__(self, stack: int):
-        super().__init__("Gold Ingot", "A shiny piece of gold ingot.")
+        super().__init__("Gold Ingot", "輝く金のインゴット。")
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.image = "gold_ingot_9820000"

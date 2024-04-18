@@ -1090,7 +1090,7 @@ if __name__ == "__main__":
         for item_to_sell in selected_items:
             eq_market_value = int(item_to_sell.market_value)
             player.add_cash(eq_market_value, False)
-            text_box.append_html_text(f"Sold {item_to_sell.name} in inventory and gained {eq_market_value} cash.\n")
+            text_box.append_html_text(f"在庫の{item_to_sell.name}が売り、{eq_market_value}Cashが入手した。\n")
             player.remove_from_inventory(type(item_to_sell), 1, False)
         player.build_inventory_slots()
 
@@ -1115,15 +1115,15 @@ if __name__ == "__main__":
         for item_to_sell in selected_items:
             amount_to_sell = item_to_sell.current_stack // 2
             if amount_to_sell == 0:
-                text_box.append_html_text(f"Cannot sell {item_to_sell.name} in inventory, stack is too small.\n")
+                text_box.append_html_text(f"{item_to_sell.name}が数量不足のため売ることができない。\n")
                 continue
             item_market_value = int(item_to_sell.market_value)
             this_item_income = item_market_value * amount_to_sell
             total_income += this_item_income
-            text_box.append_html_text(f"Sold {amount_to_sell} {item_to_sell.name} in inventory and gained {this_item_income} cash.\n")
+            text_box.append_html_text(f"在庫の{amount_to_sell}{item_to_sell.name}が売り、{this_item_income}のCashを得た。\n")
             player.remove_from_inventory(type(item_to_sell), amount_to_sell, False)
         
-        text_box.append_html_text(f"Total income: {total_income} cash.\n")
+        text_box.append_html_text(f"合計所得：{total_income}Cash.\n")
         player.add_cash(total_income, True)
 
 
@@ -1221,26 +1221,26 @@ if __name__ == "__main__":
         
         cost_total = int(sum([item_to_upgrade.star_enhence_cost for item_to_upgrade in selected_items]))
         if player.get_cash() < cost_total:
-            text_box_text_to_append += f"Not enough cash for star enhancement.\n"
+            text_box_text_to_append += "星の強化に必要な現金が足りません。\n"
             text_box.append_html_text(text_box_text_to_append)
             return
         
         for item_to_upgrade in selected_items:
             if item_to_upgrade.stars_rating == item_to_upgrade.stars_rating_max and is_upgrade:
-                text_box_text_to_append += f"Max stars reached: {str(item_to_upgrade)}\n"
+                text_box_text_to_append += f"最大星数に達しました: {str(item_to_upgrade)}\n"
                 continue
             if item_to_upgrade.stars_rating == 0 and not is_upgrade:
-                text_box_text_to_append += f"Min stars reached: {str(item_to_upgrade)}\n"
+                text_box_text_to_append += f"最小星数に達しました: {str(item_to_upgrade)}\n"
                 continue
             a, b = item_to_upgrade.upgrade_stars_func(is_upgrade) 
-            text_box_text_to_append += f"Upgrading {item_to_upgrade} in inventory.\n"
-            text_box_text_to_append += f"Stars: {int(a)} -> {int(b)}\n"
+            text_box_text_to_append += f"{item_to_upgrade}をアップグレードします。\n"
+            text_box_text_to_append += f"星: {int(a)} -> {int(b)}\n"
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_upgrade:
                     k.set_tooltip(item_to_upgrade.print_stats_html(), delay=0.1, wrap_width=300)
         if cost_total > 0:
             player.lose_cash(cost_total, False)
-            text_box_text_to_append += f"Upgraded {len(selected_items)} items for {cost_total} cash.\n"
+            text_box_text_to_append += f"{cost_total}Cashで{len(selected_items)}アイテムをアップグレードしました。\n"
         text_box.append_html_text(text_box_text_to_append)
 
     eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (156, 35)),

@@ -389,12 +389,12 @@ class StatsEffect(Effect):
                 string += "効果が無効。\n"
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                string += f"{key}が{value*100:2f}%に調整される。"
+                string += f"{key}が{(value*100):.2f}%に調整される。"
             else:
                 if value > 0:
-                    string += f"{key}を{value*100:2f}%増加する。"
+                    string += f"{key}を{(value*100):.2f}%増加する。"
                 else:
-                    string += f"{key}を{-value*100:2f}%減少する。"
+                    string += f"{key}を{(-value*100):.2f}%減少する。"
         return string
 
 
@@ -1154,10 +1154,10 @@ class EquipmentSetEffect_NUSA(Effect):
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
                 # string += f"{key} is scaled to {value*100}%."
-                string += f"{key}は{value*100:2f}%に調整される。"
+                string += f"{key}は{value*100:.2f}%に調整される。"
             else:
                 # string += f"{key} is increased by {value*100}%."
-                string += f"{key}は{value*100:2f}%増加する。"
+                string += f"{key}は{value*100:.2f}%増加する。"
         return string
 
 
@@ -1359,12 +1359,12 @@ class PharaohPassiveEffect(Effect):
     
     def apply_effect_at_end_of_turn(self, character):
         for c in character.enemy:
-            if c.has_effect_that_named('Curse'):
+            if c.has_effect_that_named('呪縛'):
                 character.apply_effect(StatsEffect("Greater Pharaoh", 3, True, {"atk": self.value}))
                 return
     
     def tooltip_description(self):
-        return f"At the end of turn, if there is a cursed enemy, increase atk by {self.value*100}% for 3 turns."
+        return f"ターン終了時、呪縛された敵がいる場合、3ターンの間攻撃力が{self.value*100}%増加させる。"
     
 
 class BakeNekoSupressionEffect(Effect):
@@ -1376,13 +1376,13 @@ class BakeNekoSupressionEffect(Effect):
     def apply_effect_in_attack_before_damage_step(self, character, target, final_damage):
         if character.hp > target.hp:
             new_dmg = final_damage * min(character.hp / target.hp, 10)
-            global_vars.turn_info_string += f"Supression effect increased damage by {int(min(character.hp / target.hp, 10)*100)}%.\n"
+            global_vars.turn_info_string += f"制圧効果でダメージが{int(min(character.hp / target.hp, 10)*100)}%増加された。\n"
         else:
             new_dmg = final_damage
         return new_dmg
 
     def tooltip_description(self):
-        return f"Attack damage increased by the ratio of self hp to target hp if self has more hp than target. Max bonus damage: 1000%."
+        return f"自分のHPが対象よりも多い場合、攻撃ダメージは自分のHPと対象のHPの比率で増加する。最大ボーナスダメージ 1000%"
 
 
 class TrialofDragonEffect(StatsEffect):
@@ -1398,11 +1398,11 @@ class TrialofDragonEffect(StatsEffect):
         if character.is_alive():
             if self.damage > 0:
                 character.take_status_damage(self.damage, self.imposter)
-            character.apply_effect(StunEffect("Stun", self.stun_duration, False))
+            character.apply_effect(StunEffect("スタン", self.stun_duration, False))
         
     def tooltip_description(self):
         string = super().tooltip_description()
-        return string + f"Deal {self.damage} status damage to self and stun for {self.stun_duration} turns when effect expires."
+        return string + f"{self.damage}の状態ダメージを自身に与え、効果が切れると{self.stun_duration}ターンの間スタンを与える。"
 
 
 # ---------------------------------------------------------

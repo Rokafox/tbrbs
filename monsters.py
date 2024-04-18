@@ -37,7 +37,7 @@ class Panda(character.Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 70:
-                target.apply_effect(StunEffect('Stun', duration=5, is_buff=False))
+                target.apply_effect(StunEffect('スタン', duration=5, is_buff=False))
         damage_dealt = self.attack(multiplier=7.0, repeat=1, func_after_dmg=stun_effect, target_kw1="enemy_in_front")
         return damage_dealt
         
@@ -45,7 +45,7 @@ class Panda(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Fat', -1, True, {'maxhp' : 1.5}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 1.5}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -68,7 +68,7 @@ class Mimic(character.Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 10:
-                target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
+                target.apply_effect(StunEffect('スタン', duration=3, is_buff=False))
         damage_dealt = self.attack(multiplier=10.0, repeat=1, func_after_dmg=stun_effect, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -76,7 +76,7 @@ class Mimic(character.Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 10:
-                target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
+                target.apply_effect(StunEffect('スタン', duration=3, is_buff=False))
         damage_dealt = self.attack(multiplier=10.0, repeat=1, func_after_dmg=stun_effect, target_kw1="enemy_in_front")
         return damage_dealt
         
@@ -101,13 +101,13 @@ class MoHawk(character.Character):
 
     def skill1_logic(self):
         def bleed_effect(self, target):
-            target.apply_effect(ContinuousDamageEffect('Bleed', duration=4, is_buff=False, value=1.2 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('出血', duration=4, is_buff=False, value=1.2 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=6.8, repeat=1, func_after_dmg=bleed_effect, target_kw1="enemy_in_front")
         return damage_dealt
 
     def skill2_logic(self):
         def bleed_effect(self, target):
-            target.apply_effect(ContinuousDamageEffect('Bleed', duration=4, is_buff=False, value=1.2 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('出血', duration=4, is_buff=False, value=1.2 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=6.8, repeat=1, func_after_dmg=bleed_effect, target_kw1="enemy_in_front")
         return damage_dealt
         
@@ -115,7 +115,7 @@ class MoHawk(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('MoHawk Passive', -1, True, {'atk' : 1.2}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'atk' : 1.2}, can_be_removed_by_skill=False))
 
 
 class Earth(character.Character):
@@ -137,7 +137,7 @@ class Earth(character.Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 50:
-                target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
+                target.apply_effect(StunEffect('スタン', duration=3, is_buff=False))
         damage_dealt = self.attack(multiplier=2.4, repeat=1, func_after_dmg=stun_effect, target_kw1="n_random_enemy", target_kw2="5")
         return damage_dealt
 
@@ -146,7 +146,7 @@ class Earth(character.Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 70:
-                target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
+                target.apply_effect(StunEffect('スタン', duration=3, is_buff=False))
         damage_dealt = self.attack(multiplier=7.0, repeat=1, func_after_dmg=stun_effect, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -154,7 +154,7 @@ class Earth(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Earth Passive', -1, True, {'maxhp' : 2.0}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 2.0}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -188,7 +188,7 @@ class Golem(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Golem Passive', -1, True, {'maxhp' : 3.0}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 3.0}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -204,8 +204,8 @@ class Mummy(character.Character):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Mummy"
         self.skill1_description = "最も近い3体の敵に攻撃力の300%のダメージを与える。"
-        self.skill2_description = "5体の敵に攻撃力の200%のダメージを与え、50%の確率で6ターンの間、呪いを付与する。呪い：攻撃力が40%減少し、重複不可。"
-        self.skill3_description = "ダメージを受けた時、30%の確率で攻撃者に4ターンの間、呪いを付与する。呪い：攻撃力が40%減少し、重複不可。"
+        self.skill2_description = "5体の敵に攻撃力の200%のダメージを与え、50%の確率で6ターンの間、呪縛を付与する。呪縛：攻撃力が40%減少し、重複不可。"
+        self.skill3_description = "ダメージを受けた時、30%の確率で攻撃者に4ターンの間、呪いを付与する。呪縛：攻撃力が40%減少し、重複不可。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -221,7 +221,7 @@ class Mummy(character.Character):
         def curse_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 50:
-                curse = StatsEffect('Curse', duration=6, is_buff=False, stats_dict={'atk' : 0.6})
+                curse = StatsEffect('呪縛', duration=6, is_buff=False, stats_dict={'atk' : 0.6})
                 curse.apply_rule = "stack"
                 target.apply_effect(curse)
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.0, repeat=1, func_after_dmg=curse_effect)
@@ -232,7 +232,7 @@ class Mummy(character.Character):
 
     def take_damage_aftermath(self, damage, attacker):
         if random.randint(1, 100) <= 30:
-            curse = StatsEffect('Curse', duration=4, is_buff=False, stats_dict={'atk' : 0.6})
+            curse = StatsEffect('呪縛', duration=4, is_buff=False, stats_dict={'atk' : 0.6})
             curse.apply_rule = "stack"
             attacker.apply_effect(curse)
 
@@ -242,8 +242,8 @@ class Pharaoh(character.Character):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Pharaoh"
         self.skill1_description = "最も近い3体の敵に攻撃力の320%で攻撃する。対象が呪い状態の場合、ダメージが100%増加する。"
-        self.skill2_description = "最も近い3体の敵に攻撃力の320%で攻撃し、80%の確率で8ターンの間呪いを付与する。対象が呪い状態の場合、ダメージが100%増加する。呪い：攻撃力が40%減少する、重複なし。"
-        self.skill3_description = "HP、攻撃力、防御力、速度が20%増加する。ダメージを受けたとき、40%の確率で攻撃者に3ターンの間呪いを付与する。ターンの終わりに、呪い状態の敵がいる場合、3ターンの間攻撃力を30%増加する。"
+        self.skill2_description = "最も近い3体の敵に攻撃力の320%で攻撃し、80%の確率で8ターンの間呪縛を付与する。対象が呪縛状態の場合、ダメージが100%増加する。呪縛：攻撃力が40%減少する、重複なし。"
+        self.skill3_description = "HP、攻撃力、防御力、速度が20%増加する。ダメージを受けたとき、40%の確率で攻撃者に3ターンの間呪縛を付与する。ターンの終わりに、呪縛状態の敵がいる場合、3ターンの間攻撃力を30%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
         self.is_boss = True
@@ -253,7 +253,7 @@ class Pharaoh(character.Character):
 
     def skill1_logic(self):
         def curse_amplify(self, target, final_damage):
-            if target.has_effect_that_named("Curse"):
+            if target.has_effect_that_named("呪縛"):
                 final_damage *= 2.0
             return final_damage
         damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=3.2, repeat=1, func_damage_step=curse_amplify)
@@ -261,13 +261,13 @@ class Pharaoh(character.Character):
 
     def skill2_logic(self):
         def curse_amplify(self, target, final_damage):
-            if target.has_effect_that_named("Curse"):
+            if target.has_effect_that_named("呪縛"):
                 final_damage *= 2.0
             return final_damage
         def curse_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 80:
-                curse = StatsEffect('Curse', duration=8, is_buff=False, stats_dict={'atk' : 0.7})
+                curse = StatsEffect('呪縛', duration=8, is_buff=False, stats_dict={'atk' : 0.7})
                 curse.apply_rule = "stack"
                 target.apply_effect(curse)
         damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=3.2, repeat=1, func_damage_step=curse_amplify, func_after_dmg=curse_effect)
@@ -278,14 +278,14 @@ class Pharaoh(character.Character):
 
     def take_damage_aftermath(self, damage, attacker):
         if random.randint(1, 100) <= 40:
-            curse = StatsEffect('Curse', duration=3, is_buff=False, stats_dict={'atk' : 0.7})
+            curse = StatsEffect('呪縛', duration=3, is_buff=False, stats_dict={'atk' : 0.7})
             curse.apply_rule = "stack"
             attacker.apply_effect(curse)
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Strong', -1, True, {'maxhp' : 1.2, 'atk' : 1.2, 'defense' : 1.2, 'spd' : 1.2}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('強靭', -1, True, {'maxhp' : 1.2, 'atk' : 1.2, 'defense' : 1.2, 'spd' : 1.2}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
-        passive = PharaohPassiveEffect('Passive Effect', -1, True, 1.3)
+        passive = PharaohPassiveEffect('パッシブ効果', -1, True, 1.3)
         passive.can_be_removed_by_skill = False
         self.apply_effect(passive)
 
@@ -308,7 +308,7 @@ class PoisonSlime(character.Character):
         def poison_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 66:
-                target.apply_effect(PoisonDamageEffect('Poison', duration=6, is_buff=False, value=0.07, imposter=self, base="hp"))
+                target.apply_effect(PoisonDamageEffect('毒', duration=6, is_buff=False, value=0.07, imposter=self, base="hp"))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=1.5, repeat=1, func_after_dmg=poison_effect)
         return damage_dealt
 
@@ -316,7 +316,7 @@ class PoisonSlime(character.Character):
         def poison_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 66:
-                target.apply_effect(PoisonDamageEffect('Poison', duration=6, is_buff=False, value=0.07, imposter=self, base="losthp"))
+                target.apply_effect(PoisonDamageEffect('毒', duration=6, is_buff=False, value=0.07, imposter=self, base="losthp"))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=1.5, repeat=1, func_after_dmg=poison_effect)
         return damage_dealt
         
@@ -324,7 +324,7 @@ class PoisonSlime(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Slimy', -1, True, {'final_damage_taken_multipler' : -0.1}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'final_damage_taken_multipler' : -0.1}, can_be_removed_by_skill=False))
 
 
 class MadScientist(character.Character):
@@ -399,7 +399,7 @@ class Ghost(character.Character):
         damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=2.0, repeat=4)
         if self.is_alive():
             for a in self.ally:
-                a.apply_effect(StatsEffect('Misty', duration=8, is_buff=True, stats_dict={'final_damage_taken_multipler' : -0.40}))
+                a.apply_effect(StatsEffect('霧', duration=8, is_buff=True, stats_dict={'final_damage_taken_multipler' : -0.40}))
         return damage_dealt
         
     def skill3(self):
@@ -462,7 +462,7 @@ class Death(character.Character):
         self.attack(func_after_dmg=fear_effect)
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Ugly', -1, True, {'maxhp' : 1.2, 'atk' : 1.2, 'defense' : 1.2}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 1.2, 'atk' : 1.2, 'defense' : 1.2}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -533,7 +533,7 @@ class MachineGolem(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('MachineGolem Passive', -1, True, {'maxhp' : 1.2, 'atk' : 1.2}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 1.2, 'atk' : 1.2}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -572,7 +572,7 @@ class Dullahan(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Dullahan Passive', -1, True, {'spd' : 1.2}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'spd' : 1.2}, can_be_removed_by_skill=False))
 
 
 class Salamander(character.Character):
@@ -609,7 +609,7 @@ class Salamander(character.Character):
         pass
 
     def battle_entry_effects(self):
-        e = ContinuousHealEffect('Salamander Passive', -1, True, 0.03, True)
+        e = ContinuousHealEffect('パッシブ効果', -1, True, 0.03, True)
         e.can_be_removed_by_skill = False
         self.apply_effect(e)
 
@@ -753,7 +753,7 @@ class BlackKnight(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('BlackKnight Passive', -1, True, {'atk' : 1.4}, 
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'atk' : 1.4}, 
                                       condition=lambda self: self.hp < self.maxhp * 0.4, can_be_removed_by_skill=False)) 
 
 
@@ -876,7 +876,7 @@ class Assassin(character.Character):
         def bleed_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 40:
-                target.apply_effect(ContinuousDamageEffect('Bleed', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('出血', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
         self.attack(target_kw1="enemy_in_front", func_after_dmg=bleed_effect, repeat=2)
 
 
@@ -918,7 +918,7 @@ class Shenlong(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Shenlong Passive', -1, True, {'maxhp' : 3.22}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 3.22}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -1067,7 +1067,7 @@ class BlackDragon(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('BlackDragon Passive', -1, True, {'maxhp' : 3.0}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 3.0}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -1099,7 +1099,7 @@ class BakeNeko(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('BakeNeko Passive', -1, True, {'maxhp' : 1.3, 'defense' : 1.3, 'eva' : 0.15}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 1.3, 'defense' : 1.3, 'eva' : 0.15}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -1267,7 +1267,7 @@ class SoldierB(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('SoldierB Passive', -1, True, {'crit' : 0.3, 'critdmg' : 0.3}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'crit' : 0.3, 'critdmg' : 0.3}, can_be_removed_by_skill=False))
 
 
 class Queen(character.Character):
@@ -1310,10 +1310,9 @@ class KungFuA(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "KungFuA"
-        self.skill1_description = "Focus attack on enemy with lowest crit defense with 280% atk 4 times, each attack increases" \
-        " self crit rate and critdmg by 20% and decrease target crit defense by 10% for 6 turns."
-        self.skill2_description = "For 2 turns, increase critdmg by 100%, focus attack on enemy with lowest crit defense with 440% atk 2 times."
-        self.skill3_description = "Increase accuracy and crit rate by 40%, all allies have increased accuracy by 20%."
+        self.skill1_description = "最もクリティカル防御の低い敵に対して、攻撃力の280%で4回集中攻撃をする。各攻撃は自身のクリティカル率とクリティカルダメージを20%増加させ、ターゲットのクリティカル防御を6ターンの間に10%減少させる。"
+        self.skill2_description = "2ターンの間、クリティカルダメージを100%増加させ、最もクリティカル防御の低い敵に対して、攻撃力の440%で2回集中攻撃する。"
+        self.skill3_description = "命中率とクリティカル率を40%増加する、全味方の命中率を20%増加させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -1323,14 +1322,14 @@ class KungFuA(character.Character):
 
     def skill1_logic(self):
         def critdmg_increase(self, target):
-            self.apply_effect(StatsEffect('Crit Up', 6, True, {'critdmg' : 0.2, 'crit' : 0.2}))
-            target.apply_effect(StatsEffect('Critdef Down', 6, True, {'critdef' : -0.1}))
+            self.apply_effect(StatsEffect('クリ率とクリダメ増加', 6, True, {'critdmg' : 0.2, 'crit' : 0.2}))
+            target.apply_effect(StatsEffect('クリ防御低下', 6, True, {'critdef' : -0.1}))
         damage_dealt = self.attack(multiplier=2.6, repeat_seq=4, func_after_dmg=critdmg_increase, 
                                    target_kw1="n_lowest_attr", target_kw2="1", target_kw3="critdef", target_kw4="enemy")
         return damage_dealt
 
     def skill2_logic(self):
-        self.apply_effect(StatsEffect('Critdmg Up', 2, True, {'critdmg' : 1.0}))
+        self.apply_effect(StatsEffect('クリダメ増加', 2, True, {'critdmg' : 1.0}))
         damage_dealt = self.attack(multiplier=4.4, repeat_seq=2, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="critdef", target_kw4="enemy")
         return damage_dealt
         
@@ -1338,9 +1337,9 @@ class KungFuA(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('KungFuA Passive', -1, True, {'acc' : 0.4, 'crit' : 0.4}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'acc' : 0.4, 'crit' : 0.4}, can_be_removed_by_skill=False))
         for a in self.ally:
-            a.apply_effect(StatsEffect('KungFuA Passive', -1, True, {'acc' : 0.2}, can_be_removed_by_skill=False))
+            a.apply_effect(StatsEffect('パッシブ効果', -1, True, {'acc' : 0.2}, can_be_removed_by_skill=False))
 
 
 # ====================================
@@ -1354,9 +1353,9 @@ class Paladin(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "paladin"
-        self.skill1_description = "Attack 1 closest enemy with 800% atk."
-        self.skill2_description = "Attack 1 closest enemy 3 times with 300% atk."
-        self.skill3_description = "When taking damage and damage is exceed 10% of maxhp, reduce damage taken by 50%. The attacker takes 30% of damage reduced."
+        self.skill1_description = "最も近い敵1体に攻撃力の800%のダメージを与える。"
+        self.skill2_description = "最も近い敵1体に攻撃力の300%のダメージを3回与える。"
+        self.skill3_description = "ダメージを受け、そのダメージが最大HPの10%を超えた場合、受けるダメージを50%軽減する。攻撃者は軽減されたダメージの30%を受ける。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -1376,7 +1375,7 @@ class Paladin(character.Character):
         pass
 
     def battle_entry_effects(self):
-        shield = EffectShield3('Shielded', -1, True, 0.5, 0.3)
+        shield = EffectShield3('堅守', -1, True, 0.5, 0.3)
         shield.can_be_removed_by_skill = False
         self.apply_effect(shield)
          
@@ -1385,9 +1384,9 @@ class Father(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Father"
-        self.skill1_description = "Apply Cancellation Shield on 3 allies with lowest hp, all damage lower than 10% of maxhp is reduced to 0. Shield last 4 turns and provide 4 uses."
-        self.skill2_description = "Attack 3 closest enemies with 450% atk."
-        self.skill3_description = "All damage taken is reduced by 20%, damage taken lower than 10% of maxhp is reduced to 0 for 300 times."
+        self.skill1_description = "最もHPが低い3人の味方にキャンセルシールドを適用する。最大HPの10%未満のダメージは0にする。シールドは4ターン持続し、4回使用できる。"
+        self.skill2_description = "最も近い3人の敵に攻撃力の450%のダメージを与える。"
+        self.skill3_description = "受けるダメージを20%軽減し、最大HPの10%未満のダメージは300回まで0に減少する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -1398,7 +1397,7 @@ class Father(character.Character):
     def skill1_logic(self):
         targets = self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally")
         for target in targets:
-            target.apply_effect(CancellationShield3('Cancellation Shield', 4, True, 0.1, False, uses=4))
+            target.apply_effect(CancellationShield3('キャンセルシールド', 4, True, 0.1, False, uses=4))
 
     def skill2_logic(self):
         damage_dealt = self.attack(multiplier=4.5, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3")
@@ -1408,19 +1407,19 @@ class Father(character.Character):
         pass
 
     def battle_entry_effects(self):
-        shield = CancellationShield3('Guidance', -1, True, 0.1, False, uses=300)
+        shield = CancellationShield3('キャンセルシールド', -1, True, 0.1, False, uses=300)
         shield.can_be_removed_by_skill = False
         self.apply_effect(shield)
-        self.apply_effect(StatsEffect('Father Passive', -1, True, {'final_damage_taken_multipler' : -0.20}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'final_damage_taken_multipler' : -0.20}, can_be_removed_by_skill=False))
          
 
 class Kobold(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Kobold"
-        self.skill1_description = "Recover hp by 30% of maxhp and increase defense by 50% for 7 turns. If you are the only one alive, effect is increased by 100%."
-        self.skill2_description = "Attack 1 closest enemy with 800% atk, if you are the only one alive, increase damage by 100%."
-        self.skill3_description = "Defence and maxhp is increased by 25%."
+        self.skill1_description = "最大HPの30%に相当するHPを回復し、7ターンの間、防御力を50%増加させる。自分だけが生き残っている場合、効果は100%増加する。"
+        self.skill2_description = "最も近い敵1体に攻撃力の800%のダメージを与える。自分だけが生き残っている場合、ダメージは100%増加する。"
+        self.skill3_description = "防御力と最大HPが25%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -1431,10 +1430,10 @@ class Kobold(character.Character):
     def skill1_logic(self):
         if len(self.ally) == 1:
             self.heal_hp(self.maxhp * 0.6, self)
-            self.apply_effect(StatsEffect('Kobold Power', 7, True, {'defense' : 2.0}))
+            self.apply_effect(StatsEffect('パワー', 7, True, {'defense' : 2.0}))
         else:
             self.heal_hp(self.maxhp * 0.3, self)
-            self.apply_effect(StatsEffect('Kobold Power', 7, True, {'defense' : 1.5}))
+            self.apply_effect(StatsEffect('パワー', 7, True, {'defense' : 1.5}))
         return 0
 
     def skill2_logic(self):
@@ -1449,16 +1448,16 @@ class Kobold(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Kobold Passive', -1, True, {'defense' : 1.25, 'maxhp' : 1.25}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'defense' : 1.25, 'maxhp' : 1.25}, can_be_removed_by_skill=False))
 
 
 class SoldierA(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "SoldierA"
-        self.skill1_description = "Focus attack on enemy with highest defense with 360% atk 3 times, each attack will reduce target defense by 20% for 7 turns."
-        self.skill2_description = "Attack all enemies with 200% atk and reduce defense by 35% for 7 turns."
-        self.skill3_description = "Skill attack have 30% chance to inflict Bleed for 6 turns. Bleed: takes 30% of atk as status damage per turn."
+        self.skill1_description = "防御力が最も高い敵に対して攻撃力の360%で3回集中攻撃を行う。各攻撃は対象の防御力を20%低下させ、その効果は7ターン持続する。"
+        self.skill2_description = "全ての敵に攻撃力の200%で攻撃し、防御力を35%低下させる。その効果は7ターン持続する。"
+        self.skill3_description = "スキル攻撃は30%の確率で出血を引き起こす。出血は6ターンの間、攻撃力の30%に相当する状態ダメージを毎ターン受ける。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -1470,8 +1469,8 @@ class SoldierA(character.Character):
         def bleed_effect_defence_break(self, target):
             dice = random.randint(1, 100)
             if dice <= 30:
-                target.apply_effect(ContinuousDamageEffect('Bleed', duration=6, is_buff=False, value=0.3 * self.atk, imposter=self))
-            target.apply_effect(StatsEffect('Defence Break', 7, False, {'defense' : 0.80}))
+                target.apply_effect(ContinuousDamageEffect('出血', duration=6, is_buff=False, value=0.3 * self.atk, imposter=self))
+            target.apply_effect(StatsEffect('防御力低下', 7, False, {'defense' : 0.80}))
         damage_dealt = self.attack(multiplier=3.6, repeat_seq=3, func_after_dmg=bleed_effect_defence_break, target_kw1="n_highest_attr", target_kw2="1", target_kw3="defense", target_kw4="enemy")
         return damage_dealt
 
@@ -1479,8 +1478,8 @@ class SoldierA(character.Character):
         def bleed_effect_defence_break(self, target):
             dice = random.randint(1, 100)
             if dice <= 30:
-                target.apply_effect(ContinuousDamageEffect('Bleed', duration=6, is_buff=False, value=0.3 * self.atk, imposter=self))
-            target.apply_effect(StatsEffect('Defence Break', 7, False, {'defense' : 0.65}))
+                target.apply_effect(ContinuousDamageEffect('出血', duration=6, is_buff=False, value=0.3 * self.atk, imposter=self))
+            target.apply_effect(StatsEffect('防御力低下', 7, False, {'defense' : 0.65}))
         damage_dealt = self.attack(multiplier=2.0, repeat=1, func_after_dmg=bleed_effect_defence_break, target_kw1="n_random_enemy", target_kw2="5")
         return damage_dealt
         
@@ -1492,9 +1491,9 @@ class FutureSoldier(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "FutureSoldier"
-        self.skill1_description = "Attack random enemies 5 times with 200% atk, each attack reduces target defense by 25% for 6 turns." # 0.7**5 = 0.168
-        self.skill2_description = "Attack random enemies 7 times with 150% atk, if target has lower defense than self, increase damage by 100%."
-        self.skill3_description = "Normal attack deals double damage if target has lower defense than self."
+        self.skill1_description = "ランダムな敵に攻撃力の200%で5回攻撃し、各攻撃は対象の防御力を6ターンの間25%減少させる。"
+        self.skill2_description = "ランダムな敵に攻撃力の150%で7回攻撃し、対象の防御力が自分より低い場合、ダメージが100%増加する。"
+        self.skill3_description = "通常攻撃は、対象の防御力が自分より低い場合、ダメージが倍になる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -1504,7 +1503,7 @@ class FutureSoldier(character.Character):
 
     def skill1_logic(self):
         def defence_break(self, target):
-            target.apply_effect(StatsEffect('Defence Break', 6, False, {'defense' : 0.75}))
+            target.apply_effect(StatsEffect('防御力低下', 6, False, {'defense' : 0.75}))
         damage_dealt = self.attack(multiplier=2.0, repeat=5, func_after_dmg=defence_break)
         return damage_dealt
 
@@ -1532,10 +1531,10 @@ class FutureElite(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "FutureElite"
-        self.skill1_description = "Attack all enemies with 400% atk, reduce defense by 40% for 6 turns."
-        self.skill2_description = "Attack random enemies 8 times with 200% atk, if target has lower defense than self, damage increased by a percentage equal to the ratio between self and target defense."
-        # for example: self.defense = 100, target.defense = 50, damage increased by 100%
-        self.skill3_description = "defense is increased by 30%."
+        self.skill1_description = "全ての敵に攻撃力の400%のダメージを与え、6ターンの間、敵の防御力を40%減少させる。"
+        self.skill2_description = "ランダムな敵に対して攻撃力の200%で8回攻撃を行う。対象の防御力が自分より低い場合、自身と対象の防御力の比率に相当するパーセンテージでダメージが増加する。"
+        # 例: self.defense = 100, target.defense = 50, ダメージ増加量 = 100%
+        self.skill3_description = "防御力が30%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -1545,7 +1544,7 @@ class FutureElite(character.Character):
 
     def skill1_logic(self):
         def defence_break(self, target):
-            target.apply_effect(StatsEffect('Defence Break', 6, False, {'defense' : 0.6}))
+            target.apply_effect(StatsEffect('防御力低下', 6, False, {'defense' : 0.6}))
         damage_dealt = self.attack(multiplier=4.0, repeat=1, func_after_dmg=defence_break, target_kw1="n_random_enemy", target_kw2="5")
         return damage_dealt
 
@@ -1561,17 +1560,17 @@ class FutureElite(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('FutureElite Passive', -1, True, {'defense' : 1.3}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'defense' : 1.3}, can_be_removed_by_skill=False))
 
 
 class Mandrake(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Mandrake"
-        self.skill1_description = "Heal 2 neighbor allies by 100% def and increase their defense by 30% for 6 turns."
-        self.skill2_description = "2 neighbor allies gain regeneration for 6 turns, heal 100% of self def per turn." \
-        " For 6 turns, their critical defense is increased by 30%."
-        self.skill3_description = "Maxhp is increased by 15%, defense is increased by 150%."
+        self.skill1_description = "隣接する2人の味方を自身の防御力の100%で回復し、6ターンの間、その防御力を30%増加させる。"
+        self.skill2_description = "隣接する2人の味方に6ターンの間、再生効果を付与する。再生効果はターンごとに自身の防御力の100%を回復する。" \
+        "さらに6ターンの間、クリティカル防御力を30%増加させる。"
+        self.skill3_description = "最大HPを15%増加させ、防御力を150%増加させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -1582,22 +1581,22 @@ class Mandrake(character.Character):
     def skill1_logic(self):
         neighbors = self.get_neighbor_allies_not_including_self()
         def effect(self, target, healing, overhealing):
-            target.apply_effect(StatsEffect('Defense Up', 6, True, {'defense' : 1.3}))
+            target.apply_effect(StatsEffect('防御力増加', 6, True, {'defense' : 1.3}))
         self.heal(target_list=neighbors, value=1.0 * self.defense, func_after_each_heal=effect)
         return 0
 
     def skill2_logic(self):
         neighbors = self.get_neighbor_allies_not_including_self()
         for n in neighbors:
-            n.apply_effect(ContinuousHealEffect('Regeneration', 6, True, 1.0 * self.defense, False))
-            n.apply_effect(StatsEffect('Critical Defense Up', 6, True, {'critdef' : 0.3}))
+            n.apply_effect(ContinuousHealEffect('再生', 6, True, 1.0 * self.defense, False))
+            n.apply_effect(StatsEffect('クリ防御力増加', 6, True, {'critdef' : 0.3}))
         return 0
     
     def skill3(self):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Mandrake Passive', -1, True, {'maxhp' : 1.15, 'defense' : 2.5}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 1.15, 'defense' : 2.5}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -1613,10 +1612,9 @@ class Gryphon(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Gryphon"
-        self.skill1_description = "Self and 2 neighboring allies gain 40% evasion for 5 turns."
-        self.skill2_description = "Attack 3 closest enemies with 250% atk 2 times, each attack has 70% chance to inflict Bleed for 4 turns." \
-        "Bleed deals 50% of atk as status damage per turn."
-        self.skill3_description = "Evasion is increased by 50%, speed is increased by 5%."
+        self.skill1_description = "自身および隣接する2人の味方が5ターンの間、回避率を40%上げる。"
+        self.skill2_description = "最も近い3体の敵に対し攻撃力の250%で2回攻撃する。各攻撃には70%の確率で出血効果を4ターン間与える。出血効果はターン毎に攻撃力の50%の状態ダメージを与える。"
+        self.skill3_description = "回避率が50%増加し、速度が5%上がる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -1627,14 +1625,14 @@ class Gryphon(character.Character):
     def skill1_logic(self):
         self_and_neighbor = self.get_neighbor_allies_including_self() # list
         for ally in self_and_neighbor:
-            ally.apply_effect(StatsEffect('Evasion Up', 5, True, {'eva' : 0.4}))
+            ally.apply_effect(StatsEffect('回避率上昇', 5, True, {'eva' : 0.4}))
         return 0
 
     def skill2_logic(self):
         def bleed_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 70:
-                target.apply_effect(ContinuousDamageEffect('Bleed', duration=4, is_buff=False, value=0.5 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('出血', duration=4, is_buff=False, value=0.5 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=2.5, repeat_seq=2, func_after_dmg=bleed_effect, target_kw1="n_enemy_in_front", target_kw2="3")
         return damage_dealt
 
@@ -1642,18 +1640,16 @@ class Gryphon(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Gryphon Passive', -1, True, {'eva' : 0.5, 'spd' : 1.05}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'eva' : 0.5, 'spd' : 1.05}, can_be_removed_by_skill=False))
 
 
 class Hermit(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Hermit"
-        self.skill1_description = "Attack 3 closest enemies with 235% atk 4 times, damage increased by the percentage of evasion rate." \
-        " After the attack, increase evasion by 20% for 4 turns."
-        self.skill2_description = "Attack all enemies with 500% atk, if evasion rate is higher than 70%, this attack will not miss and guarantee" \
-        " to be a critical hit. Inflict Blind for 5 turns, Blind: reduce accuracy by 50%."
-        self.skill3_description = "Evasion increased by 50%. Final damage taken is reduced by 15%."
+        self.skill1_description = "最も近い3体の敵に攻撃力の235%で4回攻撃し、回避率の割合に応じてダメージが増加する。攻撃後、4ターンの間、回避率を20%増加する。"
+        self.skill2_description = "全ての敵に攻撃力の500%で攻撃し、回避率が70%以上の場合、この攻撃は必ず命中しクリティカルヒットとなる。5ターンの間、敵を盲目状態にする。盲目：命中率を50%減少させる。"
+        self.skill3_description = "回避率が50%増加する。最終的に受けるダメージが15%減少する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -1666,17 +1662,17 @@ class Hermit(character.Character):
             final_damage *= max(1 + self.eva, 1.0)
             return final_damage
         damage_dealt = self.attack(multiplier=2.35, repeat_seq=4, func_damage_step=damage_amplify, target_kw1="n_enemy_in_front", target_kw2="3")
-        self.apply_effect(StatsEffect('Evasion Up', 4, True, {'eva' : 0.2}))
+        self.apply_effect(StatsEffect('回避率上昇', 4, True, {'eva' : 0.2}))
         return damage_dealt
 
     def skill2_logic(self):
         if self.eva > 0.7:
             def blind_effect(self, target):
-                target.apply_effect(StatsEffect('Blind', 5, False, {'acc' : -0.5}))
+                target.apply_effect(StatsEffect('盲目', 5, False, {'acc' : -0.5}))
             damage_dealt = self.attack(multiplier=5.0, repeat=1, func_after_dmg=blind_effect, always_hit=True, always_crit=True)
         else:
             def blind_effect(self, target):
-                target.apply_effect(StatsEffect('Blind', 5, False, {'acc' : -0.5}))
+                target.apply_effect(StatsEffect('盲目', 5, False, {'acc' : -0.5}))
             damage_dealt = self.attack(multiplier=5.0, repeat=1, func_after_dmg=blind_effect)
         return damage_dealt
 
@@ -1691,11 +1687,11 @@ class KungFuB(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "KungFuB"
-        self.skill1_description = "For 1 turn, increase accuracy by 25%," \
-        " attack enemy with highest evasion with 240% atk 4 times. Each attack has 100% chance to Stun for 4 turns," \
-        " 40% chance to inflict Bleed for 6 turns. Bleed: takes 40% of atk as status damage per turn."
-        self.skill2_description = "For 5 turns, all allies gain atk equal to 100% of their current evasion rate if their evasion rate is higher than 0%."
-        self.skill3_description = "All allies have increased evasion by 20% and accuracy by 40%."
+        self.skill1_description = "1ターンの間、命中率を25%上げ、" \
+        "回避率が最も高い敵に攻撃力の240%で4回攻撃する。各攻撃は100%の確率で4ターンの間、スタン効果を与え、" \
+        "40%の確率で6ターンの間出血効果を付与する。出血：ターンごとに攻撃力の40%に相当する状態ダメージを受ける。"
+        self.skill2_description = "5ターンの間、味方全体の回避率が0%より高い場合、現在の回避率の100%分の攻撃力を得る。"
+        self.skill3_description = "全ての味方の回避率が20%、命中率が40%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -1704,19 +1700,19 @@ class KungFuB(character.Character):
         return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        self.apply_effect(StatsEffect('KungFu', 1, True, {'acc' : 0.25}))
+        self.apply_effect(StatsEffect('功夫', 1, True, {'acc' : 0.25}))
         def bleed_stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 40:
                 target.apply_effect(ContinuousDamageEffect('Bleed', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
-            target.apply_effect(StunEffect('Stun', 4, False))
+            target.apply_effect(StunEffect('スタン', 4, False))
         damage_dealt = self.attack(multiplier=2.4, repeat=4, func_after_dmg=bleed_stun_effect, target_kw1="n_highest_attr", target_kw2="1", target_kw3="eva", target_kw4="enemy")
         return damage_dealt
 
     def skill2_logic(self):
         for a in self.ally:
             if a.eva > 0:
-                a.apply_effect(StatsEffect('KungFu', 5, True, {'atk' : a.eva + 1.0}))
+                a.apply_effect(StatsEffect('功夫', 5, True, {'atk' : a.eva + 1.0}))
         return 0
         
     def skill3(self):
@@ -1724,18 +1720,18 @@ class KungFuB(character.Character):
 
     def battle_entry_effects(self):
         for a in self.ally:
-            a.apply_effect(StatsEffect('KungFu', -1, True, {'eva' : 0.2, 'acc' : 0.4}, can_be_removed_by_skill=False))
+            a.apply_effect(StatsEffect('功夫', -1, True, {'eva' : 0.2, 'acc' : 0.4}, can_be_removed_by_skill=False))
 
 
 class HauntedTree(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "HauntedTree"
-        self.skill1_description = "3 closest enemies are Rooted for 9 turns. Rooted: evasion is reduced by 55%, def and critdef is reduced by 20%." \
-        " Effect duration refreshes if same effect is applied again."
-        self.skill2_description = "If no enemy is Rooted, this skill has no effect." \
-        " Attack all Rooted enemies with 360% atk 3 times, each attack deals additional damage equal to 5% of self maxhp."
-        self.skill3_description = "Damage taken is reduced by 60% from Rooted enemies. maxhp, def and critdef is increased by 30%."
+        self.skill1_description = "最も近い敵3体を9ターンの間ルート状態にする。ルート:回避が55%減少し、防御力とクリティカル防御力が20%減少する。" \
+        "同じ効果が再度適用された場合、効果時間は更新される。"
+        self.skill2_description = "ルートした敵がいない場合、このスキルは効果を持たない。" \
+        "ルートした敵全てにAtk360%で3回攻撃し、各攻撃は自身の最大HPの5%に等しい追加ダメージを与える。"
+        self.skill3_description="ルートした敵から受けるダメージが60%減少する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -1745,7 +1741,7 @@ class HauntedTree(character.Character):
 
     def skill1_logic(self):
         targets = self.target_selection("n_enemy_in_front", "3")
-        eff = StatsEffect('Rooted', 9, False, {'eva' : -0.55, 'defense' : 0.8, 'critdef' : -0.2})
+        eff = StatsEffect('ルート', 9, False, {'eva' : -0.55, 'defense' : 0.8, 'critdef' : -0.2})
         eff.additional_name = "HauntedTree_Rooted"
         eff.apply_rule = 'stack'
         for target in targets:
@@ -1766,13 +1762,13 @@ class HauntedTree(character.Character):
         pass
 
     def take_damage_before_calculation(self, damage, attacker):
-        if attacker.has_effect_that_named('Rooted', additional_name='HauntedTree_Rooted'):
-            global_vars.turn_info_string += f"{self.name} toke 60% less damage from {attacker.name}.\n"
+        if attacker.has_effect_that_named('ルート', additional_name='HauntedTree_Rooted'):
+            global_vars.turn_info_string += f"{self.name}は{attacker.name}からのダメージを60%軽減した。\n"
             return damage * 0.4
         return damage
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('HauntedTree Passive', -1, True, {'defense' : 1.30, 'critdef' : 0.30, 'maxhp' : 1.30}))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'defense' : 1.30, 'critdef' : 0.30, 'maxhp' : 1.30}))
         self.hp = self.maxhp
 
 
@@ -1786,9 +1782,9 @@ class Mage(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Mage"
-        self.skill1_description = "Attack 3 closest enemies with 300% atk and inflict Burn for 6 turns. Burn deals 40% of atk as status damage per turn. If target has negative status, inflict 3 Burn effects."
-        self.skill2_description = "Attack closest enemy 3 times with 320% atk, if target has negative status, each attack inflict 3 Burn effects for 6 turns."
-        self.skill3_description = "Increase atk by 10%"
+        self.skill1_description = "最も近い3つの敵に攻撃力の300%で攻撃し、6ターンの間燃焼を付与する。燃焼はターンごとに攻撃力の40%の状態ダメージを与える。対象がデバフの状態の場合、燃焼効果を3つ付与する。"
+        self.skill2_description = "最も近い敵に攻撃力の320%で3回攻撃する。対象がデバフの状態の場合、各攻撃で6ターンの間燃焼効果を3つ付与する。"
+        self.skill3_description = "攻撃力を10%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -1799,20 +1795,20 @@ class Mage(character.Character):
     def skill1_logic(self):
         def burn_effect(self, target):
             if len(target.debuffs) > 0:
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
             else:
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=burn_effect, target_kw1="n_enemy_in_front", target_kw2="3")
         return damage_dealt
 
     def skill2_logic(self):
         def burn_effect(self, target):
             if len(target.debuffs) > 0:
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
-                target.apply_effect(ContinuousDamageEffect('Burn', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
+                target.apply_effect(ContinuousDamageEffect('燃焼', duration=6, is_buff=False, value=0.4 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=3.2, repeat=3, func_after_dmg=burn_effect, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -1820,7 +1816,7 @@ class Mage(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Mage Passive', -1, True, {'atk' : 1.1}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'atk' : 1.1}, can_be_removed_by_skill=False))
 
 
 # Increase debuff duration
@@ -1828,9 +1824,9 @@ class Orklord(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Orklord"
-        self.skill1_description = "Attack closest enemy with 300% atk 3 times. If target has negative status effect, increase effect duration by 4 turns."
-        self.skill2_description = "Attack 5 enemies with 400% atk and inflict Bleed for 10 turns. Bleed deals 55% of atk as status damage per turn."
-        self.skill3_description = "Normal attack deals 200% more damage to target with Bleed. Increase maxhp and defense by 50%."
+        self.skill1_description = "最も近い敵に対して攻撃力の300%で3回攻撃する。対象がデバフの状態効果を持っている場合、効果の持続時間を4ターン延長する。"
+        self.skill2_description = "5体の敵に攻撃力の400%で攻撃し、出血効果を10ターン付与する。出血は毎ターン攻撃力の55%に相当する状態ダメージを与える。"
+        self.skill3_description = "通常攻撃が出血状態の対象に対して200%増加するダメージを与える。最大HPと防御力を50%増加させる。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
         self.is_boss = True
@@ -1849,7 +1845,7 @@ class Orklord(character.Character):
 
     def skill2_logic(self):
         def bleed_effect(self, target):
-            target.apply_effect(ContinuousDamageEffect('Bleed', duration=10, is_buff=False, value=0.55 * self.atk, imposter=self))
+            target.apply_effect(ContinuousDamageEffect('出血', duration=10, is_buff=False, value=0.55 * self.atk, imposter=self))
         damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=bleed_effect, target_kw1="n_random_enemy", target_kw2="5")
         return damage_dealt
 
@@ -1858,13 +1854,13 @@ class Orklord(character.Character):
 
     def normal_attack(self):
         def damage_amplify(self, target, final_damage):
-            if target.has_effect_that_named('Bleed'):
+            if target.has_effect_that_named('出血'):
                 final_damage *= 3.0
             return final_damage
         self.attack(func_damage_step=damage_amplify)
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Orklord Passive', -1, True, {'maxhp' : 1.50, 'defense' : 1.50}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 1.50, 'defense' : 1.50}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -1886,9 +1882,9 @@ class Thief(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Thief"
-        self.skill1_description = "Attack 1 closest enemy with 600% atk."
-        self.skill2_description = "Attack 2 closest enemies with 330% atk 2 times."
-        self.skill3_description = "Skill damage increased by 60% for each active buff on target." 
+        self.skill1_description = "最も近い敵1体に攻撃力の600%のダメージを与える。"
+        self.skill2_description = "最も近い敵2体に攻撃力の330%のダメージを2回与える。"
+        self.skill3_description = "ターゲットにかかっているバフの数に応じて、スキルダメージが各バフにつき60%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -1922,9 +1918,9 @@ class Goliath(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Goliath"
-        self.skill1_description = "Strike the enemy with the most active buff effects with 600% atk, for each active buff effect, strike again with 400% atk."
-        self.skill2_description = "Reset skill cooldown of skill 1 and increase spd by 100% for 3 turns. Attack closest enemy 3 times with 300% atk. For each active buff on target, increase damage by 30%."
-        self.skill3_description = "Increase atk, def, maxhp by 30%."
+        self.skill1_description = "最もアクティブなバフ効果を持つ敵に攻撃力の600%で攻撃し、アクティブなバフ効果ごとに攻撃力の400%で再度攻撃する。"
+        self.skill2_description = "スキル1のスキルクールダウンをリセットし、3ターンの間、速度を100%増加させる。最も近い敵に攻撃力の300%で3回攻撃する。ターゲットのアクティブなバフごとにダメージを30%増加させる。"
+        self.skill3_description = "攻撃力、防御力、最大HPを30%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 2
         self.is_boss = True
@@ -1942,7 +1938,7 @@ class Goliath(character.Character):
 
     def skill2_logic(self):
         self.skill1_cooldown = 0
-        self.apply_effect(StatsEffect('Judgement', 3, True, {'spd' : 2.0}))
+        self.apply_effect(StatsEffect('審判', 3, True, {'spd' : 2.0}))
         def buff_amplify(self, target, final_damage):
             buffs = len([e for e in target.buffs if not e.is_set_effect and not e.duration == -1])
             return final_damage * (1 + 0.3 * buffs)
@@ -1954,7 +1950,7 @@ class Goliath(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Goliath Passive', -1, True, {'atk' : 1.3, 'defense' : 1.3, 'maxhp' : 1.3}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'atk' : 1.3, 'defense' : 1.3, 'maxhp' : 1.3}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -1970,9 +1966,9 @@ class ReconMecha(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "ReconnaissanceMecha"
-        self.skill1_description = "Attack closest enemy with 280% atk 2 times, if target has no active buff, increase damage by 100%."
-        self.skill2_description = "Attack closest enemy with 280% atk 2 times, if target has no active buff, target defense is reduced by 40% for 8 turns."
-        self.skill3_description = "Every turn, at the end of turn, if an enemy is fallen in this turn, recover hp by 30% of maxhp."
+        self.skill1_description = "最も近い敵に攻撃力の280%で2回攻撃する。対象にアクティブなバフがない場合、ダメージを100%増加させる。"
+        self.skill2_description = "最も近い敵に攻撃力の280%で2回攻撃する。対象にアクティブなバフがない場合、8ターンの間、対象の防御力を40%減少させる。"
+        self.skill3_description = "毎ターンの終了時、そのターンに敵が倒れている場合、最大HPの30%に相当するHPを回復する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -1992,7 +1988,7 @@ class ReconMecha(character.Character):
     def skill2_logic(self):
         def defence_break(self, target):
             if len([e for e in target.buffs if not e.is_set_effect and not e.duration == -1]) == 0:
-                target.apply_effect(StatsEffect('Defence Break', 8, False, {'defense' : 0.6}))
+                target.apply_effect(StatsEffect('防御力低下', 8, False, {'defense' : 0.6}))
         damage_dealt = self.attack(multiplier=2.8, repeat=2, func_after_dmg=defence_break, target_kw1="enemy_in_front")
         return damage_dealt
         
@@ -2012,9 +2008,9 @@ class SecurityRobot(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "SecurityRobot"
-        self.skill1_description = "All enemies that without active buffs have their defense reduced by 20% for 8 turns, critical defense reduced by 40% for 8 turns."
-        self.skill2_description = "Attack closest enemy for 300% atk 3 times, if target has no active buff, strike a critical hit."
-        self.skill3_description = "Maxhp increased by 30%."
+        self.skill1_description = "アクティブバフがないすべての敵の防御力を8ターンの間に20%減少させ、クリティカル防御を8ターンの間に40%減少させる。"
+        self.skill2_description = "最も近い敵に対して攻撃力の300%で3回攻撃する。対象にアクティブバフがない場合、クリティカルヒットを与える。"
+        self.skill3_description = "最大HPが30%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -2026,7 +2022,7 @@ class SecurityRobot(character.Character):
     def skill1_logic(self):
         for e in self.enemy:
             if len([e for e in e.buffs if not e.is_set_effect and not e.duration == -1]) == 0:
-                e.apply_effect(StatsEffect('Analyzed', 8, False, {'defense' : 0.8, 'critdef' : -0.4}))
+                e.apply_effect(StatsEffect('測定済み', 8, False, {'defense' : 0.8, 'critdef' : -0.4}))
         return 0
 
     def skill2_logic(self):
@@ -2041,7 +2037,7 @@ class SecurityRobot(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('SecurityRobot Passive', -1, True, {'maxhp' : 1.3}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 1.3}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -2056,9 +2052,9 @@ class Cockatorice(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Cockatorice"
-        self.skill1_description = "Attack 3 closest enemies, with 330% atk."
-        self.skill2_description = "Focus attack on closest enemy 3 times with 330% atk."
-        self.skill3_description = "For 4 turns, if not taking damage, increase atk by 66% and spd by 66% for 4 turns at the end of turn. Same effect cannot be applied twice."
+        self.skill1_description = "最も近い3人の敵に対して、攻撃力の330%のダメージを与える。"
+        self.skill2_description = "最も近い敵に対して3回、攻撃力の330%で攻撃を集中する。"
+        self.skill3_description = "4ターンの間、ダメージを受けない場合、ターン終了時に攻撃力を66%、速度を66%増加させる。同じ効果は2回適用されない。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2078,16 +2074,16 @@ class Cockatorice(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(NotTakingDamageEffect("Cockatorice Passive", -1, True, {'atk' : 1.33, 'spd' : 1.33}, "default", 4, "Cockatorice Fanatic", 4))
+        self.apply_effect(NotTakingDamageEffect("パッシブ効果", -1, True, {'atk' : 1.33, 'spd' : 1.33}, "default", 4, "熱狂", 4))
 
 
 class Fanatic(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Fanatic"
-        self.skill1_description = "Attack closest enemy with 340% atk 3 times. If has not taken damage for 4 turns, land critical strikes."
-        self.skill2_description = "Attack closest enemy with 340% atk 3 times. If has not taken damage for 4 turns, damage is increased by 5% of target maxhp."
-        self.skill3_description = "Recover hp by 30% of damage dealt in skill attacks."
+        self.skill1_description = "最も近い敵に攻撃力の340%で3回攻撃する。4ターンダメージを受けていない場合、クリティカルヒットを発生させる。"
+        self.skill2_description = "最も近い敵に攻撃力の340%で3回攻撃する。4ターンダメージを受けていない場合、ターゲットの最大HPの5%分ダメージが増加する。"
+        self.skill3_description = "スキル攻撃によるダメージの30%分、HPを回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2123,9 +2119,9 @@ class Emperor(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Emperor"
-        self.skill1_description = "Attack closest enemy with 280% atk 2 times, for each alive ally, damage increased by 20%."
-        self.skill2_description = "Attack closest enemy with 560% atk, for each alive ally, damage increased by 20%."
-        self.skill3_description = "If has not taken damage for 5 turns, apply Pride to all allies for 6 turns at end of turn. Pride: increase atk by 30% and spd by 30%."
+        self.skill1_description = "最も近い敵に攻撃力の280%で2回攻撃する。生存している味方1人につきダメージが20%増加する。"
+        self.skill2_description = "最も近い敵に攻撃力の560%で攻撃する。生存している味方1人につきダメージが20%増加する。"
+        self.skill3_description = "5ターンの間ダメージを受けていない場合、ターンの終わりに全味方に6ターンの間プライドを適用する。プライド：攻撃力が30%増加し、速度も30%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -2153,8 +2149,8 @@ class Emperor(character.Character):
     def status_effects_at_end_of_turn(self):
         if self.get_num_of_turns_not_taken_damage() >= 5:
             for ally in self.ally:
-                if not ally.has_effect_that_named('Emperor Pride'):
-                    ally.apply_effect(StatsEffect('Emperor Pride', 6, True, {'atk' : 1.3, 'spd' : 1.3}))
+                if not ally.has_effect_that_named('帝王のプライド'):
+                    ally.apply_effect(StatsEffect('帝王のプライド', 6, True, {'atk' : 1.3, 'spd' : 1.3}))
         super().status_effects_at_end_of_turn()
 
 
@@ -2169,9 +2165,9 @@ class Tanuki(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Tanuki"
-        self.skill1_description = "Boost atk for two allies with highest atk by 60% for 8 turns."
-        self.skill2_description = "Attack closest enemy with 1 damage, increase self evasion by 50% for 6 turns."
-        self.skill3_description = "Normal attack resets cooldown of skill 1 and deals 400% atk damage instead of 200% and attack 2 times."
+        self.skill1_description = "攻撃力が最も高い2人の味方の攻撃力を8ターンの間に60%増加させる。"
+        self.skill2_description = "最も近い敵に1ダメージを与え、自身の回避率を6ターンの間に50%増加させる。"
+        self.skill3_description = "通常攻撃がスキル1のクールダウンをリセットし、攻撃力の200%ではなく400%のダメージを与え、2回攻撃する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2183,11 +2179,11 @@ class Tanuki(character.Character):
         self.update_ally_and_enemy()
         targets = self.target_selection(keyword="n_highest_attr", keyword2="2", keyword3="atk", keyword4="ally")
         for target in targets:
-            target.apply_effect(StatsEffect('Tanuki Buff', 8, True, {'atk' : 1.6}))
+            target.apply_effect(StatsEffect('攻撃力増加', 8, True, {'atk' : 1.6}))
 
     def skill2_logic(self):
         damage_dealt = self.attack(repeat=1, target_kw1="enemy_in_front", func_damage_step=lambda self, target, final_damage : 1)
-        self.apply_effect(StatsEffect('Tanuki Evasion', 6, True, {'eva' : 0.5}))
+        self.apply_effect(StatsEffect('回避力増加', 6, True, {'eva' : 0.5}))
         return damage_dealt
         
     def skill3(self):
@@ -2202,9 +2198,9 @@ class Werewolf(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Werewolf"
-        self.skill1_description = "Focus attack 1 enemy with highest atk with 250% atk 3 times. Each attack decreases target atk by 15% for 4 turns."
-        self.skill2_description = "Attack 3 enemies with highest atk with 220% atk 2 times. If target has lower atk than self, increase damage by 40%."
-        self.skill3_description = "Increase atk by 15%. At start of battle, increase atk by 15% for 15 turns for self and neighboring allies."
+        self.skill1_description = "攻撃力の最も高い敵1体に対し、攻撃力の250%で3回集中攻撃する。各攻撃は対象の攻撃力を4ターンの間15%減少させる。"
+        self.skill2_description = "攻撃力の最も高い3体の敵に対し、攻撃力の220%で2回攻撃する。対象の攻撃力が自身より低い場合、ダメージを40%増加させる。"
+        self.skill3_description = "攻撃力を15%増加させる。戦闘開始時、自身および隣接する味方の攻撃力を15ターンの間15%増加させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2214,7 +2210,7 @@ class Werewolf(character.Character):
 
     def skill1_logic(self):
         def atk_down(self, target):
-            target.apply_effect(StatsEffect('Atk Down', 4, False, {'atk' : 0.85}))
+            target.apply_effect(StatsEffect('攻撃力減少', 4, False, {'atk' : 0.85}))
         damage_dealt = self.attack(multiplier=2.5, repeat_seq=3, func_after_dmg=atk_down, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy")
         return damage_dealt
 
@@ -2230,21 +2226,21 @@ class Werewolf(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Werewolf Passive', -1, True, {'atk' : 1.15}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'atk' : 1.15}, can_be_removed_by_skill=False))
         self_and_neighbors = self.get_neighbor_allies_including_self()
         for ally in self_and_neighbors:
-            ally.apply_effect(StatsEffect('Strong', 15, True, {'atk' : 1.15}))
+            ally.apply_effect(StatsEffect('元気', 15, True, {'atk' : 1.15}))
 
 
 class Kunoichi(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Kunoichi"
-        self.skill1_description = "For 4 turns, increase accuracy by 20%, attack 3 closest enemies with 240% atk 2 times." \
-        " For 8 turns, target has 15% decreased atk."
-        self.skill2_description = "For 4 turns, increase atk by 20%, attack closest enemy with 450% atk." \
-        " For 8 turns, target has 30% decreased atk."
-        self.skill3_description = "Self and neighboring allies have increased penetration by 20%."
+        self.skill1_description = "4ターンの間、命中率を20%上げ、最も近い3体の敵に攻撃力の240%で2回攻撃する。" \
+                                "8ターンの間、対象の攻撃力を15%下げる。"
+        self.skill2_description = "4ターンの間、攻撃力を20%上げ、最も近い敵に攻撃力の450%で攻撃する。" \
+                                "8ターンの間、対象の攻撃力を30%下げる。"
+        self.skill3_description = "自身と隣接する味方は、貫通力が20%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2253,16 +2249,16 @@ class Kunoichi(character.Character):
         return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        self.apply_effect(StatsEffect('Acc Up', 4, True, {'acc' : 0.2}))
+        self.apply_effect(StatsEffect('命中率増加', 4, True, {'acc' : 0.2}))
         def atk_down(self, target):
-            target.apply_effect(StatsEffect('Atk Down', 8, False, {'atk' : 0.85}))
+            target.apply_effect(StatsEffect('攻撃力減少', 8, False, {'atk' : 0.85}))
         damage_dealt = self.attack(multiplier=2.4, repeat_seq=2, func_after_dmg=atk_down, target_kw1="n_enemy_in_front", target_kw2="3")
         return damage_dealt
 
     def skill2_logic(self):
-        self.apply_effect(StatsEffect('Atk Up', 4, True, {'atk' : 1.2}))
+        self.apply_effect(StatsEffect('攻撃力増加', 4, True, {'atk' : 1.2}))
         def atk_down(self, target):
-            target.apply_effect(StatsEffect('Atk Down', 8, False, {'atk' : 0.70}))
+            target.apply_effect(StatsEffect('攻撃力減少', 8, False, {'atk' : 0.70}))
         damage_dealt = self.attack(multiplier=4.5, repeat=1, func_after_dmg=atk_down, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -2272,16 +2268,16 @@ class Kunoichi(character.Character):
     def battle_entry_effects(self):
         self_and_neighbors = self.get_neighbor_allies_including_self()
         for ally in self_and_neighbors:
-            ally.apply_effect(StatsEffect('Sharp', -1, True, {'penetration' : 0.2}, can_be_removed_by_skill=False))
+            ally.apply_effect(StatsEffect('シャープ', -1, True, {'penetration' : 0.2}, can_be_removed_by_skill=False))
 
 
 class ArabianSoldier(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "ArabianSoldier"
-        self.skill1_description = "For 10 turns, increase atk by 20%, focus attack on enemy with highest atk with 300% atk 2 times."
-        self.skill2_description = "For 10 turns, increase def by 20%, recover hp by 30% of maxhp."
-        self.skill3_description = "At start of battle, increase atk and def by 20% for 15 turns for self and neighboring allies."
+        self.skill1_description = "10ターンの間、攻撃力を20%増加させ、攻撃力が最も高い敵に対して攻撃力の300%で2回攻撃する。"
+        self.skill2_description = "10ターンの間、防御力を20%増加させ、最大HPの30%に相当するHPを回復する。"
+        self.skill3_description = "戦闘開始時、自分と隣接する味方の攻撃力と防御力を15ターンの間20%増加させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -2290,12 +2286,12 @@ class ArabianSoldier(character.Character):
         return f"スキル 1 : {self.skill1_description}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        self.apply_effect(StatsEffect('Atk Up', 10, True, {'atk' : 1.20}))
+        self.apply_effect(StatsEffect('攻撃力増加', 10, True, {'atk' : 1.20}))
         damage_dealt = self.attack(multiplier=3.0, repeat_seq=2, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy")
         return damage_dealt
 
     def skill2_logic(self):
-        self.apply_effect(StatsEffect('Def Up', 10, True, {'defense' : 1.20}))
+        self.apply_effect(StatsEffect('防御力増加', 10, True, {'defense' : 1.20}))
         self.heal_hp(self.maxhp * 0.3, self)
         return 0
 
@@ -2305,7 +2301,7 @@ class ArabianSoldier(character.Character):
     def battle_entry_effects(self):
         self_and_neighbors = self.get_neighbor_allies_including_self()
         for ally in self_and_neighbors:
-            ally.apply_effect(StatsEffect('Atk and Def Up', 15, True, {'atk' : 1.20, 'defense' : 1.20}))
+            ally.apply_effect(StatsEffect('攻撃防御増加', 15, True, {'atk' : 1.20, 'defense' : 1.20}))
 
 
 # ====================================
@@ -2318,9 +2314,9 @@ class Mushroom(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Mushroom"
-        self.skill1_description = "Focus attack on 3 closest enemies with 240% atk 2 times."
-        self.skill2_description = "Heal 30% hp of maxhp and increase defense by 20% for 7 turns."
-        self.skill3_description = "After taking non zero damage and hp is lower than maxhp, recover hp by 5% of maxhp."
+        self.skill1_description = "最も近い3体の敵に対して攻撃力の240%で2回集中攻撃する。"
+        self.skill2_description = "最大HPの30%を回復し、7ターンの間、防御力を20%増加させる。"
+        self.skill3_description = "HPが最大HP未満で非ゼロダメージを受けた後、最大HPの5%分のHPを回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2334,7 +2330,7 @@ class Mushroom(character.Character):
 
     def skill2_logic(self):
         self.heal_hp(self.maxhp * 0.3, self)
-        self.apply_effect(StatsEffect('Mushroom Buff', 7, True, {'defense' : 1.2}))
+        self.apply_effect(StatsEffect('防御力増加', 7, True, {'defense' : 1.2}))
         return 0
 
     def skill3(self):
@@ -2349,9 +2345,9 @@ class Vampire(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Vampire"
-        self.skill1_description = "Focus attack on 3 closest enemies with 300% atk 2 times, recover hp by 30% of damage dealt."
-        self.skill2_description = "Pay 20% of current hp, attack 3 closest enemies with 100% of the amount of hp paid as fixed damage. This skill has no effect if hp is lower than 20% of maxhp. Paying hp counts as taking status damage."
-        self.skill3_description = "Every turn, recover hp by 5% of maxhp."
+        self.skill1_description = "最も近い3体の敵に対して、攻撃力の300%で2回集中攻撃を行い、与えたダメージの30%に相当するHPを回復する。"
+        self.skill2_description = "現在のHPの20%を支払い、支払ったHPの量に相当する100%の固定ダメージで最も近い3人の敵を攻撃する。このスキルはHPが最大HPの20%未満の場合、効果がない。HPを支払うことは状態ダメージとして扱う。"
+        self.skill3_description = "毎ターン、最大HPの5%に相当するHPを回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -2379,7 +2375,7 @@ class Vampire(character.Character):
         pass
 
     def battle_entry_effects(self):
-        heal = ContinuousHealEffect('Vampire Passive', -1, True, 0.05, True)
+        heal = ContinuousHealEffect('パッシブ効果', -1, True, 0.05, True)
         heal.can_be_removed_by_skill = False
         self.apply_effect(heal)
 
@@ -2388,9 +2384,9 @@ class Lich(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Lich"
-        self.skill1_description = "Attack closest enemy with 400% atk 3 times."
-        self.skill2_description = "Attack closest enemy with 900% atk, reduce target heal efficiency by 50% for 5 turns."
-        self.skill3_description = "Gain immunity to CC effect as long as having Undead effect. When defeated, revive with 100% hp next turn."
+        self.skill1_description = "最も近い敵に対して攻撃力の400%で3回攻撃する。"
+        self.skill2_description = "最も近い敵に攻撃力の900%で攻撃し、対象の回復効率を5ターンの間50%減少させる。"
+        self.skill3_description = "倒れた場合、次のターンにHP100%で復活する。この不死効果がある限り、CC効果に対する免疫を得る。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -2404,7 +2400,7 @@ class Lich(character.Character):
 
     def skill2_logic(self):
         def heal_efficiency_down(self, target):
-            target.apply_effect(StatsEffect('Heal Efficiency Down', 5, False, {'heal_efficiency' : -0.5}))
+            target.apply_effect(StatsEffect('回復効率減少', 5, False, {'heal_efficiency' : -0.5}))
         damage_dealt = self.attack(multiplier=9.0, repeat=1, func_after_dmg=heal_efficiency_down, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -2412,7 +2408,7 @@ class Lich(character.Character):
         pass
 
     def battle_entry_effects(self):
-        reborn = RebornEffect('Undead', -1, True, 1.0, True)
+        reborn = RebornEffect('不死', -1, True, 1.0, True)
         reborn.can_be_removed_by_skill = False
         self.apply_effect(reborn)
 
@@ -2421,9 +2417,9 @@ class Cleric(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Cleric"
-        self.skill1_description = "Heal 3 allies with lowest hp by 600% atk."
-        self.skill2_description = "Target 3 allies with lowest hp, apply a shield that absorbs up to 300% atk damage for 6 turns."
-        self.skill3_description = "Heal efficiency increased by 30%."
+        self.skill1_description = "HPが最も低い3人の味方を攻撃力の600%で回復する。"
+        self.skill2_description = "HPが最も低い3人の味方を対象に、6ターンの間、攻撃力の300%までのダメージを吸収するシールドを適用する。"
+        self.skill3_description = "回復効率が30%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -2439,13 +2435,13 @@ class Cleric(character.Character):
     def skill2_logic(self):
         targets = list(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="3"))
         for target in targets:
-            target.apply_effect(AbsorptionShield('Cleric Shield', 6, True, 3 * self.atk, self))
+            target.apply_effect(AbsorptionShield('シールド', 6, True, 3 * self.atk, self))
 
     def skill3(self):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Cleric Passive', -1, True, {'heal_efficiency' : 0.3}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'heal_efficiency' : 0.3}, can_be_removed_by_skill=False))
 
 
 
@@ -2460,9 +2456,9 @@ class Infantry(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Infantry"
-        self.skill1_description = "Attack closest enemy with 280% atk 3 times, 30% chance to inflict Atk Down for 6 turns, atk is decreased by 30%."
-        self.skill2_description = "Attack closest enemy with 280% atk 4 times."
-        self.skill3_description = "Skill damage increased by 50% if target atk is lower than self."
+        self.skill1_description = "最も近い敵に攻撃力の280%で3回攻撃し、30%の確率で6ターンの間、攻撃力を30%下げる攻撃力減少を付与する。"
+        self.skill2_description = "最も近い敵に攻撃力の280%で4回攻撃する。"
+        self.skill3_description = "対象の攻撃力が自身より低い場合、スキルダメージが50%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2473,10 +2469,10 @@ class Infantry(character.Character):
     def skill1_logic(self):
         def atk_down(self, target):
             if random.random() < 0.3:
-                target.apply_effect(StatsEffect('Atk Down', 6, False, {'atk' : 0.7}))
+                target.apply_effect(StatsEffect('攻撃力減少', 6, False, {'atk' : 0.7}))
         def high_atk(self, target, final_damage):
             if target.atk < self.atk:
-                global_vars.turn_info_string += f"{self.name} deals additional 50% damage to {target.name}.\n"
+                global_vars.turn_info_string += f"{self.name}は{target.name}に追加で50%のダメージを与えた。\n"
                 final_damage *= 1.5
             return final_damage
         damage_dealt = self.attack(multiplier=2.8, repeat=3, func_after_dmg=atk_down, func_damage_step=high_atk, target_kw1="enemy_in_front")
@@ -2485,7 +2481,7 @@ class Infantry(character.Character):
     def skill2_logic(self):
         def high_atk(self, target, final_damage):
             if target.atk < self.atk:
-                global_vars.turn_info_string += f"{self.name} deals additional 50% damage to {target.name}.\n"
+                global_vars.turn_info_string += f"{self.name}は{target.name}に追加で50%のダメージを与えた。\n"
                 final_damage *= 1.5
             return final_damage
         damage_dealt = self.attack(multiplier=2.8, repeat=4, target_kw1="enemy_in_front", func_damage_step=high_atk)
@@ -2499,10 +2495,9 @@ class Biobird(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Biobird"
-        self.skill1_description = "Attack closest enemy with 400% atk 2 times, 35% chance to inflict Def Down for 6 turns, def is decreased by 30%."
-        self.skill2_description = "Attack closest enemy with 400% atk 2 times. If hp is below 20%, for 10 turns," \
-        " Increase maxhp by 40% and recover 8% of maxhp each turn."
-        self.skill3_description = "Skill damage increased by 100% if hp is below 20%."
+        self.skill1_description = "最も近い敵に攻撃力の400%で2回攻撃し、35%の確率で防御力ダウンを6ターンの間付与する。防御力は30%減少する。"
+        self.skill2_description = "最も近い敵に攻撃力の400%で2回攻撃する。HPが20%以下の場合、10ターンの間、最大HPを40%増加させ、毎ターン最大HPの8%回復する。"
+        self.skill3_description = "HPが20%以下の場合、スキルダメージが100%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2513,10 +2508,10 @@ class Biobird(character.Character):
     def skill1_logic(self):
         def def_down(self, target):
             if random.random() < 0.35:
-                target.apply_effect(StatsEffect('Def Down', 6, False, {'defense' : 0.7}))
+                target.apply_effect(StatsEffect('防御力減少', 6, False, {'defense' : 0.7}))
         def low_hp(self, target, final_damage):
             if self.hp < self.maxhp * 0.2:
-                global_vars.turn_info_string += f"{self.name} deals additional 100% damage to {target.name}.\n"
+                global_vars.turn_info_string += f"{self.name}は{target.name}に100%の追加ダメージを与えた。\n"
                 final_damage *= 2.0
             return final_damage
         damage_dealt = self.attack(multiplier=4.0, repeat=2, func_after_dmg=def_down, func_damage_step=low_hp, target_kw1="enemy_in_front")
@@ -2526,13 +2521,13 @@ class Biobird(character.Character):
     def skill2_logic(self):
         def low_hp(self, target, final_damage):
             if self.hp < self.maxhp * 0.2:
-                global_vars.turn_info_string += f"{self.name} deals additional 100% damage to {target.name}.\n"
+                global_vars.turn_info_string += f"{self.name}は{target.name}に100%の追加ダメージを与えた。\n"
                 final_damage *= 2.0
             return final_damage
         damage_dealt = self.attack(multiplier=4.0, repeat=2, target_kw1="enemy_in_front", func_damage_step=low_hp)
         if self.is_alive() and self.hp < self.maxhp * 0.2:
-            self.apply_effect(StatsEffect('Maxhp Up', 10, True, {'maxhp' : 1.4}))
-            self.apply_effect(ContinuousHealEffect('Regen', 10, True, 0.08, True))
+            self.apply_effect(StatsEffect('最大HP増加', 10, True, {'maxhp' : 1.4}))
+            self.apply_effect(ContinuousHealEffect('再生', 10, True, 0.08, True))
         return damage_dealt
 
     def skill3(self):
@@ -2550,9 +2545,9 @@ class ArchAngel(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "ArchAngel"
-        self.skill1_description = "Heal all allies with 300% atk, for 9 turns, increase their atk by 40% and spd by 20%."
-        self.skill2_description = "Target 1 ally with lowest hp, apply Absorption Shield that absorbs up to 600% atk damage for 8 turns."
-        self.skill3_description = "Normal attack deals 400% damage and attack random enemy pair. At start of battle, apply Absorption Shield that absorbs up to 1500% atk damage."
+        self.skill1_description = "全ての味方を攻撃力の300%で回復し、9ターンの間、攻撃力を40%、速度を20%増加させる。"
+        self.skill2_description = "最もHPが低い味方1体にシールドを適用する。このシールドは攻撃力の600%のダメージを8ターンの間吸収する。"
+        self.skill3_description = "通常攻撃は400%のダメージを与え、ランダムな敵ペアを攻撃する。戦闘開始時に、攻撃力の1500%のダメージを吸収するシールドを適用する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -2564,11 +2559,11 @@ class ArchAngel(character.Character):
         self.update_ally_and_enemy()
         for target in self.ally:
             target.heal_hp(self.atk * 3.0, self)
-            target.apply_effect(StatsEffect('ArchAngel Buff', 9, True, {'atk' : 1.4, 'spd' : 1.2}))
+            target.apply_effect(StatsEffect('速度攻撃増加', 9, True, {'atk' : 1.4, 'spd' : 1.2}))
 
     def skill2_logic(self):
         target = next(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="1"))
-        target.apply_effect(AbsorptionShield('Shield', 8, True, 6 * self.atk, False))
+        target.apply_effect(AbsorptionShield('シールド', 8, True, 6 * self.atk, False))
 
     def skill3(self):
         pass
@@ -2577,7 +2572,7 @@ class ArchAngel(character.Character):
         self.attack(multiplier=4.0, repeat=1, target_kw1="random_enemy_pair")
 
     def battle_entry_effects(self):
-        shield = AbsorptionShield('Shield', -1, True, 15 * self.atk, False)
+        shield = AbsorptionShield('シールド', -1, True, 15 * self.atk, False)
         shield.can_be_removed_by_skill = False
         self.apply_effect(shield)
 
@@ -2586,9 +2581,9 @@ class Unicorn(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Unicorn"
-        self.skill1_description = "Attack closest enemy with 555% atk and cause Deep Wound for 7 turns. Deep Wound: deals 100% atk status damage per turn, can be removed by healing."
-        self.skill2_description = "Apply Absorption Shield for ally in the middle, shield absorbs up to 500% of self atk damage for 5 turns."
-        self.skill3_description = "Increase hp by 30%."
+        self.skill1_description = "最も近い敵に攻撃力の555%で攻撃し、重傷を7ターンの間与える。重傷：ターンごとに攻撃力の100%の状態ダメージを与え、回復によって除去可能。"
+        self.skill2_description = "中央の味方にシールドを適用する。シールドは自身の攻撃力の500%までのダメージを5ターンの間吸収する。"
+        self.skill3_description = "HPを30%増加させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -2598,19 +2593,19 @@ class Unicorn(character.Character):
 
     def skill1_logic(self):
         def deep_wound(self, target):
-            target.apply_effect(ContinuousDamageEffect('Deep Wound', 7, False, self.atk, self, remove_by_heal=True))
+            target.apply_effect(ContinuousDamageEffect('重傷', 7, False, self.atk, self, remove_by_heal=True))
         damage_dealt = self.attack(multiplier=5.55, repeat=1, func_after_dmg=deep_wound, target_kw1="enemy_in_front")
         return damage_dealt
 
     def skill2_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
-        t.apply_effect(AbsorptionShield('Shield', 5, True, 5 * self.atk, False))
+        t.apply_effect(AbsorptionShield('シールド', 5, True, 5 * self.atk, False))
 
     def skill3(self):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Unicorn Passive', -1, True, {'maxhp' : 1.3}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 1.3}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -2618,9 +2613,9 @@ class Zhenniao(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Zhenniao"
-        self.skill1_description = "Ally in the middle gains 20% evasion and 20% spd for 10 turns and recover hp by 200% of self atk."
-        self.skill2_description = "Ally in the middle gains 20% crit rate and 40% crit damage for 10 turns and recover hp by 100% of self atk."
-        self.skill3_description = "Normal attack damage increased by 120% and attack 2 times. maxhp is increased by 30%."
+        self.skill1_description = "真ん中の味方の回避率を20%、速度を20%上げ、10ターンの間持続し、自身の攻撃力の200%に相当するHPを回復する。"
+        self.skill2_description = "真ん中の味方のクリティカル率を20%、クリティカルダメージを40%上げ、10ターンの間持続し、自身の攻撃力の100%に相当するHPを回復する。"
+        self.skill3_description = "通常攻撃のダメージを120%増加させ、2回攻撃する。最大HPを30%増加させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2630,13 +2625,13 @@ class Zhenniao(character.Character):
 
     def skill1_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
-        t.apply_effect(StatsEffect('Evasion Buff', 10, True, {'eva' : 0.20, 'spd' : 1.20}))
+        t.apply_effect(StatsEffect('速度回避増加', 10, True, {'eva' : 0.20, 'spd' : 1.20}))
         t.heal_hp(self.atk * 2, self)
         return 0
 
     def skill2_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
-        t.apply_effect(StatsEffect('Crit Rate Buff', 10, True, {'crit' : 0.20, 'critdmg' : 0.40}))
+        t.apply_effect(StatsEffect('クリ率クリダメ増加', 10, True, {'crit' : 0.20, 'critdmg' : 0.40}))
         t.heal_hp(self.atk, self)
         return 0
 
@@ -2647,7 +2642,7 @@ class Zhenniao(character.Character):
         self.attack(multiplier=2.0, repeat=2, func_damage_step=lambda self, target, final_damage : final_damage * 2.2)
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Zhenniao Passive', -1, True, {'maxhp' : 1.3}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'maxhp' : 1.3}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -2655,9 +2650,9 @@ class YataGarasu(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "YataGarasu"
-        self.skill1_description = "Ally in the middle gains 100% speed for 4 turns."
-        self.skill2_description = "Apply Shield to 3 allies in the middle for 6 turns. Shield: the part of damage that exceeds 10% of maxhp is reduced by 50%."
-        self.skill3_description = "Speed is increased by 10%. Normal attack inflict Burn for 5 turns. Burn: deals 150% atk status damage per turn."
+        self.skill1_description = "中央の味方の速度を4ターンの間、100%上昇させる。"
+        self.skill2_description = "中央の3人の味方に6ターンの間、シールドを適用する。シールド：最大HPの10%を超えるダメージの部分が50%減少する。"
+        self.skill3_description = "速度が10%上昇する。通常攻撃は5ターンの間、燃焼させる。燃焼：ターンごとに攻撃力の150%の状態ダメージを与える。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2667,13 +2662,13 @@ class YataGarasu(character.Character):
 
     def skill1_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
-        t.apply_effect(StatsEffect('Speed Buff', 4, True, {'spd' : 2.0}))
+        t.apply_effect(StatsEffect('速度増加', 4, True, {'spd' : 2.0}))
         return 0
 
     def skill2_logic(self):
         targets = list(self.target_selection(keyword="n_ally_in_middle", keyword2="3"))
         for target in targets:
-            target.apply_effect(EffectShield2('Shield', 6, True, False, damage_reduction=0.5, shrink_rate=0, threshold=0.1))
+            target.apply_effect(EffectShield2('シールド', 6, True, False, damage_reduction=0.5, shrink_rate=0, threshold=0.1))
         return 0
 
     def skill3(self):
@@ -2681,20 +2676,20 @@ class YataGarasu(character.Character):
 
     def normal_attack(self):
         def burn(self, target):
-            target.apply_effect(ContinuousDamageEffect('Burn', 5, False, self.atk * 1.5, self))
+            target.apply_effect(ContinuousDamageEffect('燃焼', 5, False, self.atk * 1.5, self))
         self.attack(multiplier=2.0, repeat=1, func_after_dmg=burn)
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('YataGarasu Passive', -1, True, {'spd' : 1.1}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'spd' : 1.1}, can_be_removed_by_skill=False))
 
 
 class Anubis(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Anubis"
-        self.skill1_description = "Attack 3 closest enemies with 270% atk, increase atk and def for all allies by 20% for 10 turns."
-        self.skill2_description = "Attack random enemies 3 times with 240% atk, increase penetration for all allies by 20% for 10 turns."
-        self.skill3_description = "When taking non zero damage, 12% chance to increase def for all allies by 12% for 10 turns."
+        self.skill1_description = "最も近い3体の敵に攻撃力の270%のダメージを与え、全ての味方の攻撃力と防御力を10ターンの間20%増加させる。"
+        self.skill2_description = "ランダムな敵に攻撃力の240%のダメージを3回与え、全ての味方の貫通率を10ターンの間20%増加させる。"
+        self.skill3_description = "0以上のダメージを受けた時、12%の確率で全ての味方の防御力を10ターンの間12%増加させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -2705,13 +2700,13 @@ class Anubis(character.Character):
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.7, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3")
         for a in self.ally:
-            a.apply_effect(StatsEffect('Anubis Buff', 10, True, {'atk' : 1.2, 'defense' : 1.2}))
+            a.apply_effect(StatsEffect('攻撃防御増加', 10, True, {'atk' : 1.2, 'defense' : 1.2}))
         return damage_dealt
 
     def skill2_logic(self):
         damage_dealt = self.attack(multiplier=2.4, repeat=3)
         for a in self.ally:
-            a.apply_effect(StatsEffect('Anubis Buff', 10, True, {'penetration' : 0.2}))
+            a.apply_effect(StatsEffect('貫通増加', 10, True, {'penetration' : 0.2}))
         return damage_dealt
 
     def skill3(self):
@@ -2721,7 +2716,7 @@ class Anubis(character.Character):
         if random.randint(1, 100) <= 12 and damage > 0:
             print(f"{self.name} triggers skill 3.")
             for a in self.ally:
-                a.apply_effect(StatsEffect('Anubis Buff', 10, True, {'defense' : 1.12}))
+                a.apply_effect(StatsEffect('防御増加', 10, True, {'defense' : 1.12}))
 
 
 # ====================================
@@ -2734,10 +2729,9 @@ class FootSoldier(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "FootSoldier"
-        self.skill1_description = "Attack closest enemy with 250% atk 3 times."
-        self.skill2_description = "Attack closest enemy with 550% atk, 80% chance to Cripple for 7 turns,"
-        " Cripple: atk decreased by 10%, spd decreased by 20%, evasion decreased by 30%."
-        self.skill3_description = "Increase atk and spd by 100%, every turn pass, effect decreases by 4% until 35th turn."
+        self.skill1_description = "最も近い敵に攻撃力の250%で3回攻撃する。"
+        self.skill2_description = "最も近い敵に攻撃力の550%で攻撃し、7ターンの間、80%の確率で足止め効果を付与する。足止め：攻撃力が10%減少、スピードが20%減少、回避率が30%減少。"
+        self.skill3_description = "攻撃力とスピードを100%増加させる。ターンが経過するごとに効果が4%ずつ減少し、35ターン目まで続く。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2752,7 +2746,7 @@ class FootSoldier(character.Character):
     def skill2_logic(self):
         def cripple(self, target):
             if random.random() < 0.8:
-                target.apply_effect(StatsEffect('Cripple', 7, False, {'atk' : 0.9, 'spd' : 0.8, 'eva' : -0.3}))
+                target.apply_effect(StatsEffect('足止め', 7, False, {'atk' : 0.9, 'spd' : 0.8, 'eva' : -0.3}))
         damage_dealt = self.attack(multiplier=5.5, repeat=1, func_after_dmg=cripple, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -2766,7 +2760,7 @@ class FootSoldier(character.Character):
             value = min(35, self.battle_turns)
             new_dict = {'atk' : 2.0 - 0.04 * value, 'spd' : 2.0 - 0.04 * value}
             return new_dict
-        self.apply_effect(StatsEffect('FootSoldier Passive', -1, True, {'atk' : 2.0, 'spd' : 2.0}, use_active_flag=False, 
+        self.apply_effect(StatsEffect('パッシブ効果', -1, True, {'atk' : 2.0, 'spd' : 2.0}, use_active_flag=False, 
                                       stats_dict_function=decrease_func, condition=condition, can_be_removed_by_skill=False))
 
 
@@ -2774,12 +2768,9 @@ class Daji(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Daji"
-        self.skill1_description = "Increase atk by 111%, accuracy by 10%, penetration by 10% for 8 turns for all allies." \
-        " Every time this skill is used, atk bonus is decreased by 33%."
-        self.skill2_description = "All allies are healed by 200% of atk, apply a shield that absorbs up to 300% of atk damage for 8 turns." \
-        " Every time this skill is used, shield amount is decreased by 100% of atk."
-        self.skill3_description = "At end of turn, if the alive allies are more than the alive enemies, apply Pride to all allies for 8 turns." \
-        " Pride: increase atk by 45%. The same effect cannot be applied more than once."
+        self.skill1_description = "全ての味方の攻撃力を111%、命中率を10%、貫通率を10%アップさせ、8ターン持続する。このスキルを使用する度に、攻撃力ボーナスが33%減少する。"
+        self.skill2_description = "全ての味方を攻撃力の200%で回復し、攻撃力の300%までのダメージを吸収するシールドを8ターンの間適用する。このスキルを使用する度に、シールドの量が攻撃力の100%減少する。"
+        self.skill3_description = "ターン終了時に、生存している味方の数が敵より多い場合、全ての味方に8ターンの間、プライドを適用する。プライド：攻撃力を45%増加させる。同じ効果は一度以上適用されない。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -2802,17 +2793,17 @@ class Daji(character.Character):
     def skill1_logic(self):
         if self.get_atk_bonus() > 0:
             for a in self.ally:
-                a.apply_effect(StatsEffect('Atk Up', 8, True, {'atk' : 1.0 + self.get_atk_bonus(), 'acc' : 0.1, 'penetration' : 0.1}))
+                a.apply_effect(StatsEffect('攻撃力増加', 8, True, {'atk' : 1.0 + self.get_atk_bonus(), 'acc' : 0.1, 'penetration' : 0.1}))
             self.current_atk_bonus -= 0.33
         else:
             for a in self.ally:
-                a.apply_effect(StatsEffect('Atk Up', 8, True, {'acc' : 0.1, 'penetration' : 0.1}))
+                a.apply_effect(StatsEffect('攻撃力増加', 8, True, {'acc' : 0.1, 'penetration' : 0.1}))
         return 0
 
     def skill2_logic(self):
         if self.get_shield_bonus() > 0:
             def fun_after_heal(self, target, healing, overhealing):
-                target.apply_effect(AbsorptionShield('Shield', 8, True, self.get_shield_bonus() * self.atk, False))
+                target.apply_effect(AbsorptionShield('シールド', 8, True, self.get_shield_bonus() * self.atk, False))
             self.heal("n_random_ally", "5", value=self.atk * 2, func_after_each_heal=fun_after_heal)
             self.current_shield_bonus -= 1
         else:
@@ -2826,8 +2817,8 @@ class Daji(character.Character):
         self.update_ally_and_enemy()
         if len(self.ally) > len(self.enemy):
             for ally in self.ally:
-                if not ally.has_effect_that_named('Daji Pride'):
-                    ally.apply_effect(StatsEffect('Daji Pride', 8, True, {'atk' : 1.45}))
+                if not ally.has_effect_that_named('プライド'):
+                    ally.apply_effect(StatsEffect('プライド', 8, True, {'atk' : 1.45}))
         super().status_effects_at_end_of_turn()
 
 

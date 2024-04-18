@@ -497,24 +497,24 @@ class Character:
     def tooltip_string(self):
         level = self.lvl if self.lvl < self.lvl_max else "MAX"
         return f"{self.name}\n" \
-            f"level: {level}\n" \
-            f"hp: {self.hp}/{self.maxhp}\n" \
-            f"atk: {self.atk}\n" \
-            f"def: {self.defense}\n" \
-            f"speed: {self.spd}\n" \
-            f"eva: {self.eva*100:.2f}%\n" \
-            f"acc: {self.acc*100:.2f}%\n" \
-            f"crit: {self.crit*100:.2f}%\n" \
-            f"critdmg: {self.critdmg*100:.2f}%\n" \
-            f"critdef: {self.critdef*100:.2f}%\n" \
-            f"penetration: {self.penetration*100:.2f}%\n" \
-            f"heal efficiency: {self.heal_efficiency*100:.2f}%\n" \
-            f"final damage taken: {self.final_damage_taken_multipler*100:.2f}%\n" \
-            f"max skill cooldown: {self.skill1_cooldown_max}/{self.skill2_cooldown_max}\n" \
-            f"exp/maxexp/perc: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n"
+            f"レベル: {level}\n" \
+            f"HP: {self.hp}/{self.maxhp}\n" \
+            f"攻撃力: {self.atk}\n" \
+            f"防御力: {self.defense}\n" \
+            f"速度: {self.spd}\n" \
+            f"回避率: {self.eva*100:.2f}%\n" \
+            f"命中率: {self.acc*100:.2f}%\n" \
+            f"クリティカル率: {self.crit*100:.2f}%\n" \
+            f"クリティカルダメージ: {self.critdmg*100:.2f}%\n" \
+            f"クリティカル防御力: {self.critdef*100:.2f}%\n" \
+            f"貫通率: {self.penetration*100:.2f}%\n" \
+            f"回復効率: {self.heal_efficiency*100:.2f}%\n" \
+            f"最終被ダメージ: {self.final_damage_taken_multipler*100:.2f}%\n" \
+            f"スキル最大クールダウン: {self.skill1_cooldown_max}/{self.skill2_cooldown_max}\n" \
+            f"経験値/最大経験値/割合: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n"
 
     def tooltip_status_effects(self):
-        str = "Status Effects:\n"
+        str = "ステータス効果：\n"
         str += "=" * 20 + "\n"
         for effect in self.buffs:
             if not effect.is_set_effect:
@@ -1120,55 +1120,49 @@ class Character:
         set_name = self.get_equipment_set()
         str = "Equipment Set Effects:\n"
         if set_name == "None" or set_name == "Void":
-            str += "Equipment set effects is not active. Equip 4 items of the same set to receive benefits.\n"
+            str += "装備セットの効果は発動していない。同じセットアイテムを4つ装備すると効果を受ける。\n"
             return ""
         elif set_name == "Arasaka":
             str += "Arasaka\n" \
-                "Once per battle, leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 3 turns.\n"
+                "戦闘1回につき、致命的なダメージを受けた時、HPが1のまま残り、発動すると3ターンの間ダメージ免疫効果が得る。\n"
         elif set_name == "KangTao":
             str += "Kang Tao\n" \
-                "At start of battle, apply absorption shield on self. Shield value is 600% of atk.\n"
+                "戦闘開始時、自身に攻撃力の600%のダメージ吸収シールドを張る。\n"
         elif set_name == "Militech":
             str += "Militech\n" \
-                "Increase speed by 120% when hp falls below 30%.\n"
+                "HPが30%以下になると速度が120%増加する。\n"
         elif set_name == "NUSA":
             str += "NUSA\n" \
-                "Increase atk by 6%, def by 6%, and maxhp by 6% for each ally alive including self.\n"
+                "自分を含む生存している味方が1体につき、攻撃力を6%、防御力を6%、最大HPを6%増加する。\n"
         elif set_name == "Sovereign":
             str += "Sovereign\n" \
-                "Apply Sovereign effect when taking damage, Sovereign increases atk by 20% and last 4 turns. Max 5 active effects.\n"
+                "ダメージを受けると主権の効果が適用され、4ターンの間Atkが20%増加する。最大5つのアクティブ効果同時に存在できる。\n"
         elif set_name == "Snowflake":
             str += "Snowflake\n" \
-                "Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 25% hp and gain the following effect for 6 turns:\n" \
-                "atk, def, maxhp, spd are increased by 25%.\n" \
-                "Each activation of this effect increases the stats bonus and healing by 25%.\n"
+                "行動終了時に雪花の欠片を1つ獲得する。6つが蓄積されると、HPを25%回復し、次の効果を6ターン得る：攻撃力、防御力、最大HP、速度が25%増加する。この効果の発動ごとにステータスボーナスと回復量が25%増加する。"
         elif set_name == "Flute":
             str += "Flute\n" \
-                "On one action, when successfully attacking enemy for 4 times, all enemies take status damage equal to 130% of self atk.\n"
+                "1回の行動で、敵に4回攻撃が成功すると、全ての敵が自身の攻撃力の130%の状態ダメージを受ける。\n"
         elif set_name == "Rainbow":
             str += "Rainbow\n" \
-                "While attacking, damage increases by 60%/30%/0%/-30%/-60% depending on the proximity of the target.\n"
+                "攻撃中、ターゲットとの距離に応じてダメージが60%/30%/0%/-30%/-60%増加する。\n"
         elif set_name == "Dawn":
             str += "Dawn\n" \
-                "Atk increased by 24%, crit increased by 12% when hp is full.\n" \
-                "One time only, when dealing normal or skill attack damage, damage is increased by 120%.\n" 
+                "HPが満タンの時、攻撃力が24%増加し、クリティカル率が12%増加する。1回限り、通常攻撃またはスキル攻撃ダメージを与える際、ダメージが120%増加する。" 
         elif set_name == "Bamboo":
             str += "Bamboo\n" \
-                "After taking down an enemy with normal or skill attack, for 5 turns," \
-                " recovers 16% of max hp each turn and increases atk, def, spd by 66%, crit and crit damage by 33%." \
-                " Cannot be triggered when buff effect is active.\n"
+                "通常攻撃またはスキル攻撃で敵を倒した後、5ターンの間、毎ターン最大HPの16%を回復し、攻撃力、防御力、速度を66%増加、クリティカル率とクリティカルダメージを33%増加する。バフ効果が発動中の場合は発動しない。"
         elif set_name == "Rose":
             str += "Rose\n" \
-                "Heal efficiency is increased by 22%, def is increased by 11%. Before heal, increase target's heal efficiency by 88% for 2 turns." \
-                " Cannot be triggered by hp recover.\n"
+                "回復効率が22%増加し、防御力が11%増加する。治療前に対象の回復効率を2ターンの間88%増加する。HP持続回復させる時は発動しない。"
         elif set_name == "OldRusty":
             str += "Old Rusty\n" \
-                "After using skill 1, 65% chance to reset cooldown of that skill.\n"
+                "スキル1使用後、そのスキルのクールダウンをリセットする確率が65%になる。\n"
         elif set_name == "Liquidation":
             str += "Liquidation\n" \
-                "When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 20%: hp, atk, def, spd.\n"
+                "ダメージを受ける際、以下のステータスが攻撃者より低い場合、ステータス一つにつきにダメージが20%軽減する：HP、攻撃力、防御力、速度。\n"
         else:
-            str += "Unknown set effect."
+            str += "セット効果は不明。"
 
         str += "=" * 20 + "\n"
         for effect in self.buffs:
