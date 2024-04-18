@@ -7,7 +7,7 @@ from consumable import *
 import copy
 running = False
 text_box = None
-start_with_max_level = True
+start_with_max_level = False
 
 
 # NOTE:
@@ -383,7 +383,7 @@ except FileNotFoundError:
         player = Nine(50000000)
         player.cleared_stages = 2199
     else:
-        player = Nine(50000)
+        player = Nine(123456)
         player.cleared_stages = 0
 
 # =====================================
