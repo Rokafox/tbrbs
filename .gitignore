@@ -1,3 +1,6 @@
 __pycache__/
 player_data.json
 .venv/
+build/
+dist/
+*.spec
