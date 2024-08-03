@@ -4,3 +4,5 @@ player_data.json
 build/
 dist/
 *.spec
+image/monster
+image/character

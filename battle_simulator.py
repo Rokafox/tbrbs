@@ -401,7 +401,7 @@ def get_all_characters():
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
     else:
-        all_characters = [eval(f"{name}('{name}', 1)") for name in character_names]
+        all_characters = [eval(f"{name}('{name}', 40)") for name in character_names]
     return all_characters
 
 all_characters = get_all_characters()

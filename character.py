@@ -417,17 +417,17 @@ class Character:
                         self_target_index_diff = abs(self_target_index_diff)
                         final_damage *= rainbow_amplifier_dict[self_target_index_diff]
                     if self.get_equipment_set() == "Dawn":
-                        if self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active:
+                        if self.get_effect_that_named(global_vars.translate_to_jp("Dawn Set"), None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active:
                             final_damage *= 2.20
                             global_vars.turn_info_string += f"夜明装備セットの効果によりダメージが120%増加した。\n"
-                            self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active = False
+                            self.get_effect_that_named(global_vars.translate_to_jp("Dawn Set"), None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active = False
                     if final_damage < 0:
                         final_damage = 0
                     target.take_damage(final_damage, self, is_crit=critical)
                     damage_dealt += final_damage
                     if target.is_dead():
                         if self.get_equipment_set() == "Bamboo":
-                            self.get_effect_that_named("Bamboo Set", None, "EquipmentSetEffect_Bamboo").apply_effect_custom(self)
+                            self.get_effect_that_named(global_vars.translate_to_jp("Bamboo Set"), None, "EquipmentSetEffect_Bamboo").apply_effect_custom(self)
                     self.add_number_of_attacks(1)
                     if func_after_dmg is not None and self.is_alive():
                         func_after_dmg(self, target)
@@ -459,7 +459,7 @@ class Character:
         if self.get_equipment_set() == "Rose":
             for t in targets:
                 t.apply_effect(StatsEffect("Beloved Girl", 2, True, 
-                {"heal_efficiency": self.get_effect_that_named("Rose Set", None, "EquipmentSetEffect_Rose").he_bonus_before_heal}))
+                {"heal_efficiency": self.get_effect_that_named(global_vars.translate_to_jp("Rose Set"), None, "EquipmentSetEffect_Rose").he_bonus_before_heal}))
         for i in range(repeat):
             for t in targets:
                 healing, healer, overhealing = t.heal_hp(value, self)
