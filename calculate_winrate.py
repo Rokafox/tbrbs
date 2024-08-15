@@ -19,7 +19,7 @@ def fine_print(*args, mode="default", **kwargs):
 def get_all_characters(test_mode):
     character_names = ["Lillia", "Poppy", "Iris", "Freya", "Luna", "Clover", "Ruby", "Olive", "Fenrir", "Cerberus", "Pepper",
                        "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Chiffon", "Ophelia", "Requina", "Gabe", "Yuri", "Dophine",
-                       "Tian", "Don"]
+                       "Tian", "Don", "Natasya", "Roseiri"]
 
     all_characters = [eval(f"{name}('{name}', 40)") for name in character_names]
 
@@ -108,10 +108,9 @@ def calculate_win_loss_rate(wins_data, losses_data, write_csv=False):
             for k, v in sorted_result.items():
                 writer.writerow(v)
 
-    # Print the result nicely
-    max_key_length = max(len(key) for key in sorted_result)
-    for k, v in sorted_result.items():
-        print(f"{k:>{max_key_length}}: {v['wins']:>5} wins, {v['losses']:>5} losses, {v['winrate']:>6.2f}% winrate")
+    # max_key_length = max(len(key) for key in sorted_result)
+    # for k, v in sorted_result.items():
+    #     print(f"{k:>{max_key_length}}: {v['wins']:>5} wins, {v['losses']:>5} losses, {v['winrate']:>6.2f}% winrate")
 
     return sorted_result
 
@@ -255,7 +254,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 40000
+        sample = 10000
     a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:

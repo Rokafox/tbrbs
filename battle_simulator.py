@@ -380,7 +380,7 @@ try:
 except FileNotFoundError:
     print("Player data not found, creating a new one...")
     if start_with_max_level:
-        player = Nine(50000000)
+        player = Nine(5000000000)
         player.cleared_stages = 2199
     else:
         player = Nine(80000)
@@ -396,7 +396,7 @@ def get_all_characters():
     global start_with_max_level
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
-                       "Yuri", "Dophine", "Tian", "Don"]
+                       "Yuri", "Dophine", "Tian", "Don", "Natasya", "Roseiri"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]

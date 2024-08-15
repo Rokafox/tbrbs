@@ -674,13 +674,18 @@ class AbsorptionShield(Effect):
 #---------------------------------------------------------
 # Reduction Shield and Damage Amplify effect (reduces/increase damage taken by a certain percentage)
 class ReductionShield(Effect):
-    def __init__(self, name, duration, is_buff, effect_value, cc_immunity):
+    def __init__(self, name, duration, is_buff, effect_value, cc_immunity, requirement=None, requirement_description=None):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.effect_value = effect_value
         self.cc_immunity = cc_immunity
+        self.requirement = requirement
+        self.requirement_description = requirement_description
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
+        if self.requirement is not None and not self.requirement(character):
+            global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, requirement not met.\n"
+            return damage
         if self.is_buff:
             damage = damage * (1 - self.effect_value)
         else:
@@ -688,10 +693,14 @@ class ReductionShield(Effect):
         return damage
     
     def tooltip_description(self):
+        str = ""
         if self.is_buff:
-            return f"Reduces damage taken by {self.effect_value*100}%."
+            str += f"Reduces damage taken by {self.effect_value*100}%."
         else:
-            return f"Increases damage taken by {self.effect_value*100}%."
+            str += f"Increases damage taken by {self.effect_value*100}%."
+        if self.requirement_description is not None:
+            str += f"\nRequirement: {self.requirement_description}"
+        return str
     
 #---------------------------------------------------------
 # Effect shield 1 (before damage calculation, if character hp is below certain threshold, healhp for certain amount)

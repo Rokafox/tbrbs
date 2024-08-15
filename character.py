@@ -1275,6 +1275,49 @@ class Poppy(Character):    # Damage dealer, non close targets, multi strike
             attacker.apply_effect(ContinuousDamageEffect("Burn", 6, False, self.atk * 0.5, self))
 
 
+class Natasya(Character):    
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Natasya"
+        self.skill1_description = "4 hits on random enemies, 245% atk each hit, each hit has a 50% chance to stun for 2 turns."
+        self.skill2_description = "Attack all enemies for 240% atk, damage increased by 30% if have higher atk than target."
+        self.skill3_description = " Increases atk and critdmg by 20%. When hp is below 40%, reduce damage taken by 40%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def stun_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 50:
+                target.apply_effect(StunEffect("Stun", 2, False))
+        damage_dealt = self.attack(multiplier=2.45, repeat=4, func_after_dmg=stun_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def bonus_damage(self, target, final_damage):
+            if self.atk > target.atk:
+                final_damage *= 1.3
+            return final_damage
+        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.4, repeat=1, func_damage_step=bonus_damage)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        effect = ReductionShield("Passive Effect", -1, True, 0.4, cc_immunity=False, 
+                                 requirement=lambda self: self.hp <= self.maxhp * 0.4,
+                                 requirement_description="hp below 40%.")
+        effect.can_be_removed_by_skill = False
+        self.apply_effect(effect)
+        effect2 = StatsEffect("Passive Effect", -1, True, {"atk": 1.2, "critdmg": 0.2})
+        effect2.can_be_removed_by_skill = False
+        self.apply_effect(effect2)
+
+
 class Iris(Character):    # Damage dealer, non close targets, multi targets
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
@@ -1342,8 +1385,8 @@ class Luna(Character):    # Damage dealer, non close targets, multi targets
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Luna"
-        self.skill1_description = "Attack all targets with 300% atk, recover 10% of damage dealt as hp."
-        self.skill2_description = "Attack all targets with 300% atk, apply Moonlight on self for next 4 turns, reduce damage taken by 90%."
+        self.skill1_description = "Attack all enemies with 300% atk, recover 10% of damage dealt as hp."
+        self.skill2_description = "Attack all enemies with 300% atk, apply Moonlight on self for next 4 turns, reduce damage taken by 90%."
         self.skill3_description = "Recover 8% hp of maxhp at start of action."
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -1815,6 +1858,41 @@ class Bell(Character):    # Damage dealer, close targets, multi strike, counter 
                 self.apply_effect(AbsorptionShield("Shield", -1, True, damage * 4.0, cc_immunity=False))
                 self.skill3_used = True
             return damage
+
+
+class Roseiri(Character):    
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Roseiri"
+        self.skill1_description = "Attack 3 closest enemies for 380% atk, reduce their heal efficiency by 100% for the next 6 turns."
+        self.skill2_description = "Attack 3 closest enemies for 360% atk, reduce their def by 40% for 6 turns."
+        self.skill3_description = "Every time a skill is used, for 2 turns, reduce damage taken by 99%."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def unhealable_effect(self, target):
+            target.apply_effect(StatsEffect("Unhealable", 6, False, {"heal_efficiency": -1.0}))
+            immunity = ReductionShield("Immunity", 2, True, 0.99, cc_immunity=False)
+            immunity.apply_rule = "stack"
+            self.apply_effect(immunity)
+        damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=3.8, repeat=1, func_after_dmg=unhealable_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def defdown_effect(self, target):
+            target.apply_effect(StatsEffect("Def Down", 6, False, {'defense' : 0.6}))
+            immunity = ReductionShield("Immunity", 2, True, 0.99, cc_immunity=False)
+            immunity.apply_rule = "stack"
+            self.apply_effect(immunity)
+        damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=3.6, repeat=1, func_after_dmg=defdown_effect)
+        return damage_dealt
+
+    def skill3(self):
+        pass
 
 
 class Taily(Character):    # Frontline, damage reduction, protect allies
