@@ -2222,7 +2222,7 @@ if __name__ == "__main__":
     box_submenu_next_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((425, 560), (120, 35)),
                                                                     text='Next Stage',
                                                                     manager=ui_manager)
-    box_submenu_next_stage_button.set_tooltip("次のステージに進む。現在のステージがクリアされている場合のみ進むことができます。", delay=0.1)
+    box_submenu_next_stage_button.set_tooltip("Advance to the next stage. You can proceed only if the current stage has been cleared.", delay=0.1)
     box_submenu_previous_stage_button.hide()
     box_submenu_next_stage_button.hide()
     box_submenu_stage_info_label = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((550, 560), (80, 35)),
@@ -2232,7 +2232,7 @@ if __name__ == "__main__":
     box_submenu_explore_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((635, 560), (120, 35)),
                                                                     text='Explore',
                                                                     manager=ui_manager)
-    box_submenu_explore_button.set_tooltip("選択した資金で世界を探索する。ランダムなアイテムを報酬として獲得しますが、1つのアイテムの価値は資金の2倍以上になることはない。", delay=0.1, wrap_width=300)
+    box_submenu_explore_button.set_tooltip("Explore the world with the funds you choose. You will be rewarded with random items, but no single item will be worth more than twice your funds.", delay=0.1, wrap_width=300)
     box_submenu_explore_button.hide()
 
     box_submenu_explore_funds_selection = pygame_gui.elements.UIDropDownMenu(["50", "100", "200", "500", "1000", "5000", "10000"],
