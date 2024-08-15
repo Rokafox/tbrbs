@@ -383,7 +383,7 @@ except FileNotFoundError:
         player = Nine(50000000)
         player.cleared_stages = 2199
     else:
-        player = Nine(50000)
+        player = Nine(80000)
         player.cleared_stages = 0
 
 # =====================================
@@ -401,7 +401,7 @@ def get_all_characters():
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
     else:
-        all_characters = [eval(f"{name}('{name}', 1)") for name in character_names]
+        all_characters = [eval(f"{name}('{name}', 10)") for name in character_names]
     return all_characters
 
 all_characters = get_all_characters()
@@ -711,31 +711,31 @@ if __name__ == "__main__":
                                         text='Shuffle Party',
                                         manager=ui_manager,
                                         tool_tip_text = "Shuffle party and restart the battle")
-    button1.set_tooltip("パーティをシャッフルしてバトルを再開する。", delay=0.1, wrap_width=300)
+    button1.set_tooltip("Shuffle the party and restart battle.", delay=0.1, wrap_width=300)
 
     button4 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 360), (156, 50)),
                                         text='Restart Battle',
                                         manager=ui_manager,
                                         tool_tip_text = "Restart battle")
-    button4.set_tooltip("Restart battle", delay=0.1)
+    button4.set_tooltip("Restart battle.", delay=0.1)
 
     button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 420), (156, 50)),
                                         text='All Turns',
                                         manager=ui_manager,
                                         tool_tip_text = "Skip to the end of the battle.")
-    button3.set_tooltip("バトルの終わりまでスキップするが、報酬はなしです。", delay=0.1, wrap_width=300)
+    button3.set_tooltip("Skip to the end of the battle but no reward.", delay=0.1, wrap_width=300)
 
     button_left_clear_board = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
                                         text='Clear Board',
                                         manager=ui_manager,
                                         tool_tip_text = "Remove all text from the text box, text box will be slower if there are too many text.")
-    button_left_clear_board.set_tooltip("テキストボックスのテキストをすべて削除する。テキストが多いとテキストボックスが遅くなる。", delay=0.1, wrap_width=300)
+    button_left_clear_board.set_tooltip("Remove all text from the text box, text box will be slower if there are too many text.", delay=0.1, wrap_width=300)
     
     button_quit_game = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 540), (156, 50)),
                                         text='Quit',
                                         manager=ui_manager,
                                         tool_tip_text = "Quit")
-    button_quit_game.set_tooltip("プレイヤーデータをplayer_data.jsonとして保存し、終了する。", delay=0.1, wrap_width=300)
+    button_quit_game.set_tooltip("Save player data as player_data.json and exit.", delay=0.1, wrap_width=300)
 
     # =====================================
     # Right Side
@@ -744,15 +744,15 @@ if __name__ == "__main__":
                                         text='Next Turn',
                                         manager=ui_manager,
                                         tool_tip_text = "Simulate the next turn")
-    next_turn_button_tooltip_str = "次のターン。冒険モードでバトルが勝利した場合に経験値とCASHを獲得できる。"
-    next_turn_button_tooltip_str += "ステージレベルが平均パーティのレベルよりも高い場合、報酬が増える。"
+    next_turn_button_tooltip_str = "Next turn. Experience and cash will be earned if the battle is won in adventure mode."
+    next_turn_button_tooltip_str += "If the stage level is higher than the average party level, the reward will increase."
     next_turn_button.set_tooltip(next_turn_button_tooltip_str, delay=0.1, wrap_width=300)
 
     button_auto_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 300), (156, 50)),
                                         text='Auto',
                                         manager=ui_manager,
                                         tool_tip_text = "Auto battle")
-    button_auto_battle.set_tooltip("プログレスバーが満タンになったら自動的に次のターンに進む。バトルが終了した場合に報酬を獲得できる。", delay=0.1, wrap_width=300)
+    button_auto_battle.set_tooltip("Automatically proceed to the next turn when the progress bar is full. Rewards are earned when the battle is over.", delay=0.1, wrap_width=300)
 
 
     auto_battle_bar = pygame_gui.elements.UIStatusBar(pygame.Rect((1080, 290), (156, 10)),
@@ -760,36 +760,36 @@ if __name__ == "__main__":
                                                None)
 
     # If these options are changed, make sure to change the corresponding functions by searching for the function name
-    auto_battle_speed_selection_menu = pygame_gui.elements.UIDropDownMenu(["遅い", "普通", "速い", "とても速い", "即時"],
-                                                            "普通",
+    auto_battle_speed_selection_menu = pygame_gui.elements.UIDropDownMenu(["Veryslow", "Slow", "Normal", "Fast", "Veryfast"],
+                                                            "Normal",
                                                             pygame.Rect((1080, 260), (156, 35)),
                                                             ui_manager)
 
     auto_battle_speed_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 220), (156, 35)),
-                                        "自動バトル速度: ",
+                                        "Autobattle Speed: ",
                                         ui_manager)
 
-    after_auto_battle_selection_menu = pygame_gui.elements.UIDropDownMenu(["何もしない", "バトル再開", "パーティシャッフル"],
-                                                            "何もしない",
+    after_auto_battle_selection_menu = pygame_gui.elements.UIDropDownMenu(["Do Nothing", "Restart", "Shuffle Party"],
+                                                            "Do Nothing",
                                                             pygame.Rect((1080, 180), (156, 35)),
                                                             ui_manager)
 
     after_auto_battle_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 140), (156, 35)),
-                                        "自動バトル後の処理: ",
+                                        "After Autobattle: ",
                                         ui_manager)
 
     def decide_auto_battle_speed():
         speed = auto_battle_speed_selection_menu.selected_option
         match speed:
-            case "遅い":
+            case "Veryslow":
                 return 10.0
-            case "普通":
+            case "Slow":
                 return 5.0
-            case "速い":
+            case "Normal":
                 return 2.5
-            case "とても速い":
+            case "Fast":
                 return 1.25
-            case "即時":
+            case "Veryfast":
                 return 0.625
             case _:
                 raise ValueError(f"Invalid speed: {speed}")
@@ -803,7 +803,7 @@ if __name__ == "__main__":
                                         text='Adventure Mode',
                                         manager=ui_manager,
                                         tool_tip_text = "Switch between Casual Training Mode and Adventure Mode")
-    switch_game_mode_button.set_tooltip("アドベンチャーモードとトレーニングモードを切り替える。", delay=0.1, wrap_width=300)
+    switch_game_mode_button.set_tooltip("Switch between adventure mode and training mode.", delay=0.1, wrap_width=300)
 
     def adventure_mode_generate_stage():
         global current_game_mode, adventure_mode_current_stage, adventure_mode_stages
@@ -913,7 +913,7 @@ if __name__ == "__main__":
     label_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((870, 360), (25, 35)),
                                         "→",
                                         ui_manager)
-    label_character_selection_menu.set_tooltip("選択したキャラクター。キャラクター画像をクリックしても選択できます。", delay=0.1)
+    label_character_selection_menu.set_tooltip("Selected character. You can also select a character by clicking on the character image.", delay=0.1)
 
     reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option1"],
                                                             "Option1",
@@ -923,36 +923,36 @@ if __name__ == "__main__":
     label_reserve_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((870, 400), (25, 35)),
                                         "→",
                                         ui_manager)
-    label_reserve_character_selection_menu.set_tooltip("控えメンバー、キャラクターのレベルでソートされてる。", delay=0.1)
+    label_reserve_character_selection_menu.set_tooltip("The reserve members, sorted by character level.", delay=0.1)
 
     character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 440), (156, 35)),
                                         text='Replace',
                                         manager=ui_manager,
                                         tool_tip_text = "Replace selected character with reserve character")
-    character_replace_button.set_tooltip("選択したキャラクターを控えメンバーで置き換える。", delay=0.1, wrap_width=300)
+    character_replace_button.set_tooltip("Replace the selected character with a reserve member.", delay=0.1, wrap_width=300)
 
     use_item_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 480), (156, 35)),
                                         text='Equip Item',
                                         manager=ui_manager,
                                         tool_tip_text = "Use selected item for selected character.")
-    use_item_button.set_tooltip("選択したアイテムを選択したキャラクターに使用する。選択したアイテムが装備品の場合は、選択したキャラクターに装備する。一度に複数のアイテムを装備または使用することもできる。",
+    use_item_button.set_tooltip("The selected item is used on the selected character. If the selected item is an equipment item, equip it to the selected character. Multiple items may be equipped or used at one time.",
                                 delay=0.1, wrap_width=300)
     item_sell_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 520), (156, 35)),
                                         text='Sell Item',
                                         manager=ui_manager,
                                         tool_tip_text = "Sell selected item in inventory.")
-    item_sell_button.set_tooltip("選択したアイテムをインベントリから一つ売却する。", delay=0.1, wrap_width=300)
+    item_sell_button.set_tooltip("Sell one selected item from your inventory.", delay=0.1, wrap_width=300)
     item_sell_button.hide()
     item_sell_half_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 560), (156, 35)),
                                         text='Sell Half',
                                         manager=ui_manager,
                                         tool_tip_text = "Sell half stack of selected item in inventory.")
-    item_sell_half_button.set_tooltip("選択したアイテムの半分のスタックを売却する。", delay=0.1, wrap_width=300)
+    item_sell_half_button.set_tooltip("Sell half a stack of selected items.", delay=0.1, wrap_width=300)
     item_sell_half_button.hide()
     use_random_consumable_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 420), (156, 35)),
                                         "Random Use:",
                                         ui_manager)
-    use_random_consumable_label.set_tooltip("自動バトル中に毎ターン、一つの適切な消耗品を使用する。", delay=0.1, wrap_width=300)
+    use_random_consumable_label.set_tooltip("Use one appropriate consumable each turn during auto battles.", delay=0.1, wrap_width=300)
     use_random_consumable_label.hide()
     use_random_consumable_selection_menu = pygame_gui.elements.UIDropDownMenu(["True", "False"],
                                                             "False",
@@ -1173,7 +1173,7 @@ if __name__ == "__main__":
                                         text='Unequip',
                                         manager=ui_manager,
                                         tool_tip_text = "Unequip selected item from selected character")
-    character_eq_unequip_button.set_tooltip("選択したキャラクターから装備品を外す。", delay=0.1, wrap_width=300)
+    character_eq_unequip_button.set_tooltip("Remove equipment from the selected character.", delay=0.1, wrap_width=300)
 
     def unequip_item():
         text_box.set_text("==============================\n")
@@ -1200,7 +1200,7 @@ if __name__ == "__main__":
                                         text='Star Enhancement',
                                         manager=ui_manager,
                                         tool_tip_text = "Upgrade stars for item")
-    eq_stars_upgrade_button.set_tooltip("インベントリ内の選択した装備品のスターランクを上げる。", delay=0.1, wrap_width=300)
+    eq_stars_upgrade_button.set_tooltip("Increase the star rank of selected equipment in inventory.", delay=0.1, wrap_width=300)
 
     def eq_stars_upgrade(is_upgrade: bool):
         text_box.set_text("==============================\n")
@@ -1247,7 +1247,7 @@ if __name__ == "__main__":
                                         text='Level Up',
                                         manager=ui_manager,
                                         tool_tip_text = "Level up selected item.")
-    eq_levelup_button.set_tooltip("インベントリ内の選択した装備品をレベルアップする。", delay=0.1, wrap_width=300)
+    eq_levelup_button.set_tooltip("Level up selected equipment in the inventory.", delay=0.1, wrap_width=300)
 
     def eq_level_up(is_level_up: bool = True):
         text_box.set_text("==============================\n")
@@ -1294,7 +1294,7 @@ if __name__ == "__main__":
                                         text='Sell Selected',
                                         manager=ui_manager,
                                         tool_tip_text = "Sell selected item.")
-    eq_sell_selected_button.set_tooltip("インベントリ内の選択した装備品を売却する。", delay=0.1, wrap_width=300)
+    eq_sell_selected_button.set_tooltip("Sell selected equipment in the inventory.", delay=0.1, wrap_width=300)
 
     def eq_sell_selected():
         text_box.set_text("==============================\n")
@@ -1325,7 +1325,7 @@ if __name__ == "__main__":
                                         text='Sell Low Value',
                                         manager=ui_manager,
                                         tool_tip_text = "Sell all equipment that is below the selected market value.")
-    eq_sell_low_value_button.set_tooltip("インベントリ内の装備品が市場価値以下のものを売却する。", delay=0.1, wrap_width=300)
+    eq_sell_low_value_button.set_tooltip("Sell equipment in inventory that is below market value.", delay=0.1, wrap_width=300)
 
 
     def eq_sell_low_value(sell_value_below: int):
@@ -1348,7 +1348,7 @@ if __name__ == "__main__":
                                         text='Level Up To Max',
                                         manager=ui_manager,
                                         tool_tip_text = "Try level up selected item to max level until Cash is exhausted.")
-    eq_level_up_to_max_button.set_tooltip("インベントリ内の選択した装備品を最大レベルまでレベルアップする。", delay=0.1, wrap_width=300)
+    eq_level_up_to_max_button.set_tooltip("Level up selected equipment in the inventory to the maximum level.", delay=0.1, wrap_width=300)
 
     def eq_level_up_to_max():
         text_box.set_text("==============================\n")
@@ -1392,19 +1392,19 @@ if __name__ == "__main__":
                                         text='Show Equipment',
                                         manager=ui_manager,
                                         tool_tip_text = "Show equipment in inventory")
-    cheap_inventory_show_equipment_button.set_tooltip("インベントリ内の装備品を表示する。", delay=0.1, wrap_width=300)
+    cheap_inventory_show_equipment_button.set_tooltip("Show equipment in inventory.", delay=0.1, wrap_width=300)
 
     cheap_inventory_show_items_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 60), (156, 35)),
                                         text='Show Items',
                                         manager=ui_manager,
                                         tool_tip_text = "Show items in inventory")
-    cheap_inventory_show_items_button.set_tooltip("インベントリ内のアイテムを表示する。", delay=0.1, wrap_width=300)
+    cheap_inventory_show_items_button.set_tooltip("Show items in inventory.", delay=0.1, wrap_width=300)
     
     cheap_inventory_show_consumables_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 100), (156, 35)),
                                         text='Show Consumables',
                                         manager=ui_manager,
                                         tool_tip_text = "Show consumables in inventory")
-    cheap_inventory_show_consumables_button.set_tooltip("インベントリ内の消耗品を表示する。", delay=0.1, wrap_width=300)
+    cheap_inventory_show_consumables_button.set_tooltip("Show consumables in inventory.", delay=0.1, wrap_width=300)
     cheap_inventory_show_current_option = "Equip"
 
     cheap_inventory_sort_by_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
@@ -1416,7 +1416,7 @@ if __name__ == "__main__":
                                         text='Sort',
                                         manager=ui_manager,
                                         tool_tip_text = "Sort inventory by selected option")
-    cheap_inventory_sort_by_button.set_tooltip("選択したオプションでインベントリをソートする。", delay=0.1, wrap_width=300)
+    cheap_inventory_sort_by_button.set_tooltip("Sort inventory by selected option.", delay=0.1, wrap_width=300)
 
     def cheap_inventory_sort():
         match cheap_inventory_sort_by_selection_menu.selected_option:
@@ -1449,22 +1449,22 @@ if __name__ == "__main__":
                                         text='<<',
                                         manager=ui_manager,
                                         tool_tip_text = "Skip to first page of inventory")
-    cheap_inventory_skip_to_first_page_button.set_tooltip("インベントリの最初のページに移動する。", delay=0.1, wrap_width=300)
+    cheap_inventory_skip_to_first_page_button.set_tooltip("Jump to first page of inventory.", delay=0.1, wrap_width=300)
     cheap_inventory_previous_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1300, 100), (50, 35)),
                                         text='<',
                                         manager=ui_manager,
                                         tool_tip_text = "Previous page of inventory")
-    cheap_inventory_previous_page_button.set_tooltip("インベントリの前のページに移動する。", delay=0.1, wrap_width=300)
+    cheap_inventory_previous_page_button.set_tooltip("Previous page of inventory.", delay=0.1, wrap_width=300)
     cheap_inventory_skip_to_last_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1480, 140), (50, 35)),
                                         text='>>',
                                         manager=ui_manager,
                                         tool_tip_text = "Skip to last page of inventory")
-    cheap_inventory_skip_to_last_page_button.set_tooltip("インベントリの最後のページに移動する。", delay=0.1, wrap_width=300)
+    cheap_inventory_skip_to_last_page_button.set_tooltip("Jump to last page of inventory.", delay=0.1, wrap_width=300)
     cheap_inventory_next_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1480, 100), (50, 35)),
                                         text='>',
                                         manager=ui_manager,
                                         tool_tip_text = "Next page of inventory")
-    cheap_inventory_next_page_button.set_tooltip("インベントリの次のページに移動する。", delay=0.1, wrap_width=300)
+    cheap_inventory_next_page_button.set_tooltip("Next page of inventory.", delay=0.1, wrap_width=300)
 
     def create_inventory_image_slots(n, start_x, start_y, slot_width, slot_height, spacing, ui_manager, column=6) -> list:
         # -> list of UIImage
@@ -2558,13 +2558,13 @@ if __name__ == "__main__":
                 if not next_turn(party1, party2):
                     auto_battle_active = False
                     instruction = after_auto_battle_selection_menu.selected_option
-                    if instruction == "何もしない":
+                    if instruction == "Do Nothing":
                         pass
-                    elif instruction == "バトル再開":
+                    elif instruction == "Restart":
                         text_box.set_text("==============================\n")
                         restart_battle()
                         auto_battle_active = True
-                    elif instruction == "パーティシャッフル":
+                    elif instruction == "Shuffle Party":
                         text_box.set_text("==============================\n")
                         if current_game_mode == "Training Mode":
                             party1, party2 = set_up_characters()
