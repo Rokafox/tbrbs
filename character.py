@@ -44,6 +44,9 @@ class Character:
         }
 
     def initialize_stats(self, resethp=True, resetally=True, resetenemy=True, reset_battle_entry=True):
+        self.additive_main_stats = [] # A list of dict.
+        # Used by update_main_stats_additive, allowing additive stats changes. 
+        # Only "maxhp", "hp", "atk", "defense", "spd" is allowed in the dict record.
         self.maxhp = self.lvl * 100
         self.hp = self.lvl * 100 if resethp else self.hp
         self.atk = self.lvl * 5
@@ -656,8 +659,10 @@ class Character:
         if self.is_charmed():
             self.ally, self.enemy = self.enemy, self.ally
         elif self.is_confused():
-            self.ally += self.enemy
-            self.enemy += self.ally
+            self.ally = list(set(self.ally + self.enemy))
+            self.enemy = list(set(self.enemy + self.ally))
+            if len(self.ally) != len(self.enemy):
+                raise Exception
         
     def has_ally(self, ally_name):
         return ally_name in [ally.name for ally in self.ally]
@@ -695,6 +700,7 @@ class Character:
         prev = {}
         new = {}
         delta = {}
+        self.update_main_stats_additive(reversed=True)
         for attr, value in stats.items():
             if attr in ["maxhp", "hp", "atk", "defense", "spd"]:
                 if reversed:
@@ -708,7 +714,7 @@ class Character:
                 elif attr == "maxhp":
                     self.hp = min(self.hp, new_value)
                 if new_value <= 0:
-                    raise Exception("Cannot multiply stats by 0 or below. Does not make sense.") 
+                    raise Exception(f"New stat is 0 or below, Does not make sense: {stats}, {attr}, {value}, {new_value}") 
             else:
                 if reversed:
                     new_value = getattr(self, attr) - value
@@ -718,7 +724,35 @@ class Character:
             setattr(self, attr, new_value)
             new[attr] = new_value
             delta[attr] = new_value - prev[attr]
+        self.update_main_stats_additive()
         return prev, new, delta
+
+    def update_main_stats_additive(self, reversed=False, effect_pointer=None):
+        # update stats from self.additive_main_stats, which is a list of dict, if any.
+        # example : [{'hp': 200, 'effect_pointer': a Effect object}, {'atk': 30, 'spd': 50, 'effect_pointer': another Effect object}]
+        # effect_pointer: A Effect object. If it is None, update with every records, otherwise, only update with the certain matched record.
+        if not self.additive_main_stats: # No dict records
+            return None
+        for dict_record in self.additive_main_stats:
+            # Check if effect_pointer is specified and should match the record's effect_pointer
+            if effect_pointer is not None and dict_record.get('effect_pointer') != effect_pointer:
+                continue
+            for attr, value in dict_record.items():
+                if attr == "effect_pointer":  # Skip 'effect_pointer' itself
+                    continue
+                if attr not in ["maxhp", "hp", "atk", "defense", "spd"]:
+                    raise Exception(f"Unexpected attribute {attr} found in additive stats.")
+                # Apply or reverse the effect based on the `reversed` flag
+                if reversed:
+                    new_value = getattr(self, attr) - value
+                else:
+                    new_value = getattr(self, attr) + value
+                # Ensure `hp` does not exceed `maxhp` and is non-negative
+                if attr == "hp":
+                    new_value = min(new_value, self.maxhp)
+                    new_value = max(new_value, 0)
+                setattr(self, attr, new_value)
+        return None
 
     def heal_hp(self, value, healer):
         # Remember the healer can be a Character object or Consumable object or perhaps other objects
@@ -1047,7 +1081,7 @@ class Character:
 
     def status_effects_at_end_of_turn(self):
         # The following character/monster has a local implementation of this function:
-        # Character: BeastTamer
+        # Character: BeastTamer Yuri
         # Monster: Security Guard, Emperor
         buffs_copy = self.buffs.copy()
         debuffs_copy = self.debuffs.copy()
@@ -1534,7 +1568,7 @@ class Fenrir(Character):    # Support
         self.name = "Fenrir"
         self.skill1_description = "Focus attack 3 times on closest enemy, 220% atk each hit. Reduce skill cooldown for neighbor allies by 2 turns."
         self.skill2_description = "350% atk on a closest enemy. Remove 2 debuffs for neighbor allies."
-        self.skill3_description = "Fluffy protection is applied to neighbor allies at start of battle. When the protected ally below 40% hp is about to take damage, the ally recovers hp by 100% of self base atk."
+        self.skill3_description = "Fluffy protection is applied to neighbor allies at start of battle. When the protected ally below 40% hp is about to take damage, the ally recovers hp by 100% of your current atk."
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -1563,7 +1597,7 @@ class Fenrir(Character):    # Support
     def battle_entry_effects(self):
         neighbors = self.get_neighbor_allies_not_including_self()
         for ally in neighbors:
-            e = EffectShield1("Fluffy Protection", -1, True, 0.4, self.atk, False)
+            e = EffectShield1("Fluffy Protection", -1, True, 0.4, lambda x: x.atk, False, False, self)
             e.can_be_removed_by_skill = False
             ally.apply_effect(e)
 
@@ -1893,6 +1927,79 @@ class Roseiri(Character):
 
     def skill3(self):
         pass
+
+
+class MessengerRoseiri(Character):    
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "MessengerRoseiri"
+        self.skill1_description = "4 hits on random enemies, 220% atk each. Each attack has a 70% chance to increase the target's damage taken by 10% for 2 turns."
+        self.skill2_description = "Using the angelic power gained through the contract, perform magic attack 4 times at" \
+        " 160% atk against random enemies. If the number of stacks of 'Memory' is above 15 before the attack," \
+        " 'Memory' is removed and Soul Sacrifice is activated instead of Angel Ray. Soul Sacrifice: Attack with" \
+        " 180% atk 4 times on random enemies. After that, the skill cooldown count of 2 neighbor allies is reduced by 2 and their atk is increased by 4% of your maximum HP, for 12 turns."
+        self.skill3_description = "At the end of each turn, if an ally is affected by a debuff effect, granted 1 stack of Memory," \
+        " then the number of stacks of Memory increases by the total number of debuff effects you and your allies are affected by (up to a maximum of 15 stacks)." \
+        " When Memory is at 15 stacks, apply a Absorption Shield on self that absorb damage up to 30% of maxhp. If shield is active, increase shield value by 1% of maxhp."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def effect(self, target):
+            if random.randint(1, 100) <= 70:
+                target.apply_effect(StatsEffect("Vulnerability Up", 2, False, {'final_damage_taken_multipler' : 0.1}))
+        damage_dealt = self.attack(multiplier=2.2, repeat=4, func_after_dmg=effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        memory = None
+        memory = self.get_effect_that_named("Memory", "MessengerRoseiri_Memory")
+        if memory and memory.stacks >= 15:
+            self.remove_effect(memory)
+            damage_dealt = self.attack(multiplier=1.8, repeat=4)
+            neighbors = self.get_neighbor_allies_not_including_self()
+            for ally in neighbors:
+                ally.skill1_cooldown = max(ally.skill1_cooldown - 2, 0)
+                ally.skill2_cooldown = max(ally.skill2_cooldown - 2, 0)
+                global_vars.turn_info_string += f"{ally.name} skill cooldown reduced by 2.\n"
+                ally.apply_effect(StatsEffect("Atk Up", 12, True, main_stats_additive_dict={'atk': int(self.maxhp * 0.04)}))
+        else:
+            damage_dealt = self.attack(multiplier=1.6, repeat=4)
+        return damage_dealt
+        
+
+    def skill3(self):
+        pass
+
+    def status_effects_at_end_of_turn(self):
+        stacks_to_gain = 0
+        for ally in self.ally:
+            stacks_to_gain += len(ally.debuffs)
+        memory = self.get_effect_that_named("Memory", "MessengerRoseiri_Memory")
+        if memory and memory.stacks >= 15:
+            memory.stacks = 15
+            if not self.has_effect_that_named("Shield", "MessengerRoseiri_Shield"):
+                shield = AbsorptionShield("Shield", -1, True, self.maxhp * 0.30, cc_immunity=False)
+                shield.additional_name = "MessengerRoseiri_Shield"
+                self.apply_effect(shield)
+            else:
+                shield = self.get_effect_that_named("Shield", "MessengerRoseiri_Shield")
+                shield.shield_value += int(self.maxhp * 0.01)
+        if stacks_to_gain > 0:
+            if memory:
+                memory.stacks += stacks_to_gain
+                memory.stacks = min(memory.stacks, 15)
+            else:
+                new_memory = Effect("Memory", -1, True, False, can_be_removed_by_skill=False, show_stacks=True)
+                new_memory.stacks += stacks_to_gain
+                new_memory.additional_name = "MessengerRoseiri_Memory"
+                new_memory.tooltip_str =  "Cherished for 200 years."
+                self.apply_effect(new_memory)
+            global_vars.turn_info_string += f"{self.name} gained {stacks_to_gain} memories.\n"
+        super().status_effects_at_end_of_turn()
 
 
 class Taily(Character):    # Frontline, damage reduction, protect allies

@@ -1326,7 +1326,7 @@ class KungFuA(character.Character):
     def skill1_logic(self):
         def critdmg_increase(self, target):
             self.apply_effect(StatsEffect('Crit Up', 6, True, {'critdmg' : 0.2, 'crit' : 0.2}))
-            target.apply_effect(StatsEffect('Critdef Down', 6, True, {'critdef' : -0.1}))
+            target.apply_effect(StatsEffect('Critdef Down', 6, False, {'critdef' : -0.1}))
         damage_dealt = self.attack(multiplier=2.6, repeat_seq=4, func_after_dmg=critdmg_increase, 
                                    target_kw1="n_lowest_attr", target_kw2="1", target_kw3="critdef", target_kw4="enemy")
         return damage_dealt
@@ -1602,6 +1602,46 @@ class Mandrake(character.Character):
         self.apply_effect(StatsEffect('Mandrake Passive', -1, True, {'maxhp' : 1.15, 'defense' : 2.5}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
+
+class Coward(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Coward"
+        self.skill1_description = "Increase defense by 50% for 10 turns. Same effect cannot be applied twice."
+        self.skill2_description = "Attack 1 closest enemy with 800% atk."
+        self.skill3_description = "Protect all allies. Take 50% damage for all allies. Reduce damage taken by 25% in this effect." \
+        " Start the battle with a Absorption Shield of 50% maxhp."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        if not self.has_effect_that_named("Concealed", "Coward_Concealed"):
+            concealed = StatsEffect('Concealed', 10, True, {'defense' : 1.5})
+            concealed.additional_name = "Coward_Concealed"
+            self.apply_effect(concealed)
+        return 0
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=8.0, repeat=1, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Dark Material", -1, True, False, self, 0.75, 0.5)
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
+
+        shield = AbsorptionShield('Cowardice', -1, True, int(self.maxhp * 0.5), False)
+        shield.can_be_removed_by_skill = False
+        self.apply_effect(shield)
 
 
 # ====================================
@@ -2721,7 +2761,7 @@ class Anubis(character.Character):
 
     def take_damage_aftermath(self, damage, attacker):
         if random.randint(1, 100) <= 12 and damage > 0:
-            print(f"{self.name} triggers skill 3.")
+            # print(f"{self.name} triggers skill 3.")
             for a in self.ally:
                 a.apply_effect(StatsEffect('Anubis Buff', 10, True, {'defense' : 1.12}))
 

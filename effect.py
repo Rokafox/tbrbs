@@ -5,7 +5,7 @@ import global_vars
 
 class Effect:
     def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0, is_set_effect=False, 
-                 tooltip_str=None, can_be_removed_by_skill=True):
+                 tooltip_str=None, can_be_removed_by_skill=True, show_stacks=False):
         self.name = name
         self.duration = duration
         self.is_buff = bool(is_buff)
@@ -15,11 +15,13 @@ class Effect:
         self.secondary_name = None
         self.is_set_effect = is_set_effect
         self.sort_priority = 1000 # The lower the number, the higher the priority. Default is 1000.
+        # priority 100-199 is used by Protected Effect.
         self.stacks = 1 
         self.apply_rule = "default" # "default", "stack"
         self.is_cc_effect = False
         self.tooltip_str = tooltip_str
         self.can_be_removed_by_skill = can_be_removed_by_skill
+        self.show_stacks = show_stacks
     
     def is_permanent(self):
         return self.duration == -1
@@ -105,6 +107,8 @@ class Effect:
             string += "Cannot be removed by skill.\n"
         if self.delay_trigger > 0:
             string += "Trigger in " + str(self.delay_trigger) + " turn(s)\n"
+        if self.show_stacks:
+            string += "Currently has " + str(self.stacks) + " stack(s)\n"
         string += self.tooltip_description()
         return string
     
@@ -122,26 +126,33 @@ class Effect:
 # Protected effect
 # When a protected character is about to take damage, that damage is taken by the protector instead. Does not apply to status damage.
 class ProtectedEffect(Effect):
-    def __init__(self, name, duration, is_buff, cc_immunity=False, protector=None, multiplier=1.0):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, protector=None, damage_after_reduction_multiplier=1.0, damage_redirect_percentage=1.0):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.cc_immunity = cc_immunity
         self.protector = protector
-        self.multiplier = multiplier
-        self.sort_priority = 100
+        self.damage_after_reduction_multiplier = damage_after_reduction_multiplier
+        self.damage_redirect_percentage = damage_redirect_percentage
+        self.sort_priority = self.calculate_sort_priority()
         self.is_protected_effect = True
+
+    def calculate_sort_priority(self):
+        return int(100 + self.damage_redirect_percentage * 99)
 
     def protected_apply_effect_during_damage_step(self, character, damage, attacker, func_after_dmg):
         if self.protector is None:
             raise Exception
-        if self.protector.is_alive():
-            damage = damage * self.multiplier
-            self.protector.take_damage(damage, attacker, func_after_dmg, disable_protected_effect=True)
+        if damage == 0:
             return 0
+        if self.protector.is_alive():
+            new_damage = damage * self.damage_after_reduction_multiplier
+            redirect_damage = new_damage * self.damage_redirect_percentage
+
+            self.protector.take_damage(redirect_damage, attacker, func_after_dmg, disable_protected_effect=True)
+            return new_damage - redirect_damage
         else:
             return damage
     
     def apply_effect_on_trigger(self, character):
-        # Double check, the first is to handle cases of leaving party unexpectedly.
         if self.protector not in character.ally or self.protector.is_dead():
             character.remove_effect(self)
 
@@ -150,7 +161,9 @@ class ProtectedEffect(Effect):
             character.remove_effect(self)
 
     def tooltip_description(self):
-        return f"Protected by {self.protector.name}."
+        reduction_info = f"Damage reduction: {(1 - self.damage_after_reduction_multiplier) * 100}%."
+        redirect_info = f"{self.damage_redirect_percentage * 100}% of the damage is redirected."
+        return f"Protected by {self.protector.name}. {reduction_info} {redirect_info}"
 
 
 # =========================================================
@@ -292,7 +305,7 @@ class FearEffect(Effect):
             return str + "Currently have no effect."
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                str += f"{key} is scaled to {value*100}%."
+                str += f"{key} is scaled to {value*100:.2f}%."
             else:
                 if value > 0:
                     str += f"{key} is increased by {value*100}%."
@@ -309,21 +322,22 @@ class FearEffect(Effect):
 
 class StatsEffect(Effect):
     def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True, 
-                 stats_dict_function=None, is_set_effect=False, can_be_removed_by_skill=True):
+                 stats_dict_function=None, is_set_effect=False, can_be_removed_by_skill=True,
+                 main_stats_additive_dict=None):
         """
-        Initializes a StatsEffect object.
-
-        Args:
-            name (str): The name of the effect.
-            duration (int): The duration of the effect.
-            is_buff (bool): Indicates whether the effect is a buff or a debuff.
-            stats_dict (dict, optional): A dictionary containing the stats to be modified and their corresponding values. Defaults to None.
-            condition (function, optional): A condition function that determines when the effect should be triggered. Defaults to None.
-            condition(character) -> bool: A function that returns True if the condition is met, and False otherwise.
-            use_active_flag (bool, optional): Indicates whether the stats update should be triggered only when the condition is met. Defaults to True.
-            stats_dict_function (function, optional): A function that dynamically updates the stats_dict when use_active_flag is False. Defaults to None.
-            is_set_effect (bool, optional): Indicates whether the effect is a set effect. Defaults to False.
-            can_be_removed_by_skill (bool, optional): Indicates whether the effect can be removed by a skill. Defaults to True.
+        name (str): The name of the effect.
+        duration (int): The duration of the effect.
+        is_buff (bool): Indicates whether the effect is a buff or a debuff.
+        stats_dict (dict, optional): A dictionary containing the stats to be modified and their corresponding values. Defaults to None.
+        condition (function, optional): A condition function that determines when the effect should be triggered. Defaults to None.
+        condition(character) -> bool: A function that returns True if the condition is met, and False otherwise.
+        use_active_flag (bool, optional): Indicates whether the stats update should be triggered only when the condition is met. Defaults to True.
+        stats_dict_function (function, optional): A function that dynamically updates the stats_dict when use_active_flag is False. Defaults to None.
+        is_set_effect (bool, optional): Indicates whether the effect is a set effect. Defaults to False.
+        can_be_removed_by_skill (bool, optional): Indicates whether the effect can be removed by a skill. Defaults to True.
+        main_stats_additive_dict: A dictionary containing main stats, for example {'hp': 200, 'atk: 40'}, this dict is added to additive_main_stats
+        of Character class on effect apply, and removed on effect removal. I do not want to implement a dynamic dict for this because it will be
+        complex.
         """
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
         self.stats_dict = stats_dict
@@ -337,15 +351,36 @@ class StatsEffect(Effect):
             self.stats_dict = self.stats_dict_function()
         self.is_set_effect = is_set_effect
         self.can_be_removed_by_skill = can_be_removed_by_skill
+        self.main_stats_additive_dict = main_stats_additive_dict
 
     def apply_effect_on_apply(self, character):
         if self.condition is None or self.condition(character):
-            character.update_stats(self.stats_dict, reversed=False)
+            if self.main_stats_additive_dict:
+                new_dict = {**self.main_stats_additive_dict, **{'effect_pointer': self}}
+                character.additive_main_stats.append(new_dict)
+                character.update_main_stats_additive(effect_pointer=self)
+
+            if self.stats_dict:
+                character.update_stats(self.stats_dict, reversed=False)
             self.flag_is_active = True
 
     def apply_effect_on_remove(self, character):
         if self.condition is None or self.condition(character):
-            character.update_stats(self.stats_dict, reversed=True)
+            if self.main_stats_additive_dict:
+                # find the dict in character.additive_main_stats which effect_pointer matchs self. Give exception if not found.
+                matching_dict = None
+                for dict_record in character.additive_main_stats:
+                    if dict_record.get('effect_pointer') == self:
+                        matching_dict = dict_record
+                        break
+                if matching_dict is None:
+                    raise Exception("Effect not found in character's additive_main_stats.")
+
+                character.update_main_stats_additive(reversed=True, effect_pointer=self)
+                character.additive_main_stats.remove(matching_dict)
+
+            if self.stats_dict:
+                character.update_stats(self.stats_dict, reversed=True)
 
     def apply_effect_on_trigger(self, character):
         if self.condition is not None and self.use_active_flag:
@@ -387,14 +422,22 @@ class StatsEffect(Effect):
                 string += "Effect is active.\n"
             else:
                 string += "Effect is not active.\n"
-        for key, value in self.stats_dict.items():
-            if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                string += f"{key} is scaled to {value*100}%."
-            else:
-                if value > 0:
-                    string += f"{key} is increased by {value*100}%."
+        if self.stats_dict:
+            for key, value in self.stats_dict.items():
+                if key in ["maxhp", "hp", "atk", "defense", "spd"]:
+                    string += f"{key} is scaled to {value*100:.2f}%."
                 else:
-                    string += f"{key} is decreased by {-value*100}%."
+                    if value > 0:
+                        string += f"{key} is increased by {value*100}%."
+                    else:
+                        string += f"{key} is decreased by {-value*100}%."
+        if self.main_stats_additive_dict:
+            for key, value in self.main_stats_additive_dict.items():
+                if key in ["maxhp", "hp", "atk", "defense", "spd"]:
+                    if value > 0:
+                        string += f"{key} is increased by {value}."
+                    else:
+                        string += f"{key} is decreased by {value}."
         return string
 
 # ---------------------------------------------------------
@@ -703,31 +746,34 @@ class ReductionShield(Effect):
         return str
     
 #---------------------------------------------------------
-# Effect shield 1 (before damage calculation, if character hp is below certain threshold, healhp for certain amount)
+# Effect shield 1: before damage calculation, if character hp is below certain threshold, heal hp for certain amount before damage calculation.
 # Only used by Fenrir
 class EffectShield1(Effect):
-    def __init__(self, name, duration, is_buff, threshold, heal_value, cc_immunity,
-                require_above_zero_dmg=False):
+    def __init__(self, name, duration, is_buff, hp_threshold, heal_function, cc_immunity,
+                require_above_zero_dmg=False, effect_applier=None):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
-        self.threshold = threshold
-        self.heal_value = heal_value
+        self.hp_threshold = hp_threshold
+        self.heal_function = heal_function
         self.cc_immunity = cc_immunity
-        self.sort_priority = 120
+        self.sort_priority = 200
         self.require_above_zero_dmg = require_above_zero_dmg
+        self.effect_applier = effect_applier
 
     def apply_effect_at_end_of_turn(self, character):
-        character.update_ally_and_enemy()
-        if character.has_neighbor("Fenrir") == False:
+        # character.update_ally_and_enemy()
+        # if character.has_neighbor("Fenrir") == False:
+        #     self.flag_for_remove = True
+        if self.effect_applier.is_dead():
             self.flag_for_remove = True
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
-        if character.hp < character.maxhp * self.threshold and (not self.require_above_zero_dmg or damage > 0):
-            character.heal_hp(self.heal_value, self)
+        if character.hp < character.maxhp * self.hp_threshold and (not self.require_above_zero_dmg or damage > 0):
+            character.heal_hp(self.heal_function(self.effect_applier), self)
         return damage
     
     def tooltip_description(self):
-        return f"When hp is below {self.threshold*100}%, heal for {self.heal_value} hp before damage calculation."
+        return f"When hp is below {self.hp_threshold*100}%, heal for {self.heal_function(self.effect_applier)} hp before damage calculation."
 
 
 #---------------------------------------------------------
@@ -741,7 +787,7 @@ class EffectShield2(Effect):
         self.cc_immunity = cc_immunity
         self.damage_reduction = damage_reduction
         self.shrink_rate = shrink_rate
-        self.sort_priority = 150
+        self.sort_priority = 220
         self.threshold = threshold
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
@@ -755,7 +801,7 @@ class EffectShield2(Effect):
             self.flag_for_remove = True
     
     def tooltip_description(self):
-        return f"Current damage reduction: {self.damage_reduction*100}%."
+        return f"Current damage reduction: {self.damage_reduction*100:.2f}%."
 
 
 #---------------------------------------------------------
@@ -769,7 +815,7 @@ class EffectShield3(Effect):
         self.cc_immunity = cc_immunity
         self.damage_reduction = damage_reduction
         self.damage_reflect = damage_reflect
-        self.sort_priority = 150
+        self.sort_priority = 220
 
         self.attacker = None
         self.actual_reflect = 0
@@ -794,7 +840,7 @@ class CancellationShield(Effect):
         self.is_buff = is_buff
         self.threshold = threshold
         self.cc_immunity = cc_immunity
-        self.sort_priority = 150
+        self.sort_priority = 220
         self.uses = uses
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
@@ -820,7 +866,7 @@ class CancellationShield2(Effect):
         self.is_buff = is_buff
         self.threshold = threshold
         self.cc_immunity = cc_immunity
-        self.sort_priority = 180
+        self.sort_priority = 250
 
     def apply_effect_during_damage_step(self, character, damage, attacker):
         damage = min(damage, character.maxhp * self.threshold)
@@ -838,7 +884,7 @@ class CancellationShield3(Effect):
         self.is_buff = is_buff
         self.threshold = threshold
         self.cc_immunity = cc_immunity
-        self.sort_priority = 150
+        self.sort_priority = 220
         self.uses = uses
 
     def apply_effect_during_damage_step(self, character, damage, attacker):

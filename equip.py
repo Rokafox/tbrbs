@@ -147,7 +147,7 @@ class Equip(Block):
         values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.60]
         rarity_values = {rarity: value for rarity, value in zip(self.rarity_list, values)}
         rarity_multiplier = rarity_values.get(self.rarity, 1.0)
-        return int(1000 * (self.stars_rating + 1) ** 2 * rarity_multiplier)
+        return int(2000 * (self.stars_rating + 1) ** 2 * rarity_multiplier)
 
     def update_stats_from_upgrade(self):
         values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.60]
@@ -215,32 +215,34 @@ class Equip(Block):
         if level < 200:
             extra_lines_to_generate = 1
         elif 200 <= level < 400:
-            extra_lines_to_generate = 2
+            extra_lines_to_generate = 1
         elif 400 <= level < 600:
-            extra_lines_to_generate = 3
+            extra_lines_to_generate = 2
         elif 600 <= level < 800:
-            extra_lines_to_generate = 4
+            extra_lines_to_generate = 3
         elif 800 <= level < 1000:
+            extra_lines_to_generate = 4
+        elif 1000 <= level < 2000:
             extra_lines_to_generate = 5
-        elif 1000 <= level:
-            extra_lines_to_generate = 6
+        elif 2000 <= level:
+            extra_lines_to_generate = 5
         else:
             extra_lines_to_generate = 0
         
         if self.type == self.type_list[2]:
-            self.maxhp_flat = max(normal_distribution(1, 3000, 1000, 500), 1)
+            self.maxhp_flat = max(normal_distribution(1, 5000, 2000, 500), 1)
             self.maxhp_flat /= 40
             self.maxhp_flat *= level
         elif self.type == self.type_list[0]:
-            self.atk_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.atk_flat = max(normal_distribution(1, 3000, 1200, 500) * 0.05, 1)
             self.atk_flat /= 40
             self.atk_flat *= level
         elif self.type == self.type_list[1]:
-            self.def_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.def_flat = max(normal_distribution(1, 3000, 1200, 500) * 0.05, 1)
             self.def_flat /= 40
             self.def_flat *= level
         elif self.type == self.type_list[3]:
-            self.spd_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.spd_flat = max(normal_distribution(1, 3000, 1200, 500) * 0.05, 1)
             self.spd_flat /= 40
             self.spd_flat *= level
         else:
@@ -252,7 +254,7 @@ class Equip(Block):
             selected_attributes = random.sample(attributes, extra_lines_to_generate)
             
             for attr in selected_attributes:
-                value = normal_distribution(1, 2000, 500, 500) * 0.0001
+                value = normal_distribution(1, 2000, 500, 500) * 0.00015
                 setattr(self, attr, getattr(self, attr) + value)
         
         self.enhance_by_rarity()

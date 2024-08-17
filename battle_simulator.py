@@ -381,9 +381,9 @@ except FileNotFoundError:
     print("Player data not found, creating a new one...")
     if start_with_max_level:
         player = Nine(5000000000)
-        player.cleared_stages = 2199
+        player.cleared_stages = 2199 # 2199
     else:
-        player = Nine(80000)
+        player = Nine(500000)
         player.cleared_stages = 0
 
 # =====================================
@@ -396,12 +396,12 @@ def get_all_characters():
     global start_with_max_level
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
-                       "Yuri", "Dophine", "Tian", "Don", "Natasya", "Roseiri"]
+                       "Yuri", "Dophine", "Tian", "Don", "Natasya", "Roseiri", "MessengerRoseiri"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
     else:
-        all_characters = [eval(f"{name}('{name}', 10)") for name in character_names]
+        all_characters = [eval(f"{name}('{name}', 40)") for name in character_names]
     return all_characters
 
 all_characters = get_all_characters()
@@ -769,7 +769,7 @@ if __name__ == "__main__":
                                         "Autobattle Speed: ",
                                         ui_manager)
 
-    after_auto_battle_selection_menu = pygame_gui.elements.UIDropDownMenu(["Do Nothing", "Restart", "Shuffle Party"],
+    after_auto_battle_selection_menu = pygame_gui.elements.UIDropDownMenu(["Do Nothing", "Restart", "Shuffle Party", "Next Stage"],
                                                             "Do Nothing",
                                                             pygame.Rect((1080, 180), (156, 35)),
                                                             ui_manager)
@@ -819,10 +819,27 @@ if __name__ == "__main__":
             new_selection_of_monsters = random.sample([x for x in all_monsters if not x.is_boss], k=5)
         if not adventure_mode_stages.get(adventure_mode_current_stage):
             adventure_mode_stages[adventure_mode_current_stage] = new_selection_of_monsters
-        if adventure_mode_current_stage > 1000:
+        # if adventure_mode_current_stage > 1000:
+        if adventure_mode_current_stage < 500:
             for m in adventure_mode_stages[adventure_mode_current_stage]:
                 m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Common", 
-                                                            eq_level=int(adventure_mode_current_stage - 1000)))
+                                                            eq_level=int(adventure_mode_current_stage)))
+        elif 500 <= adventure_mode_current_stage < 1000:
+            for m in adventure_mode_stages[adventure_mode_current_stage]:
+                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Uncommon", 
+                                                            eq_level=int(adventure_mode_current_stage)))
+        elif 1000 <= adventure_mode_current_stage < 1500:
+            for m in adventure_mode_stages[adventure_mode_current_stage]:
+                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Rare", 
+                                                            eq_level=int(adventure_mode_current_stage)))
+        elif 1500 <= adventure_mode_current_stage < 2000:
+            for m in adventure_mode_stages[adventure_mode_current_stage]:
+                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Epic", 
+                                                            eq_level=int(adventure_mode_current_stage)))
+        elif 2000 <= adventure_mode_current_stage:
+            for m in adventure_mode_stages[adventure_mode_current_stage]:
+                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Unique", 
+                                                            eq_level=int(adventure_mode_current_stage)))
 
     def adventure_mode_stage_increase():
         global current_game_mode, adventure_mode_current_stage
@@ -830,13 +847,14 @@ if __name__ == "__main__":
             raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
         if adventure_mode_current_stage == 2200:
             text_box.set_text("We have reached the end of the world.\n")
-            return
+            return False
         if player.cleared_stages < adventure_mode_current_stage:
             text_box.set_text("We have not cleared the current stage.\n")
-            return
+            return False
         adventure_mode_current_stage += 1
         adventure_mode_generate_stage()
         set_up_characters_adventure_mode()
+        return True
 
     def adventure_mode_stage_decrease():
         global current_game_mode, adventure_mode_current_stage
@@ -1535,7 +1553,7 @@ if __name__ == "__main__":
             character.status_effects_start_of_turn()
             character.record_battle_turns()
 
-        if not is_someone_alive(party1) or not is_someone_alive(party2):
+        if not is_someone_alive(party1) or not is_someone_alive(party2) or turn > 300:
 
             buff_after = {character.name: character.buffs for character in itertools.chain(party1, party2)} 
             buff_after = {k: [x.name for x in buff_after[k]] for k in buff_after.keys()}
@@ -1574,6 +1592,8 @@ if __name__ == "__main__":
                     global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
                 else:
                     global_vars.turn_info_string += "Party 2 is defeated.\n"
+            else:
+                global_vars.turn_info_string += "Battle ended with no result.\n"
             text_box.append_html_text(global_vars.turn_info_string)
             return False
         
@@ -1588,7 +1608,7 @@ if __name__ == "__main__":
         for character in party2:
             character.update_ally_and_enemy()
 
-        if not is_someone_alive(party1) or not is_someone_alive(party2):
+        if not is_someone_alive(party1) or not is_someone_alive(party2) or turn > 300:
 
             buff_after = {character.name: character.buffs for character in itertools.chain(party1, party2)} 
             buff_after = {k: [x.name for x in buff_after[k]] for k in buff_after.keys()}
@@ -1627,6 +1647,8 @@ if __name__ == "__main__":
                     global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
                 else:
                     global_vars.turn_info_string += "Party 2 is defeated.\n"
+            else:
+                global_vars.turn_info_string += "Battle ended with no result.\n"
             text_box.append_html_text(global_vars.turn_info_string)
             return False
         
@@ -1657,7 +1679,7 @@ if __name__ == "__main__":
             character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
             character.record_healing_received() 
 
-        if not is_someone_alive(party1) or not is_someone_alive(party2):
+        if not is_someone_alive(party1) or not is_someone_alive(party2) or turn > 300:
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
@@ -1678,6 +1700,8 @@ if __name__ == "__main__":
                     global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
                 else:
                     global_vars.turn_info_string += "Party 2 is defeated.\n"
+            else:
+                global_vars.turn_info_string += "Battle ended with no result.\n"
             text_box.append_html_text(global_vars.turn_info_string)
             return False
         text_box.append_html_text(global_vars.turn_info_string)
@@ -2235,7 +2259,7 @@ if __name__ == "__main__":
     box_submenu_explore_button.set_tooltip("Explore the world with the funds you choose. You will be rewarded with random items, but no single item will be worth more than twice your funds.", delay=0.1, wrap_width=300)
     box_submenu_explore_button.hide()
 
-    box_submenu_explore_funds_selection = pygame_gui.elements.UIDropDownMenu(["50", "100", "200", "500", "1000", "5000", "10000"],
+    box_submenu_explore_funds_selection = pygame_gui.elements.UIDropDownMenu(["50", "100", "200", "500", "1000", "5000", "10000", "20000", "50000", "100000"],
                                                                     "200",
                                                                     pygame.Rect((760, 560), (100, 35)),
                                                                     ui_manager)
@@ -2533,10 +2557,12 @@ if __name__ == "__main__":
                     adventure_mode_stage_decrease()
                     box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
                     box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
+                    turn = 1
                 if event.ui_element == box_submenu_next_stage_button:
                     adventure_mode_stage_increase()
                     box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
                     box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
+                    turn = 1
                 if event.ui_element == box_submenu_explore_button:
                     explore_brave_new_world()
 
@@ -2572,6 +2598,20 @@ if __name__ == "__main__":
                             party1, party2 = set_up_characters_adventure_mode(True)
                         turn = 1
                         auto_battle_active = True
+                    elif instruction == "Next Stage":
+                        if current_game_mode == "Training Mode":
+                            text_box.set_text("==============================\n")
+                            restart_battle()
+                        elif current_game_mode == "Adventure Mode":
+                            if adventure_mode_stage_increase():
+                                box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
+                                box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
+                                turn = 1
+                            else:
+                                restart_battle()
+                        auto_battle_active = True
+                    else:
+                        raise Exception("Unknown Instruction")
                 else:
                     turn += 1
             auto_battle_bar.percent_full = auto_battle_bar_progress
