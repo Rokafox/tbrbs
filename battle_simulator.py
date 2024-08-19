@@ -4,7 +4,8 @@ from character import *
 import monsters
 from item import *
 from consumable import *
-import copy
+import copy, csv, re
+from io import StringIO
 running = False
 text_box = None
 start_with_max_level = True
@@ -396,7 +397,7 @@ def get_all_characters():
     global start_with_max_level
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
-                       "Yuri", "Dophine", "Tian", "Don", "Natasya", "Roseiri", "MessengerRoseiri"]
+                       "Yuri", "Dophine", "Tian", "Don", "Natasya", "Roseiri", "MessengerRoseiri", "Season"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -405,6 +406,8 @@ def get_all_characters():
     return all_characters
 
 all_characters = get_all_characters()
+all_monsters = [cls(name, 1) for name, cls in monsters.__dict__.items() 
+                if inspect.isclass(cls) and issubclass(cls, Character) and cls != Character]
 
 try:
     character_info_dict
@@ -428,17 +431,7 @@ else:
                 c.equip_item(item)
                 print(f"Equipped {str(item)} to {c.name}.")
 
-def get_all_monsters():
-    monster_names = [name for name in dir(monsters) 
-                    if inspect.isclass(getattr(monsters, name)) and 
-                    issubclass(getattr(monsters, name), Character) and 
-                    name != "Character"]
-    print("All monsters:")
-    print(monster_names)
-    all_monsters = [eval(f"monsters.{name}('{name}', 1)") for name in monster_names]
-    return all_monsters
 
-all_monsters = get_all_monsters()
 
 
 # ---------------------------------------------------------
@@ -457,6 +450,13 @@ if __name__ == "__main__":
     debug_ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
 
     pygame.display.set_caption("Battle Simulator")
+
+    if not os.path.exists("./.tmp"):
+        os.mkdir("./.tmp")
+
+    # clean everything in ./.tmp, old data
+    for file in os.listdir("./.tmp"):
+        os.remove(f"./.tmp/{file}")
 
     # =====================================
     # Load Images
@@ -725,12 +725,19 @@ if __name__ == "__main__":
                                         tool_tip_text = "Skip to the end of the battle.")
     button3.set_tooltip("Skip to the end of the battle but no reward.", delay=0.1, wrap_width=300)
 
-    button_left_clear_board = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
-                                        text='Clear Board',
+    # button_left_clear_board = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
+    #                                     text='Clear Board',
+    #                                     manager=ui_manager,
+    #                                     tool_tip_text = "Remove all text from the text box, text box will be slower if there are too many text.")
+    # button_left_clear_board.set_tooltip("Remove all text from the text box, text box will be slower if there are too many text.", delay=0.1, wrap_width=300)
+
+    current_display_chart = "Damage Dealt Chart"
+    button_left_change_chart = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
+                                        text='Switch Chart',
                                         manager=ui_manager,
-                                        tool_tip_text = "Remove all text from the text box, text box will be slower if there are too many text.")
-    button_left_clear_board.set_tooltip("Remove all text from the text box, text box will be slower if there are too many text.", delay=0.1, wrap_width=300)
-    
+                                        tool_tip_text = "")
+    button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
+
     button_quit_game = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 540), (156, 50)),
                                         text='Quit',
                                         manager=ui_manager,
@@ -845,7 +852,7 @@ if __name__ == "__main__":
         global current_game_mode, adventure_mode_current_stage
         if current_game_mode == "Training Mode":
             raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
-        if adventure_mode_current_stage == 2200:
+        if adventure_mode_current_stage == 2300:
             text_box.set_text("We have reached the end of the world.\n")
             return False
         if player.cleared_stages < adventure_mode_current_stage:
@@ -871,7 +878,7 @@ if __name__ == "__main__":
     adventure_mode_stages = {} # int : list of monsters
     if player.cleared_stages > 0:
         print(f"Loading adventure mode stages from player data. Current stage: {player.cleared_stages}")
-        adventure_mode_current_stage = min(player.cleared_stages + 1, 2200)
+        adventure_mode_current_stage = min(player.cleared_stages + 1, 2300)
     else:
         adventure_mode_current_stage = 1
     adventure_mode_generate_stage()
@@ -1567,11 +1574,15 @@ if __name__ == "__main__":
 
             redraw_ui(party1, party2, refill_image=True, main_char=None, 
                     buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
-                    shield_value_diff_dict=shield_value_diff)
+                    shield_value_diff_dict=shield_value_diff, also_draw_chart=False)
 
             for character in itertools.chain(party1, party2):
                 character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
-                character.record_healing_received() 
+                character.record_healing_received()
+
+            create_tmp_damage_data_csv(party1, party2)
+            create_healing_data_csv(party1, party2)
+            draw_chart()
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
@@ -1622,11 +1633,15 @@ if __name__ == "__main__":
 
             redraw_ui(party1, party2, refill_image=True, main_char=None, 
                     buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
-                    shield_value_diff_dict=shield_value_diff)
+                    shield_value_diff_dict=shield_value_diff, also_draw_chart=False)
 
             for character in itertools.chain(party1, party2):
                 character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
                 character.record_healing_received() 
+
+            create_tmp_damage_data_csv(party1, party2)
+            create_healing_data_csv(party1, party2)
+            draw_chart()
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
@@ -1673,11 +1688,15 @@ if __name__ == "__main__":
 
         redraw_ui(party1, party2, refill_image=True, main_char=the_chosen_one, 
                   buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
-                  shield_value_diff_dict=shield_value_diff, redraw_eq_slots=False)
+                  shield_value_diff_dict=shield_value_diff, redraw_eq_slots=False, also_draw_chart=False)
 
         for character in itertools.chain(party1, party2):
             character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
-            character.record_healing_received() 
+            character.record_healing_received()
+
+        create_tmp_damage_data_csv(party1, party2)
+        create_healing_data_csv(party1, party2)
+        draw_chart()
 
         if not is_someone_alive(party1) or not is_someone_alive(party2) or turn > 300:
 
@@ -1753,6 +1772,8 @@ if __name__ == "__main__":
 
             turn += 1
 
+        create_tmp_damage_data_csv(party1, party2)
+        create_healing_data_csv(party1, party2)
         redraw_ui(party1, party2, redraw_eq_slots=False)
 
         text_box.set_text("=====================================\n")
@@ -1774,6 +1795,96 @@ if __name__ == "__main__":
                 text_box.append_html_text("Party 2 is defeated.\n")
 
 
+    df_damage_summary = None
+    df_healing_summary = None
+
+    def create_tmp_damage_data_csv(p1, p2):
+        global df_damage_summary
+        if not os.path.exists("./.tmp"):
+            os.makedirs("./.tmp")
+        data = {}
+        original_character_list = [character.name for character in itertools.chain(p1, p2)]
+        for character in itertools.chain(party1, party2):
+            # print(character.damage_taken_history)
+            # [[], [], [], [], [], [], [], [], [], [], [], [], [(8798, <character.Pheonix object at 0x7a1d667b4250>, 'normal_critical')], 
+            # [(2500, <character.Pheonix object at 0x7a1d667b4250>, 'status')], [(2500, <character.Pheonix object at 0x7a1d667b4250>, 'status')], 
+            # [(2500, <character.Pheonix object at 0x7a1d667b4250>, 'status')], [(2500, <character.Pheonix object at 0x7a1d667b4250>, 'status')], 
+            # [(2500, <character.Pheonix object at 0x7a1d667b4250>, 'status')], [(2500, <character.Pheonix object at 0x7a1d667b4250>, 'status')], 
+            # [(2500, <character.Pheonix object at 0x7a1d667b4250>, 'status')], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], 
+            # [], [], [], [], [(0, <character.Yuri object at 0x7a1d667b43d0>, 'normal'), 
+            # (2597, <character.Yuri object at 0x7a1d667b43d0>, 'normal'), (3243, <character.Yuri object at 0x7a1d667b43d0>, 'normal'), 
+            # (2448, <character.Yuri object at 0x7a1d667b43d0>, 'normal'), (3213, <character.Yuri object at 0x7a1d667b43d0>, 'normal')], 
+            # [(10441, <character.Requina object at 0x7a1d667b4370>, 'normal')], [(11222, <character.Yuri object at 0x7a1d667b43d0>, 'normal'), 
+            # (2520, <character.Yuri object at 0x7a1d667b43d0>, 'normal'), (2459, <character.Yuri object at 0x7a1d667b43d0>, 'normal'), 
+            # (2969, <character.Yuri object at 0x7a1d667b43d0>, 'normal'), (6193, <character.Yuri object at 0x7a1d667b43d0>, 'normal_critical')], 
+            # [(6055, <character.Gabe object at 0x7a1d667b43a0>, 'normal')], [(5306, <character.Gabe object at 0x7a1d667b43a0>, 'normal')], [], 
+            # [(4934, <character.Requina object at 0x7a1d667b4370>, 'normal')], [(500, <character.Requina object at 0x7a1d667b4370>, 'status')], 
+            # [(500, <character.Requina object at 0x7a1d667b4370>, 'status'), (5146, <character.Requina object at 0x7a1d667b4370>, 'normal')], ...
+            # filtered_damage_taken_history = [
+            #     (record[0][0], record[0][1].name, record[0][2]) if record else record 
+            #     for record in character.damage_taken_history
+            # ] # Incorrect
+            filtered_damage_taken_history = []
+            for record in character.damage_taken_history:
+                if not record:
+                    filtered_damage_taken_history.append(record)
+                    continue
+                else:
+                    for abc_tuple in record:
+                        filtered_damage_taken_history.append((abc_tuple[0], abc_tuple[1].name, abc_tuple[2]))
+              
+            data[character.name] = filtered_damage_taken_history
+        with open("./.tmp/tmp_damage_data.csv", "w", newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Character", "Damage Taken History"])
+
+            for name, history in data.items():
+                writer.writerow([name, history])
+        import analyze
+        df = analyze.create_damage_summary_new(original_character_list)
+        df_damage_summary = df
+        analyze.damage_summary_visualize(df)
+            
+
+    def create_healing_data_csv(p1, p2):
+        global df_healing_summary
+        if not os.path.exists("./.tmp"):
+            os.makedirs("./.tmp")
+        data = {}
+        original_character_list = [character.name for character in itertools.chain(p1, p2)]
+        for character in itertools.chain(party1, party2):
+            # print(character.healing_received_history) # Basically the same as damage_taken_history, but only (healing, healer) tuple
+            # [[], [], [], [], [], [], [], [], [], [(10066, <character.Clover object at 0x72c1b410d4b0>)], [], [], 
+            # [(5952, <character.Clover object at 0x72c1b410d4b0>)], [], [], [], [], [], [], [], [], [], [], [], [], [], 
+            # [], [], [], [], [], [], [], [], [(25957, <character.Clover object at 0x72c1b410d4b0>)], [], [], [], [], [], [], 
+            # [], [], [], [], [], [], [], [], [], [], [], [], [(10500, <character.Clover object at 0x72c1b410d4b0>)], [], [], 
+            # [], [(10332, <character.Clover object at 0x72c1b410d4b0>)], [], [], [], [], []]
+            # We sometimes have a string as healer instead of a character object, i.e. "Equipment"
+            filtered_healing_received_history = []
+            for record in character.healing_received_history:
+                if not record:
+                    filtered_healing_received_history.append(record)
+                    continue
+                else:
+                    for ab_tuple in record:
+                        if isinstance(ab_tuple[1], str):
+                            filtered_healing_received_history.append((ab_tuple[0], ab_tuple[1]))
+                        else:
+                            filtered_healing_received_history.append((ab_tuple[0], ab_tuple[1].name))
+            data[character.name] = filtered_healing_received_history
+        with open("./.tmp/tmp_healing_data.csv", "w", newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Character", "Healing Received History"])
+
+            for name, history in data.items():
+                writer.writerow([name, history])
+        import analyze
+        df = analyze.create_healing_summary(original_character_list)
+        df_healing_summary = df
+        analyze.healing_summary_visualize(df)
+
+
+            
     def restart_battle():
         global turn
         global_vars.turn_info_string = ""
@@ -2065,9 +2176,16 @@ if __name__ == "__main__":
     health_bar_party2 = [character_healthbar_slot_buttom1, character_healthbar_slot_buttom2, character_healthbar_slot_buttom3, character_healthbar_slot_buttom4, character_healthbar_slot_buttom5]
 
 
+    damage_graph_slot = pygame_gui.elements.UIImage(pygame.Rect((1080, 655), (500, 225)),
+                                        pygame.Surface((500, 225)),
+                                        ui_manager)
+    # ./tmp/damage_dealt.png
+    damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
+
+
     def redraw_ui(party1, party2, *, refill_image=True, main_char=None,
                   buff_added_this_turn=None, debuff_added_this_turn=None, shield_value_diff_dict=None, redraw_eq_slots=True,
-                  ):
+                  also_draw_chart=True):
 
         def redraw_party(party, image_slots, equip_slots_weapon, equip_slots_armor, equip_slots_accessory, equip_stats_boots, 
                          labels, healthbar, equip_effect_slots):
@@ -2225,6 +2343,46 @@ if __name__ == "__main__":
                      label_party1, health_bar_party1, equip_set_slot_party1)
         redraw_party(party2, image_slots_party2, equip_slot_party2_weapon, equip_slot_party2_armor, equip_slot_party2_accessory, equip_slot_party2_boots,
                      label_party2, health_bar_party2, equip_set_slot_party2)
+        if also_draw_chart:
+            draw_chart()
+
+
+
+    def draw_chart():
+        global current_display_chart, df_damage_summary
+        match current_display_chart:
+            case "Damage Dealt Chart":
+                if os.path.exists("./.tmp/damage_dealt.png"):
+                    damage_graph_slot.set_image(pygame.image.load("./.tmp/damage_dealt.png"))
+                    if df_damage_summary is not None:
+                        tooltip_text = "Damage dealt summary:\n"
+                        for line in df_damage_summary.values:
+                            tooltip_text += f"{line[0]} dealt {line[6]} damage in total, {line[7]} normal damage, {line[8]} critical damage, {line[9]} status damage, and {line[10]} bypass damage.\n"
+                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                else:
+                    damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
+            case "Damage Taken Chart":
+                if os.path.exists("./.tmp/damage_taken.png"):
+                    damage_graph_slot.set_image(pygame.image.load("./.tmp/damage_taken.png"))
+                    if df_damage_summary is not None:
+                        tooltip_text = "Damage taken summary:\n"
+                        for line in df_damage_summary.values:
+                            tooltip_text += f"{line[0]} received {line[1]} damage in total, {line[2]} normal damage, {line[3]} critical damage, {line[4]} status damage, and {line[5]} bypass damage.\n"
+                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                else:
+                    damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
+            case "Healing Chart":
+                if os.path.exists("./.tmp/healing_summary.png"):
+                    damage_graph_slot.set_image(pygame.image.load("./.tmp/healing_summary.png"))
+                    if df_healing_summary is not None:
+                        tooltip_text = "Healing summary:\n"
+                        for line in df_healing_summary.values:
+                            tooltip_text += f"{line[0]} received {line[1]} healing in total, {line[2]} healing is given.\n"
+                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                else:
+                    damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
+            case _:
+                raise Exception(f"Unknown current_display_chart: {current_display_chart}")
 
     # =====================================
     # Text Entry Box Section
@@ -2412,8 +2570,20 @@ if __name__ == "__main__":
 
 
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
-                if event.ui_element == button_left_clear_board:
-                    text_box.set_text("==============================\n")
+                if event.ui_element == button_left_change_chart:
+                    if current_display_chart == "Damage Dealt Chart":
+                        current_display_chart = "Damage Taken Chart"
+                        draw_chart()
+                        button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
+                    elif current_display_chart == "Damage Taken Chart":
+                        # current_display_chart = "Healing Chart" # Implemented
+                        current_display_chart = "Healing Chart"
+                        draw_chart()
+                        button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
+                    elif current_display_chart == "Healing Chart":
+                        current_display_chart = "Damage Dealt Chart"
+                        draw_chart()
+                        button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
                 if event.ui_element == button1: # Shuffle party
                     text_box.set_text("==============================\n")
                     if current_game_mode == "Training Mode":

@@ -1,8 +1,8 @@
-from character import *
+import character
 import inspect
 import monsters
 from equip import generate_equips_list
-import random, sys, csv, copy, time
+import random, sys, csv, copy, time, itertools
 import global_vars
 
 
@@ -17,20 +17,12 @@ def fine_print(*args, mode="default", **kwargs):
 
 
 def get_all_characters(test_mode):
-    character_names = ["Lillia", "Poppy", "Iris", "Freya", "Luna", "Clover", "Ruby", "Olive", "Fenrir", "Cerberus", "Pepper",
-                       "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Chiffon", "Ophelia", "Requina", "Gabe", "Yuri", "Dophine",
-                       "Tian", "Don", "Natasya", "Roseiri", "MessengerRoseiri"]
-
-    all_characters = [eval(f"{name}('{name}', 40)") for name in character_names]
-
-    # get all monsters class names in monsters.py, search for all classes that is a subclass of Character
-    monster_names = [name for name in dir(monsters) 
-                    if inspect.isclass(getattr(monsters, name)) and 
-                    issubclass(getattr(monsters, name), Character) and 
-                    name != "Character"]
-    print("All monsters:")
-    print(monster_names)
-    all_monsters = [eval(f"monsters.{name}('{name}', 40)") for name in monster_names]
+    all_characters = [cls(name, 40) for name, cls in character.__dict__.items() 
+                    if inspect.isclass(cls) and issubclass(cls, character.Character) and cls != character.Character]
+    all_monsters = [cls(name, 40) for name, cls in monsters.__dict__.items() 
+                    if inspect.isclass(cls) and issubclass(cls, character.Character) and cls != character.Character]
+    print(f"All characters: {[x.name for x in all_characters]}")
+    print(f"All monsters: {[x.name for x in all_monsters]}")
 
     match (test_mode, type(test_mode)):
         case (1, int):
@@ -95,22 +87,35 @@ def calculate_win_loss_rate(wins_data, losses_data, write_csv=False):
         total_games = wins + losses
         winrate = wins / total_games * 100 if total_games > 0 else 0
         character, equipment = key.split("_")
-        result[key] = {'character_name': character, 'equipment_set': equipment, 'wins': wins, 'losses': losses, 'winrate': winrate}
+        
+        is_boss = False
+        hack = False
+        try: 
+            hack = eval(f"monsters.{character}('{character}', 40)").is_boss
+        except Exception:
+            pass
+        if hack:
+            is_boss = True
+        
+        result[key] = {
+            'character_name': character,
+            'equipment_set': equipment,
+            'wins': wins,
+            'losses': losses,
+            'winrate': winrate,
+            'is_boss': is_boss
+        }
 
     # Sort the result, sort by A-Z of keys
     sorted_result = {k: v for k, v in sorted(result.items(), key=lambda item: item[0])}
 
     # Write to CSV if enabled
     if write_csv:
-        with open('win_loss_data.csv', 'w', newline='', encoding='utf-8') as file:
-            writer = csv.DictWriter(file, fieldnames=['character_name', 'equipment_set', 'wins', 'losses', 'winrate'])
+        with open('./reports/win_loss_data.csv', 'w', newline='', encoding='utf-8') as file:
+            writer = csv.DictWriter(file, fieldnames=['character_name', 'equipment_set', 'wins', 'losses', 'winrate', 'is_boss'])
             writer.writeheader()
             for k, v in sorted_result.items():
                 writer.writerow(v)
-
-    # max_key_length = max(len(key) for key in sorted_result)
-    # for k, v in sorted_result.items():
-    #     print(f"{k:>{max_key_length}}: {v['wins']:>5} wins, {v['losses']:>5} losses, {v['winrate']:>6.2f}% winrate")
 
     return sorted_result
 
@@ -254,14 +259,14 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 5000
+        sample = 6000
     a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze
         data = analyze.create_report()
         print("Report generated and saved to ./reports/performance.txt")
-        analyze.generate_heatmap(data)
+        analyze.report_generate_heatmap(data)
         print("Heatmap generated and saved to ./reports/heatmap.png")
     except Exception as e:
         print(e)
