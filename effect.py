@@ -92,24 +92,25 @@ class Effect:
     def print_stats_html(self):
         color_buff = "#659a00"
         color_debuff = "#ff0000"
+        string_unremovable = ""
+        if not self.can_be_removed_by_skill or self.is_set_effect:
+            string_unremovable += ": Unremovable"
         if self.is_buff:
             if self.duration == -1:
-                string = "<font color=" + color_buff + ">" + self.name + ": Permanent</font>" + "\n"
+                string = "<font color=" + color_buff + ">" + self.name + ": Permanent" + string_unremovable + "</font>" + "\n"
             else:
-                string = "<font color=" + color_buff + ">" + self.name + ": " + str(self.duration) + " turn(s) remaining</font>" + "\n"
+                string = "<font color=" + color_buff + ">" + self.name + ": " + str(self.duration) + " turn(s)" + string_unremovable + "</font>" + "\n"
         else:
             if self.duration == -1:
-                string = "<font color=" + color_debuff + ">" + self.name + ": Permanent</font>" + "\n"
+                string = "<font color=" + color_debuff + ">" + self.name + ": Permanent" + string_unremovable + "</font>" + "\n"
             else:
-                string = "<font color=" + color_debuff + ">" + self.name + ": " + str(self.duration) + " turn(s) remaining</font>" + "\n"
+                string = "<font color=" + color_debuff + ">" + self.name + ": " + str(self.duration) + " turn(s)" + string_unremovable + "</font>" + "\n"
         if self.cc_immunity:
-            string += "Grants CC immunity.\n"
-        if not self.can_be_removed_by_skill or self.is_set_effect:
-            string += "Cannot be removed by skill.\n"
+            string += "Grants CC immunity. "
         if self.delay_trigger > 0:
-            string += "Trigger in " + str(self.delay_trigger) + " turn(s)\n"
+            string += "Trigger in " + str(self.delay_trigger) + " turn(s) "
         if self.show_stacks:
-            string += "Currently has " + str(self.stacks) + " stack(s)\n"
+            string += "Currently has " + str(self.stacks) + " stack(s) "
         string += self.tooltip_description()
         return string
     
@@ -163,7 +164,7 @@ class ProtectedEffect(Effect):
             character.remove_effect(self)
 
     def tooltip_description(self):
-        reduction_info = f"Damage reduction: {(1 - self.damage_after_reduction_multiplier) * 100}%."
+        reduction_info = f"Damage reduction: {(1 - self.damage_after_reduction_multiplier) * 100:.1f}%."
         redirect_info = f"{self.damage_redirect_percentage * 100}% of the damage is redirected."
         return f"Protected by {self.protector.name}. {reduction_info} {redirect_info}"
 
@@ -196,7 +197,7 @@ class AbsorptionShield(Effect):
             return 0
         
     def tooltip_description(self):
-        return f"Absorbs up to {self.shield_value} damage."
+        return f"Absorbs up to {self.shield_value:.1f} damage."
 
 #---------------------------------------------------------
 
@@ -238,9 +239,9 @@ class ReductionShield(Effect):
             else:
                 str += f"Increases damage taken by {self.effect_value*100}%."
         elif self.damage_function:
-            str += f"Damage reduction is further calculated by a function."
+            str += f" Damage reduction is further calculated by a function."
         if self.requirement_description is not None:
-            str += f"\nRequirement: {self.requirement_description}"
+            str += f" Requirement: {self.requirement_description}"
         return str
     
 #---------------------------------------------------------
@@ -269,7 +270,7 @@ class EffectShield1(Effect):
         return damage
     
     def tooltip_description(self):
-        return f"When hp is below {self.hp_threshold*100}%, heal for {self.heal_function(self.effect_applier)} hp before damage calculation."
+        return f"When hp is below {self.hp_threshold*100:.1f}%, heal for {self.heal_function(self.effect_applier):.1f} hp before damage calculation."
 
 
 #---------------------------------------------------------
@@ -347,7 +348,7 @@ class CancellationShield(Effect):
                 damage = min(damage, character.maxhp * self.threshold)
             if self.cancel_below_instead:
                 damage = max(0, damage - character.maxhp * self.threshold)
-            else:
+            if not self.cancel_below_instead and not self.cancel_excessive_instead:
                 damage = 0
             return damage
         else:
@@ -994,6 +995,8 @@ class NotTakingDamageEffect(Effect):
         self.effect_to_apply = effect_to_apply
 
     def apply_effect_at_end_of_turn(self, character):
+        if character.is_dead():
+            return
         twd = character.get_num_of_turns_not_taken_damage()
         if twd >= self.require_turns_without_damage:
             character.apply_effect(self.effect_to_apply)
@@ -1094,9 +1097,9 @@ class EquipmentSetEffect_Militech(Effect):
         string = ""
         if self.condition is not None:
             if self.flag_is_active:
-                string += "Effect is active.\n"
+                string += "Effect is active. "
             else:
-                string += "Effect is not active.\n"
+                string += "Effect is not active. "
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
                 string += f"{key} is scaled to {value*100}% on condition."
@@ -1371,8 +1374,8 @@ class RequinaGreatPoisonEffect(Effect):
         self.apply_effect_on_apply(character)
 
     def tooltip_description(self):
-        return f"Great Poison stacks: {self.stacks}.\nTake {int(self.value_onestack * self.stacks * 100)}% max hp status damage each turn." \
-            f"\nStats are decreased by {self.stacks}%."
+        return f"Great Poison stacks: {self.stacks}. Take {int(self.value_onestack * self.stacks * 100)}% max hp status damage each turn." \
+            f" Stats are decreased by {self.stacks}%."
 
 
 class PharaohPassiveEffect(Effect):

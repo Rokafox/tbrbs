@@ -2287,7 +2287,7 @@ class Emperor(character.Character):
         pass
 
     def status_effects_at_end_of_turn(self):
-        if self.get_num_of_turns_not_taken_damage() >= 5:
+        if self.get_num_of_turns_not_taken_damage() >= 5 and self.is_alive():
             for ally in self.ally:
                 if not ally.has_effect_that_named('Emperor Pride'):
                     ally.apply_effect(StatsEffect('Emperor Pride', 6, True, {'atk' : 1.3, 'spd' : 1.3}))

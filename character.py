@@ -1178,9 +1178,9 @@ class Character:
                 "Apply Sovereign effect when taking damage, Sovereign increases atk by 20% and last 4 turns. Max 5 active effects.\n"
         elif set_name == "Snowflake":
             str += "Snowflake\n" \
-                "Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 25% hp and gain the following effect for 6 turns:\n" \
-                "atk, def, maxhp, spd are increased by 25%.\n" \
-                "Each activation of this effect increases the stats bonus and healing by 25%.\n"
+                "Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 25% hp and gain the following effect for 6 turns:" \
+                " atk, def, maxhp, spd are increased by 25%." \
+                " Each activation of this effect increases the stats bonus and healing by 25%.\n"
         elif set_name == "Flute":
             str += "Flute\n" \
                 "On one action, when successfully attacking enemy for 4 times, all enemies take status damage equal to 130% of self atk.\n"
@@ -1189,8 +1189,8 @@ class Character:
                 "While attacking, damage increases by 60%/30%/0%/-30%/-60% depending on the proximity of the target.\n"
         elif set_name == "Dawn":
             str += "Dawn\n" \
-                "Atk increased by 24%, crit increased by 12% when hp is full.\n" \
-                "One time only, when dealing normal or skill attack damage, damage is increased by 120%.\n" 
+                "Atk increased by 24%, crit increased by 12% when hp is full." \
+                " One time only, when dealing normal or skill attack damage, damage is increased by 120%.\n" 
         elif set_name == "Bamboo":
             str += "Bamboo\n" \
                 "After taking down an enemy with normal or skill attack, for 5 turns," \
@@ -1292,7 +1292,6 @@ class Poppy(Character):
     """
     Many character skill ideas are from afk mobile games, this line is written in 2024/01/18
     Attacker, can be paired with high damage reduction support to utilize burn effect
-    TODO: Add such support character
     Build: atk, crit, critdmg, penetration
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -2004,14 +2003,14 @@ class Roseiri(Character):
         pass
 
 
-class MessengerRoseiri(Character):
+class Fox(Character):
     """
     Tanky support, counter status effects
     Build: hp, spd, def
     """    
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
-        self.name = "MessengerRoseiri"
+        self.name = "Fox"
         self.skill1_description = "4 hits on random enemies, 220% atk each. Each attack has a 70% chance to increase the target's damage taken by 10% for 2 turns."
         self.skill2_description = "Using the angelic power gained through the contract, perform magic attack 4 times at" \
         " 160% atk against random enemies. If the number of stacks of 'Memory' is above 15 before the attack," \
@@ -2086,12 +2085,13 @@ class Taily(Character):
     A reference to a dead mobile game character
     Tank
     Build: hp, def
+    Effect name is rediculous but does not matter
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Taily"
         self.skill1_description = "305% atk on 3 closest enemies, Stun the target for 2 turns."
-        self.skill2_description = "700% atk on enemy with highest hp, damage increased by 50% if target has more than 90% hp percentage."
+        self.skill2_description = "700% atk on enemy with highest hp, damage increased by 50% if target has more than 90% hp ratio."
         self.skill3_description = "At start of battle, apply Blessing of Firewood to all allies." \
         " When an ally is about to take normal attack or skill damage, take the damage instead. Damage taken is reduced by 40% when taking damage for an ally." \
         " Cannot protect against status effect and status damage."
@@ -2122,6 +2122,46 @@ class Taily(Character):
         allies = [x for x in self.ally if x != self]
         for ally in allies:
             e = ProtectedEffect("Blessing of Firewood", -1, True, False, self, 0.6)
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
+
+
+class Air(Character):
+    """
+    tank
+    Build: spd, def, hp
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Air"
+        self.skill1_description = "For 20 turns, all allies have their accuracy increased by 120% of their evasion."
+        self.skill2_description = "Focus attack on closest enemy 3 times with 230% atk."
+        self.skill3_description = "At start of battle, apply Blessing of Air to all allies." \
+        " Before the ally is about to take damage, damage taken is reduced by 30%, then 30% of the damage is taken by you." \
+        " Cannot protect against status effect and status damage."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 5
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        for ally in self.ally:
+            e = StatsEffect("Accuracy Up", 20, True, {"acc": ally.eva * 1.2})
+            ally.apply_effect(e)
+        return 0
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=2.3, repeat_seq=3, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Blessing of Air", -1, True, False, self, 0.7, 0.3)
             e.can_be_removed_by_skill = False
             ally.apply_effect(e)
 
@@ -2319,6 +2359,61 @@ class Season(Character):
         self.apply_effect(passive)
 
 
+class Raven(Character):
+    """
+    Burst attacker
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Raven"
+        self.skill1_description = "Apply Blackbird on your self for 16 turns. For 12 turns, neighbor allies lose 30% of their atk, add the reduced atk to your atk." \
+        " If you already have Blackbird, its duration is refreshed."
+        self.skill2_description = "Attack enemy with lowest def 6 times with 285% atk."
+        self.skill3_description = "After using 2 times of skill 2, apply a shield on neighbor allies after the skill, absorb damage up to 80% of total" \
+        " damage dealt by skill 2."  
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.raven_skill2_counter = 0
+        self.raven_skill2_damage_dealt = 0
+
+    def clear_others(self):
+        self.raven_skill2_counter = 0
+        self.raven_skill2_damage_dealt = 0
+        super().clear_others()
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n Skill 2 counter : {self.raven_skill2_counter}\n Shield value : {self.raven_skill2_damage_dealt}\n"
+
+    def skill1_logic(self):
+        blackbird = self.get_effect_that_named("Blackbird", "Raven_Blackbird")
+        if blackbird:
+            blackbird.duration = 16
+            global_vars.turn_info_string += f"{self.name} refreshed Blackbird.\n"
+        else:
+            v = 0
+            for a in self.get_neighbor_allies_not_including_self():
+                v += a.atk * 0.3
+                a.apply_effect(StatsEffect("Atk Down", 12, False, {"atk": 0.7}))
+            self.apply_effect(StatsEffect("Blackbird", 16, True, main_stats_additive_dict={"atk": v}))
+        return 0
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="defense",target_kw4="enemy", multiplier=2.85, repeat=6)
+        self.raven_skill2_damage_dealt += damage_dealt
+        self.raven_skill2_counter += 1
+        if self.raven_skill2_counter == 2:
+            neighbors = self.get_neighbor_allies_not_including_self()
+            for ally in neighbors:
+                shield = AbsorptionShield("Shield", -1, True, self.raven_skill2_damage_dealt * 0.8, cc_immunity=False)
+                ally.apply_effect(shield)
+            self.raven_skill2_counter = 0
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+
 class Ophelia(Character):  
     """
     all rounder
@@ -2329,7 +2424,7 @@ class Ophelia(Character):
         self.name = "Ophelia"
         self.skill1_description = "Attack 1 enemy with highest atk with 460% atk. Consumes a card in possession to gain an additional effect according to the card type." \
         " Death Card: Skill damage increases by 50%, Stun the target for 4 turns." \
-        " Love Card: Reduce heal efficiency for 4 turns by 100%." \
+        " Love Card: Reduce heal efficiency for 6 turns by 100%." \
         " Luck Card: Skill cooldown does not apply." \
         " Gains Death Card after this skill."
         self.skill2_description = "All allies regenerates 5% of maxhp for 4 turns. Consumes a card in possession to gain an additional effect according to the card type." \
@@ -2355,7 +2450,7 @@ class Ophelia(Character):
                     target.apply_effect(StunEffect('Stun', duration=4, is_buff=False))
                     buff_to_remove_list.append(buff)
                 if buff.name == "Love Card":
-                    target.apply_effect(StatsEffect("Unhealable", 4, False, {"heal_efficiency": -1.0}))
+                    target.apply_effect(StatsEffect("Unhealable", 6, False, {"heal_efficiency": -1.0}))
                     buff_to_remove_list.append(buff)
 
         def card_amplify(self, target, final_damage):
@@ -2534,14 +2629,14 @@ class Gabe(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Gabe"
-        self.skill1_description = "Attack 3 closeset enemies with 420% atk. Damage increases by 20% if target has New Year Fireworks effect."
+        self.skill1_description = "Attack 3 closeset enemies with 300% atk. Damage increases by 150% if target has New Year Fireworks effect."
         self.skill2_description = "Apply New Year Fireworks to self for 4 times and heal hp by 400% atk." \
         " New Year Fireworks: Have 6 counters. Every turn, throw a dice, counter decreases by the dice number." \
         " When counter reaches 0, deal 600% of applier atk as status damage to self." \
         " At the end of the turn, this effect is applied to a random enemy." 
-        self.skill3_description = "Reduces chances of rolling 6 on dice by 50%."
+        self.skill3_description = "Reduces chances of rolling 1 and 6 on dice by 80%."
         self.skill1_cooldown_max = 5
-        self.skill2_cooldown_max = 4
+        self.skill2_cooldown_max = 3
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
@@ -2549,9 +2644,9 @@ class Gabe(Character):
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
             if target.has_effect_that_named("New Year Fireworks"):
-                final_damage *= 1.2
+                final_damage *= 2.5
             return final_damage
-        damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=4.2, repeat=1, func_damage_step=damage_amplify)
+        damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=3.0, repeat=1, func_damage_step=damage_amplify)
         return damage_dealt
 
     def skill2_logic(self):
@@ -2571,7 +2666,7 @@ class Gabe(Character):
 
     def fake_dice(self, sides=6, weights=None):
         if sides == 6:
-            weights = [100, 100, 100, 100, 100, 50]
+            weights = [20, 100, 100, 100, 100, 20]
         return super().fake_dice(sides, weights)
 
 
@@ -2589,7 +2684,7 @@ class Yuri(Character):
         " Eagle: Each Normal attack gains 4 additional focus attacks on the same target, each attack deals 150% atk damage." \
         " Cat: After normal attack, an ally with highest atk gains 'Gold Card' effect for 6 turns. Gold Card: atk, def, critical damage is increased by 30%." \
         " After 4 summons above, this skill cannot be used."
-        self.skill2_description = "This skill cannot be used. For each summon, heal 20% hp and gain buff effect for 12 turns." \
+        self.skill2_description = "This skill cannot be used. For each summon, heal 15% hp and gain buff effect for 12 turns." \
         " Bear: atk increased by 40%." \
         " Wolf: critical rate increased by 40%." \
         " Eagle: speed increased by 40%." \
@@ -2627,7 +2722,7 @@ class Yuri(Character):
                 global_vars.turn_info_string += f"{self.name} summoned Bear.\n"
                 self.bt_bear = True
                 self.apply_effect(StatsEffect("Bear", 12, True, {"atk": 1.40}))
-                self.heal_hp(self.maxhp * 0.2, self)
+                self.heal_hp(self.maxhp * 0.15, self)
                 return 0
             case (True, False, False, False):
                 wolf_effect = Effect("Wolf", -1, True, False)
@@ -2636,7 +2731,7 @@ class Yuri(Character):
                 global_vars.turn_info_string += f"{self.name} summoned Wolf.\n"
                 self.bt_wolf = True
                 self.apply_effect(StatsEffect("Wolf", 12, True, {"crit": 0.40}))
-                self.heal_hp(self.maxhp * 0.2, self)
+                self.heal_hp(self.maxhp * 0.15, self)
                 return 0
             case (True, True, False, False):
                 eagle_effect = Effect("Eagle", -1, True, False)
@@ -2645,7 +2740,7 @@ class Yuri(Character):
                 global_vars.turn_info_string += f"{self.name} summoned Eagle.\n"
                 self.bt_eagle = True
                 self.apply_effect(StatsEffect("Eagle", 12, True, {"spd": 1.40}))
-                self.heal_hp(self.maxhp * 0.2, self)
+                self.heal_hp(self.maxhp * 0.15, self)
                 return 0
             case (True, True, True, False):
                 cat_effect = Effect("Cat", -1, True, False)
@@ -2654,7 +2749,7 @@ class Yuri(Character):
                 global_vars.turn_info_string += f"{self.name} summoned Cat.\n"
                 self.bt_cat = True
                 self.apply_effect(StatsEffect("Cat", 12, True, {"heal_efficiency": 0.40}))
-                self.heal_hp(self.maxhp * 0.2, self)
+                self.heal_hp(self.maxhp * 0.15, self)
                 return 0
             case (True, True, True, True):
                 raise Exception("Skill can not be used. Should be already handled in status_effects_at_end_of_turn")

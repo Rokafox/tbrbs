@@ -397,7 +397,7 @@ def get_all_characters():
     global start_with_max_level
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
-                       "Yuri", "Dophine", "Tian", "Don", "Natasya", "Roseiri", "MessengerRoseiri", "Season"]
+                       "Yuri", "Dophine", "Tian", "Don", "Natasya", "Roseiri", "Fox", "Season", "Air", "Raven"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -2242,7 +2242,7 @@ if __name__ == "__main__":
                 # This should always be redrawn
                 if character.equipment_set_effects_tooltip() != "":
                     equip_effect_slots[i].show()
-                    equip_effect_slots[i].set_tooltip(character.equipment_set_effects_tooltip(), delay=0.1, wrap_width=300)
+                    equip_effect_slots[i].set_tooltip(character.equipment_set_effects_tooltip(), delay=0.1, wrap_width=400)
                 else:
                     equip_effect_slots[i].hide()
 
@@ -2250,7 +2250,7 @@ if __name__ == "__main__":
                 labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=500)
                 labels[i].set_text_alpha(255) if character.is_alive() else labels[i].set_text_alpha(125)
                 healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value()))
-                healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=300)
+                healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=400)
 
                 if main_char == character:
                     labels[i].set_text(f"--> lv {character.lvl} {character.name}")
