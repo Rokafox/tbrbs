@@ -330,6 +330,14 @@ class Character:
                 n = int(n)
                 yield from sorted(ts_available_enemy, key=lambda x: x.hp/x.maxhp)[:n]
 
+            case ("n_highest_hp_percentage_ally", n, _, _):
+                n = int(n)
+                yield from sorted(self.ally, key=lambda x: x.hp/x.maxhp, reverse=True)[:n]
+
+            case ("n_highest_hp_percentage_enemy", n, _, _):
+                n = int(n)
+                yield from sorted(ts_available_enemy, key=lambda x: x.hp/x.maxhp, reverse=True)[:n]
+
             case ("n_dead_allies", n, _, _):
                 n = int(n)
                 yield from mit.take(n, filter(lambda x: x.is_dead(), self.party))

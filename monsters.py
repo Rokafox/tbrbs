@@ -1193,7 +1193,7 @@ class Skeleton(character.Character):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Skeleton"
         self.skill1_description = "Attack enemy with highest hp with 300% atk 3 times."
-        self.skill2_description = "Attack enemy with highest hp with 900%, 80% chance to Stun for 3 turns."
+        self.skill2_description = "Attack enemy with highest hp with 900% atk, 80% chance to Stun for 4 turns."
         self.skill3_description = "Normal attack has 5% chance to Stun for 2 turns."
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 4
@@ -1210,7 +1210,7 @@ class Skeleton(character.Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 80:
-                target.apply_effect(StunEffect('Stun', duration=3, is_buff=False))
+                target.apply_effect(StunEffect('Stun', duration=4, is_buff=False))
         damage_dealt = self.attack(multiplier=9.0, repeat=1, func_after_dmg=stun_effect, target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
         return damage_dealt
         
@@ -1407,6 +1407,67 @@ class Biobird(character.Character):
 
     def skill3(self):
         pass
+
+
+class Captain(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Captain"
+        self.skill1_description = "Attack 1 enemy with highest hp percentage with 320% atk 2 times, if target is at full hp," \
+        " damage is increased by 100% and apply Def Down for 6 turns, def is decreased by 30%."
+        self.skill2_description = "Attack 1 enemy with lowest hp percentage with 320% atk 2 times, if target is at full hp," \
+        " damage is increased by 200% and apply Heal Reduced for 6 turns, heal efficiency is reduced by 40%."
+        self.skill3_description = "Normal attack attacks 2 times."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+        self.skill1_add_def_down = False
+        self.skill2_add_unhealable = False
+
+    def clear_others(self):
+        self.skill1_add_def_down = False
+        self.skill2_add_unhealable = False
+        super().clear_others()
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def def_down(self, target):
+            if self.skill1_add_def_down:
+                target.apply_effect(StatsEffect('Def Down', 6, False, {'defense' : 0.7}))
+                self.skill1_add_def_down = False
+            else:
+                pass
+        def full_hp(self, target, final_damage):
+            if target.hp == target.maxhp:
+                final_damage *= 2.0
+                self.skill1_add_def_down = True
+            return final_damage
+        damage_dealt = self.attack(multiplier=3.2, repeat=2, func_after_dmg=def_down, func_damage_step=full_hp, target_kw1="n_highest_hp_percentage_enemy", target_kw2="1")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def unhealable(self, target):
+            if self.skill2_add_unhealable:
+                target.apply_effect(StatsEffect('Heal Reduced', 6, False, {"heal_efficiency": -0.4}))
+                self.skill2_add_unhealable = False
+            else:
+                pass
+        def full_hp(self, target, final_damage):
+            if target.hp == target.maxhp:
+                final_damage *= 3.0
+                self.skill2_add_unhealable = True
+            return final_damage
+        damage_dealt = self.attack(multiplier=3.2, repeat=2, func_after_dmg=unhealable, func_damage_step=full_hp, target_kw1="n_lowest_hp_percentage_enemy", target_kw2="1")
+        return damage_dealt
+
+        
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        self.attack(repeat=2)
 
 
 # ====================================
