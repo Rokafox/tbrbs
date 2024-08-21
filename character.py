@@ -370,9 +370,13 @@ class Character:
                target_kw3="Undefined", target_kw4="Undefined", multiplier=2, repeat=1, func_after_dmg=None,
                func_damage_step=None, repeat_seq=1, func_after_miss=None, func_after_crit=None,
                always_crit=False, additional_attack_after_dmg=None, always_hit=False, target_list=None,
-               force_dmg=None, ignore_protected_effect=False) -> int:
-        # Warning: DO NOT MESS WITH repeat and repeat_seq TOGETHER, otherwise the result will be confusing
-        # -> damage dealt
+               force_dmg=None, ignore_protected_effect=False, func_for_multiplier=None) -> int:
+        """
+        -> damage_dealt
+        WARNING: DO NOT MESS WITH [repeat] AND [repeat_seq] TOGETHER, otherwise the result will be confusing.
+        use [repeat] for attacking [repeat] times, use [repeat_seq] for focusing on one target for [repeat_seq] times.
+        If [func_for_multiplier] is not None, [multiplier] will be overwritten by the return value of [func_for_multiplier].
+        """
         damage_dealt = 0
         for i in range(repeat):
             if repeat > 1 and i > 0:
@@ -394,6 +398,8 @@ class Character:
                 if self.is_dead():
                     break
                 global_vars.turn_info_string += f"{self.name} is targeting {target.name}.\n"
+                if not force_dmg and func_for_multiplier is not None:
+                    multiplier = func_for_multiplier(self, target) # multiplier is overwritten.
                 damage = self.atk * multiplier - target.defense * (1 - self.penetration) if not force_dmg else force_dmg
                 final_accuracy = self.acc - target.eva
                 dice = random.randint(1, 100)
@@ -2147,7 +2153,10 @@ class Air(Character):
 
     def skill1_logic(self):
         for ally in self.ally:
-            e = StatsEffect("Accuracy Up", 20, True, {"acc": ally.eva * 1.2})
+            is_buff = True
+            if ally.eva < 0:
+                is_buff = False
+            e = StatsEffect("Accuracy Up", 20, is_buff, {"acc": ally.eva * 1.2})
             ally.apply_effect(e)
         return 0
 
@@ -2684,7 +2693,7 @@ class Yuri(Character):
         " Eagle: Each Normal attack gains 4 additional focus attacks on the same target, each attack deals 150% atk damage." \
         " Cat: After normal attack, an ally with highest atk gains 'Gold Card' effect for 6 turns. Gold Card: atk, def, critical damage is increased by 30%." \
         " After 4 summons above, this skill cannot be used."
-        self.skill2_description = "This skill cannot be used. For each summon, heal 15% hp and gain buff effect for 12 turns." \
+        self.skill2_description = "This skill cannot be used. For each summon, recover 15% hp and gain buff effect for 12 turns." \
         " Bear: atk increased by 40%." \
         " Wolf: critical rate increased by 40%." \
         " Eagle: speed increased by 40%." \

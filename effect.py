@@ -622,10 +622,11 @@ class StatsEffect(Effect):
                 if key in ["maxhp", "hp", "atk", "defense", "spd"]:
                     string += f"{key} is scaled to {value*100:.2f}%."
                 else:
+                    processed_key = key.replace("_", " ")
                     if value > 0:
-                        string += f"{key} is increased by {value*100}%."
+                        string += f"{processed_key} is increased by {value*100}%."
                     else:
-                        string += f"{key} is decreased by {-value*100}%."
+                        string += f"{processed_key} is decreased by {-value*100}%."
         if self.main_stats_additive_dict:
             for key, value in self.main_stats_additive_dict.items():
                 if key in ["maxhp", "hp", "atk", "defense", "spd"]:

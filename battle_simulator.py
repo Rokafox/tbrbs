@@ -916,7 +916,7 @@ if __name__ == "__main__":
         global adventure_mode_current_stage
         str = f"Current Stage: {adventure_mode_current_stage}\n"
         if adventure_mode_current_stage > sum([x.lvl for x in party1]) / 5:
-            str += f"Enemy level is higher than average party level, reward is increased by {(adventure_mode_current_stage / (sum([x.lvl for x in party1]) / 5) - 1) * 100}%\n"
+            str += f"Enemy level is higher than average party level, reward is increased by {(adventure_mode_current_stage / (sum([x.lvl for x in party1]) / 5) - 1) * 100:.2f}%\n"
         if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # boss stage
             str += "Boss Stage. Reward is increased by 50%.\n"
         str += f"Exp Reward: {adventure_mode_exp_reward()}\n"
