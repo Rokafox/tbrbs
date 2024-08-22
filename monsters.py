@@ -1595,6 +1595,43 @@ class Agent(character.Character):
         self.attack(func_damage_step=damage_increase, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="spd", target_kw4="enemy")
 
 
+ #
+
+
+class Windspirit(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Windspirit"
+        self.skill1_description = "For 12 turns, all allies gain speed equal to 20% of your speed."
+        self.skill2_description = "Attack all enemies with 200% atk, damage increased by 100% if target has lower spd than you."
+        self.skill3_description = "Increase spd by 20%, crit rate by 20%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        for a in self.ally:
+            a.apply_effect(StatsEffect('Wind', 12, True, main_stats_additive_dict={'spd' : self.spd * 0.2}))
+        return 0
+
+    def skill2_logic(self):
+        def spd_penalty(self, target, final_damage):
+            if target.spd < self.spd:
+                final_damage *= 2.0
+            return final_damage
+        damage_dealt = self.attack(multiplier=2.0, repeat=1, func_damage_step=spd_penalty, target_kw1="n_random_enemy", target_kw2="5")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Windspirit Passive', -1, True, {'spd' : 1.2, 'crit' : 0.2}, can_be_removed_by_skill=False))
+
+
 # ====================================
 # End of spd related
 # ====================================
@@ -1710,6 +1747,49 @@ class KungFuA(character.Character):
             a.apply_effect(StatsEffect('KungFuA Passive', -1, True, {'acc' : 0.2}, can_be_removed_by_skill=False))
 
 
+class PaladinB(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "PaladinB"
+        self.skill1_description = "Neighboring allies have their crit defense increased by 50% for 15 turns."
+        self.skill2_description = "Attack 1 closest enemy 3 times with 300% atk, each attack decreases target crit rate by 50% for 10 turns." \
+        " Recover hp by 100% of damage dealt."
+        self.skill3_description = "Protect all allies. Damage taken is reduced 20%, 40% of damage taken is redirected to you."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        for neighbor in self.get_neighbor_allies_not_including_self():
+            neighbor.apply_effect(StatsEffect('Crit Def Up', 15, True, {'critdef' : 0.5}))
+        return 0
+
+    def skill2_logic(self):
+        def crit_down(self, target):
+            target.apply_effect(StatsEffect('Crit Down', 10, False, {'crit' : -0.5}))
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, func_after_dmg=crit_down, target_kw1="enemy_in_front")
+        if self.is_alive():
+            self.heal_hp(damage_dealt * 1, self)
+        return damage_dealt
+
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Royal Guard", -1, True, False, self, 0.80, 0.4)
+            e.additional_name = "PaladinB_RoyalGuard"
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
+
+         
+
+
 # ====================================
 # End of Crit related
 # ====================================
@@ -1720,7 +1800,7 @@ class KungFuA(character.Character):
 class Paladin(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
-        self.original_name = "paladin"
+        self.original_name = "Paladin"
         self.skill1_description = "Attack 1 closest enemy with 800% atk."
         self.skill2_description = "Attack 1 closest enemy 3 times with 300% atk."
         self.skill3_description = "When taking damage and damage is exceed 10% of maxhp, reduce damage taken by 50%. The attacker takes 30% of damage reduced."
@@ -1896,7 +1976,6 @@ class FutureSoldier(character.Character):
 
 
 class FutureElite(character.Character):
-    # Boss
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "FutureElite"
@@ -1930,6 +2009,38 @@ class FutureElite(character.Character):
 
     def battle_entry_effects(self):
         self.apply_effect(StatsEffect('FutureElite Passive', -1, True, {'defense' : 1.3}, can_be_removed_by_skill=False))
+
+
+class SkeletonB(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "SkeletonB"
+        self.skill1_description = "Attack enemy with highest def with 300% atk 3 times."
+        self.skill2_description = "Attack enemy with highest def with 900% atk, 80% chance to Stun for 4 turns."
+        self.skill3_description = "Penetration is increased by 35%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="defense", target_kw4="enemy")
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def stun(self, target):
+            target.apply_effect(StunEffect('Stun', 4, False))
+        damage_dealt = self.attack(multiplier=9.0, repeat=1, func_after_dmg=stun, target_kw1="n_highest_attr", target_kw2="1", target_kw3="defense", target_kw4="enemy")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('SkeletonB Passive', -1, True, {'penetration' : 0.35}, can_be_removed_by_skill=False))
 
 
 class Mandrake(character.Character):
@@ -2980,11 +3091,123 @@ class Cleric(character.Character):
         self.apply_effect(StatsEffect('Cleric Passive', -1, True, {'heal_efficiency' : 0.3}, can_be_removed_by_skill=False))
 
 
-# class Kyubi(character.Character):
+class Kyubi(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Kyubi"
+        self.skill1_description = "Attack random enemies 6 times with 300% atk, recover hp by 100% of damage dealt."
+        self.skill2_description = "Heal random allies 6 times with 900% atk each."
+        self.skill3_description = "Cancels 90% of damage that exceeds 9% of maxhp when taking damage."
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=3.0, repeat=6)
+        if self.is_alive():
+            self.heal_hp(damage_dealt, self)
+        return damage_dealt
+
+    def skill2_logic(self):
+        healing = 0
+        for i in range(6):
+            healing += self.heal(value=9.0 * self.atk)
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        passive = EffectShield2('Passive', -1, True, cc_immunity=False, hp_threshold=0.09, damage_reduction=0.9, shrink_rate=0)
+        passive.can_be_removed_by_skill = False
+        self.apply_effect(passive)
 
 
 # ====================================
 # End of Regeneration & Revival
+# ====================================
+# Anti Heal
+# ====================================
+
+class Delf(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Delf"
+        self.skill1_description = "Attack all enemies with 220% atk, reduce their heal efficiency by 30% for 10 turns." \
+        " If target has lower than 50% hp, heal efficiency is further reduced by 30%."
+        self.skill2_description = "Attack random enemies 6 times with 220% atk, each attack reduce their heal efficiency by 20% for 10 turns."
+        self.skill3_description = "Accuracy is increased by 30%."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def heal_down(self, target):
+            target.apply_effect(StatsEffect('Heal Efficiency Down', 10, False, {'heal_efficiency' : -0.3}))
+            if target.hp < target.maxhp * 0.5:
+                target.apply_effect(StatsEffect('Heal Efficiency Down', 10, False, {'heal_efficiency' : -0.3}))
+        damage_dealt = self.attack(multiplier=2.2, repeat=1, func_after_dmg=heal_down, target_kw1="n_random_enemy", target_kw2="5")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def heal_down(self, target):
+            target.apply_effect(StatsEffect('Heal Efficiency Down', 10, False, {'heal_efficiency' : -0.2}))
+        damage_dealt = self.attack(multiplier=2.2, repeat=6, func_after_dmg=heal_down)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Delf Passive', -1, True, {'acc' : 0.3}, can_be_removed_by_skill=False))
+
+
+class DelfB(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "DelfB"
+        self.skill1_description = "Attack closest enemy 3 times with 250% atk, reduce their heal efficiency by 30% for 12 turns."
+        self.skill2_description = "Attack closest enemy with 400% atk, if target has lower than 30% hp, " \
+        " apply poison, blind and heal efficiency down by 100% for 10 turns. Poison: deals 4% of lost hp each turn. Blind: reduce accuracy by 50%."
+        self.skill3_description = "speed is increased by 20%, defense is increased by 20%."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def heal_down(self, target):
+            target.apply_effect(StatsEffect('Heal Efficiency Down', 12, False, {'heal_efficiency' : -0.3}))
+        damage_dealt = self.attack(multiplier=2.5, repeat=3, func_after_dmg=heal_down, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def massive_debuff(self, target):
+            if target.hp < target.maxhp * 0.3:
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison', 10, False, ratio=0.04, imposter=self, base="losthp"))
+                target.apply_effect(StatsEffect('Blind', 10, False, {'acc' : 0.5}))
+                target.apply_effect(StatsEffect('Heal Efficiency Down', 10, False, {'heal_efficiency' : -1.0}))
+        damage_dealt = self.attack(multiplier=4.0, repeat=1, func_after_dmg=massive_debuff, target_kw1="enemy_in_front")
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('DelfB Passive', -1, True, {'spd' : 1.2, 'defense': 1.2}, can_be_removed_by_skill=False))
+
+
+# ====================================
+# End of Anti Heal
 # ====================================
 # All around Support
 # ====================================

@@ -62,7 +62,7 @@ class Effect:
     def apply_effect_in_attack_before_damage_step(self, character, target, final_damage):
         return final_damage
 
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         """
         Triggers when character with this effect is about to take damage.
         Include both damage step and status damage step.
@@ -185,7 +185,7 @@ class AbsorptionShield(Effect):
         self.cc_immunity = cc_immunity
         self.sort_priority = 299
 
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         if damage > self.shield_value:
             remaining_damage = damage - self.shield_value
             global_vars.turn_info_string += f"{character.name}'s shield is broken! {remaining_damage} damage is dealt to {character.name}.\n"
@@ -219,7 +219,7 @@ class ReductionShield(Effect):
         self.sort_priority = 200
         self.damage_function = damage_function
 
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         if self.requirement is not None and not self.requirement(character, attacker):
             global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, requirement not met.\n"
             return damage
@@ -264,7 +264,7 @@ class EffectShield1(Effect):
         if self.effect_applier.is_dead():
             self.flag_for_remove = True
 
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         if character.hp < character.maxhp * self.hp_threshold and (not self.require_above_zero_dmg or damage > 0):
             character.heal_hp(self.heal_function(self.effect_applier), self.effect_applier)
         return damage
@@ -293,7 +293,7 @@ class EffectShield2(Effect):
         self.damage_reflect_function = damage_reflect_function
         self.damage_reflect_description = damage_reflect_description
 
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         damage_original = damage
         if damage > character.maxhp * self.hp_threshold:
             damage = character.maxhp * self.hp_threshold + (damage - character.maxhp * self.hp_threshold) * (1 - self.damage_reduction)
@@ -336,7 +336,7 @@ class CancellationShield(Effect):
         self.cancel_excessive_instead = cancel_excessive_instead
         self.cancel_below_instead = cancel_below_instead
 
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         if damage > character.maxhp * self.threshold:
             self.uses -= 1
             if self.uses == 0:
@@ -369,7 +369,6 @@ class CancellationShield(Effect):
 # CC effects
 # =========================================================
     
-# Stun effect
 class StunEffect(Effect):
     def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
@@ -391,8 +390,78 @@ class StunEffect(Effect):
     def tooltip_description(self):
         return "Cannot take action and evasion is reduced by 100%."
 
+    
+class FrozenEffect(Effect):
+    def __init__(self, name, duration, is_buff, imposter, cc_immunity=False, delay_trigger=0):
+        super().__init__(name, duration, is_buff)
+        self.name = "Frozen"
+        self.is_buff = False
+        self.imposter = imposter
+        self.cc_immunity = cc_immunity
+        self.delay_trigger = delay_trigger
+        self.apply_rule = "stack"
+        self.is_cc_effect = True
+    
+    def apply_effect_on_apply(self, character):
+        stats_dict = {"eva": -1.00}
+        character.update_stats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
 
-# Silence effect
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+        match which_ds:
+            case "normal":
+                return damage * 0.2
+            case "status":
+                return damage * 2.0
+            case _:
+                raise Exception("Invalid damage step.")
+
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            return
+        character.take_status_damage(0.01 * character.maxhp, self.imposter)
+
+    def apply_effect_on_remove(self, character):
+        stats_dict = {"eva": 1.00}
+        character.update_stats(stats_dict, reversed=False)
+    
+    def tooltip_description(self):
+        return "Cannot take action and evasion is reduced by 100%, normal damage taken is reduced by 80%." \
+        " Status damage taken is increased by 100%. Each turn, take status damage equal to 1% of max hp."
+
+
+class PetrifyEffect(Effect):
+    def __init__(self, name, duration, is_buff, imposter, delay_trigger=0):
+        super().__init__(name, duration, is_buff)
+        self.name = "Petrify"
+        self.is_buff = False
+        self.imposter = imposter
+        self.cc_immunity = True
+        self.delay_trigger = delay_trigger
+        self.apply_rule = "stack"
+        self.is_cc_effect = True
+    
+    def apply_effect_on_apply(self, character):
+        stats_dict = {"eva": -1.00}
+        character.update_stats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
+
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+        match which_ds:
+            case "normal":
+                return damage * 2.0
+            case "status":
+                return 0
+            case _:
+                raise Exception("Invalid damage step.")
+
+    def apply_effect_on_remove(self, character):
+        stats_dict = {"eva": 1.00}
+        character.update_stats(stats_dict, reversed=False)
+    
+    def tooltip_description(self):
+        return "Cannot take action and evasion is reduced by 100%." \
+        " Immune to status damage, normal damage taken is increased by 100%."
+
+
 class SilenceEffect(Effect):
     def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
         super().__init__(name, duration, is_buff)
@@ -407,7 +476,6 @@ class SilenceEffect(Effect):
         return "Cannot use skill."
 
 
-# Sleep effect
 class SleepEffect(Effect):
     def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
         super().__init__(name, duration, is_buff)
@@ -418,7 +486,7 @@ class SleepEffect(Effect):
         self.apply_rule = "stack"
         self.is_cc_effect = True
     
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         character.remove_effect(self)
         return damage
 
@@ -434,7 +502,6 @@ class SleepEffect(Effect):
         return "Cannot act, effect is removed when taking damage, evasion is reduced by 100%."
 
 
-# Confusion effect
 class ConfuseEffect(Effect):
     def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
         super().__init__(name, duration, is_buff)
@@ -447,6 +514,21 @@ class ConfuseEffect(Effect):
     
     def tooltip_description(self):
         return "Attack random ally or enemy."
+
+
+class CharmEffect(Effect):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
+        super().__init__(name, duration, is_buff)
+        self.name = "Charm"
+        self.is_buff = False
+        self.cc_immunity = cc_immunity
+        self.delay_trigger = delay_trigger
+        self.apply_rule = "stack"
+        self.is_cc_effect = True
+    
+    def tooltip_description(self):
+        return "Attack random ally"
+
 
 
 # Fear effect
@@ -741,7 +823,7 @@ class ContinuousDamageEffect_Poison(Effect):
     [damage_type] can be "status", "bypass". 
     if [is_plague], transmit the same effect to a neighbor ally at the end of turn with [is_plague_transmission_chance*100]% chance.
     """
-    def __init__(self, name, duration, is_buff, ratio, imposter, base, remove_by_heal=False, 
+    def __init__(self, name, duration, is_buff, ratio, imposter, base: str, remove_by_heal=False, 
                  damage_type="status", is_plague=False, is_plague_transmission_chance=0.0,
                  is_plague_transmission_decay=0):
         super().__init__(name, duration, is_buff)
@@ -937,7 +1019,7 @@ class HideEffect(Effect):
         if not self.is_active:
             self.flag_for_remove = True
         
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         if self.remove_on_damage:
             global_vars.turn_info_string += f"{character.name} is no longer hidden!\n"
             character.remove_effect(self)
@@ -1020,7 +1102,7 @@ class EquipmentSetEffect_Arasaka(Effect):
         self.onehp_effect_triggered = False
         self.sort_priority = 2000
 
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         if self.onehp_effect_triggered:
             return 0
         if damage >= character.hp:
@@ -1048,7 +1130,7 @@ class EquipmentSetEffect_KangTao(Effect):
         self.is_set_effect = True
         self.sort_priority = 2000
 
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         if damage > self.shield_value:
             remaining_damage = damage - self.shield_value
             global_vars.turn_info_string += f"{character.name}'s shield is broken!\n{remaining_damage} damage is dealt to {character.name}.\n"
@@ -1160,7 +1242,7 @@ class EquipmentSetEffect_Sovereign(Effect):
         self.stats_dict_function = stats_dict_function
         self.sort_priority = 2000
 
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         # count how many "Sovereign" in character.buffs, if less than 5, apply effect.
         if Counter([effect.name for effect in character.buffs])["Sovereign"] < 5:
             character.apply_effect(StatsEffect("Sovereign", 4, True, self.stats_dict, is_set_effect=True))
@@ -1323,7 +1405,7 @@ class EquipmentSetEffect_Liquidation(Effect):
         self.sort_priority = 2000
         self.damage_reduction = damage_reduction
 
-    def apply_effect_during_damage_step(self, character, damage, attacker):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
         if damage == 0:
             return 0
         for key in ["hp", "atk", "defense", "spd"]:

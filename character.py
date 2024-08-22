@@ -5,6 +5,9 @@ import itertools
 import global_vars
 
 
+# TODO: Add a attack healer, deal damage equal to the heal amount.
+
+
 class Character:
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         if equip is None:
@@ -370,6 +373,9 @@ class Character:
                 else:
                     yield from random.choice(list(mit.triplewise(self.ally)))
 
+            case ("Undefined_ally", _, _, _):
+                yield random.choice(self.ally)
+
             case (_, _, _, _):
                 raise Exception(f"Keyword not found. Keyword: {keyword}, Keyword2: {keyword2}, Keyword3: {keyword3}, Keyword4: {keyword4}")
 
@@ -466,7 +472,7 @@ class Character:
     def reset_number_of_attacks(self):
         self.number_of_attacks = 0
 
-    def heal(self, target_kw1="Undefined", target_kw2="Undefined", target_kw3="Undefined", target_kw4="Undefined", 
+    def heal(self, target_kw1="Undefined_ally", target_kw2="Undefined", target_kw3="Undefined", target_kw4="Undefined", 
              value=0, repeat=1, func_after_each_heal=None, target_list=None, func_before_heal=None) -> int:
         # -> healing done
         healing_done = 0
@@ -635,22 +641,25 @@ class Character:
         return self.hp <= 0
 
     def is_charmed(self):
-        return self.has_effect_that_named("Charm")
+        return self.has_effect_that_named("Charm", class_name="CharmEffect")
     
     def is_confused(self):
-        return self.has_effect_that_named("Confuse")
+        return self.has_effect_that_named("Confuse", class_name="ConfuseEffect")
     
     def is_stunned(self):
-        return self.has_effect_that_named("Stun")
+        return self.has_effect_that_named("Stun", class_name="StunEffect")
     
     def is_silenced(self):
-        return self.has_effect_that_named("Silence")
+        return self.has_effect_that_named("Silence", class_name="SilenceEffect")
     
     def is_sleeping(self):
-        return self.has_effect_that_named("Sleep")
+        return self.has_effect_that_named("Sleep", class_name="SleepEffect")
     
     def is_frozed(self):
-        return self.has_effect_that_named("Frozen")
+        return self.has_effect_that_named("Frozen", class_name="FrozenEffect")
+    
+    def is_petrfied(self):
+        return self.has_effect_that_named("Petrify", class_name="PetrifyEffect")
     
     def is_hidden(self):
         for e in self.buffs + self.debuffs:
@@ -670,7 +679,8 @@ class Character:
     def update_ally_and_enemy(self):
         self.ally = [ally for ally in self.party if not ally.is_dead()]
         self.enemy = [enemy for enemy in self.enemyparty if not enemy.is_dead()]
-        if self.is_charmed():
+        if self.is_charmed(): 
+            # If both charmed and confused, charmed will be prioritized
             self.ally, self.enemy = self.enemy, self.ally
         elif self.is_confused():
             self.ally = list(set(self.ally + self.enemy))
@@ -846,9 +856,9 @@ class Character:
                 if hasattr(effect, "is_protected_effect") and effect.is_protected_effect and not disable_protected_effect:
                     damage = effect.protected_apply_effect_during_damage_step(self, damage, attacker, func_after_dmg)
                 else:
-                    damage = effect.apply_effect_during_damage_step(self, damage, attacker)
+                    damage = effect.apply_effect_during_damage_step(self, damage, attacker, "normal")
             for effect in copyed_debuffs:
-                damage = effect.apply_effect_during_damage_step(self, damage, attacker)
+                damage = effect.apply_effect_during_damage_step(self, damage, attacker, "normal")
                 
         damage = self.take_damage_before_calculation(damage, attacker)
         damage = int(damage)
@@ -891,9 +901,9 @@ class Character:
             copyed_buffs = self.buffs.copy() 
             copyed_debuffs = self.debuffs.copy()
             for effect in copyed_buffs:
-                damage = effect.apply_effect_during_damage_step(self, damage, attacker)
+                damage = effect.apply_effect_during_damage_step(self, damage, attacker, "status")
             for effect in copyed_debuffs:
-                damage = effect.apply_effect_during_damage_step(self, damage, attacker)
+                damage = effect.apply_effect_during_damage_step(self, damage, attacker, "status")
         damage = int(damage)
         damage = max(0, damage)
         if self.hp - damage < 0:

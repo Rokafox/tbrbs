@@ -852,7 +852,7 @@ if __name__ == "__main__":
         global current_game_mode, adventure_mode_current_stage
         if current_game_mode == "Training Mode":
             raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
-        if adventure_mode_current_stage == 2300:
+        if adventure_mode_current_stage == 2500:
             text_box.set_text("We have reached the end of the world.\n")
             return False
         if player.cleared_stages < adventure_mode_current_stage:
@@ -878,7 +878,7 @@ if __name__ == "__main__":
     adventure_mode_stages = {} # int : list of monsters
     if player.cleared_stages > 0:
         print(f"Loading adventure mode stages from player data. Current stage: {player.cleared_stages}")
-        adventure_mode_current_stage = min(player.cleared_stages + 1, 2300)
+        adventure_mode_current_stage = min(player.cleared_stages + 1, 2500)
     else:
         adventure_mode_current_stage = 1
     adventure_mode_generate_stage()
