@@ -1788,6 +1788,40 @@ class PaladinB(character.Character):
             ally.apply_effect(e)
 
          
+class Bat(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Bat"
+        self.skill1_description = "Increase crit rate and crit damage by 30% for 20 turns."
+        self.skill2_description = "Attack random ememy with 300% atk 2 times, 90% chance to poison the target for 3 turns," \
+        " poison deals 4% of losthp as status damage per turn."
+        self.skill3_description = "Normal attack deals 50% more damage."
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        self.apply_effect(StatsEffect('Bad Bat', 20, True, {'crit' : 0.3, 'critdmg' : 0.3}))
+        return 0
+
+    def skill2_logic(self):
+        def poison_effect(self, target):
+            if random.random() < 0.9:
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison', duration=3, is_buff=False, ratio=0.04, imposter=self, base="losthp"))
+        damage_dealt = self.attack(multiplier=3.0, repeat=2, func_after_dmg=poison_effect)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def damage_increase(self, target, final_damage):
+            final_damage *= 1.5
+            return final_damage
+        self.attack(func_damage_step=damage_increase)
 
 
 # ====================================
@@ -2680,6 +2714,41 @@ class Cockatorice(character.Character):
 
     def battle_entry_effects(self):
         effect = StatsEffect("Cockatorice Madness", 4, True, {'atk' : 1.33, 'spd' : 1.33})
+        effect.apply_rule = "stack"
+        self.apply_effect(NotTakingDamageEffect("Cockatorice Passive", -1, True, 4, effect))
+
+
+class CockatoriceB(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "CockatoriceB"
+        self.skill1_description = "Attack 3 closest enemies, with 270% atk, their defense is reduced by 20% for 8 turns."
+        self.skill2_description = "Focus attack on closest enemy 3 times with 270% atk, each attack reduces target critdmg by 30% for 8 turns."
+        self.skill3_description = "For 4 turns, if not taking damage, increase crit def by 66% and def by 66% for 8 turns at the end of turn. Same effect cannot be applied twice."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def defence_break(self, target):
+            target.apply_effect(StatsEffect('Defence Down', 8, False, {'defense' : 0.8}))
+        damage_dealt = self.attack(multiplier=2.7, repeat=1, target_kw1="n_enemy_in_front", target_kw2=3, func_after_dmg=defence_break)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def critdmg_reduction(self, target):
+            target.apply_effect(StatsEffect('Critdmg Down', 8, False, {'critdmg' : -0.3}))
+        damage_dealt = self.attack(multiplier=2.7, repeat_seq=3, target_kw1="enemy_in_front", func_after_dmg=critdmg_reduction)
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        effect = StatsEffect("Cockatorice Madness", 8, True, {'critdef' : 0.66, 'defense' : 1.66})
         effect.apply_rule = "stack"
         self.apply_effect(NotTakingDamageEffect("Cockatorice Passive", -1, True, 4, effect))
 
