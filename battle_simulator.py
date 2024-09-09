@@ -1534,7 +1534,7 @@ if __name__ == "__main__":
     # =====================================
 
 
-    def next_turn(party1, party2):
+    def next_turn(party1: list[Character], party2: list[Character]):
         global turn, text_box, current_game_mode, player, adventure_mode_current_stage
         if not is_someone_alive(party1) or not is_someone_alive(party2):
             return 0
@@ -2471,8 +2471,9 @@ if __name__ == "__main__":
     # for c in all_characters + all_monsters:
         # c.equip_item_from_list(generate_equips_list(4, random_full_eqset=True)) 
 
-    party1 = []
-    party2 = []
+    # party1 = []
+    party1 : list[Character] = []
+    party2 : list[Character] = []
     party1, party2 = set_up_characters(is_start_of_app=True)
     player.build_inventory_slots()
     turn = 1

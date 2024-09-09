@@ -2114,6 +2114,13 @@ class Mandrake(character.Character):
         self.hp = self.maxhp
 
 
+# ====================================
+# End of Defence & Mitigation
+# ====================================
+# Protection Effects
+# ====================================
+
+
 class Coward(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
@@ -2205,8 +2212,9 @@ class Yamatanoorochi(character.Character):
 
 
 
+
 # ====================================
-# End of Defence & Mitigation
+# End of Protection Effects
 # ====================================
 # Evasion related
 # ====================================

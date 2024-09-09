@@ -1,3 +1,4 @@
+from typing import List, Tuple
 from effect import *
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
@@ -82,10 +83,10 @@ class Character:
         self.skill2_cooldown = 0
         self.skill1_can_be_used = True
         self.skill2_can_be_used = True
-        self.damage_taken_this_turn = []
+        self.damage_taken_this_turn: list[tuple[int, Character, str]] = []
         # list of tuples (damage, attacker, dt), damage is int, attacker is Character object, dt is damage type
         # useful for recording damage taken sequence for certain effects
-        self.damage_taken_history = [] # list of self.damage_taken_this_turn
+        self.damage_taken_history: list[list[tuple[int, Character, str]]] = [] # list of self.damage_taken_this_turn
         self.healing_received_this_turn = [] # list of tuples (healing, healer), healing is int, healer is Character object
         self.healing_received_history = [] # list of self.healing_received_this_turn
 
