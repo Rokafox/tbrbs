@@ -36,9 +36,11 @@ def get_all_characters(test_mode):
             print(f"Testing all characters and {test_mode} only")
             return [x for x in all_monsters if x.name == test_mode] + all_characters 
 
-def is_someone_alive(party):
+def is_someone_alive(party: list[character.Character]):
     for character in party:
-        if character.is_alive():
+        # if character.has_effect_that_named(class_name="RebornEffect"):
+        #     print(f"{character.name} is considered alive because of RebornEffect.")
+        if character.is_alive() or character.has_effect_that_named(class_name="RebornEffect"):
             return True
     return False
 
@@ -260,7 +262,7 @@ if __name__ == "__main__":
         sample = int(sys.argv[1])
     else:
         sample = 8000
-    a, b = calculate_winrate_for_character(sample, get_all_characters(2), "suppress")
+    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze

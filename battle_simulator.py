@@ -4,6 +4,7 @@ from character import *
 import monsters
 from item import *
 from consumable import *
+from calculate_winrate import is_someone_alive
 import copy, csv, re
 from io import StringIO
 running = False
@@ -69,11 +70,6 @@ def load_player(filename="player_data.json"):
     player.cleared_stages = data["cleared_stages"]
     return player, dict_character_name_lvl_exp_equip
 
-def is_someone_alive(party):
-    for character in party:
-        if character.is_alive():
-            return True
-    return False
 
 # Reset characters.ally and characters.enemy
 def reset_ally_enemy_attr(party1, party2):

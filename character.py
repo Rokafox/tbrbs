@@ -206,6 +206,7 @@ class Character:
     def target_selection(self, keyword="Undefined", keyword2="Undefined", keyword3="Undefined", keyword4="Undefined", target_list=None):
         # This function is a generator
         # default : random choice of a single enemy
+        # NOTE: currently, target_selection is used for all attack skills, but it should also be used for healing and others
 
         # get rid of hidden enemies
         ts_available_enemy = [enemy for enemy in self.enemy if not enemy.is_hidden()]
@@ -222,6 +223,8 @@ class Character:
                 yield self
 
             case ("Undefined", _, _, _):
+                # NOTE: We need to handle cases when there are no enemies left,
+                # this heppens when all enemies are defeated, but the battle is not over yet because of Reborn effect
                 yield random.choice(ts_available_enemy)
 
             case ("n_random_enemy", n, _, _):
@@ -494,6 +497,14 @@ class Character:
 
     # Action logic
     def action(self) -> None:
+        # Action is not allowed if the character is dead
+        if self.is_dead():
+            raise Exception("Dead character cannot act.")
+        # Action is disabled if no enemies are present
+        if not self.enemy:
+            global_vars.turn_info_string += f"Waiting for enemies to appear.\n"
+            return
+
         can_act, reason = self.can_take_action()
         if can_act:
             self.update_cooldown()
