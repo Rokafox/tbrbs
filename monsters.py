@@ -1824,6 +1824,82 @@ class Bat(character.Character):
         self.attack(func_damage_step=damage_increase)
 
 
+class Killerfish(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Killerfish"
+        self.skill1_description = "Attack 3 closest enemies with 500% atk, their crit defense is decreased by 50% for 12 turns."
+        self.skill2_description = "For 6 turns, reduce atk and damage taken by 50%."
+        self.skill3_description = "Increase crit rate by 100% if hp is more than 50%."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def critdef_down(self, target):
+            target.apply_effect(StatsEffect('Critdef Down', 12, False, {'critdef' : -0.5}))
+        damage_dealt = self.attack(multiplier=5.0, repeat=1, func_after_dmg=critdef_down, target_kw1="n_enemy_in_front", target_kw2="3")
+        return damage_dealt
+
+    def skill2_logic(self):
+        self.apply_effect(StatsEffect('Dive', 6, True, {'atk' : 0.5, 'final_damage_taken_multipler' : -0.5}))
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        condiction_func = lambda x: x.hp > x.maxhp * 0.5
+        self.apply_effect(StatsEffect('Killerfish Passive', -1, True, {'crit' : 1.0}, can_be_removed_by_skill=False,
+                                        condition=condiction_func))
+
+
+class Dryad(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Dryad"
+        self.skill1_description = "Attack all enemies with 300% atk, 70% chance to reduce their crit rate by 30% for 13 turns."
+        self.skill2_description = "Heal all allies by 300% of atk, 70% chance to increase their crit defense by 30% for 13 turns."
+        self.skill3_description = "Increase hp by 70%. Every time you take critical damage, recover hp by 130% of atk."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def critrate_down(self, target):
+            if random.random() < 0.7:
+                target.apply_effect(StatsEffect('Critrate Down', 13, False, {'crit' : -0.3}))
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=critrate_down, target_kw1="n_random_enemy", target_kw2="5")
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        allies = self.target_selection(keyword="n_random_ally", keyword2="5")
+        for ally in allies:
+            ally.heal_hp(self.atk * 3, self)
+            if random.random() < 0.7:
+                ally.apply_effect(StatsEffect('Critdef Up', 13, True, {'critdef' : 0.3}))
+        return 0
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Dryad Passive', -1, True, {'maxhp' : 1.7}, can_be_removed_by_skill=False))
+        heal_on_crit = lambda x: x.atk * 1.3
+        e = EffectShield1_healoncrit('Tranquility', -1, True, 1.0, heal_on_crit, False, False, self)
+        e.can_be_removed_by_skill = False
+        self.apply_effect(e)
+        self.hp = self.maxhp
+
+
 # ====================================
 # End of Crit related
 # ====================================
@@ -2210,6 +2286,97 @@ class Yamatanoorochi(character.Character):
         self.apply_effect(StatsEffect('Passive', -1, True, {'maxhp' : 1.5}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
+
+class Hero(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Hero"
+        self.skill1_description = "Attack enemy of lowest hp with 350% atk 3 times. If this attack or additional attack takes down the enemy," \
+        " attack again."
+        self.skill2_description = "For 12 turns, you and your neighbor allies have their atk and def increased by the percentage of your lost hp."
+        self.skill3_description = "Protect 2 neighboring allies. Damage taken is reduced by 40%, 80% of damage taken is redirected to you."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def additional_attacks(self, target, is_crit):
+            if target.is_dead():
+                return self.attack(target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy", multiplier=3.5, repeat=3, additional_attack_after_dmg=additional_attacks)
+            else:
+                return 0
+        damage_dealt = self.attack(target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy", multiplier=3.5, repeat=3, additional_attack_after_dmg=additional_attacks)
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def atk_def_increase(self, target):
+            hp_lost = self.maxhp - self.hp
+            target.apply_effect(StatsEffect('Heroic Power', 12, True, {'atk' : 1 + hp_lost / self.maxhp, 'defense' : 1 + hp_lost / self.maxhp}))
+        allies = self.get_neighbor_allies_including_self()
+        for ally in allies:
+            atk_def_increase(self, ally)
+        return 0
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = self.get_neighbor_allies_not_including_self()
+        for ally in allies:
+            e = ProtectedEffect("Heroic Sacrifice", -1, True, False, self, damage_after_reduction_multiplier=0.60, damage_redirect_percentage=0.80)
+            e.additional_name = "Hero_Heroic_Sacrifice"
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
+
+
+class HeroB(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "HeroB"
+        self.skill1_description = "Attack enemy of highest hp with 265% atk 3 times, if this skill does not take down the enemy, attack again."
+        self.skill2_description = "Apply a shield on you and 2 neighboring allies for 12 turns," \
+        " shield absorbs damage equal to your lost hp."
+        self.skill3_description = "Protect 2 neighboring allies. Damage taken is reduced by 30%, 50% of damage taken is redirected to you."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def additional_attacks(self, target, is_crit):
+            if not target.is_dead():
+                return self.attack(target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy", multiplier=2.65, repeat=3)
+            else:
+                return 0
+        damage_dealt = self.attack(target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy", multiplier=2.65, repeat=3, additional_attack_after_dmg=additional_attacks)
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        allies = self.get_neighbor_allies_including_self()
+        for ally in allies:
+            shield = AbsorptionShield('Heroic Shield', 12, True, int((self.maxhp - self.hp) * 1.0), False)
+            ally.apply_effect(shield)
+        return 0
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = self.get_neighbor_allies_not_including_self()
+        for ally in allies:
+            e = ProtectedEffect("Heroic Sacrifice", -1, True, False, self, damage_after_reduction_multiplier=0.70, damage_redirect_percentage=0.50)
+            e.additional_name = "HeroB_Heroic_Sacrifice"
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
 
 
 
@@ -2726,10 +2893,10 @@ class Cockatorice(character.Character):
         self.apply_effect(NotTakingDamageEffect("Cockatorice Passive", -1, True, 4, effect))
 
 
-class CockatoriceB(character.Character):
+class Cockatrice(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
-        self.original_name = "CockatoriceB"
+        self.original_name = "Cockatrice"
         self.skill1_description = "Attack 3 closest enemies, with 270% atk, their defense is reduced by 20% for 8 turns."
         self.skill2_description = "Focus attack on closest enemy 3 times with 270% atk, each attack reduces target critdmg by 30% for 8 turns."
         self.skill3_description = "For 4 turns, if not taking damage, increase crit def by 66% and def by 66% for 8 turns at the end of turn. Same effect cannot be applied twice."
@@ -3134,7 +3301,6 @@ class Lich(character.Character):
         reborn = RebornEffect('Undead', -1, True, 1.0, True, self)
         reborn.can_be_removed_by_skill = False
         self.apply_effect(reborn)
-        self.apply_effect(reborn)
 
 
 class Cleric(character.Character):
@@ -3285,6 +3451,19 @@ class DelfB(character.Character):
 
 # ====================================
 # End of Anti Heal
+# ====================================
+# Shield
+# ====================================
+
+
+
+
+
+
+
+
+# ====================================
+# End of Shield
 # ====================================
 # All around Support
 # ====================================

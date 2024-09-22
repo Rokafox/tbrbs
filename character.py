@@ -857,9 +857,9 @@ class Character:
                 if hasattr(effect, "is_protected_effect") and effect.is_protected_effect and not disable_protected_effect:
                     damage = effect.protected_apply_effect_during_damage_step(self, damage, attacker, func_after_dmg)
                 else:
-                    damage = effect.apply_effect_during_damage_step(self, damage, attacker, "normal")
+                    damage = effect.apply_effect_during_damage_step(self, damage, attacker, "normal", attack_is_crit=is_crit)
             for effect in copyed_debuffs:
-                damage = effect.apply_effect_during_damage_step(self, damage, attacker, "normal")
+                damage = effect.apply_effect_during_damage_step(self, damage, attacker, "normal", attack_is_crit=is_crit)
                 
         damage = self.take_damage_before_calculation(damage, attacker)
         damage = int(damage)

@@ -62,7 +62,7 @@ class Effect:
     def apply_effect_in_attack_before_damage_step(self, character, target, final_damage):
         return final_damage
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         """
         Triggers when character with this effect is about to take damage.
         Include both damage step and status damage step.
@@ -185,7 +185,7 @@ class AbsorptionShield(Effect):
         self.cc_immunity = cc_immunity
         self.sort_priority = 299
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if damage > self.shield_value:
             remaining_damage = damage - self.shield_value
             global_vars.turn_info_string += f"{character.name}'s shield is broken! {remaining_damage} damage is dealt to {character.name}.\n"
@@ -219,7 +219,7 @@ class ReductionShield(Effect):
         self.sort_priority = 200
         self.damage_function = damage_function
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if self.requirement is not None and not self.requirement(character, attacker):
             global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, requirement not met.\n"
             return damage
@@ -264,13 +264,45 @@ class EffectShield1(Effect):
         if self.effect_applier.is_dead():
             self.flag_for_remove = True
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if character.hp < character.maxhp * self.hp_threshold and (not self.require_above_zero_dmg or damage > 0):
             character.heal_hp(self.heal_function(self.effect_applier), self.effect_applier)
         return damage
     
     def tooltip_description(self):
         return f"When hp is below {self.hp_threshold*100:.1f}%, heal for {self.heal_function(self.effect_applier):.1f} hp before damage calculation."
+
+
+#---------------------------------------------------------
+class EffectShield1_healoncrit(Effect):
+    """
+    Before damage calculation, if character takes crit damage, heal hp for [heal_function] amount before damage calculation.
+    """
+    def __init__(self, name, duration, is_buff, hp_threshold, heal_function, cc_immunity,
+                require_above_zero_dmg=False, effect_applier=None):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.hp_threshold = hp_threshold
+        self.heal_function = heal_function
+        self.cc_immunity = cc_immunity
+        self.sort_priority = 200
+        self.require_above_zero_dmg = require_above_zero_dmg
+        self.effect_applier = effect_applier
+
+    def apply_effect_at_end_of_turn(self, character):
+        if self.effect_applier.is_dead():
+            self.flag_for_remove = True
+
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        # check if the damage is crit damage, access with keywords['attack_is_crit']
+        crit_condition = keywords.get('attack_is_crit', False) and keywords["attack_is_crit"]
+        if crit_condition and (not self.require_above_zero_dmg or damage > 0) and character.hp < character.maxhp * self.hp_threshold:
+            a,b,c = character.heal_hp(self.heal_function(self.effect_applier), self.effect_applier)
+        return damage
+    
+    def tooltip_description(self):
+        return f"When taking critical damage, heal for {self.heal_function(self.effect_applier):.1f} hp before damage calculation."
+
 
 
 #---------------------------------------------------------
@@ -293,7 +325,7 @@ class EffectShield2(Effect):
         self.damage_reflect_function = damage_reflect_function
         self.damage_reflect_description = damage_reflect_description
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         damage_original = damage
         if damage > character.maxhp * self.hp_threshold:
             damage = character.maxhp * self.hp_threshold + (damage - character.maxhp * self.hp_threshold) * (1 - self.damage_reduction)
@@ -336,7 +368,7 @@ class CancellationShield(Effect):
         self.cancel_excessive_instead = cancel_excessive_instead
         self.cancel_below_instead = cancel_below_instead
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if damage > character.maxhp * self.threshold:
             self.uses -= 1
             if self.uses == 0:
@@ -406,7 +438,7 @@ class FrozenEffect(Effect):
         stats_dict = {"eva": -1.00}
         character.update_stats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         match which_ds:
             case "normal":
                 return damage * 0.2
@@ -444,7 +476,7 @@ class PetrifyEffect(Effect):
         stats_dict = {"eva": -1.00}
         character.update_stats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         match which_ds:
             case "normal":
                 return damage * 2.0
@@ -486,7 +518,7 @@ class SleepEffect(Effect):
         self.apply_rule = "stack"
         self.is_cc_effect = True
     
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         character.remove_effect(self)
         return damage
 
@@ -1019,7 +1051,7 @@ class HideEffect(Effect):
         if not self.is_active:
             self.flag_for_remove = True
         
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if self.remove_on_damage:
             global_vars.turn_info_string += f"{character.name} is no longer hidden!\n"
             character.remove_effect(self)
@@ -1102,7 +1134,7 @@ class EquipmentSetEffect_Arasaka(Effect):
         self.onehp_effect_triggered = False
         self.sort_priority = 2000
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if self.onehp_effect_triggered:
             return 0
         if damage >= character.hp:
@@ -1130,7 +1162,7 @@ class EquipmentSetEffect_KangTao(Effect):
         self.is_set_effect = True
         self.sort_priority = 2000
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if damage > self.shield_value:
             remaining_damage = damage - self.shield_value
             global_vars.turn_info_string += f"{character.name}'s shield is broken!\n{remaining_damage} damage is dealt to {character.name}.\n"
@@ -1242,7 +1274,7 @@ class EquipmentSetEffect_Sovereign(Effect):
         self.stats_dict_function = stats_dict_function
         self.sort_priority = 2000
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         # count how many "Sovereign" in character.buffs, if less than 5, apply effect.
         if Counter([effect.name for effect in character.buffs])["Sovereign"] < 5:
             character.apply_effect(StatsEffect("Sovereign", 4, True, self.stats_dict, is_set_effect=True))
@@ -1405,7 +1437,7 @@ class EquipmentSetEffect_Liquidation(Effect):
         self.sort_priority = 2000
         self.damage_reduction = damage_reduction
 
-    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds):
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if damage == 0:
             return 0
         for key in ["hp", "atk", "defense", "spd"]:
