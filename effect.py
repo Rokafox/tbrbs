@@ -17,6 +17,7 @@ class Effect:
         self.sort_priority = 1000 # The lower the number, the higher the priority.
         # priority 100-199 is used by Protected Effect.
         # priority 200-299 is used by Shield related effects.
+        # Equipments have priority 2000-2200.
         self.stacks = 1 
         self.apply_rule = "default" # "default", "stack"
         self.is_cc_effect = False
@@ -358,7 +359,7 @@ class CancellationShield(Effect):
 
     """
     def __init__(self, name, duration, is_buff, threshold, cc_immunity, uses=1, cancel_excessive_instead=False, 
-                 cancel_below_instead=False):
+                 cancel_below_instead=False, remove_this_effect_when_use_is_zero=True):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.threshold = threshold
@@ -367,11 +368,14 @@ class CancellationShield(Effect):
         self.uses = uses
         self.cancel_excessive_instead = cancel_excessive_instead
         self.cancel_below_instead = cancel_below_instead
+        self.remove_this_effect_when_use_is_zero = remove_this_effect_when_use_is_zero
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        if not self.remove_this_effect_when_use_is_zero and self.uses == 0:
+            return damage
         if damage > character.maxhp * self.threshold:
             self.uses -= 1
-            if self.uses == 0:
+            if self.uses == 0 and self.remove_this_effect_when_use_is_zero:
                 character.remove_effect(self)
             elif self.uses < 0:
                 raise Exception("Logic Error")
@@ -1152,7 +1156,6 @@ class EquipmentSetEffect_Arasaka(Effect):
 
 #---------------------------------------------------------
 # KangTao
-# Absorption Shield effect, separate from AbsorptionShield class to very slightly improve performance.
 class EquipmentSetEffect_KangTao(Effect):
     def __init__(self, name, duration, is_buff, shield_value, cc_immunity):
         super().__init__(name, duration, is_buff, cc_immunity=False)

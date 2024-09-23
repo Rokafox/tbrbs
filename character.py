@@ -71,12 +71,12 @@ class Character:
         self.thorn = 0.00
         self.heal_efficiency = 1.00
         self.final_damage_taken_multipler = 1.00
-        self.buffs = []
-        self.debuffs = []
-        self.ally = [] if resetally else self.ally
-        self.enemy = [] if resetenemy else self.enemy
-        self.party = [] if resetally and resetenemy else self.party
-        self.enemyparty = [] if resetally and resetenemy else self.enemyparty
+        self.buffs: list[Effect] = []
+        self.debuffs: list[Effect] = []
+        self.ally: list[Character] = [] if resetally else self.ally
+        self.enemy: list[Character] = [] if resetenemy else self.enemy
+        self.party: list[Character] = [] if resetally and resetenemy else self.party
+        self.enemyparty: list[Character] = [] if resetally and resetenemy else self.enemyparty
         self.calculate_equip_effect(resethp=resethp)
         self.eq_set = self.get_equipment_set()
         self.skill1_cooldown = 0
@@ -389,6 +389,25 @@ class Character:
                func_damage_step=None, repeat_seq=1, func_after_miss=None, func_after_crit=None,
                always_crit=False, additional_attack_after_dmg=None, always_hit=False, target_list=None,
                force_dmg=None, ignore_protected_effect=False, func_for_multiplier=None) -> int:
+    # def attack(self, 
+    #         target_kw1: str = "Undefined", 
+    #         target_kw2: str = "Undefined", 
+    #         target_kw3: str = "Undefined", 
+    #         target_kw4: str = "Undefined", 
+    #         multiplier: float = 2.0, 
+    #         repeat: int = 1, 
+    #         func_after_dmg: callable | None = None,
+    #         func_damage_step: callable | None = None, 
+    #         repeat_seq: int = 1, 
+    #         func_after_miss: callable | None = None, 
+    #         func_after_crit: callable | None = None,
+    #         always_crit: bool = False, 
+    #         additional_attack_after_dmg: callable | None = None, 
+    #         always_hit: bool = False, 
+    #         target_list: list | None = None,
+    #         force_dmg: float | None = None, 
+    #         ignore_protected_effect: bool = False, 
+    #         func_for_multiplier: callable | None = None) -> int:
         """
         -> damage_dealt
         WARNING: DO NOT MESS WITH [repeat] AND [repeat_seq] TOGETHER, otherwise the result will be confusing.
@@ -895,12 +914,23 @@ class Character:
             self.damage_taken_this_turn.append((damage, attacker, "normal_critical"))
         else:
             self.damage_taken_this_turn.append((damage, attacker, "normal"))
+        if self.is_dead():
+            self.defeated_by_taken_damage(damage, attacker)
         return None
     
     def take_damage_before_calculation(self, damage, attacker):
         return damage
 
     def take_damage_aftermath(self, damage, attacker):
+        """
+        Event triggered after taking normal damage, not status nor bypass.
+        """
+        pass
+
+    def defeated_by_taken_damage(self, damage, attacker):
+        """
+        Event triggered when the character is defeated by taking any type of damage.
+        """
         pass
 
     def take_status_damage(self, value, attacker=None):
@@ -931,6 +961,8 @@ class Character:
 
         global_vars.turn_info_string += f"{self.name} took {damage} status damage.\n"
         self.damage_taken_this_turn.append((damage, attacker, "status"))
+        if self.is_dead():
+            self.defeated_by_taken_damage(damage, attacker)
         return None
 
     def take_bypass_status_effect_damage(self, value, attacker=None):
@@ -947,6 +979,8 @@ class Character:
         self.hp -= damage
         global_vars.turn_info_string += f"{self.name} took {damage} bypass status effect damage.\n"
         self.damage_taken_this_turn.append((damage, attacker, "bypass"))
+        if self.is_dead():
+            self.defeated_by_taken_damage(damage, attacker)
         return None
 
     def has_effect_that_is(self, effect: Effect):
@@ -1157,7 +1191,8 @@ class Character:
         elif set_name == "Arasaka": 
             self.apply_effect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False))
         elif set_name == "KangTao":
-            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, self.atk * 7.0, False))
+            highest_stat = max(self.atk, self.defense)
+            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, highest_stat * 7.0, False))
         elif set_name == "Militech":
             def condition_func(self):
                 return self.hp <= self.maxhp * 0.30
@@ -1202,7 +1237,7 @@ class Character:
                 "Once per battle, leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 3 turns.\n"
         elif set_name == "KangTao":
             str += "Kang Tao\n" \
-                "At start of battle, apply absorption shield on self. Shield value is 700% of your atk.\n"
+                "Compare atk and def, apply the higher value * 700% as absorption shield on self at start of battle.\n"
         elif set_name == "Militech":
             str += "Militech\n" \
                 "Increase speed by 120% when hp falls below 30%.\n"

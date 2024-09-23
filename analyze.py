@@ -1,4 +1,6 @@
+import io
 import warnings
+import pygame
 warnings.simplefilter(action='ignore', category=FutureWarning) # No future, now is eternal
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -35,9 +37,12 @@ def report_generate_heatmap(data):
     plt.savefig('./reports/heatmap.png')
 
 
-def create_damage_summary_new(sort_reference_list=None):
-    file_path = './.tmp/tmp_damage_data.csv'
-    damage_data = pd.read_csv(file_path)
+def create_damage_summary_new(sort_reference_list=None, dataframe=None):
+    if dataframe is None:
+        file_path = './.tmp/tmp_damage_data.csv'
+        damage_data = pd.read_csv(file_path)
+    else:
+        damage_data = dataframe
     damage_dealt_summary = {}
     damage_received_summary = []
 
@@ -93,19 +98,58 @@ def create_damage_summary_new(sort_reference_list=None):
     return combined_df
 
 
+# def damage_summary_visualize(df):
+#     data = df
+#     # for performance reasons, we will not read
+#     # file_path = './.tmp/damage_summary_combined_new.csv'
+#     # data = pd.read_csv(file_path)
+    
+#     # Preparing data for the stacked bar chart
+#     damage_received = data[['Character', 'normal_received', 'normal_critical_received', 'status_received', 'bypass_received']].copy()
+#     damage_dealt = data[['Character', 'normal_dealt', 'normal_critical_dealt', 'status_dealt', 'bypass_dealt']].copy()
+
+#     # Shorten character names if they are too long using .loc to avoid SettingWithCopyWarning
+#     damage_received.loc[:, 'Character'] = damage_received['Character'].apply(lambda x: x[:7] if len(x) > 7 else x)
+#     damage_dealt.loc[:, 'Character'] = damage_dealt['Character'].apply(lambda x: x[:7] if len(x) > 7 else x)
+
+#     # Plotting the stacked bar chart for Damage Received
+#     plt.figure(figsize=(14, 6))
+#     plt.bar(damage_received['Character'], damage_received['normal_received'], label='Normal Damage Received', color='deepskyblue')
+#     plt.bar(damage_received['Character'], damage_received['normal_critical_received'], bottom=damage_received['normal_received'], label='Normal Critical Damage Received', color='darkturquoise')
+#     plt.bar(damage_received['Character'], damage_received['status_received'], bottom=damage_received['normal_received'] + damage_received['normal_critical_received'], label='Status Damage Received', color='lightblue')
+#     plt.bar(damage_received['Character'], damage_received['bypass_received'], bottom=damage_received['normal_received'] + damage_received['normal_critical_received'] + damage_received['status_received'], label='Bypass Damage Received', color='cadetblue')
+#     plt.xticks(fontsize=22)
+#     plt.yticks(fontsize=22)
+#     plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+#     plt.savefig('./.tmp/damage_taken.png', bbox_inches='tight', pad_inches=0, transparent=True)
+#     plt.close()
+
+#     # Plotting the stacked bar chart for Damage Dealt
+#     plt.figure(figsize=(14, 6))
+#     plt.bar(damage_dealt['Character'], damage_dealt['normal_dealt'], label='Normal Damage Dealt', color='tomato')
+#     plt.bar(damage_dealt['Character'], damage_dealt['normal_critical_dealt'], bottom=damage_dealt['normal_dealt'], label='Normal Critical Damage Dealt', color='firebrick')
+#     plt.bar(damage_dealt['Character'], damage_dealt['status_dealt'], bottom=damage_dealt['normal_dealt'] + damage_dealt['normal_critical_dealt'], label='Status Damage Dealt', color='orange')
+#     plt.bar(damage_dealt['Character'], damage_dealt['bypass_dealt'], bottom=damage_dealt['normal_dealt'] + damage_dealt['normal_critical_dealt'] + damage_dealt['status_dealt'], label='Bypass Damage Dealt', color='cadetblue')
+#     plt.xticks(fontsize=22)
+#     plt.yticks(fontsize=22)
+#     plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+#     plt.savefig('./.tmp/damage_dealt.png', bbox_inches='tight', pad_inches=0, transparent=True)
+#     plt.close()
+
 def damage_summary_visualize(df):
     data = df
-    # for performance reasons, we will not read
-    # file_path = './.tmp/damage_summary_combined_new.csv'
-    # data = pd.read_csv(file_path)
-    
+
     # Preparing data for the stacked bar chart
     damage_received = data[['Character', 'normal_received', 'normal_critical_received', 'status_received', 'bypass_received']].copy()
     damage_dealt = data[['Character', 'normal_dealt', 'normal_critical_dealt', 'status_dealt', 'bypass_dealt']].copy()
 
-    # Shorten character names if they are too long using .loc to avoid SettingWithCopyWarning
-    damage_received.loc[:, 'Character'] = damage_received['Character'].apply(lambda x: x[:7] if len(x) > 7 else x)
-    damage_dealt.loc[:, 'Character'] = damage_dealt['Character'].apply(lambda x: x[:7] if len(x) > 7 else x)
+    # Shorten character names if they are too long
+    damage_received['Character'] = damage_received['Character'].apply(lambda x: x[:7] if len(x) > 7 else x)
+    damage_dealt['Character'] = damage_dealt['Character'].apply(lambda x: x[:7] if len(x) > 7 else x)
+
+    # In-memory buffer for saving the images
+    buffer_received = io.BytesIO()
+    buffer_dealt = io.BytesIO()
 
     # Plotting the stacked bar chart for Damage Received
     plt.figure(figsize=(14, 6))
@@ -116,7 +160,7 @@ def damage_summary_visualize(df):
     plt.xticks(fontsize=22)
     plt.yticks(fontsize=22)
     plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-    plt.savefig('./.tmp/damage_taken.png', bbox_inches='tight', pad_inches=0, transparent=True)
+    plt.savefig(buffer_received, format='png', bbox_inches='tight', pad_inches=0, transparent=True)
     plt.close()
 
     # Plotting the stacked bar chart for Damage Dealt
@@ -128,8 +172,23 @@ def damage_summary_visualize(df):
     plt.xticks(fontsize=22)
     plt.yticks(fontsize=22)
     plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-    plt.savefig('./.tmp/damage_dealt.png', bbox_inches='tight', pad_inches=0, transparent=True)
+    plt.savefig(buffer_dealt, format='png', bbox_inches='tight', pad_inches=0, transparent=True)
     plt.close()
+
+    # Move buffers to the beginning so they can be read
+    buffer_received.seek(0)
+    buffer_dealt.seek(0)
+
+    # Load these images directly into Pygame
+    image_received = pygame.image.load(buffer_received, 'damage_received.png')
+    image_dealt = pygame.image.load(buffer_dealt, 'damage_dealt.png')
+
+    # Clean up the buffers
+    buffer_received.close()
+    buffer_dealt.close()
+
+    return image_received, image_dealt
+
 
 
 def create_healing_summary(sort_reference_list=None):
@@ -177,35 +236,71 @@ def create_healing_summary(sort_reference_list=None):
     return summary_df
 
 
-def healing_summary_visualize(df):
-    # file_path = './.tmp/healing_summary.csv'
-    # data = pd.read_csv(file_path)
-    data = df
-    # Character,healing_received,healing_given
-    # Cliffe,48500,0
-    # Fenrir,0,35000
-    # Gabe,20000,20000
-    # Olive,13500,40500
-    # Dophine,13500,0
-    # Cerberus,30000,30000
-    # Pheonix,0,0
-    # Taily,60529,25001
-    # Lillia,0,0
-    # Clover,0,35528
+# def healing_summary_visualize(df):
+#     # file_path = './.tmp/healing_summary.csv'
+#     # data = pd.read_csv(file_path)
+#     data = df
+#     # Character,healing_received,healing_given
+#     # Cliffe,48500,0
+#     # Fenrir,0,35000
+#     # Gabe,20000,20000
+#     # Olive,13500,40500
+#     # Dophine,13500,0
+#     # Cerberus,30000,30000
+#     # Pheonix,0,0
+#     # Taily,60529,25001
+#     # Lillia,0,0
+#     # Clover,0,35528
 
-    # Given the nature of data, use grouped bar chart
+#     # Given the nature of data, use grouped bar chart
+
+#     # Preparing data for the grouped bar chart
+#     healing_received = data[['Character', 'healing_received']].copy()
+#     healing_given = data[['Character', 'healing_given']].copy()
+
+#     healing_received['Character'] = healing_received['Character'].astype(str).apply(lambda x: x[:7] if len(x) > 7 else x)
+#     healing_given['Character'] = healing_given['Character'].astype(str).apply(lambda x: x[:7] if len(x) > 7 else x)
+
+
+#     # Set the positions and width for the bars
+#     bar_width = 0.40
+#     index = np.arange(len(healing_received))
+
+#     # Plotting the bars
+#     fig, ax = plt.subplots(figsize=(14, 6))
+
+#     ax.bar(index, healing_received['healing_received'], bar_width, label='Healing Received', color='forestgreen')
+#     ax.bar(index + bar_width, healing_given['healing_given'], bar_width, label='Healing Given', color='springgreen')
+
+#     ax.set_xticks(index + bar_width / 2)
+#     ax.set_xticklabels(healing_received['Character'])
+#     ax.legend(fontsize=22)
+
+#     # Display the plot
+#     plt.tight_layout()
+#     plt.xticks(fontsize=22)
+#     plt.yticks(fontsize=22)
+#     plt.savefig('./.tmp/healing_summary.png', bbox_inches='tight', pad_inches=0, transparent=True)
+#     plt.close()
+
+
+def healing_summary_visualize(df):
+    data = df
 
     # Preparing data for the grouped bar chart
     healing_received = data[['Character', 'healing_received']].copy()
     healing_given = data[['Character', 'healing_given']].copy()
 
+    # Shorten character names if they are too long
     healing_received['Character'] = healing_received['Character'].astype(str).apply(lambda x: x[:7] if len(x) > 7 else x)
     healing_given['Character'] = healing_given['Character'].astype(str).apply(lambda x: x[:7] if len(x) > 7 else x)
-
 
     # Set the positions and width for the bars
     bar_width = 0.40
     index = np.arange(len(healing_received))
+
+    # In-memory buffer for saving the image
+    buffer = io.BytesIO()
 
     # Plotting the bars
     fig, ax = plt.subplots(figsize=(14, 6))
@@ -221,5 +316,18 @@ def healing_summary_visualize(df):
     plt.tight_layout()
     plt.xticks(fontsize=22)
     plt.yticks(fontsize=22)
-    plt.savefig('./.tmp/healing_summary.png', bbox_inches='tight', pad_inches=0, transparent=True)
+
+    # Save the plot to the buffer
+    plt.savefig(buffer, format='png', bbox_inches='tight', pad_inches=0, transparent=True)
     plt.close()
+
+    # Move the buffer to the beginning so it can be read
+    buffer.seek(0)
+
+    # Load the image directly into Pygame
+    image = pygame.image.load(buffer, 'healing_summary.png')
+
+    # Clean up the buffer
+    buffer.close()
+
+    return image

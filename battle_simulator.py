@@ -4,7 +4,7 @@ from character import *
 import monsters
 from item import *
 from consumable import *
-from calculate_winrate import is_someone_alive
+from calculate_winrate import is_someone_alive, reset_ally_enemy_attr
 import copy, csv, re
 from io import StringIO
 running = False
@@ -70,19 +70,6 @@ def load_player(filename="player_data.json"):
     player.cleared_stages = data["cleared_stages"]
     return player, dict_character_name_lvl_exp_equip
 
-
-# Reset characters.ally and characters.enemy
-def reset_ally_enemy_attr(party1, party2):
-    for character in party1:
-        character.ally = copy.copy(party1)
-        character.enemy = copy.copy(party2)
-        character.party = party1
-        character.enemyparty = party2
-    for character in party2:
-        character.ally = copy.copy(party2)
-        character.enemy = copy.copy(party1)
-        character.party = party2
-        character.enemyparty = party1
 
 # =====================================
 # End of Helper Functions
@@ -813,11 +800,14 @@ if __name__ == "__main__":
         for m in all_monsters:
             m.lvl = adventure_mode_current_stage
         # Boss monsters have attribute is_boss = True, every 10 stages, starting from stage 10, summon a boss monster
-        # There can only be 1 boss monster in a stage
-        if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000:
+        # Stage 1000 to 2400, every stage has a boss monster in the middle of the stage.
+        # Howerver, on stage 2400 and later, there will be no restriction on whether boss or not.
+        if (adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000) and adventure_mode_current_stage < 2400:
             new_selection_of_monsters = random.sample([x for x in all_monsters if not x.is_boss], k=4)
             boss_monster = random.choice([x for x in all_monsters if x.is_boss])
             new_selection_of_monsters.insert(2, boss_monster)
+        elif adventure_mode_current_stage >= 2400:
+            new_selection_of_monsters = random.sample(all_monsters, k=5)
         else:
             new_selection_of_monsters = random.sample([x for x in all_monsters if not x.is_boss], k=5)
         if not adventure_mode_stages.get(adventure_mode_current_stage):
@@ -1793,9 +1783,12 @@ if __name__ == "__main__":
 
     df_damage_summary = None
     df_healing_summary = None
+    plot_damage_d_chart = None
+    plot_damage_r_chart = None
+    plot_healing_chart = None
 
     def create_tmp_damage_data_csv(p1, p2):
-        global df_damage_summary
+        global df_damage_summary, plot_damage_d_chart, plot_damage_r_chart
         if not os.path.exists("./.tmp"):
             os.makedirs("./.tmp")
         data = {}
@@ -1830,20 +1823,22 @@ if __name__ == "__main__":
                         filtered_damage_taken_history.append((abc_tuple[0], abc_tuple[1].name, abc_tuple[2]))
               
             data[character.name] = filtered_damage_taken_history
+
         with open("./.tmp/tmp_damage_data.csv", "w", newline='') as f:
             writer = csv.writer(f)
             writer.writerow(["Character", "Damage Taken History"])
 
             for name, history in data.items():
                 writer.writerow([name, history])
+                
         import analyze
         df = analyze.create_damage_summary_new(original_character_list)
         df_damage_summary = df
-        analyze.damage_summary_visualize(df)
+        plot_damage_r_chart, plot_damage_d_chart = analyze.damage_summary_visualize(df)
             
 
     def create_healing_data_csv(p1, p2):
-        global df_healing_summary
+        global df_healing_summary, plot_healing_chart
         if not os.path.exists("./.tmp"):
             os.makedirs("./.tmp")
         data = {}
@@ -1877,7 +1872,7 @@ if __name__ == "__main__":
         import analyze
         df = analyze.create_healing_summary(original_character_list)
         df_healing_summary = df
-        analyze.healing_summary_visualize(df)
+        plot_healing_chart = analyze.healing_summary_visualize(df)
 
 
             
@@ -2348,33 +2343,33 @@ if __name__ == "__main__":
         global current_display_chart, df_damage_summary
         match current_display_chart:
             case "Damage Dealt Chart":
-                if os.path.exists("./.tmp/damage_dealt.png"):
-                    damage_graph_slot.set_image(pygame.image.load("./.tmp/damage_dealt.png"))
-                    if df_damage_summary is not None:
-                        tooltip_text = "Damage dealt summary:\n"
-                        for line in df_damage_summary.values:
-                            tooltip_text += f"{line[0]} dealt {line[6]} damage in total, {line[7]} normal damage, {line[8]} critical damage, {line[9]} status damage, and {line[10]} bypass damage.\n"
-                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                if plot_damage_d_chart:
+                    damage_graph_slot.set_image(plot_damage_d_chart)
+                if df_damage_summary is not None:
+                    tooltip_text = "Damage dealt summary:\n"
+                    for line in df_damage_summary.values:
+                        tooltip_text += f"{line[0]} dealt {line[6]} damage in total, {line[7]} normal damage, {line[8]} critical damage, {line[9]} status damage, and {line[10]} bypass damage.\n"
+                    damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
                 else:
                     damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
             case "Damage Taken Chart":
-                if os.path.exists("./.tmp/damage_taken.png"):
-                    damage_graph_slot.set_image(pygame.image.load("./.tmp/damage_taken.png"))
-                    if df_damage_summary is not None:
-                        tooltip_text = "Damage taken summary:\n"
-                        for line in df_damage_summary.values:
-                            tooltip_text += f"{line[0]} received {line[1]} damage in total, {line[2]} normal damage, {line[3]} critical damage, {line[4]} status damage, and {line[5]} bypass damage.\n"
-                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                if plot_damage_r_chart:
+                    damage_graph_slot.set_image(plot_damage_r_chart)
+                if df_damage_summary is not None:
+                    tooltip_text = "Damage taken summary:\n"
+                    for line in df_damage_summary.values:
+                        tooltip_text += f"{line[0]} received {line[1]} damage in total, {line[2]} normal damage, {line[3]} critical damage, {line[4]} status damage, and {line[5]} bypass damage.\n"
+                    damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
                 else:
                     damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
             case "Healing Chart":
-                if os.path.exists("./.tmp/healing_summary.png"):
-                    damage_graph_slot.set_image(pygame.image.load("./.tmp/healing_summary.png"))
-                    if df_healing_summary is not None:
-                        tooltip_text = "Healing summary:\n"
-                        for line in df_healing_summary.values:
-                            tooltip_text += f"{line[0]} received {line[1]} healing in total, {line[2]} healing is given.\n"
-                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                if plot_healing_chart:
+                    damage_graph_slot.set_image(plot_healing_chart)
+                if df_healing_summary is not None:
+                    tooltip_text = "Healing summary:\n"
+                    for line in df_healing_summary.values:
+                        tooltip_text += f"{line[0]} received {line[1]} healing in total, {line[2]} healing is given.\n"
+                    damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
                 else:
                     damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
             case _:

@@ -916,6 +916,54 @@ class AssassinB(character.Character):
         self.apply_effect(StatsEffect('AssassinB Passive', -1, True, {'atk' : 1.1}, can_be_removed_by_skill=False))
 
 
+class Asura(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Asura"
+        self.skill1_description = "Attack random enemies 6 times with 200% atk. 50% chance to apply vulnerable for 8 turns." \
+        " Vulnerable: take 30% more damage from all sources."
+        self.skill2_description = "Attack random enemies 6 times with 240% atk."
+        self.skill3_description = "At start of battle, gain 6 uses of cancellation shield, shield will cancel all damage." \
+        " Everytime you use a skill, shield uses is recharged to 6."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def vulnerable_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 50:
+                target.apply_effect(StatsEffect('Vulnerable', 8, False, {'final_damage_taken_multipler' : 0.3}))
+        damage_dealt = self.attack(multiplier=2.0, repeat=6, func_after_dmg=vulnerable_effect)
+        shield = self.get_effect_that_named(effect_name="Asura Passive", class_name="CancellationShield")
+        if not shield:
+            raise Exception("Cancellation Shield not found on Asura.")
+        shield.uses = 6
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=2.4, repeat=6)
+        shield = self.get_effect_that_named(effect_name="Asura Passive", class_name="CancellationShield")
+        if not shield:
+            raise Exception("Cancellation Shield not found on Asura.")
+        shield.uses = 6
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        cancellation_shield = CancellationShield("Asura Passive", -1, True, 0, False, uses=6, remove_this_effect_when_use_is_zero=False)
+        cancellation_shield.can_be_removed_by_skill = False
+        self.apply_effect(cancellation_shield)
+
+
+
 
 # ====================================
 # End of Multistrike
@@ -1863,7 +1911,7 @@ class Dryad(character.Character):
         self.original_name = "Dryad"
         self.skill1_description = "Attack all enemies with 300% atk, 70% chance to reduce their crit rate by 30% for 13 turns."
         self.skill2_description = "Heal all allies by 300% of atk, 70% chance to increase their crit defense by 30% for 13 turns."
-        self.skill3_description = "Increase hp by 70%. Every time you take critical damage, recover hp by 130% of atk."
+        self.skill3_description = "Increase hp by 100%. Every time you take critical damage, recover hp by 130% of atk."
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -1892,7 +1940,7 @@ class Dryad(character.Character):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Dryad Passive', -1, True, {'maxhp' : 1.7}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('Dryad Passive', -1, True, {'maxhp' : 2.0}, can_be_removed_by_skill=False))
         heal_on_crit = lambda x: x.atk * 1.3
         e = EffectShield1_healoncrit('Tranquility', -1, True, 1.0, heal_on_crit, False, False, self)
         e.can_be_removed_by_skill = False
@@ -2375,6 +2423,82 @@ class HeroB(character.Character):
         for ally in allies:
             e = ProtectedEffect("Heroic Sacrifice", -1, True, False, self, damage_after_reduction_multiplier=0.70, damage_redirect_percentage=0.50)
             e.additional_name = "HeroB_Heroic_Sacrifice"
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
+
+
+class Puppet(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Puppet"
+        self.skill1_description = "For 20 turns, increase evasion by 50%."
+        self.skill2_description = "Heal hp by 40% of maxhp."
+        self.skill3_description = "Protect all allies. Damage taken is reduced 50%, 90% of damage taken is redirected to you."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        self.apply_effect(StatsEffect('Floating Flag', 20, True, {'eva' : 0.5}))
+        return 0
+
+    def skill2_logic(self):
+        self.heal_hp(self.maxhp * 0.4, self)
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Puppet Strings", -1, True, False, self, damage_after_reduction_multiplier=0.50, damage_redirect_percentage=0.90)
+            e.additional_name = "Puppet_Puppet_Strings"
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
+
+
+class PuppetB(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "PuppetB"
+        self.skill1_description = "For 10 turns, increase spd by 30%."
+        self.skill2_description = "Apply absorption shield on your self, shield absorbs damage equal to 60% of maxhp."
+        self.skill3_description = "Protect all allies. Damage taken is reduced 25%, 90% of damage taken is redirected to you."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        self.apply_effect(StatsEffect('Movement Control', 10, True, {'spd' : 1.3}))
+        return 0
+
+
+    def skill2_logic(self):
+        shield = self.get_effect_that_named(effect_name="Puppet Shield", additional_name="PuppetB_Puppet_Shield")
+        if not shield:
+            shield = AbsorptionShield('Puppet Shield', -1, True, int(self.maxhp * 0.6), False)
+            shield.additional_name = "PuppetB_Puppet_Shield"
+            self.apply_effect(shield)
+        else:
+            shield.shield_value += int(self.maxhp * 0.6)
+        return 0
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Puppet Movement", -1, True, False, self, damage_after_reduction_multiplier=0.75, damage_redirect_percentage=0.90)
+            e.additional_name = "PuppetB_Puppet_Movement"
             e.can_be_removed_by_skill = False
             ally.apply_effect(e)
 
@@ -3334,6 +3458,42 @@ class Cleric(character.Character):
         self.apply_effect(StatsEffect('Cleric Passive', -1, True, {'heal_efficiency' : 0.3}, can_be_removed_by_skill=False))
 
 
+class Priest(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Priest"
+        self.skill1_description = "Heal 1 ally of lowest hp by 600% atk."
+        self.skill2_description = "Heal all allies by 300% atk."
+        self.skill3_description = "Maxhp is increased by 20%. When you are defeated, heal all allies except you by 600% atk."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        self.heal(target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="ally", value=6.0)
+
+
+    def skill2_logic(self):
+        self.heal(target_kw1="n_random_ally", target_kw2="5", value=3.0)
+
+
+    def skill3(self):
+        pass
+
+    def defeated_by_taken_damage(self, damage, attacker):
+        self.update_ally_and_enemy()
+        for ally in self.ally:
+            if ally != self:
+                ally.heal_hp(self.atk * 6, self)
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Priest Passive', -1, True, {'maxhp' : 1.2}, can_be_removed_by_skill=False))
+        self.hp = self.maxhp
+
+
 class Kyubi(character.Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
@@ -3447,6 +3607,48 @@ class DelfB(character.Character):
 
     def battle_entry_effects(self):
         self.apply_effect(StatsEffect('DelfB Passive', -1, True, {'spd' : 1.2, 'defense': 1.2}, can_be_removed_by_skill=False))
+
+
+class Darkpriest(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Darkpriest"
+        self.skill1_description = "Attack all enemies with 300% atk, reduce their heal efficiency by 40% for 10 turns."
+        self.skill2_description = "Attack closest enemy with 600% atk, reduce heal efficiency by 90% for 10 turns."
+        self.skill3_description = "Heal efficiency is reduced by 90%. When you are defeated, all allies except you take 300% atk status damage."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def heal_down(self, target):
+            target.apply_effect(StatsEffect('Heal Down', 10, False, {'heal_efficiency' : -0.4}))
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=heal_down, target_kw1="n_random_enemy", target_kw2="5")
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def heal_down(self, target):
+            target.apply_effect(StatsEffect('Heal Down', 10, False, {'heal_efficiency' : -0.9}))
+        damage_dealt = self.attack(multiplier=6.0, repeat=1, func_after_dmg=heal_down, target_kw1="enemy_in_front")
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def defeated_by_taken_damage(self, damage, attacker):
+        self.update_ally_and_enemy()
+        for ally in self.ally:
+            if ally != self:
+                ally.take_status_damage(self.atk * 3, self)
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Darkpriest Passive', -1, False, {'heal_efficiency' : -0.9}, can_be_removed_by_skill=False))
+
 
 
 # ====================================
