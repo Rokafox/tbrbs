@@ -1190,6 +1190,53 @@ class Assassin(character.Character):
         self.attack(target_kw1="enemy_in_front", func_after_dmg=bleed_effect, repeat=2)
 
 
+class Fairy(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Fairy"
+        self.skill1_description = "Attack 4 random targets with 300% atk, confuse them for 8 turns."
+        self.skill2_description = "Attack 1 enemy with 400% atk 3 times, each hit has 33% chance to confuse the target for 8 turns."
+        self.skill3_description = "When taking damage from anyone who is confused," \
+        " recover hp by 300% atk, increase atk by 30% and reduce damage taken multiplier by 40% for 8 turns." \
+        " When the same effect is applied again, the duration is refreshed."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def confuse_effect(self, target):
+            target.apply_effect(ConfuseEffect('Confuse', duration=8, is_buff=False))
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=confuse_effect, target_kw1="n_random_target",target_kw2="4")
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def confuse_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 33:
+                target.apply_effect(ConfuseEffect('Confuse', duration=8, is_buff=False))
+        damage_dealt = self.attack(multiplier=4.0, repeat_seq=3, func_after_dmg=confuse_effect)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def take_damage_aftermath(self, damage, attacker):
+        if attacker.is_confused() and self.is_alive():
+            self.heal_hp(3.0 * self.atk, self)
+            play = self.get_effect_that_named(effect_name="Playful", additional_name="Fairy_Playful")
+            if not play:
+                play = StatsEffect('Playful', 8, True, {'atk' : 1.3, 'final_damage_taken_multipler' : -0.4})
+                play.additional_name = "Fairy_Playful"
+                self.apply_effect(play)
+            else:
+                play.duration = 8
+
+
 
 # ====================================
 # End of CC: Confuse
@@ -3657,8 +3704,72 @@ class Darkpriest(character.Character):
 # Shield
 # ====================================
 
+class ClericB(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "ClericB"
+        self.skill1_description = "Apply Absorption Shield for ally with lowest hp, shield absorbs up to 1000% atk damage for 20 turns."
+        self.skill2_description = "Apply Absorption Shield for ally with highest atk, shield absorbs up to 1000% atk damage for 20 turns."
+        self.skill3_description = "At start of battle, apply Absorption Shield for an ally with highest speed," \
+        " shield absorbs up to 1000% atk damage for 20 turns."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        target = next(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="1"))
+        target.apply_effect(AbsorptionShield('Shield', 20, True, 10 * self.atk, False))
+        return 0
+
+    def skill2_logic(self):
+        target = next(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
+        target.apply_effect(AbsorptionShield('Shield', 20, True, 10 * self.atk, False))
+        return 0
 
 
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        target = next(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="spd", keyword4="ally"))
+        target.apply_effect(AbsorptionShield('Shield', -1, True, 10 * self.atk, False))
+
+
+class ClericC(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "ClericC"
+        self.skill1_description = "Apply Reduction Shield on all allies, shield reduces damage that would exceed 10% of maxhp by 50% for 10 turns."
+        self.skill2_description = "Apply Cancelltion Shield on all allies, shield cancels all damage if damage is above 10% of maxhp for 10 turns," \
+        " shield provides 5 uses."
+        self.skill3_description = "Crit defense is increased by 20%, defense is increased by 10%."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        for ally in self.ally:
+            ally.apply_effect(EffectShield2('Shield', 10, True, cc_immunity=False, shrink_rate=0, damage_reduction=0.5, hp_threshold=0.1))
+        return 0
+
+
+    def skill2_logic(self):
+        for ally in self.ally:
+            ally.apply_effect(CancellationShield('Shield', 10, True, threshold=0.1, uses=5, cc_immunity=False))
+        return 0
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('ClericC Passive', -1, True, {'critdef' : 0.2, 'defense' : 1.1}, can_be_removed_by_skill=False))
 
 
 
@@ -3964,6 +4075,43 @@ class Daji(character.Character):
 # We can either have insane damage or insane survivability that requires damage check
 # ====================================
         
+class EvilKing(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "EvilKing"
+        self.skill1_description = "Attack 3 closest enemies with 234% atk 3 times, multiplier increases by 2.5% for each turn passed."
+        self.skill2_description = "Attack 1 cloeset enemy with 600% atk, inflict cripple for 12 turns, Cripple: atk decreased by 20%, spd decreased by 30%, evasion decreased by 40%."
+        self.skill3_description = "Increase atk and crit damage by 1% every turn."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        base_multiplier = 2.34
+        turn_passed = self.battle_turns
+        multiplier = base_multiplier + 0.025 * turn_passed
+        damage_dealt = self.attack(multiplier=multiplier, repeat=3, target_kw1="n_enemy_in_front", target_kw2="3")
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def cripple(self, target):
+            target.apply_effect(StatsEffect('Cripple', 12, False, {'atk' : 0.8, 'spd' : 0.7, 'eva' : 0.6}))
+        damage_dealt = self.attack(multiplier=6.0, repeat=1, func_after_dmg=cripple, target_kw1="enemy_in_front")
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        def condition(self) -> bool:
+            return True
+        self.apply_effect(StatsEffect('EvilKing Passive', -1, True, {'atk' : 1.01, 'critdmg' : 0.01}, use_active_flag=False,  condition=condition, can_be_removed_by_skill=False))
+
 
 
 

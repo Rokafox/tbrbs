@@ -28,111 +28,119 @@ class Consumable(Block):
 
 class Banana(Consumable):
     def __init__(self, stack: int):
-        super().__init__("Banana", "Recover 15% of hp.")
+        super().__init__("Banana", "Recover approximatly 30000 hp.")
         self.image = "banana"
         self.rarity = "Common"
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 45
+        self.market_value = 800
 
     def E(self, user, player):
-        user.heal_hp(user.maxhp * 0.15, self)
-        return f"{user.name} healed 15% of max hp by {self.name}."
+        # random 0.8-1.2
+        heal_amount = 30000 * random.uniform(0.8, 1.2)
+        user.heal_hp(heal_amount, self)
+        return f"{user.name} healed {heal_amount} hp by {self.name}."
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            return user.hp < user.maxhp * 0.8
+            return user.hp < user.maxhp - 30000
         
 
 
 class Kiwi(Consumable):
     def __init__(self, stack: int):
-        super().__init__("Kiwi", "Recover 25% of hp.")
+        super().__init__("Kiwi", "Recover approximatly 70000 hp.")
         self.image = "kiwi"
         self.rarity = "Uncommon"
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 80
+        self.market_value = 1500
 
     def E(self, user, player):
-        user.heal_hp(user.maxhp * 0.25, self)
-        return f"{user.name} healed 25% of max hp by {self.name}."
+        # random 0.8-1.2
+        heal_amount = 70000 * random.uniform(0.8, 1.2)
+        user.heal_hp(heal_amount, self)
+        return f"{user.name} healed {heal_amount} hp by {self.name}."
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            return user.hp < user.maxhp * 0.7
-
+            return user.hp < user.maxhp - 70000
+        
 
 class Strawberry(Consumable):
     def __init__(self, stack: int):
         super().__init__("Strawberry", "")
-        self.description = "Recover 5% of hp, every turn, recover 5% of lost hp for 6 turns."
+        self.description = "Recover approximatly 150000 hp."
         self.image = "strawberry"
-        self.rarity = "Uncommon"
-        self.type = "Food"
-        self.current_stack = max(1, stack)
-        self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 100
-
-    def E(self, user, player):
-        user.heal_hp(user.maxhp * 0.05, self)
-        user.apply_effect(ContinuousHealEffect("Strawberry", 6, True, (user.maxhp - user.hp) * 0.05, False))
-        return f"{user.name} healed 5% of max hp, and will heal 5% of lost hp for 4 turns by {self.name}."
-    
-    def auto_E_condition(self, user, player):
-        if not self.can_use_on_dead and user.is_dead():
-            return False
-        else:
-            return user.hp < user.maxhp * 0.7
-
-
-class Pancake(Consumable):
-    def __init__(self, stack: int):
-        super().__init__("Pancake", "Recover 50% of hp.")
-        self.image = "pancake"
         self.rarity = "Rare"
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 245
+        self.market_value = 3000
 
     def E(self, user, player):
-        user.heal_hp(user.maxhp * 0.5, self)
-        return f"{user.name} healed 50% of max hp by {self.name}."
+        # random 0.8-1.2
+        heal_amount = 150000 * random.uniform(0.8, 1.2)
+        user.heal_hp(heal_amount, self)
+        return f"{user.name} healed {heal_amount} hp by {self.name}."
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            return user.hp < user.maxhp * 0.5
-        
+            return user.hp < user.maxhp - 150000
 
-class Mantou(Consumable):
+
+class Pancake(Consumable):
     def __init__(self, stack: int):
-        super().__init__("Mantou", "Recover 75% of hp.")
-        self.image = "mantou"
+        super().__init__("Pancake", "Recover approximatly 230000 hp.")
+        self.image = "pancake"
         self.rarity = "Epic"
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 499
+        self.market_value = 5000
 
     def E(self, user, player):
-        user.heal_hp(user.maxhp * 0.75, self)
-        return f"{user.name} healed 75% of max hp by {self.name}."
+        # random 0.8-1.2
+        heal_amount = 230000 * random.uniform(0.8, 1.2)
+        user.heal_hp(heal_amount, self)
+        return f"{user.name} healed {heal_amount} hp by {self.name}."
+
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            return user.hp < user.maxhp - 230000
+        
+
+class Mantou(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Mantou", "Recover approximatly 300000 hp.")
+        self.image = "mantou"
+        self.rarity = "Unique"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 8000
+
+    def E(self, user, player):
+        # random 0.8-1.2
+        heal_amount = 300000 * random.uniform(0.8, 1.2)
+        user.heal_hp(heal_amount, self)
+        return f"{user.name} healed {heal_amount} hp by {self.name}."
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            return user.hp < user.maxhp * 0.3
-
+            return user.hp < user.maxhp - 300000
 
 def get_1_random_consumable():
     consumable_list = [Banana(1), Kiwi(1), Strawberry(1), Pancake(1), Mantou(1)]

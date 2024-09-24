@@ -6,14 +6,24 @@ import random, sys, csv, copy, time, itertools
 import global_vars
 
 
-def fine_print(*args, mode="default", **kwargs):
-    if mode == "file":
-        with open("logs.txt", "a") as f:
-            print(*args, file=f, **kwargs)
-    elif mode == "suppress":
-        pass
-    else:
-        print(*args, **kwargs)
+class FinePrinter:
+    def __init__(self, mode="default"):
+        self.mode = mode
+        if self.mode not in ["default", "file", "suppress"]:
+            raise ValueError("Invalid mode.")
+        self.page = 1
+
+    def go_to_next_page(self):
+        self.page += 1
+
+    def fine_print(self, *args, **kwargs):
+        if self.mode == "file":
+            with open("logs/log_page" + str(self.page) + ".txt", "a") as f:
+                print(*args, file=f, **kwargs)
+        elif self.mode == "suppress":
+            pass
+        else:
+            print(*args, **kwargs)
 
 
 def get_all_characters(test_mode: int):
@@ -122,18 +132,19 @@ def calculate_win_loss_rate(wins_data, losses_data, write_csv=False):
     return sorted_result
 
 
-def simulate_battle_between_party(party1, party2, fineprint_mode="default"):
+def simulate_battle_between_party(party1: list[character.Character], party2: list[character.Character], printer: FinePrinter):
     # -> (winner_party, turns, loser_party)
+
     turn = 1
     if party1 == [] or party2 == []:
-        fine_print("One of the party is empty.", mode=fineprint_mode)
+        printer.fine_print("One of the party is empty.")
         return None
     reset_ally_enemy_attr(party1, party2)
     for c in itertools.chain(party1, party2):
         c.battle_entry_effects()
     while turn < 300 and is_someone_alive(party1) and is_someone_alive(party2):
-        fine_print("=====================================", mode=fineprint_mode)
-        fine_print(f"Turn {turn}", mode=fineprint_mode)
+        printer.fine_print("=====================================")
+        printer.fine_print(f"Turn {turn}")
         global_vars.turn_info_string = ""
 
         reset_ally_enemy_attr(party1, party2)
@@ -146,7 +157,7 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default"):
             for character in itertools.chain(party1, party2):
                 character.record_damage_taken() 
                 character.record_healing_received() 
-            fine_print(global_vars.turn_info_string, mode=fineprint_mode)
+            printer.fine_print(global_vars.turn_info_string)
             break
 
         for character in party1:
@@ -169,7 +180,7 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default"):
             for character in itertools.chain(party1, party2):
                 character.record_damage_taken() 
                 character.record_healing_received()
-            fine_print(global_vars.turn_info_string, mode=fineprint_mode) 
+            printer.fine_print(global_vars.turn_info_string) 
             break
         alive_characters = [x for x in itertools.chain(party1, party2) if x.is_alive()]
         weight = [x.spd for x in alive_characters]
@@ -184,28 +195,32 @@ def simulate_battle_between_party(party1, party2, fineprint_mode="default"):
             character.record_damage_taken()
             character.record_healing_received()
 
-        fine_print(global_vars.turn_info_string, mode=fineprint_mode)
+        printer.fine_print(global_vars.turn_info_string)
 
-        fine_print("", mode=fineprint_mode)
-        fine_print("Party 1:", mode=fineprint_mode)
+        printer.fine_print("")
+        printer.fine_print("Party 1:")
         for character in party1:
-            fine_print(character, mode=fineprint_mode)
-        fine_print("", mode=fineprint_mode)
-        fine_print("Party 2:", mode=fineprint_mode)
+            printer.fine_print(character)
+        printer.fine_print("")
+        printer.fine_print("Party 2:")
         for character in party2:
-            fine_print(character, mode=fineprint_mode)
+            printer.fine_print(character)
         turn += 1
     if turn > 300:
-        fine_print("Battle is taking too long.", mode=fineprint_mode)
+        printer.fine_print("Battle is taking too long.")
+        printer.go_to_next_page()
         return None, 300, None
     if is_someone_alive(party1) and not is_someone_alive(party2):
-        fine_print("Party 1 win!", mode=fineprint_mode)
+        printer.fine_print("Party 1 win!")
+        printer.go_to_next_page()
         return party1, turn, party2
     elif is_someone_alive(party2) and not is_someone_alive(party1):
-        fine_print("Party 2 win!", mode=fineprint_mode)
+        printer.fine_print("Party 2 win!")
+        printer.go_to_next_page()
         return party2, turn, party1
     else:
-        fine_print("Draw!", mode=fineprint_mode)
+        printer.fine_print("Draw!")
+        printer.go_to_next_page()
         return None, turn, None
 
 
@@ -216,8 +231,16 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
     turns_total = 0
     character_and_eqset_wins = []
     character_and_eqset_losses = []
+    printer = FinePrinter(mode=fineprint_mode)
+    amount_of_error = 0
 
     for i in range(sample):
+        # If there are too many errors, we know it is not a hardware failure or cosmic rays bit flipping
+        # We should stop the simulation if 1 in 1000 games are errors
+        if amount_of_error > max(int(sample * 0.001), 1):
+            print("Too many errors, stopping the simulation.")
+            break
+
         for character in character_list:
             character.fineprint_mode = fineprint_mode
             character.equip_item_from_list(generate_equips_list(4, random_full_eqset=True))
@@ -230,7 +253,13 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
         for character in itertools.chain(party1, party2):
             total_games[character.name] += 1
 
-        winner_party, turns, loser_party = simulate_battle_between_party(party1, party2, fineprint_mode=fineprint_mode)
+        try:
+            winner_party, turns, loser_party = simulate_battle_between_party(party1, party2, printer)
+        except Exception as e:
+            amount_of_error += 1
+            print(f"Error: {e}")
+            winner_party, turns, loser_party = None, 300, None
+
         turns_total += turns
         if winner_party is not None:
             for character in winner_party:
@@ -251,18 +280,22 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
     print("=====================================")
     print(f"Elapsed time: {elapsed_time} seconds")
     print("=====================================")
-    print(f"Average turns: {turns_total / sample}") # Ideal range: 55-60
+    print(f"Average turns: {turns_total / sample}") # Ideal range: 70-90
     print("=====================================")
 
     return character_and_eqset_wins, character_and_eqset_losses
 
 
 if __name__ == "__main__":
+    # if ./logs directory does not exist, create it
+    import os
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
         sample = 8000
-    a, b = calculate_winrate_for_character(sample, get_all_characters(2), "suppress")
+    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze

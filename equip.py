@@ -287,8 +287,9 @@ class Equip(Block):
     def level_up_cost(self):
         if self.level == self.level_max:
             return 0
-        return int(100 * self.level)
-
+        base_cost = 0.01  
+        return int(base_cost * (self.level ** 1.955))  # Approximatly 2500000 from 1 to 1000
+    
     def level_up_as_possible(self, funds: int):
         previous_funds = funds
         cost = 0

@@ -380,7 +380,8 @@ def get_all_characters():
     global start_with_max_level
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
-                       "Yuri", "Dophine", "Tian", "Don", "Natasya", "Roseiri", "Fox", "Season", "Air", "Raven"]
+                       "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
+                       "Nata", "Chei", "Cocoa"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -2405,7 +2406,7 @@ if __name__ == "__main__":
     box_submenu_explore_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((635, 560), (120, 35)),
                                                                     text='Explore',
                                                                     manager=ui_manager)
-    box_submenu_explore_button.set_tooltip("Explore the world with the funds you choose. You will be rewarded with random items, but no single item will be worth more than twice your funds.", delay=0.1, wrap_width=300)
+    box_submenu_explore_button.set_tooltip("Explore the world with the funds you choose. You will be rewarded with random items, but no single item will be worth more than twice your funds. Player data is saved afterwards.", delay=0.1, wrap_width=300)
     box_submenu_explore_button.hide()
 
     box_submenu_explore_funds_selection = pygame_gui.elements.UIDropDownMenu(["50", "100", "200", "500", "1000", "5000", "10000", "20000", "50000", "100000"],
@@ -2450,6 +2451,7 @@ if __name__ == "__main__":
         text_box_text += f"You have spent {int(box_submenu_explore_funds_selection.selected_option)} cash and the total value of the items you gained is {int(sum([x.market_value for x in package]))} cash.\n"
         text_box.append_html_text(text_box_text)
         player.lose_cash(int(box_submenu_explore_funds_selection.selected_option))
+        save_player(player)
 
 
     # =====================================

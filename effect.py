@@ -331,8 +331,10 @@ class EffectShield2(Effect):
         if damage > character.maxhp * self.hp_threshold:
             damage = character.maxhp * self.hp_threshold + (damage - character.maxhp * self.hp_threshold) * (1 - self.damage_reduction)
         delta = abs(damage_original - damage)
-        if self.damage_reflect_function:
-            attacker.take_status_damage(self.damage_reflect_function(delta), character)
+        if self.damage_reflect_function and delta > 0:
+            damage_to_reflect = self.damage_reflect_function(delta)
+            # print(f"{character.name} reflects {damage_to_reflect} damage to {attacker.name}.")
+            attacker.take_status_damage(damage_to_reflect, character)
         return damage
     
     def apply_effect_on_trigger(self, character):
@@ -378,7 +380,7 @@ class CancellationShield(Effect):
             if self.uses == 0 and self.remove_this_effect_when_use_is_zero:
                 character.remove_effect(self)
             elif self.uses < 0:
-                raise Exception("Logic Error")
+                raise Exception(f"Logic Error: {self.name} uses is negative. Character: {character.name}, attacker: {attacker.name}")
             global_vars.turn_info_string += f"{character.name} shielded the attack!\n"
             if self.cancel_excessive_instead:
                 damage = min(damage, character.maxhp * self.threshold)
@@ -397,6 +399,50 @@ class CancellationShield(Effect):
         if self.cancel_below_instead:
             string += " Cancel the damage below."
         return string
+
+
+class RenkaEffect(Effect):
+    """
+    Renka has 15 stacks, each time when taking lethal damage, consume 1 stack, cancel the damage and recover 15% hp.
+    When taking damage, reduce damage taken by 20% + 5% for each stack.
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, hp_recover_percentage=0.12, damage_reduction=0.04, stacks=15,
+                 damage_reduction_per_stack=0.04):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.cc_immunity = cc_immunity
+        self.hp_recover_percentage = hp_recover_percentage
+        self.damage_reduction = damage_reduction
+        self.sort_priority = 299
+        self.stacks = stacks
+        self.damage_reduction_per_stack = damage_reduction_per_stack
+
+    def apply_effect_on_trigger(self, character):
+        if self.stacks == 0:
+            character.remove_effect(self)
+
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        if damage > character.hp:
+            if self.stacks > 0:
+                self.stacks -= 1
+                character.heal_hp(character.maxhp * self.hp_recover_percentage, character)
+                global_vars.turn_info_string += f"{character.name} Renka effect cancelled the damage and recovered {self.hp_recover_percentage*100:.1f}% hp.\n"
+                return 0
+            else:
+                # No stacks left, remove the effect.
+                character.remove_effect(self)
+                return damage
+        else:
+            red = self.damage_reduction + self.stacks * self.damage_reduction_per_stack
+            return damage * (1 - red)
+    
+    def tooltip_description(self):
+        return f"Renka effect: When taking lethal damage, consume 1 stack, cancel the damage and recover {self.hp_recover_percentage*100:.1f}% hp. " \
+        f"When taking damage, reduce damage taken by {self.damage_reduction*100:.1f}% + {self.stacks * self.damage_reduction_per_stack*100:.1f}% for each stack. " \
+        f"Currently has {self.stacks} stack(s)."
+    
+
+
 
 
 # =========================================================

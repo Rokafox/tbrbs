@@ -1,3 +1,4 @@
+import copy
 from typing import List, Tuple
 from effect import *
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
@@ -809,12 +810,12 @@ class Character:
                 setattr(self, attr, new_value)
         return None
 
-    def heal_hp(self, value, healer):
+    def heal_hp(self, value, healer, ignore_death=False):
         # Remember the healer can be a Character object or Consumable object or Effect or perhaps other objects
         # if healer is not Character class, give error for now, testing purpose
         if not isinstance(healer, Character) and not isinstance(healer, EquipmentSetEffect_Snowflake) and not isinstance(healer, EquipmentSetEffect_Bamboo):
             raise Exception(f"Invalid healer: {healer}, {healer.__class__}")
-        if self.is_dead():
+        if self.is_dead() and not ignore_death:
             print(global_vars.turn_info_string)
             raise Exception(f"Cannot heal a dead character: {self.name}")
         if value < 0:
@@ -987,7 +988,7 @@ class Character:
         """ Check if the character has the same effect object. """
         return effect in self.buffs + self.debuffs
 
-    def has_effect_that_named(self, effect_name: str = None, additional_name: str = None, class_name: str = None):
+    def has_effect_that_named(self, effect_name: str = None, additional_name: str = None, class_name: str = None) -> bool:
         for effect in self.buffs + self.debuffs:
             if effect_name and effect.name != effect_name:
                 continue
@@ -1007,7 +1008,7 @@ class Character:
                         return True
         return False
 
-    def get_effect_that_named(self, effect_name: str = None, additional_name: str = None, class_name: str = None):
+    def get_effect_that_named(self, effect_name: str = None, additional_name: str = None, class_name: str = None) -> Effect:
         """
         Return the first effect found that matches the given effect name.
         """
@@ -1041,7 +1042,7 @@ class Character:
                 return True
         return False
 
-    def apply_effect(self, effect):
+    def apply_effect(self, effect: Effect):
         # if self.is_dead():
         #     print(f"Warning: {self.name} is dead, should not be a valid target to apply effect. Effect name: {effect.name}")
         if effect.name in self.effect_immunity:
@@ -1075,7 +1076,10 @@ class Character:
         elif effect in self.debuffs:
             self.debuffs.remove(effect)
         else:
-            raise Exception("Effect not found.") if strict else None
+            if strict:
+                raise Exception("Effect not found.")
+            else:
+                print(f"Warning: Effect not found. Effect: {effect}")
         global_vars.turn_info_string += f"{effect.name} on {self.name} has been removed.\n"
         if not purge:
             effect.apply_effect_on_remove(self)
@@ -1396,14 +1400,14 @@ class Poppy(Character):
             attacker.apply_effect(ContinuousDamageEffect("Burn", 6, False, self.atk * 0.5, self))
 
 
-class Natasya(Character):
+class Cate(Character):
     """
     Generic attacker
     Build: atk, penetration
     """    
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
-        self.name = "Natasya"
+        self.name = "Cate"
         self.skill1_description = "4 hits on random enemies, 245% atk each hit, each hit has a 50% chance to stun for 2 turns."
         self.skill2_description = "Attack all enemies for 220% atk, damage increases by 60% if you have higher atk than target."
         self.skill3_description = "Increases atk and critdmg by 20%. When hp is below 40%, reduce damage taken by 40%."
@@ -2124,6 +2128,8 @@ class Fox(Character):
         pass
 
     def status_effects_at_end_of_turn(self):
+        if self.is_dead():
+            return super().status_effects_at_end_of_turn()
         stacks_to_gain = 0
         for ally in self.ally:
             stacks_to_gain += len(ally.debuffs)
@@ -2913,3 +2919,307 @@ class Yuri(Character):
             
             case (_, _, _, _):
                 raise Exception("Invalid state")
+            
+
+class April(Character):
+    """
+    special attacker
+    Build: generic attack build
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "April"
+        self.skill1_description = "Attack closest enemy with 300% atk 3 times. For each attack, if target has a beneficial effect, create a" \
+        " copy of that effect and apply it on self. Effect created this way always have a duration of 12 turns." \
+        " Each effect can only be copied once. Equippment set effect cannot be copied."
+        self.skill2_description = "Attack 3 enemy with 300% atk. If you have beneficial effect, for each effect you have," \
+        " attack enemy of highest hp with 200% atk."
+        self.skill3_description = "Before taking damage, for each beneficial effect you have, reduce damage taken by 6%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def copy_effect(self, target):
+            for e in target.buffs:
+                e.ch_april_mark_as_copied = False
+                if not e.is_set_effect and hasattr(e, "ch_april_mark_as_copied") and not e.ch_april_mark_as_copied:
+                    e2 = copy.copy(e)
+                    e2.duration = 12
+                    e.ch_april_mark_as_copied = True
+                    self.apply_effect(e2)
+        damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=3.0, repeat=3, func_after_dmg=copy_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def additional_attack(self, target, is_crit):
+            admg = 0
+            for e in self.buffs:
+                if e.is_buff and not e.is_set_effect:
+                    admg = self.attack(target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy", multiplier=2.0)
+            return admg
+            
+        damage_dealt = self.attack(target_kw1="n_random_enemy", target_kw2="3",
+                                   multiplier=3.0, repeat=1, additional_attack_after_dmg=additional_attack)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def take_damage_before_calculation(self, damage, attacker):
+        reduction = 0.06 * sum(1 for e in self.buffs if e.is_buff and not e.is_set_effect)
+        return damage * (1 - reduction)
+    
+
+class Nata(Character):
+    """
+    tank
+    Build: heal_efficiency, hp 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Nata"
+        self.skill1_description = "Attack random enemies 4 times with 200% atk. All duration of beneficial effects on yourself is increased by 4 turns," \
+        " if you have Renka effect, its stack is increased by 1 if less than 10."
+        self.skill2_description = "Focus attack 1 enemy of highest crit rate with 210% atk 3 times." \
+        " if the enemy falls by this attack, recover 20% hp."
+        self.skill3_description = "The first time you are defeated, recover 12% hp and apply Renka status effect on yourself," \
+        " Renka has 15 stacks, each time when taking lethal damage, consume 1 stack, cancel the damage and recover 12% hp." \
+        " When taking damage, reduce damage taken by 4% + 4% for each stack."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.skill3_used = False
+
+    def clear_others(self):
+        self.skill3_used = False
+        super().clear_others()
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def after_the_attack():
+            for e in self.buffs:
+                if e.duration > 0:
+                    e.duration += 4
+            renka = self.get_effect_that_named("Renka", "Nata_Renka", "RenkaEffect")
+            if renka:
+                if renka.stacks < 10:
+                    renka.stacks += 1
+                    # print(f"{self.name} gained 1 stack of Renka.")
+        damage_dealt = self.attack(multiplier=2.0, repeat=4)
+        if self.is_alive():
+            after_the_attack()
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def recovery(self, target):
+            self.heal_hp(self.maxhp * 0.2, self)
+        damage_dealt = self.attack(target_kw1="n_highest_attr", target_kw2="1", target_kw3="crit", target_kw4="enemy", multiplier=2.1, repeat_seq=3, func_after_dmg=recovery)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def defeated_by_taken_damage(self, damage, attacker):
+        if not self.skill3_used:
+            self.heal_hp(self.maxhp * 0.12, self, ignore_death=True)
+            renka = RenkaEffect("Renka", -1, True, False)
+            renka.can_be_removed_by_skill = False
+            renka.additional_name = "Nata_Renka"
+            self.apply_effect(renka)
+            self.skill3_used = True
+            return 
+        return
+    
+
+class Chei(Character):
+    """
+    damage reflect attacker
+    Build: spd
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Chei"
+        self.skill1_description = "Attack 4 enemies with 280% atk. Apply Assist on yourself for 12 turns." \
+        " Assist: reflect 120% of received damage that exceeds 15% of maxhp to the attacker as status damage," \
+        " Damage taken cannot exceed 15% of maxhp. On applying the same effect, duration is refreshed."
+        self.skill2_description = "Attack 3 enemies with 280% atk. 60% chance to inflict Burn for 6 turns." \
+        " Burn: deals 50% atk status damage per turn. If Assist is still active, increase its duration by 3 turns."
+        self.skill3_description = "At start of battle, apply Assist on yourself for 12 turns."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.skill3_used = False
+
+    def clear_others(self):
+        self.skill3_used = False
+        super().clear_others()
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def after_the_attack():
+            assist = self.get_effect_that_named("Assist", "Chei_Assist")
+            if assist:
+                assist.duration = 12
+            else:
+                assist = EffectShield2("Assist", 12, True, False, damage_reduction=1.0, shrink_rate=0.0, hp_threshold=0.15,
+                                       damage_reflect_function=lambda x: x * 1.2, 
+                                       damage_reflect_description="reflect 120% of received damage that exceeds 15% of maxhp to the attacker.")
+                assist.additional_name = "Chei_Assist"
+                self.apply_effect(assist)
+        damage_dealt = self.attack(multiplier=2.8, repeat=1, target_kw1="n_random_enemy", target_kw2="4")
+        if self.is_alive():
+            after_the_attack()
+        return damage_dealt
+
+    def skill2_logic(self):
+        def burn_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 60:
+                target.apply_effect(ContinuousDamageEffect("Burn", 6, False, self.atk * 0.5, self))
+        damage_dealt = self.attack(multiplier=2.8, repeat=1, target_kw1="n_random_enemy", target_kw2="3", func_after_dmg=burn_effect)
+        if self.is_alive():
+            assist = self.get_effect_that_named("Assist", "Chei_Assist")
+            if assist:
+                assist.duration += 3
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        e = EffectShield2("Assist", 12, True, False, damage_reduction=1.0, shrink_rate=0.0, hp_threshold=0.15,
+                                       damage_reflect_function=lambda x: x * 1.2, 
+                                       damage_reflect_description="reflect 120% of received damage that exceeds 15% of maxhp to the attacker.")
+        e.additional_name = "Chei_Assist"
+        self.apply_effect(e)
+
+
+class Cocoa(Character):
+    """
+
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Cocoa"
+        self.skill1_description = "Focus attack closest enemy with 440% atk 3 times, if you have higher maxhp than the target, double the damage."
+        self.skill2_description = "Select an ally of highest atk, reduce the allys skill cooldown by 2," \
+        " and increase the allys speed by 200% for 3 turns. If the same effect is applied, duration is refreshed." \
+        " if the selected ally is Cocoa, hp is recovered by 30%."
+        self.skill3_description = "If haven't taken damage for 5 turns, fall asleep. This effect does not reduce evasion." \
+        " While asleep, recover 30% hp each turn. When this effect is removed, for 12 turns," \
+        " atk and defense is increased by 30%."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 5
+        self.skill3_used = False
+
+    def clear_others(self):
+        self.skill3_used = False
+        super().clear_others()
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def damage_amplify(self, target, final_damage):
+            if self.maxhp > target.maxhp:
+                final_damage *= 2.0
+            return final_damage
+        damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=4.4, repeat_seq=3, func_damage_step=damage_amplify)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def speed_effect(target: Character):
+            spd_e = target.get_effect_that_named("Speed Up", "Cocoa_Speed_Up")
+            if not spd_e:
+                spd_e = StatsEffect("Speed Up", 3, True, {"spd": 3.0})
+                spd_e.additional_name = "Cocoa_Speed_Up"
+                target.apply_effect(spd_e)
+            else:
+                spd_e.duration = 3
+
+            target.update_skill_cooldown(1)
+            target.update_skill_cooldown(1)
+            target.update_skill_cooldown(2)
+            target.update_skill_cooldown(2)
+            if target == self:
+                self.heal_hp(self.maxhp * 0.3, self)
+        ally = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
+        speed_effect(ally)
+        return 0
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        effect = SleepEffect("Sleep", -1, True, True)
+        effect.is_buff = True
+        effect.additional_name = "Cocoa_Sleep"
+        def new_apply_effect_on_trigger(character):
+            character.heal_hp(character.maxhp * 0.3, character)
+        def new_apply_effect_on_apply(character):
+            pass
+        def new_apply_effect_on_remove(character):
+            character.apply_effect(StatsEffect("Sweet Dreams", 12, True, {"atk": 1.3, "defense": 1.3}))
+        effect.apply_effect_on_trigger = new_apply_effect_on_trigger
+        effect.apply_effect_on_apply = new_apply_effect_on_apply
+        effect.apply_effect_on_remove = new_apply_effect_on_remove
+        effect.can_be_removed_by_skill = False
+        def new_tooltip_description():
+            return "While asleep, recover 30% hp each turn. When this effect is removed, for 10 turns, atk and defense is increased by 30%."
+        effect.tooltip_description = new_tooltip_description
+        self.apply_effect(NotTakingDamageEffect("Shopping date", -1, True, 5, effect))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
