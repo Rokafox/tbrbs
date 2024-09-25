@@ -54,3 +54,20 @@ class GoldIngot(Item):
             "type": self.type,
             "current_stack": self.current_stack,
         }
+    
+
+class DiamondIngot(Item):
+    def __init__(self, stack: int):
+        super().__init__("Diamond Ingot", "A shiny piece of diamond ingot.")
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.image = "diamond_ingot_62000000"
+        self.rarity = "Unique"
+        self.market_value = 62000000
+
+    def to_dict(self):
+        return {
+            "object": str(self.__class__),
+            "type": self.type,
+            "current_stack": self.current_stack,
+        }

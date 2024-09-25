@@ -10,6 +10,9 @@ class Block:
         self.rarity_list = ["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]
         self.type_list = ["None"]
         self.eq_set_list = ["None"]
+        """
+        Every time a new item type is added, we MUST add it to Nine.sort_inventory_by_type() method.
+        """
         self.type = "None"
         self.rarity = "Common"
         self.eq_set = "None"
@@ -46,6 +49,12 @@ class Block:
         else:
             return f"Used {self.name} but nothing happened."
         
+    def E_actual(self, user, player):
+        """
+        If method E modifies the user inventory, we must use E_actual for actual execution instead of E.
+        """
+        pass
+
     def print_stats_html(self, include_market_price=True):
         match self.rarity:
             case "Common":

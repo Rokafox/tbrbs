@@ -37,6 +37,7 @@ class Equip(Block):
         self.atk_flat = 0
         self.def_flat = 0
         self.spd_flat = 0
+        self.market_value = 0
         # Effect from upgrade
         self.stars_rating = 0 # 0 to 15
         self.stars_rating_max = 15
@@ -147,7 +148,7 @@ class Equip(Block):
         values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.60]
         rarity_values = {rarity: value for rarity, value in zip(self.rarity_list, values)}
         rarity_multiplier = rarity_values.get(self.rarity, 1.0)
-        return int(2000 * (self.stars_rating + 1) ** 2 * rarity_multiplier)
+        return int(2000 * (self.stars_rating + 1) ** 1.90 * rarity_multiplier)
 
     def update_stats_from_upgrade(self):
         values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.60]
@@ -179,19 +180,19 @@ class Equip(Block):
         extra_lines_to_generate = self.fake_dice() - 1
         
         if self.type == self.type_list[2]:
-            self.maxhp_flat = max(normal_distribution(1, 3000, 1000, 500), 1)
+            self.maxhp_flat = max(normal_distribution(1, 4000, 1000, 1000), 1)
             self.maxhp_flat /= 40
             self.maxhp_flat *= level
         elif self.type == self.type_list[0]:
-            self.atk_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.atk_flat = max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
             self.atk_flat /= 40
             self.atk_flat *= level
         elif self.type == self.type_list[1]:
-            self.def_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.def_flat = max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
             self.def_flat /= 40
             self.def_flat *= level
         elif self.type == self.type_list[3]:
-            self.spd_flat = max(normal_distribution(1, 3000, 1000, 500) * 0.05, 1)
+            self.spd_flat = max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
             self.spd_flat /= 40
             self.spd_flat *= level
         else:
@@ -201,7 +202,7 @@ class Equip(Block):
             for i in range(extra_lines_to_generate):
                 attr = random.choice(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
                                       "crit", "critdmg", "critdef", "penetration", "heal_efficiency"])
-                value = normal_distribution(1, 3000, 1000, 500) * 0.0001
+                value = normal_distribution(1, 4000, 1000, 1000) * 0.0001
                 setattr(self, attr, getattr(self, attr) + value)
         
         self.enhance_by_rarity()
@@ -284,11 +285,29 @@ class Equip(Block):
         self.level_cost = self.level_up_cost()
         return prev_level, new_level
     
-    def level_up_cost(self):
-        if self.level == self.level_max:
+    def level_up_cost(self, current_level=None):
+        if not current_level:
+            current_level = self.level
+        if current_level == self.level_max:
             return 0
         base_cost = 0.01  
-        return int(base_cost * (self.level ** 1.955))  # Approximatly 2500000 from 1 to 1000
+        return int(base_cost * (current_level ** 1.955))  # Approximatly 2500000 from 1 to 1000
+    
+    def level_up_cost_multilevel(self, levels: int) -> int:
+        # calculate the cost of leveling up multiple levels from current level
+        if levels < 0:
+            raise Exception("Invalid levels")
+
+        total_cost = 0
+        current_level = self.level
+        for i in range(levels):
+            if current_level >= self.level_max:
+                break
+            total_cost += self.level_up_cost(current_level)
+            current_level += 1
+
+        return total_cost
+
     
     def level_up_as_possible(self, funds: int):
         previous_funds = funds
@@ -305,17 +324,19 @@ class Equip(Block):
                             self.eva * 4000, self.acc * 4000, self.crit * 4000, 
                           self.critdmg * 4000, self.critdef * 4000, self.penetration * 6000, self.heal_efficiency * 3000])
         base_value_b /= 40
-        base_value_b *= self.level
         base_value_c = sum([self.maxhp_extra * 0.6, self.atk_extra * 12, self.def_extra * 12, self.spd_extra * 12])
         rarity_values = [1.00, 1.10, 1.25, 1.45, 1.70, 2.00]
         rarity_multipliers = {rarity: value for rarity, value in zip(self.rarity_list, rarity_values)}
         rarity_multiplier = rarity_multipliers.get(self.rarity)
         random_multiplier = random.uniform(0.95, 1.05)
+        level_multiplier = max(1, 0.006 * (self.level ** 1.333))
         if self.eq_set == "None":
             self.market_value = (base_value + base_value_b + base_value_c) * rarity_multiplier * random_multiplier * 0.66
+            self.market_value *= level_multiplier
             return self.market_value
         else:
-            self.market_value = (base_value + base_value_b + base_value_c) * rarity_multiplier * random_multiplier 
+            self.market_value = (base_value + base_value_b + base_value_c) * rarity_multiplier * random_multiplier
+            self.market_value *= level_multiplier 
             return self.market_value
 
     def print_stats(self):

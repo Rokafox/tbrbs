@@ -5,8 +5,7 @@ import monsters
 from item import *
 from consumable import *
 from calculate_winrate import is_someone_alive, reset_ally_enemy_attr
-import copy, csv, re
-from io import StringIO
+import csv
 running = False
 text_box = None
 start_with_max_level = True
@@ -16,7 +15,7 @@ start_with_max_level = True
 # 1. We cannot have character with the same name.
 # 2. We better not have effects with the same name.
 # 3. Because we now have save feature, make sure to shut down instead of quit for debugging. Delete player_data.json if necessary.
-# 4, Every time we add a new item type for inventory, we have to add it to a certain list. See Nine.sort_inventory_by_type
+# 4, Every time we add a new item type for inventory, we MUST to add it to a certain list for sort feature. See Nine.sort_inventory_by_type
 # 5. load_player() is only partially implemented. We have to add more code to load consumables and items.
 # 6. If there is bug unsolvable, refer to 3.
 # 7. explore_generate_package_of_items_to_desired_value need more items to be added.
@@ -50,6 +49,8 @@ def load_player(filename="player_data.json"):
                 item = SliverIngot(item_data["current_stack"])
             case ("<class 'item.GoldIngot'>", _):
                 item = GoldIngot(item_data["current_stack"])
+            case ("<class 'item.DiamondIngot'>", _):
+                item = DiamondIngot(item_data["current_stack"])
             case ("<class 'equip.Equip'>", _):
                 item = Equip("foo", "Weapon", "Common")
                 for attr, value in item_data.items():
@@ -62,6 +63,31 @@ def load_player(filename="player_data.json"):
                     item = item_class(item_data['current_stack'])
                 else:
                     raise ValueError(f"Unknown item type: {item_data['name']}")
+            case ("<class 'consumable.EquipPackage'>", _):
+                # "object": "<class 'consumable.EquipPackage'>",
+                item = EquipPackage(item_data["current_stack"])
+            case ("<class 'consumable.EquipPackage2'>", _):
+                # "object": "<class 'consumable.EquipPackage'>",
+                item = EquipPackage2(item_data["current_stack"])
+            case ("<class 'consumable.EquipPackage3'>", _):
+                # "object": "<class 'consumable.EquipPackage'>",
+                item = EquipPackage3(item_data["current_stack"])
+            case ("<class 'consumable.EquipPackage4'>", _):
+                # "object": "<class 'consumable.EquipPackage'>",
+                item = EquipPackage4(item_data["current_stack"])
+            case ("<class 'consumable.EquipPackage5'>", _):
+                # "object": "<class 'consumable.EquipPackage'>",
+                item = EquipPackage5(item_data["current_stack"])
+            case ("<class 'consumable.EquipPackage6'>", _):
+                # "object": "<class 'consumable.EquipPackage'>",
+                item = EquipPackage6(item_data["current_stack"])
+            # FoodPackage
+            case ("<class 'consumable.FoodPackage'>", _):
+                item = FoodPackage(item_data["current_stack"])
+            case ("<class 'consumable.FoodPackage2'>", _):
+                item = FoodPackage2(item_data["current_stack"])
+            case ("<class 'consumable.FoodPackage3'>", _):
+                item = FoodPackage3(item_data["current_stack"])
             case _:
                 continue
 
@@ -87,7 +113,8 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         self.max_pages = 0
         self.dict_image_slots_items = {}
         self.dict_image_slots_rects = {}
-        self.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Block)}
+        # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Block)}
+        self.selected_item: dict[pygame_gui.elements.UIImage, tuple[pygame.Surface, bool, Block]] = {}
         self.cleared_stages = 0
 
         if cash > 0:
@@ -103,6 +130,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
 
     def build_inventory_slots(self):
         global cheap_inventory_show_current_option
+        # TODO: We have commented out the selected_item feature. TEST IT.
         self.selected_item = {}
         page = self.current_page
         try: # I do not think it is the best way to do this.
@@ -114,6 +142,8 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                 filtered_inventory = [x for x in self.inventory if isinstance(x, Equip)]
             case "Consumable":
                 filtered_inventory = [x for x in self.inventory if isinstance(x, Consumable)]
+                # check if item have flag mark_for_removal, if so, remove it from inventory
+                # filtered_inventory = [x for x in filtered_inventory if not x.mark_for_removal]
             case "Item":
                 filtered_inventory = [x for x in self.inventory if isinstance(x, Item)]
             case _:
@@ -240,16 +270,24 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             self.build_inventory_slots()
         return amount_to_remove 
 
-    def use_1_selected_item(self, rebuild_inventory_slots: bool):
+    def use_1_selected_item(self, rebuild_inventory_slots: bool, use_how_many_times: int = 1, who_the_character: Character = None):
         # self.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item)}
+        # use_how_many_times is contradicting with the name of the method. Whatever.
         """Can be used for stackable items"""
         if not self.selected_item:
+            print("No item selected.")
             return
         for a, b, item in self.selected_item.values():
             if b: # is_highlighted
-                self.remove_from_inventory(type(item), 1, False)
+                # cannot use 7 bananas when we only have 5
+                uhmt_fixed = min(use_how_many_times, item.current_stack)
+                self.remove_from_inventory(type(item), uhmt_fixed, False)
+                for i in range(uhmt_fixed):
+                    item.E_actual(who_the_character, self)
+
         if rebuild_inventory_slots:
             self.build_inventory_slots()
+
 
     def add_package_of_items_to_inventory(self, package_of_items: list):
         for item in package_of_items:
@@ -257,7 +295,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         self.build_inventory_slots()
 
     def sort_inventory_by_rarity(self):
-        all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food"]
+        all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food", "Eqpackage", "Foodpackage"]
         item_sample = Block("Foo", "")
         # Create ordering dictionaries for rarity and types
         rarity_order = dict(mit.zip_equal(item_sample.rarity_list, range(len(item_sample.rarity_list))))
@@ -271,14 +309,14 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         # Certainly a little bit stupid. Every time we add a new type, we have to add it to this list.
         # Faster than dumping Equip to a new list, sort, then dump back to inventory
         # Slower than seperating Equip, Consumable, Item into 3 lists
-        all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food"]
+        all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food", "Eqpackage", "Foodpackage"]
         type_order = dict(mit.zip_equal(all_possible_types, range(len(all_possible_types))))
         self.inventory.sort(key=lambda x: type_order[x.type], reverse=False)
         self.current_page = 0
         self.build_inventory_slots()
 
     def sort_inventory_by_set(self):
-        all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food"]
+        all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food", "Eqpackage", "Foodpackage"]
         item_sample = Equip("Foo", "Weapon", "Common")
         # Create ordering dictionaries for sets and types
         set_order = dict(mit.zip_equal(item_sample.eq_set_list, range(len(item_sample.eq_set_list))))
@@ -358,18 +396,6 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         self.remove_from_inventory(Cash, amount, rebuild_inventory_slots)
 
 
-try:
-    player, character_info_dict = load_player()
-    print("Player and character data loaded.")
-except FileNotFoundError:
-    print("Player data not found, creating a new one...")
-    if start_with_max_level:
-        player = Nine(5000000000)
-        player.cleared_stages = 2199 # 2199
-    else:
-        player = Nine(500000)
-        player.cleared_stages = 0
-
 # =====================================
 # End of Player Section
 # =====================================
@@ -386,34 +412,14 @@ def get_all_characters():
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
     else:
-        all_characters = [eval(f"{name}('{name}', 40)") for name in character_names]
+        all_characters = [eval(f"{name}('{name}', 1)") for name in character_names]
     return all_characters
 
 all_characters = get_all_characters()
 all_monsters = [cls(name, 1) for name, cls in monsters.__dict__.items() 
                 if inspect.isclass(cls) and issubclass(cls, Character) and cls != Character]
 
-try:
-    character_info_dict
-except NameError:
-    pass
-else:
-    for c in all_characters:
-        if not c.name in character_info_dict.keys():
-            print(f"Character {c.name} not found in character_info_dict, skipped.") # When a new character is added, this will happen.
-            continue
-        c.lvl = character_info_dict[c.name][0]
-        c.exp = character_info_dict[c.name][1]
-        if character_info_dict[c.name][2]:
-            print(f"Trying to read equipment data and equip items for {c.name}...")
-            for d in character_info_dict[c.name][2]:
-                item = Equip("foo", "Weapon", "Common")
-                for attr, value in d.items():
-                    if hasattr(item, attr):
-                        setattr(item, attr, value)
-                item.estimate_market_price()
-                c.equip_item(item)
-                print(f"Equipped {str(item)} to {c.name}.")
+
 
 
 
@@ -770,7 +776,7 @@ if __name__ == "__main__":
                                         ui_manager)
 
     def decide_auto_battle_speed():
-        speed = auto_battle_speed_selection_menu.selected_option
+        speed = auto_battle_speed_selection_menu.selected_option[0]
         match speed:
             case "Veryslow":
                 return 10.0
@@ -862,15 +868,6 @@ if __name__ == "__main__":
         set_up_characters_adventure_mode()
 
 
-    adventure_mode_stages = {} # int : list of monsters
-    if player.cleared_stages > 0:
-        print(f"Loading adventure mode stages from player data. Current stage: {player.cleared_stages}")
-        adventure_mode_current_stage = min(player.cleared_stages + 1, 2500)
-    else:
-        adventure_mode_current_stage = 1
-    adventure_mode_generate_stage()
-
-
     def adventure_mode_exp_reward():
         global adventure_mode_current_stage, party1
         average_party_level = sum([x.lvl for x in party1]) / 5
@@ -943,12 +940,18 @@ if __name__ == "__main__":
                                         tool_tip_text = "Replace selected character with reserve character")
     character_replace_button.set_tooltip("Replace the selected character with a reserve member.", delay=0.1, wrap_width=300)
 
-    use_item_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 480), (156, 35)),
+    use_item_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 480), (100, 35)),
                                         text='Equip Item',
                                         manager=ui_manager,
                                         tool_tip_text = "Use selected item for selected character.")
     use_item_button.set_tooltip("The selected item is used on the selected character. If the selected item is an equipment item, equip it to the selected character. Multiple items may be equipped or used at one time.",
                                 delay=0.1, wrap_width=300)
+    use_itemx10_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1005, 480), (51, 35)),
+                                        text='x10',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Use selected item 10 times.")
+    use_itemx10_button.set_tooltip("Use selected item 10 times, only effective on comsumables.", delay=0.1, wrap_width=300)
+
     item_sell_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 520), (156, 35)),
                                         text='Sell Item',
                                         manager=ui_manager,
@@ -985,7 +988,7 @@ if __name__ == "__main__":
     gold_ingot_exchange_button.hide()
 
 
-    def use_item():
+    def use_item(how_many_times: int = 1):
         # Nine.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Equip|Consumable|Item)})}
         # get all selected items
         text_box.set_text("==============================\n")
@@ -1010,7 +1013,7 @@ if __name__ == "__main__":
                 text_box.append_html_text(text_box_text_to_append)
                 return
             for character in all_characters:
-                if character.name == character_selection_menu.selected_option.split()[-1] and character.is_alive():
+                if character.name == character_selection_menu.selected_option[0].split()[-1] and character.is_alive():
                     # check if selected items have more than 1 of the same type
                     item_types_seen = []
                     for item in selected_items:
@@ -1033,21 +1036,28 @@ if __name__ == "__main__":
                         player.add_package_of_items_to_inventory(old_items)
                     else:
                         player.remove_selected_item_from_inventory(True)
-                elif character.name == character_selection_menu.selected_option.split()[-1] and not character.is_alive():
+                elif character.name == character_selection_menu.selected_option[0].split()[-1] and not character.is_alive():
                     text_box_text_to_append += f"Can only equip items to alive characters.\n"
                     text_box.append_html_text(text_box_text_to_append)
                     return
         elif cheap_inventory_show_current_option == "Consumable":
             for character in all_characters:
-                if character.name == character_selection_menu.selected_option.split()[-1]:
+                if character.name == character_selection_menu.selected_option[0].split()[-1]:
                     for consumable in selected_items:
-                        if not consumable.can_use_on_dead and not character.is_alive():
-                            text_box_text_to_append += f"Cannot use {str(consumable)} on dead characters.\n"
-                            text_box.append_html_text(text_box_text_to_append)
-                            return
-                        event_str = consumable.E(character, player)
-                        text_box_text_to_append += event_str + "\n"
-                    player.use_1_selected_item(True)
+                        how_many_times_tmp = min(how_many_times, consumable.current_stack)
+                        for i in range(how_many_times_tmp):
+                            if not consumable.can_use_on_dead and not character.is_alive():
+                                text_box_text_to_append += f"Dead character Cannot use {str(consumable)}.\n"
+                                text_box.append_html_text(text_box_text_to_append)
+                                return
+                            # if comsumable is food, it takes effect in E() so this loop is enough for effect
+                            # for else that uses E_actual(), E() only returns a string indicating what happened,
+                            # then it is handled in player.use_1_selected_item() for actual effect.
+                            # In conclusion, we should not have both E() and E_actual() for effects, although it is possible.
+                            event_str = consumable.E(character, player)
+                            text_box_text_to_append += event_str + "\n"
+                    # player.use_1_selected_item will correctly handle cases when consumable.current_stack is less than how_many_times
+                    player.use_1_selected_item(True, use_how_many_times=how_many_times, who_the_character=character)
         # Remember to change this if decided item can also be used on characters
         elif cheap_inventory_show_current_option == "Item":
             for item in selected_items:
@@ -1074,6 +1084,7 @@ if __name__ == "__main__":
         random.shuffle(characters_in_need)
         for character in characters_in_need:
             all_consumables = [x for x in player.inventory if isinstance(x, Consumable) and x.can_use_for_auto_battle]
+            random.shuffle(all_consumables)
             if not all_consumables:
                 global_vars.turn_info_string += f"Random use failed: No consumable in inventory.\n"
                 return
@@ -1193,8 +1204,8 @@ if __name__ == "__main__":
             text_box.append_html_text("Cannot unequip items when not in first turn or after the battle is concluded.\n")
             return
         for character in all_characters:
-            if character.name == character_selection_menu.selected_option.split()[-1] and character.is_alive():
-                item_type = eq_selection_menu.selected_option
+            if character.name == character_selection_menu.selected_option[0].split()[-1] and character.is_alive():
+                item_type = eq_selection_menu.selected_option[0]
                 unequipped_item = character.unequip_item(item_type, False)
                 if unequipped_item:
                     text_box.append_html_text(f"Unequipped {item_type} from {character.name}.\n")
@@ -1203,7 +1214,7 @@ if __name__ == "__main__":
                     text_box.append_html_text(f"{character.name} does not have {item_type} equipped.\n")
                 redraw_ui(party1, party2)
                 return
-            elif character.name == character_selection_menu.selected_option.split()[-1] and not character.is_alive():
+            elif character.name == character_selection_menu.selected_option[0].split()[-1] and not character.is_alive():
                 text_box.append_html_text(f"Can only unequip items from alive characters.\n")
                 return
 
@@ -1255,16 +1266,26 @@ if __name__ == "__main__":
             text_box_text_to_append += f"Upgraded {len(selected_items)} items for {cost_total} cash.\n"
         text_box.append_html_text(text_box_text_to_append)
 
-    eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (156, 35)),
+    eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (100, 35)),
                                         text='Level Up',
                                         manager=ui_manager,
                                         tool_tip_text = "Level up selected item.")
     eq_levelup_button.set_tooltip("Level up selected equipment in the inventory.", delay=0.1, wrap_width=300)
 
-    def eq_level_up(is_level_up: bool = True):
+    eq_levelup_buttonx10 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1185, 460), (51, 35)),
+                                        text='x10',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Level up selected item.")
+    eq_levelup_buttonx10.set_tooltip("Level up for 10 levels for selected equipment in the inventory.", delay=0.1, wrap_width=300)
+
+
+    def eq_level_up(is_level_up: bool = True, amount_to_level: int = 1):
+        """
+        [action_loop]: int, number of times to level up the selected items
+        """
         text_box.set_text("==============================\n")
         text_box_text_to_append = ""
-        selected_items = []
+        selected_items: list[Equip] = []
         if not player.selected_item:
             text_box_text_to_append += "No item is selected.\n"
             text_box.append_html_text(text_box_text_to_append)
@@ -1277,7 +1298,7 @@ if __name__ == "__main__":
             text_box.append_html_text(text_box_text_to_append)
             return
 
-        cost_total = int(sum([item_to_upgrade.level_cost for item_to_upgrade in selected_items]))
+        cost_total = int(sum([item_to_upgrade.level_up_cost_multilevel(amount_to_level) for item_to_upgrade in selected_items]))
         if player.get_cash() < cost_total:
             text_box_text_to_append += "Not enough cash for leveling up equipment.\n"
             text_box.append_html_text(text_box_text_to_append)
@@ -1291,7 +1312,7 @@ if __name__ == "__main__":
                 text_box_text_to_append += f"Min level reached: {str(item_to_level_up)}\n"
                 continue
             text_box_text_to_append += f"Leveling {'up' if is_level_up else 'down'} {item_to_level_up} in inventory.\n"
-            a, b = item_to_level_up.level_change(1 if is_level_up else -1)
+            a, b = item_to_level_up.level_change(amount_to_level if is_level_up else amount_to_level * -1)
             text_box_text_to_append += f"Level: {int(a)} -> {int(b)}\n"
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_level_up:
@@ -1300,6 +1321,7 @@ if __name__ == "__main__":
             player.lose_cash(cost_total, False)
             text_box_text_to_append += f"Leveled {len(selected_items)} items for {cost_total} cash.\n"
         text_box.append_html_text(text_box_text_to_append)
+
 
     
     eq_sell_selected_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 500), (156, 35)),
@@ -1431,7 +1453,7 @@ if __name__ == "__main__":
     cheap_inventory_sort_by_button.set_tooltip("Sort inventory by selected option.", delay=0.1, wrap_width=300)
 
     def cheap_inventory_sort():
-        match cheap_inventory_sort_by_selection_menu.selected_option:
+        match cheap_inventory_sort_by_selection_menu.selected_option[0]:
             case "Rarity":
                 player.sort_inventory_by_rarity()
             case "Type":
@@ -1445,7 +1467,7 @@ if __name__ == "__main__":
             case "BOGO":
                 player.sort_inventory_bogo()
             case _:
-                print(f"Warning: Unknown option: {cheap_inventory_sort_by_selection_menu.selected_option}")
+                print(f"Warning: Unknown option: {cheap_inventory_sort_by_selection_menu.selected_option[0]}")
 
 
     cheap_inventory_cheap_label = pygame_gui.elements.UILabel(pygame.Rect((1372, 100), (72, 35)),
@@ -1538,7 +1560,7 @@ if __name__ == "__main__":
         global_vars.turn_info_string += f"Turn {turn}\n"
 
         # Use random consumable
-        if auto_battle_active and use_random_consumable_selection_menu.selected_option == "True":
+        if auto_battle_active and use_random_consumable_selection_menu.selected_option[0] == "True":
             use_random_consumable()
 
         reset_ally_enemy_attr(party1, party2)
@@ -1681,6 +1703,9 @@ if __name__ == "__main__":
             character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
             character.record_healing_received()
 
+        for character in itertools.chain(party1, party2):
+            character.status_effects_after_damage_record()
+
         create_tmp_damage_data_csv(party1, party2)
         create_healing_data_csv(party1, party2)
         draw_chart()
@@ -1714,7 +1739,7 @@ if __name__ == "__main__":
         return True
 
 
-    def all_turns(party1, party2):
+    def all_turns(party1: list[Character], party2: list[Character]):
         # Warning: Constant logging on text_box is slowing down the simulation
         global turn, current_game_mode
         if not is_someone_alive(party1) or not is_someone_alive(party2):
@@ -1729,6 +1754,9 @@ if __name__ == "__main__":
                 character.record_battle_turns()
 
             if not is_someone_alive(party1) or not is_someone_alive(party2):
+                for character in itertools.chain(party1, party2):
+                    character.record_damage_taken() 
+                    character.record_healing_received()
                 break
 
             for character in itertools.chain(party1, party2):
@@ -1743,6 +1771,9 @@ if __name__ == "__main__":
                 character.update_ally_and_enemy()
 
             if not is_someone_alive(party1) or not is_someone_alive(party2):
+                for character in itertools.chain(party1, party2):
+                    character.record_damage_taken() 
+                    character.record_healing_received()
                 break
             
             alive_characters = [x for x in itertools.chain(party1, party2) if x.is_alive()]
@@ -1756,6 +1787,9 @@ if __name__ == "__main__":
             for character in itertools.chain(party1, party2):
                 character.record_damage_taken()
                 character.record_healing_received()
+
+            for character in itertools.chain(party1, party2):
+                character.status_effects_after_damage_record()
 
             turn += 1
 
@@ -1979,6 +2013,10 @@ if __name__ == "__main__":
             character.battle_entry_effects_activate()
         redraw_ui(party1, party2)
         text_box.append_html_text(global_vars.turn_info_string)
+
+        if auto_battle_active and use_random_consumable_selection_menu.selected_option[0] == "True":
+            use_random_consumable()
+
         return party1, party2
 
 
@@ -2240,7 +2278,8 @@ if __name__ == "__main__":
 
                 labels[i].set_text(f"lv {character.lvl} {character.name}")
                 labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=500)
-                labels[i].set_text_alpha(255) if character.is_alive() else labels[i].set_text_alpha(125)
+                # Doesn't work so commented out
+                # labels[i].set_text_alpha(255) if character.is_alive() else labels[i].set_text_alpha(125)
                 healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value()))
                 healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=400)
 
@@ -2403,55 +2442,67 @@ if __name__ == "__main__":
                                                                     text='Current Stage: 1',
                                                                     manager=ui_manager)
     box_submenu_stage_info_label.hide()
-    box_submenu_explore_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((635, 560), (120, 35)),
-                                                                    text='Explore',
-                                                                    manager=ui_manager)
-    box_submenu_explore_button.set_tooltip("Explore the world with the funds you choose. You will be rewarded with random items, but no single item will be worth more than twice your funds. Player data is saved afterwards.", delay=0.1, wrap_width=300)
-    box_submenu_explore_button.hide()
 
-    box_submenu_explore_funds_selection = pygame_gui.elements.UIDropDownMenu(["50", "100", "200", "500", "1000", "5000", "10000", "20000", "50000", "100000"],
-                                                                    "200",
-                                                                    pygame.Rect((760, 560), (100, 35)),
-                                                                    ui_manager)
-    box_submenu_explore_funds_selection.hide()
+    box_submenu_enter_shop_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((635, 560), (120, 35)),
+                                                                text='Shop',
+                                                                manager=ui_manager)
+    box_submenu_enter_shop_button.set_tooltip("Enter the shop to buy items.", delay=0.1)
+    box_submenu_enter_shop_button.hide()
+    box_submenu_exit_shop_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((760, 560), (120, 35)),
+                                                                text='Exit Shop',
+                                                                manager=ui_manager)
+    box_submenu_exit_shop_button.set_tooltip("Exit the shop.", delay=0.1)
+    box_submenu_exit_shop_button.hide()
 
-    def explore_generate_package_of_items_to_desired_value(desired_market_value: float) -> list:
-        package = []
-        while True:
-            while True:
-                # single item cannot be twice more valueable than the funds
-                coin = random.choice([1, 2])
-                match coin:
-                    case 1:
-                        new_item = adventure_generate_random_equip_with_weight() # This function is incredibly greedy, we should consider using the next line.
-                        # new_item = generate_equips_list(1, eq_level=1)[0] # Good gacha
-                    case 2:
-                        new_item = get_1_random_consumable()
-                if new_item.market_value <= desired_market_value * 2:
-                    break
-            package.append(new_item)
-            if sum([x.market_value for x in package]) >= desired_market_value:
-                break
-        return package
+    # box_submenu_explore_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((635, 560), (120, 35)),
+    #                                                                 text='Explore',
+    #                                                                 manager=ui_manager)
+    # box_submenu_explore_button.set_tooltip("Explore the world with the funds you choose. You will be rewarded with random items, but no single item will be worth more than twice your funds. Player data is saved afterwards.", delay=0.1, wrap_width=300)
+    # box_submenu_explore_button.hide()
 
-    def explore_brave_new_world():
-        global player, text_box
-        if player.get_cash() < int(box_submenu_explore_funds_selection.selected_option):
-            text_box.set_text("Not enough cash.\n")
-            return
+    # box_submenu_explore_funds_selection = pygame_gui.elements.UIDropDownMenu(["50", "100", "200", "500", "1000", "5000", "10000", "20000", "50000", "100000"],
+    #                                                                 "200",
+    #                                                                 pygame.Rect((760, 560), (100, 35)),
+    #                                                                 ui_manager)
+    # box_submenu_explore_funds_selection.hide()
 
-        desired_market_value = int(box_submenu_explore_funds_selection.selected_option)
-        package = explore_generate_package_of_items_to_desired_value(desired_market_value)
-        text_box.set_text("You have gained the following items:\n")
-        text_box_text = ""
-        for item in package:
-            text_box_text += f"{str(item)}, which is worth {int(item.market_value)} cash.\n"
-        player.add_package_of_items_to_inventory(package)
+    # def explore_generate_package_of_items_to_desired_value(desired_market_value: float) -> list:
+    #     package = []
+    #     while True:
+    #         while True:
+    #             # single item cannot be twice more valueable than the funds
+    #             coin = random.choice([1, 2])
+    #             match coin:
+    #                 case 1:
+    #                     new_item = adventure_generate_random_equip_with_weight() # This function is incredibly greedy, we should consider using the next line.
+    #                     # new_item = generate_equips_list(1, eq_level=1)[0] # Good gacha
+    #                 case 2:
+    #                     new_item = get_1_random_consumable()
+    #             if new_item.market_value <= desired_market_value * 2:
+    #                 break
+    #         package.append(new_item)
+    #         if sum([x.market_value for x in package]) >= desired_market_value:
+    #             break
+    #     return package
 
-        text_box_text += f"You have spent {int(box_submenu_explore_funds_selection.selected_option)} cash and the total value of the items you gained is {int(sum([x.market_value for x in package]))} cash.\n"
-        text_box.append_html_text(text_box_text)
-        player.lose_cash(int(box_submenu_explore_funds_selection.selected_option))
-        save_player(player)
+    # def explore_brave_new_world():
+    #     global player, text_box
+    #     if player.get_cash() < int(box_submenu_explore_funds_selection.selected_option[0]):
+    #         text_box.set_text("Not enough cash.\n")
+    #         return
+
+    #     desired_market_value = int(box_submenu_explore_funds_selection.selected_option[0])
+    #     package = explore_generate_package_of_items_to_desired_value(desired_market_value)
+    #     text_box.set_text("You have gained the following items:\n")
+    #     text_box_text = ""
+    #     for item in package:
+    #         text_box_text += f"{str(item)}, which is worth {int(item.market_value)} cash.\n"
+    #     player.add_package_of_items_to_inventory(package)
+
+    #     text_box_text += f"You have spent {int(box_submenu_explore_funds_selection.selected_option[0])} cash and the total value of the items you gained is {int(sum([x.market_value for x in package]))} cash.\n"
+    #     text_box.append_html_text(text_box_text)
+    #     player.lose_cash(int(box_submenu_explore_funds_selection.selected_option[0]))
+    #     save_player(player)
 
 
     # =====================================
@@ -2463,6 +2514,64 @@ if __name__ == "__main__":
     running = True 
     # for c in all_characters + all_monsters:
         # c.equip_item_from_list(generate_equips_list(4, random_full_eqset=True)) 
+
+
+
+    def initiate_player_data():
+        try:
+            player, character_info_dict = load_player()
+            print("Player and character data loaded.")
+        except FileNotFoundError:
+            print("Player data not found, creating a new one...")
+            if start_with_max_level:
+                player = Nine(5000000000)
+                player.cleared_stages = 2199 # 2199
+                package_of_equips = [EquipPackage(100), EquipPackage2(100), EquipPackage3(100), EquipPackage4(10), 
+                                    EquipPackage5(100), EquipPackage6(100), FoodPackage(100), FoodPackage2(100), FoodPackage3(100)]
+                player.add_package_of_items_to_inventory(package_of_equips)
+                package_of_ingots = [SliverIngot(1), GoldIngot(1), DiamondIngot(1)]
+                player.add_package_of_items_to_inventory(package_of_ingots)
+            else:
+                player = Nine(80000)
+                player.cleared_stages = 0
+                # new player reward
+                starter_package = [EquipPackage(2)]
+                player.add_package_of_items_to_inventory(starter_package)
+
+
+        try:
+            character_info_dict
+        except NameError:
+            pass
+        else:
+            for c in all_characters:
+                if not c.name in character_info_dict.keys():
+                    print(f"Character {c.name} not found in character_info_dict, skipped loading equip.") # When a new character is added, this will happen.
+                    continue
+                c.lvl = character_info_dict[c.name][0]
+                c.exp = character_info_dict[c.name][1]
+                if character_info_dict[c.name][2]:
+                    print(f"Trying to read equipment data and equip items for {c.name}...")
+                    for d in character_info_dict[c.name][2]:
+                        item = Equip("foo", "Weapon", "Common")
+                        for attr, value in d.items():
+                            if hasattr(item, attr):
+                                setattr(item, attr, value)
+                        item.estimate_market_price()
+                        c.equip_item(item)
+                        print(f"Equipped {str(item)} to {c.name}.")
+        return player
+
+    player = initiate_player_data()
+
+    adventure_mode_stages = {} # int : list of monsters
+    if player.cleared_stages > 0:
+        print(f"Loading adventure mode stages from player data. Current stage: {player.cleared_stages}")
+        adventure_mode_current_stage = min(player.cleared_stages + 1, 2500)
+    else:
+        adventure_mode_current_stage = 1
+    adventure_mode_generate_stage()
+
 
     # party1 = []
     party1 : list[Character] = []
@@ -2544,7 +2653,8 @@ if __name__ == "__main__":
                     if current_game_mode == "Training Mode":
                         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 8)
-                if image_slot10.get_abs_rect().collidepoint(event.pos):
+                # This is only a temporary solution, we should consider changing layering of UI elements
+                if image_slot10.get_abs_rect().collidepoint(event.pos) and not reserve_character_selection_menu.are_contents_hovered():
                     if current_game_mode == "Training Mode":
                         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
                         handle_UIDropDownMenu(party_show_in_menu, None, 9)
@@ -2597,8 +2707,10 @@ if __name__ == "__main__":
                         box_submenu_stage_info_label.show()
                         box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
                         box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
-                        box_submenu_explore_button.show()
-                        box_submenu_explore_funds_selection.show()
+                        box_submenu_enter_shop_button.show()
+                        box_submenu_exit_shop_button.show()
+                        # box_submenu_explore_button.show()
+                        # box_submenu_explore_funds_selection.show()
                     elif current_game_mode == "Adventure Mode":
                         current_game_mode = "Training Mode"
                         party1, party2 = set_up_characters()
@@ -2608,8 +2720,10 @@ if __name__ == "__main__":
                         box_submenu_previous_stage_button.hide()
                         box_submenu_next_stage_button.hide()
                         box_submenu_stage_info_label.hide()
-                        box_submenu_explore_button.hide()
-                        box_submenu_explore_funds_selection.hide()
+                        box_submenu_enter_shop_button.hide()
+                        box_submenu_exit_shop_button.hide()
+                        # box_submenu_explore_button.hide()
+                        # box_submenu_explore_funds_selection.hide()
                 if event.ui_element == next_turn_button:
                     if next_turn(party1, party2):
                         turn += 1
@@ -2624,15 +2738,17 @@ if __name__ == "__main__":
                 if event.ui_element == eq_stars_upgrade_button:
                     eq_stars_upgrade(True)
                 if event.ui_element == character_replace_button:
-                    replace_character_with_reserve_member(character_selection_menu.selected_option.split()[-1], reserve_character_selection_menu.selected_option.split()[-1])
+                    replace_character_with_reserve_member(character_selection_menu.selected_option[0].split()[-1], reserve_character_selection_menu.selected_option[0].split()[-1])
                 if event.ui_element == eq_levelup_button:
-                    eq_level_up()
+                    eq_level_up(amount_to_level=1)
+                if event.ui_element == eq_levelup_buttonx10:
+                    eq_level_up(amount_to_level=10)
                 if event.ui_element == eq_level_up_to_max_button:
                     eq_level_up_to_max()
                 if event.ui_element == eq_sell_selected_button:
                     eq_sell_selected()
                 if event.ui_element == eq_sell_low_value_button:
-                    eq_sell_low_value(int(eq_sell_low_value_selection_menu.selected_option))
+                    eq_sell_low_value(int(eq_sell_low_value_selection_menu.selected_option[0]))
                 if event.ui_element == button_auto_battle:
                     if auto_battle_active:
                         auto_battle_active = False
@@ -2656,6 +2772,7 @@ if __name__ == "__main__":
                     eq_selection_menu.show()
                     character_eq_unequip_button.show()
                     eq_levelup_button.show()
+                    eq_levelup_buttonx10.show()
                     eq_level_up_to_max_button.show()
                     eq_stars_upgrade_button.show()
                     eq_sell_selected_button.show()
@@ -2675,6 +2792,7 @@ if __name__ == "__main__":
                     eq_selection_menu.hide()
                     character_eq_unequip_button.hide()
                     eq_levelup_button.hide()
+                    eq_levelup_buttonx10.hide()
                     eq_level_up_to_max_button.hide()
                     eq_stars_upgrade_button.hide()
                     eq_sell_selected_button.hide()
@@ -2694,6 +2812,7 @@ if __name__ == "__main__":
                     eq_selection_menu.hide()
                     character_eq_unequip_button.hide()
                     eq_levelup_button.hide()
+                    eq_levelup_buttonx10.hide()
                     eq_level_up_to_max_button.hide()
                     eq_stars_upgrade_button.hide()
                     eq_sell_selected_button.hide()
@@ -2707,6 +2826,8 @@ if __name__ == "__main__":
                     gold_ingot_exchange_button.hide()
                 if event.ui_element == use_item_button:
                     use_item()
+                if event.ui_element == use_itemx10_button:
+                    use_item(10)
                 if event.ui_element == item_sell_button:
                     item_sell_selected()
                 if event.ui_element == item_sell_half_button:
@@ -2727,8 +2848,8 @@ if __name__ == "__main__":
                     box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
                     box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
                     turn = 1
-                if event.ui_element == box_submenu_explore_button:
-                    explore_brave_new_world()
+                # if event.ui_element == box_submenu_explore_button:
+                #     explore_brave_new_world()
 
 
             ui_manager.process_events(event)
@@ -2747,7 +2868,7 @@ if __name__ == "__main__":
                 time_acc = 0.0
                 if not next_turn(party1, party2):
                     auto_battle_active = False
-                    instruction = after_auto_battle_selection_menu.selected_option
+                    instruction = after_auto_battle_selection_menu.selected_option[0]
                     if instruction == "Do Nothing":
                         pass
                     elif instruction == "Restart":

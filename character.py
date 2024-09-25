@@ -567,6 +567,7 @@ class Character:
             f"final damage taken: {self.final_damage_taken_multipler*100:.2f}%\n" \
             f"max skill cooldown: {self.skill1_cooldown_max}/{self.skill2_cooldown_max}\n" \
             f"exp/maxexp/perc: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n"
+            # f"battle turns: {self.battle_turns}\n"
 
     def tooltip_status_effects(self):
         str = "Status Effects:\n"
@@ -814,7 +815,8 @@ class Character:
         # Remember the healer can be a Character object or Consumable object or Effect or perhaps other objects
         # if healer is not Character class, give error for now, testing purpose
         if not isinstance(healer, Character) and not isinstance(healer, EquipmentSetEffect_Snowflake) and not isinstance(healer, EquipmentSetEffect_Bamboo):
-            raise Exception(f"Invalid healer: {healer}, {healer.__class__}")
+            # raise Exception(f"Invalid healer: {healer}, {healer.__class__}")
+            healer = self
         if self.is_dead() and not ignore_death:
             print(global_vars.turn_info_string)
             raise Exception(f"Cannot heal a dead character: {self.name}")
@@ -1166,6 +1168,16 @@ class Character:
         debuffs_copy = self.debuffs.copy()
         for effect in buffs_copy + debuffs_copy:
             effect.apply_effect_at_end_of_turn(self)
+
+    def status_effects_after_damage_record(self):
+        """
+        Please do not trigger and damage related effect in this process.
+        """
+        buffs_copy = self.buffs.copy()
+        debuffs_copy = self.debuffs.copy()
+        for effect in buffs_copy + debuffs_copy:
+            effect.apply_effect_after_damage_record(self)
+
 
     def update_cooldown(self):
         if self.skill1_cooldown > 0:
@@ -2987,7 +2999,7 @@ class Nata(Character):
         " if the enemy falls by this attack, recover 20% hp."
         self.skill3_description = "The first time you are defeated, recover 12% hp and apply Renka status effect on yourself," \
         " Renka has 15 stacks, each time when taking lethal damage, consume 1 stack, cancel the damage and recover 12% hp." \
-        " When taking damage, reduce damage taken by 4% + 4% for each stack."
+        " When taking damage, reduce damage taken by 6% + 4% for each stack."
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.skill3_used = False
@@ -3017,7 +3029,8 @@ class Nata(Character):
 
     def skill2_logic(self):
         def recovery(self, target):
-            self.heal_hp(self.maxhp * 0.2, self)
+            if target.is_dead():
+                self.heal_hp(self.maxhp * 0.2, self)
         damage_dealt = self.attack(target_kw1="n_highest_attr", target_kw2="1", target_kw3="crit", target_kw4="enemy", multiplier=2.1, repeat_seq=3, func_after_dmg=recovery)
         return damage_dealt
 
@@ -3028,11 +3041,14 @@ class Nata(Character):
     def defeated_by_taken_damage(self, damage, attacker):
         if not self.skill3_used:
             self.heal_hp(self.maxhp * 0.12, self, ignore_death=True)
-            renka = RenkaEffect("Renka", -1, True, False)
-            renka.can_be_removed_by_skill = False
-            renka.additional_name = "Nata_Renka"
-            self.apply_effect(renka)
-            self.skill3_used = True
+            # print(self.hp)
+            # print(self.is_alive())
+            if self.is_alive():
+                renka = RenkaEffect("Renka", -1, True, False)
+                renka.can_be_removed_by_skill = False
+                renka.additional_name = "Nata_Renka"
+                self.apply_effect(renka)
+                self.skill3_used = True
             return 
         return
     

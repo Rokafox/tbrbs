@@ -195,6 +195,9 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
             character.record_damage_taken()
             character.record_healing_received()
 
+        for character in itertools.chain(party1, party2):
+            character.status_effects_after_damage_record()
+
         printer.fine_print(global_vars.turn_info_string)
 
         printer.fine_print("")

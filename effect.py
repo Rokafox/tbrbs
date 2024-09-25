@@ -51,6 +51,10 @@ class Effect:
         # As effect is removed at the beginning of the next turn.
         pass
 
+    def apply_effect_after_damage_record(self, character):
+        # Please do not trigger and damage related effect in this process.
+        pass
+
     def apply_effect_when_adding_stacks(self, character, stats_income):
         pass
 
@@ -406,7 +410,7 @@ class RenkaEffect(Effect):
     Renka has 15 stacks, each time when taking lethal damage, consume 1 stack, cancel the damage and recover 15% hp.
     When taking damage, reduce damage taken by 20% + 5% for each stack.
     """
-    def __init__(self, name, duration, is_buff, cc_immunity, hp_recover_percentage=0.12, damage_reduction=0.04, stacks=15,
+    def __init__(self, name, duration, is_buff, cc_immunity, hp_recover_percentage=0.12, damage_reduction=0.06, stacks=15,
                  damage_reduction_per_stack=0.04):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
@@ -438,7 +442,7 @@ class RenkaEffect(Effect):
     
     def tooltip_description(self):
         return f"Renka effect: When taking lethal damage, consume 1 stack, cancel the damage and recover {self.hp_recover_percentage*100:.1f}% hp. " \
-        f"When taking damage, reduce damage taken by {self.damage_reduction*100:.1f}% + {self.stacks * self.damage_reduction_per_stack*100:.1f}% for each stack. " \
+        f"When taking damage, reduce damage taken by {self.damage_reduction*100:.1f}% + {self.stacks * self.damage_reduction_per_stack*100:.1f}%. " \
         f"Currently has {self.stacks} stack(s)."
     
 
@@ -1159,7 +1163,7 @@ class NotTakingDamageEffect(Effect):
         self.require_turns_without_damage = require_turns_without_damage
         self.effect_to_apply = effect_to_apply
 
-    def apply_effect_at_end_of_turn(self, character):
+    def apply_effect_after_damage_record(self, character):
         if character.is_dead():
             return
         twd = character.get_num_of_turns_not_taken_damage()
