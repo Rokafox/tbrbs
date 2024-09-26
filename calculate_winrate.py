@@ -262,6 +262,9 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
             amount_of_error += 1
             print(f"Error: {e}")
             winner_party, turns, loser_party = None, 300, None
+            # dump global_vars.turn_info_string to a logs/error.log file
+            with open("logs/error.log", "a") as f:
+                f.write(global_vars.turn_info_string)
 
         turns_total += turns
         if winner_party is not None:
@@ -297,7 +300,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 8000
+        sample = 80000
     a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:

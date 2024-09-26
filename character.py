@@ -1047,6 +1047,7 @@ class Character:
     def apply_effect(self, effect: Effect):
         # if self.is_dead():
         #     print(f"Warning: {self.name} is dead, should not be a valid target to apply effect. Effect name: {effect.name}")
+        global_vars.turn_info_string += f"{effect.name} is about to be applied on {self.name}.\n"
         if effect.name in self.effect_immunity:
             global_vars.turn_info_string += f"{self.name} is immune to {effect.name}.\n"
             return
@@ -2973,6 +2974,7 @@ class April(Character):
                     e2 = copy.copy(e)
                     e2.duration = 12
                     e.ch_april_mark_as_copied = True
+                    global_vars.turn_info_string += f"{self.name} copied {e.name} from {target.name}.\n"
                     self.apply_effect(e2)
                     break
         damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=3.0, repeat=3, func_after_dmg=copy_effect)
