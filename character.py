@@ -1189,11 +1189,22 @@ class Character:
         return ""
 
     def get_equipment_set(self):
-        if not self.equip or len(self.equip) != 4:
+        if not self.equip:
+            return "None"
+        for e in self.equip.values():
+            e.set_effect_is_acive = False
+        if len(self.equip) != 4:
             return "None"
 
         sets = {item.eq_set for item in self.equip.values()}
-        return sets.pop() if len(sets) == 1 else "None"
+        # return sets.pop() if len(sets) == 1 else "None"
+        if len(sets) == 1:
+            for e in self.equip.values():
+                e.set_effect_is_acive = True
+            return sets.pop()
+        else:
+            return "None"
+
 
     def set_up_equipment_set_effects(self):
         # This function is called at the start of the battle. We expect item set effect
@@ -2956,12 +2967,14 @@ class April(Character):
     def skill1_logic(self):
         def copy_effect(self, target):
             for e in target.buffs:
-                e.ch_april_mark_as_copied = False
+                if not e.is_set_effect and not hasattr(e, "ch_april_mark_as_copied"):
+                    e.ch_april_mark_as_copied = False
                 if not e.is_set_effect and hasattr(e, "ch_april_mark_as_copied") and not e.ch_april_mark_as_copied:
                     e2 = copy.copy(e)
                     e2.duration = 12
                     e.ch_april_mark_as_copied = True
                     self.apply_effect(e2)
+                    break
         damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=3.0, repeat=3, func_after_dmg=copy_effect)
         return damage_dealt
 

@@ -5,6 +5,7 @@ import monsters
 from item import *
 from consumable import *
 from calculate_winrate import is_someone_alive, reset_ally_enemy_attr
+import shop
 import csv
 running = False
 text_box = None
@@ -12,13 +13,16 @@ start_with_max_level = True
 
 
 # NOTE:
-# 1. We cannot have character with the same name.
-# 2. We better not have effects with the same name.
-# 3. Because we now have save feature, make sure to shut down instead of quit for debugging. Delete player_data.json if necessary.
-# 4, Every time we add a new item type for inventory, we MUST to add it to a certain list for sort feature. See Nine.sort_inventory_by_type
-# 5. load_player() is only partially implemented. We have to add more code to load consumables and items.
-# 6. If there is bug unsolvable, refer to 3.
-# 7. explore_generate_package_of_items_to_desired_value need more items to be added.
+"""
+1. We cannot have character with the same name.
+2. We cannot have effects with the same name.
+3. Because we now have save feature, make sure to shut down instead of quit for debugging. Delete player_data.json if necessary.
+4, Every time we add a new item type for inventory, we MUST to add it to a certain list for sort feature. See Nine.sort_inventory_by_type
+5. load_player() is only partially implemented. We have to add more code to load more consumables and items.
+   Make sure to check it if there is something run after loading player data.
+6. If there is bug unsolvable, refer to 3.
+7. If we want to sell a item in the shop, we must add it somewhere in shop module.
+"""
 
 # =====================================
 # Helper Functions
@@ -57,6 +61,7 @@ def load_player(filename="player_data.json"):
                     if hasattr(item, attr):
                         setattr(item, attr, value)
                 item.estimate_market_price()
+                item.four_set_effect_description = item.assign_four_set_effect_description()
             case (_, "Food"): 
                 item_class = globals().get(item_data['name'])
                 if item_class:
@@ -209,6 +214,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             item_added = False
             for inv_item in self.inventory:
                 if isinstance(inv_item, type(item)) and not inv_item.is_full():
+                    # print(f"Adding {item.current_stack} {item.name} to existing stack...")
                     # Add to the existing stack
                     added_stack = min(item.current_stack, inv_item.max_stack - inv_item.current_stack)
                     inv_item.current_stack += added_stack
@@ -391,9 +397,28 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             else:
                 self.add_to_inventory(Cash(999999), False)
                 amount -= 999999
+        try:
+            set_currency_on_icon_and_label(self, the_shop.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
+        except NameError:
+            pass
+
 
     def lose_cash(self, amount: int, rebuild_inventory_slots: bool = True):
         self.remove_from_inventory(Cash, amount, rebuild_inventory_slots)
+        try:
+            set_currency_on_icon_and_label(self, the_shop.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
+        except NameError:
+            pass
+
+    def get_currency(self, currency: str):
+        if currency == "Cash" or "cash":
+            return self.get_cash()
+        else:
+            c = 0
+            for item in self.inventory:
+                if item.__class__.__name__ == currency or item.__class__.__name__.lower() == currency:
+                    c += item.current_stack
+            return c
 
 
 # =====================================
@@ -958,12 +983,18 @@ if __name__ == "__main__":
                                         tool_tip_text = "Sell selected item in inventory.")
     item_sell_button.set_tooltip("Sell one selected item from your inventory.", delay=0.1, wrap_width=300)
     item_sell_button.hide()
-    item_sell_half_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 560), (156, 35)),
+    item_sell_half_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 560), (100, 35)),
                                         text='Sell Half',
                                         manager=ui_manager,
                                         tool_tip_text = "Sell half stack of selected item in inventory.")
     item_sell_half_button.set_tooltip("Sell half a stack of selected items.", delay=0.1, wrap_width=300)
     item_sell_half_button.hide()
+    item_sell_all_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1005, 560), (51, 35)),
+                                        text='All',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Sell all of selected item in inventory.")
+    item_sell_all_button.set_tooltip("Sell all of selected items.", delay=0.1, wrap_width=300)
+    item_sell_all_button.hide()
     use_random_consumable_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 420), (156, 35)),
                                         "Random Use:",
                                         ui_manager)
@@ -974,18 +1005,6 @@ if __name__ == "__main__":
                                                             pygame.Rect((1080, 460), (156, 35)),
                                                             ui_manager)
     use_random_consumable_selection_menu.hide()
-    sliver_ingot_exchange_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 420), (156, 35)),
-                                        text='Buy Sliver Ingot',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Exchange Sliver Ingot")
-    sliver_ingot_exchange_button.set_tooltip("Buy sliver ingot with cash, price: 111000", delay=0.1, wrap_width=300)
-    sliver_ingot_exchange_button.hide()
-    gold_ingot_exchange_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (156, 35)),
-                                        text='Buy Gold Ingot',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Exchange Gold Ingot")
-    gold_ingot_exchange_button.set_tooltip("Buy gold ingot with cash, price: 9820000", delay=0.1, wrap_width=300)
-    gold_ingot_exchange_button.hide()
 
 
     def use_item(how_many_times: int = 1):
@@ -1118,9 +1137,10 @@ if __name__ == "__main__":
         player.build_inventory_slots()
 
 
-    def item_sell_half():
+    def item_sell_half(all=False):
         """
         Sell half stack of selected items in inventory
+        [all] if True, sell all selected items in inventory
         """
         text_box.set_text("==============================\n")
         selected_items = []
@@ -1136,7 +1156,10 @@ if __name__ == "__main__":
 
         total_income = 0
         for item_to_sell in selected_items:
-            amount_to_sell = item_to_sell.current_stack // 2
+            if all:
+                amount_to_sell = item_to_sell.current_stack
+            else:
+                amount_to_sell = item_to_sell.current_stack // 2
             if amount_to_sell == 0:
                 text_box.append_html_text(f"Cannot sell {item_to_sell.name} in inventory, stack is too small.\n")
                 continue
@@ -1150,25 +1173,35 @@ if __name__ == "__main__":
         player.add_cash(total_income, True)
 
 
-    def item_trade(item: str, amount: int=1):
-        text_box.set_text("==============================\n")
-        match item:
-            case "Sliver Ingot":
-                if player.get_cash() < 111000 * amount:
-                    text_box.append_html_text(f"Not enough cash to buy {amount} Sliver Ingot.\n")
-                    return
-                player.add_to_inventory(SliverIngot(amount), False)
-                player.lose_cash(111000 * amount, True)
-                text_box.append_html_text(f"Bought {amount} Sliver Ingot for {111000 * amount} cash.\n")
-            case "Gold Ingot":
-                if player.get_cash() < 9820000 * amount:
-                    text_box.append_html_text(f"Not enough cash to buy {amount} Gold Ingot.\n")
-                    return
-                player.add_to_inventory(GoldIngot(amount), False)
-                player.lose_cash(9820000 * amount, True)
-                text_box.append_html_text(f"Bought {amount} Gold Ingot for {9820000 * amount} cash.\n")
-            case _:
-                raise ValueError(f"Invalid item: {item}")
+    # def item_trade(item: str, amount: int=1):
+    #     text_box.set_text("==============================\n")
+    #     match item:
+    #         case "Sliver Ingot":
+    #             if player.get_cash() < 111000 * amount:
+    #                 text_box.append_html_text(f"Not enough cash to buy {amount} Sliver Ingot.\n")
+    #                 return
+    #             player.add_to_inventory(SliverIngot(amount), False)
+    #             player.lose_cash(111000 * amount, True)
+    #             text_box.append_html_text(f"Bought {amount} Sliver Ingot for {111000 * amount} cash.\n")
+    #         case "Gold Ingot":
+    #             if player.get_cash() < 9820000 * amount:
+    #                 text_box.append_html_text(f"Not enough cash to buy {amount} Gold Ingot.\n")
+    #                 return
+    #             player.add_to_inventory(GoldIngot(amount), False)
+    #             player.lose_cash(9820000 * amount, True)
+    #             text_box.append_html_text(f"Bought {amount} Gold Ingot for {9820000 * amount} cash.\n")
+    #         case _:
+    #             raise ValueError(f"Invalid item: {item}")
+
+    def buy_one_item(player: Nine, item: Block, item_price: int) -> None:
+        if player.get_cash() < item_price:
+            print(f"Not enough cash to buy {item.name}.")
+            return
+        player.add_to_inventory(item, False)
+        player.lose_cash(item_price, True)
+        text_box.set_text(f"Bought {item.name} for {item_price} cash.\n")
+        save_player(player)
+        return
 
 
     # =====================================
@@ -2444,70 +2477,202 @@ if __name__ == "__main__":
     box_submenu_stage_info_label.hide()
 
     box_submenu_enter_shop_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((635, 560), (120, 35)),
-                                                                text='Shop',
+                                                                text='Enter Shop',
                                                                 manager=ui_manager)
     box_submenu_enter_shop_button.set_tooltip("Enter the shop to buy items.", delay=0.1)
     box_submenu_enter_shop_button.hide()
-    box_submenu_exit_shop_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((760, 560), (120, 35)),
+    box_submenu_exit_shop_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((760, 560), (95, 35)),
                                                                 text='Exit Shop',
                                                                 manager=ui_manager)
     box_submenu_exit_shop_button.set_tooltip("Exit the shop.", delay=0.1)
     box_submenu_exit_shop_button.hide()
 
-    # box_submenu_explore_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((635, 560), (120, 35)),
-    #                                                                 text='Explore',
-    #                                                                 manager=ui_manager)
-    # box_submenu_explore_button.set_tooltip("Explore the world with the funds you choose. You will be rewarded with random items, but no single item will be worth more than twice your funds. Player data is saved afterwards.", delay=0.1, wrap_width=300)
-    # box_submenu_explore_button.hide()
-
-    # box_submenu_explore_funds_selection = pygame_gui.elements.UIDropDownMenu(["50", "100", "200", "500", "1000", "5000", "10000", "20000", "50000", "100000"],
-    #                                                                 "200",
-    #                                                                 pygame.Rect((760, 560), (100, 35)),
-    #                                                                 ui_manager)
-    # box_submenu_explore_funds_selection.hide()
-
-    # def explore_generate_package_of_items_to_desired_value(desired_market_value: float) -> list:
-    #     package = []
-    #     while True:
-    #         while True:
-    #             # single item cannot be twice more valueable than the funds
-    #             coin = random.choice([1, 2])
-    #             match coin:
-    #                 case 1:
-    #                     new_item = adventure_generate_random_equip_with_weight() # This function is incredibly greedy, we should consider using the next line.
-    #                     # new_item = generate_equips_list(1, eq_level=1)[0] # Good gacha
-    #                 case 2:
-    #                     new_item = get_1_random_consumable()
-    #             if new_item.market_value <= desired_market_value * 2:
-    #                 break
-    #         package.append(new_item)
-    #         if sum([x.market_value for x in package]) >= desired_market_value:
-    #             break
-    #     return package
-
-    # def explore_brave_new_world():
-    #     global player, text_box
-    #     if player.get_cash() < int(box_submenu_explore_funds_selection.selected_option[0]):
-    #         text_box.set_text("Not enough cash.\n")
-    #         return
-
-    #     desired_market_value = int(box_submenu_explore_funds_selection.selected_option[0])
-    #     package = explore_generate_package_of_items_to_desired_value(desired_market_value)
-    #     text_box.set_text("You have gained the following items:\n")
-    #     text_box_text = ""
-    #     for item in package:
-    #         text_box_text += f"{str(item)}, which is worth {int(item.market_value)} cash.\n"
-    #     player.add_package_of_items_to_inventory(package)
-
-    #     text_box_text += f"You have spent {int(box_submenu_explore_funds_selection.selected_option[0])} cash and the total value of the items you gained is {int(sum([x.market_value for x in package]))} cash.\n"
-    #     text_box.append_html_text(text_box_text)
-    #     player.lose_cash(int(box_submenu_explore_funds_selection.selected_option[0]))
-    #     save_player(player)
-
-
     # =====================================
     # End of Text Entry Box Section
     # =====================================
+    # =====================================
+    # Shop Section
+    # =====================================
+
+
+    shop_image_slota = pygame_gui.elements.UIImage(pygame.Rect((300, 300), (100, 100)),
+                                        pygame.Surface((100, 100)),
+                                        ui_manager)
+    shop_image_slotb = pygame_gui.elements.UIImage(pygame.Rect((412, 300), (100, 100)),
+                                        pygame.Surface((100, 100)),
+                                        ui_manager)
+    shop_image_slotc = pygame_gui.elements.UIImage(pygame.Rect((524, 300), (100, 100)),
+                                        pygame.Surface((100, 100)),
+                                        ui_manager)
+    shop_image_slotd = pygame_gui.elements.UIImage(pygame.Rect((636, 300), (100, 100)),
+                                        pygame.Surface((100, 100)),
+                                        ui_manager)
+    shop_image_slote = pygame_gui.elements.UIImage(pygame.Rect((748, 300), (100, 100)),
+                                        pygame.Surface((100, 100)),
+                                        ui_manager)
+    
+    shop_image_slot_currency_icon = pygame_gui.elements.UIImage(pygame.Rect((260, 400), (32, 32)),
+                                        pygame.Surface((32, 32)),
+                                        ui_manager)
+
+    shop_price_labela = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((300, 400), (100, 32)),
+                                                                    text='17522443',
+                                                                    manager=ui_manager)
+    shop_price_labelb = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((412, 400), (100, 32)),
+                                                                    text='17522443',
+                                                                    manager=ui_manager)
+    shop_price_labelc = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((524, 400), (100, 32)),
+                                                                    text='17522443',
+                                                                    manager=ui_manager)
+    shop_price_labeld = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((636, 400), (100, 32)),
+                                                                    text='17522443',
+                                                                    manager=ui_manager)
+    shop_price_labele = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((748, 400), (100, 32)),
+                                                                    text='17522443',
+                                                                    manager=ui_manager)
+    shop_price_discount_labela = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((300, 425), (100, 24)),
+                                                                    text='-60%',
+                                                                    manager=ui_manager)
+    shop_price_discount_labelb = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((412, 425), (100, 24)),
+                                                                    text='-60%',
+                                                                    manager=ui_manager)
+    shop_price_discount_labelc = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((524, 425), (100, 24)),
+                                                                    text='-60%',
+                                                                    manager=ui_manager)
+    shop_price_discount_labeld = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((636, 425), (100, 24)),
+                                                                    text='-60%',
+                                                                    manager=ui_manager)
+    shop_price_discount_labele = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((748, 425), (100, 24)),
+                                                                    text='-60%',
+                                                                    manager=ui_manager)
+    shop_item_purchase_buttona = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((300, 450), (100, 35)),
+                                                                    text='Purchase',
+                                                                    manager=ui_manager)
+    shop_item_purchase_buttonb = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((412, 450), (100, 35)),
+                                                                    text='Purchase',
+                                                                    manager=ui_manager)
+    shop_item_purchase_buttonc = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((524, 450), (100, 35)),
+                                                                    text='Purchase',
+                                                                    manager=ui_manager)
+    shop_item_purchase_buttond = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((636, 450), (100, 35)),
+                                                                    text='Purchase',
+                                                                    manager=ui_manager)
+    shop_item_purchase_buttone = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((748, 450), (100, 35)),
+                                                                    text='Purchase',
+                                                                    manager=ui_manager)
+    shop_select_a_shop = pygame_gui.elements.UIDropDownMenu(["Banana Armory", "Silver Wolf Company", "Big Food Market"],
+                                                            "Banana Armory",
+                                                            pygame.Rect((300, 500), (212, 35)),
+                                                            ui_manager)
+    shop_shop_introduction_sign = pygame_gui.elements.UIImage(pygame.Rect((815, 500), (35, 35)),
+                                        pygame.Surface((35, 35)),
+                                        ui_manager)
+    shop_shop_introduction_sign.set_image(images_item["info_sign"])
+    shop_refresh_items_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((524, 500), (100, 35)),
+                                                                    text='Refresh',
+                                                                    manager=ui_manager)
+    shop_player_owned_currency_icon = pygame_gui.elements.UIImage(pygame.Rect((625, 500), (32, 32)),
+                                        pygame.Surface((32, 32)),
+                                        ui_manager)
+    shop_player_owned_currency = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((660, 500), (100, 36)),
+                                                                    text='17522443',
+                                                                    manager=ui_manager)
+    shop_player_owned_currency.set_tooltip("Owned currency. Different shops may accept different currency.", delay=0.1)
+
+    all_shop_ui_modules = [shop_image_slota, shop_image_slotb, shop_image_slotc, shop_image_slotd, shop_image_slote,
+                            shop_image_slot_currency_icon, shop_price_labela, shop_price_labelb, shop_price_labelc, shop_price_labeld, shop_price_labele,
+                            shop_price_discount_labela, shop_price_discount_labelb, shop_price_discount_labelc, shop_price_discount_labeld, shop_price_discount_labele,
+                            shop_item_purchase_buttona, shop_item_purchase_buttonb, shop_item_purchase_buttonc, shop_item_purchase_buttond, shop_item_purchase_buttone,
+                            shop_select_a_shop, shop_shop_introduction_sign, shop_refresh_items_button, shop_player_owned_currency_icon,
+                            shop_player_owned_currency]
+    for m in all_shop_ui_modules:
+        m.hide()
+
+    def redraw_ui_shop_edition():
+        # we first need to get what shop it is
+        shop_name = shop_select_a_shop.selected_option[0]
+        # then we create a shop of Shop.[shop_name]
+        match shop_name:
+            case "Banana Armory":
+                shop_instance = shop.Armory_Banana("Banana Armory", None)
+            case "Silver Wolf Company":
+                shop_instance = shop.Gulid_SliverWolf("Silver Wolf Company", None)
+            case "Big Food Market":
+                shop_instance = shop.Big_Food_Market("Big Food Market", None)
+            case _:
+                raise Exception(f"Unknown shop name: {shop_name}")
+        shop_instance.get_items_from_manufacturers()
+        shop_instance.decide_price()
+        shop_instance.decide_discount()
+        shop_instance.calculate_final_price()
+
+        shop_image_slot_currency_icon.set_image(images_item[shop_instance.currency.lower()])
+        shop_player_owned_currency_icon.set_image(images_item[shop_instance.currency.lower()])
+        # shop_player_owned_currency.set_text(str(player.get_cash()))
+        set_currency_on_icon_and_label(player, shop_instance.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
+
+        shop_shop_introduction_sign.set_tooltip(shop_instance.description, delay=0.1, wrap_width=300)
+
+        image_slots = [shop_image_slota, shop_image_slotb, shop_image_slotc, shop_image_slotd, shop_image_slote]
+        # Code here is copyed from Nine() class
+        list_of_shop_items = list(shop_instance.inventory.keys())
+        dict_image_slots_items = {k: v for k, v in mit.zip_equal(image_slots, list_of_shop_items)}
+        # set up image and tooltip to UIImage based on item info
+        for ui_image, item in dict_image_slots_items.items():
+            if item.image:
+                # If stackable, process the image and show amount
+                if item.can_be_stacked:
+                    try:
+                        image_to_process = images_item[item.image].copy()
+                    except KeyError:
+                        image_to_process = images_item["404"].copy()
+                    create_yellow_text(image_to_process, str(item.current_stack), 310, (0, 0, 0), add_background=True)
+                    ui_image.set_image(image_to_process)
+                else:
+                    try:
+                        ui_image.set_image(images_item[item.image])
+                    except KeyError:
+                        print(f"Warning: Image not found: {item.image} in redraw_ui_shop_edition()")
+                        match (type(item).__name__, item.type):    
+                            case ("Equip", "Weapon"):
+                                ui_image.set_image(images_item["Generic_Weapon"])
+                            case ("Equip", "Armor"):
+                                ui_image.set_image(images_item["Generic_Armor"])
+                            case ("Equip", "Accessory"):
+                                ui_image.set_image(images_item["Generic_Accessory"])
+                            case ("Equip", "Boots"):
+                                ui_image.set_image(images_item["Generic_Boots"])
+                            case _:
+                                print(f"Warning: Unknown item type: {item.type} in redraw_ui_shop_edition()")
+                                ui_image.set_image(images_item["404"])
+            ui_image.set_tooltip(item.print_stats_html(), delay=0.1, wrap_width=300)
+        # set up prices
+        price_labels = [shop_price_labela, shop_price_labelb, shop_price_labelc, shop_price_labeld, shop_price_labele]
+        for price_label, (p, d, f) in mit.zip_equal(price_labels, list(shop_instance.inventory.values())): 
+            price_label.set_text(str(f))
+        # show discount
+        discount_labels = [shop_price_discount_labela, shop_price_discount_labelb, shop_price_discount_labelc, shop_price_discount_labeld, shop_price_discount_labele]
+        for discount_label, (p, d, f) in mit.zip_equal(discount_labels, list(shop_instance.inventory.values())):
+            # if no discount, show nothing
+            if d == 0:
+                discount_label.set_text("")
+            else:
+                discount_label.set_text(f"(-{(d * 100):.1f}%)")
+
+        return shop_instance
+
+
+    def shop_purchase_item(player: Nine, shop: shop.Shop, item_id: int) -> None:
+        item_price = list(shop.inventory.values())[item_id][2]
+        item = list(shop.inventory.keys())[item_id]
+        copyed_item = copy.copy(item)
+        # print(f"item: {item}, price: {item_price}")
+        buy_one_item(player, copyed_item, item_price)
+        set_currency_on_icon_and_label(player, shop.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
+
+    def set_currency_on_icon_and_label(player: Nine, currency: str, label: pygame_gui.elements.UILabel, icon: pygame_gui.elements.UIImage):
+        icon.set_image(images_item[currency.lower()])
+        label.set_text(str(player.get_currency(currency)))
 
     # Event loop
     # ==========================
@@ -2558,6 +2723,7 @@ if __name__ == "__main__":
                             if hasattr(item, attr):
                                 setattr(item, attr, value)
                         item.estimate_market_price()
+                        item.four_set_effect_description = item.assign_four_set_effect_description()
                         c.equip_item(item)
                         print(f"Equipped {str(item)} to {c.name}.")
         return player
@@ -2722,6 +2888,10 @@ if __name__ == "__main__":
                         box_submenu_stage_info_label.hide()
                         box_submenu_enter_shop_button.hide()
                         box_submenu_exit_shop_button.hide()
+                        for m in all_shop_ui_modules:
+                            m.hide()
+                        text_box.show()
+                        global_vars.player_is_in_shop = False
                         # box_submenu_explore_button.hide()
                         # box_submenu_explore_funds_selection.hide()
                 if event.ui_element == next_turn_button:
@@ -2780,10 +2950,9 @@ if __name__ == "__main__":
                     eq_sell_low_value_button.show()
                     item_sell_button.hide()
                     item_sell_half_button.hide()
+                    item_sell_all_button.hide()
                     use_random_consumable_label.hide()
                     use_random_consumable_selection_menu.hide()
-                    sliver_ingot_exchange_button.hide()
-                    gold_ingot_exchange_button.hide()
                 if event.ui_element == cheap_inventory_show_items_button:
                     player.current_page = 0
                     cheap_inventory_show_current_option = "Item"
@@ -2800,10 +2969,9 @@ if __name__ == "__main__":
                     eq_sell_low_value_button.hide()
                     item_sell_button.show()
                     item_sell_half_button.show()
+                    item_sell_all_button.show()
                     use_random_consumable_label.hide()
                     use_random_consumable_selection_menu.hide()
-                    sliver_ingot_exchange_button.show()
-                    gold_ingot_exchange_button.show()
                 if event.ui_element == cheap_inventory_show_consumables_button:
                     player.current_page = 0
                     cheap_inventory_show_current_option = "Consumable"
@@ -2820,10 +2988,9 @@ if __name__ == "__main__":
                     eq_sell_low_value_button.hide()
                     item_sell_button.show()
                     item_sell_half_button.show()
+                    item_sell_all_button.show()
                     use_random_consumable_label.show()
                     use_random_consumable_selection_menu.show()
-                    sliver_ingot_exchange_button.hide()
-                    gold_ingot_exchange_button.hide()
                 if event.ui_element == use_item_button:
                     use_item()
                 if event.ui_element == use_itemx10_button:
@@ -2832,10 +2999,8 @@ if __name__ == "__main__":
                     item_sell_selected()
                 if event.ui_element == item_sell_half_button:
                     item_sell_half()
-                if event.ui_element == sliver_ingot_exchange_button:
-                    item_trade("Sliver Ingot")
-                if event.ui_element == gold_ingot_exchange_button:
-                    item_trade("Gold Ingot")
+                if event.ui_element == item_sell_all_button:
+                    item_sell_half(all=True)
                 if event.ui_element == character_eq_unequip_button:
                     unequip_item()
                 if event.ui_element == box_submenu_previous_stage_button:
@@ -2848,9 +3013,37 @@ if __name__ == "__main__":
                     box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
                     box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
                     turn = 1
-                # if event.ui_element == box_submenu_explore_button:
-                #     explore_brave_new_world()
+                if event.ui_element == box_submenu_enter_shop_button:
+                    if not global_vars.player_is_in_shop:
+                        text_box.hide()
+                        for m in all_shop_ui_modules:
+                            m.show()
+                        the_shop = redraw_ui_shop_edition()
+                    global_vars.player_is_in_shop = True
+                if event.ui_element == box_submenu_exit_shop_button:
+                    text_box.show()
+                    for m in all_shop_ui_modules:
+                        m.hide()
+                    global_vars.player_is_in_shop = False
+                if event.ui_element == shop_refresh_items_button:
+                    the_shop = redraw_ui_shop_edition()
+                if event.ui_element == shop_item_purchase_buttona:
+                    shop_purchase_item(player, the_shop, 0)
+                if event.ui_element == shop_item_purchase_buttonb:
+                    shop_purchase_item(player, the_shop, 1)
+                if event.ui_element == shop_item_purchase_buttonc:
+                    shop_purchase_item(player, the_shop, 2)
+                if event.ui_element == shop_item_purchase_buttond:
+                    shop_purchase_item(player, the_shop, 3)
+                if event.ui_element == shop_item_purchase_buttone:
+                    shop_purchase_item(player, the_shop, 4)
 
+
+            if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+                if event.ui_element == shop_select_a_shop:
+                    # working correctly
+                    print(f"Selected shop: {shop_select_a_shop.selected_option[0]}")
+                    the_shop = redraw_ui_shop_edition()
 
             ui_manager.process_events(event)
 

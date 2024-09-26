@@ -5,6 +5,9 @@ import random
 
 class Block:
     def __init__(self, name, description):
+        """
+        If we want to sell a item in the shop, we must add it somewhere in shop module.
+        """
         self.name = name
         self.description = description
         self.rarity_list = ["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]

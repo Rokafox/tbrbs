@@ -52,6 +52,10 @@ class Equip(Block):
         self.can_be_stacked = False
         self.max_stack = 1
 
+        self.set_effect_is_acive = False
+        self.four_set_effect_description = ""
+        self.four_set_effect_description = self.assign_four_set_effect_description()
+
     def to_dict(self):
         return {
             "object": str(self.__class__),
@@ -87,7 +91,66 @@ class Equip(Block):
             "def_extra": self.def_extra,
             "spd_extra": self.spd_extra
         }
-
+    
+    def assign_four_set_effect_description(self):
+        match self.eq_set:
+            case "Arasaka":
+                return (
+                    "Once per battle, leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 3 turns."
+                )
+            case "KangTao":
+                return (
+                    "Compare atk and def, apply the higher value * 700% as absorption shield on self at start of battle."
+                )
+            case "Militech":
+                return (
+                    "Increase speed by 120% when hp falls below 30%."
+                )
+            case "NUSA":
+                return (
+                    "Increase atk by 6%, def by 6%, and maxhp by 6% for each ally alive including self."
+                )
+            case "Sovereign":
+                return (
+                    "Apply Sovereign effect when taking damage, Sovereign increases atk by 20% and lasts 4 turns. Max 5 active effects."
+                )
+            case "Snowflake":
+                return (
+                    "Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 25% hp and gain the following effect for 6 turns: "
+                    "atk, def, maxhp, spd are increased by 25%. Each activation of this effect increases the stats bonus and healing by 25%."
+                )
+            case "Flute":
+                return (
+                    "On one action, when successfully attacking enemy 4 times, all enemies take status damage equal to 130% of self atk."
+                )
+            case "Rainbow":
+                return (
+                    "While attacking, damage increases by 60%/30%/0%/-30%/-60% depending on the proximity of the target."
+                )
+            case "Dawn":
+                return (
+                    "Atk increased by 24%, crit increased by 12% when hp is full. One time only, when dealing normal or skill attack damage, damage is increased by 120%."
+                )
+            case "Bamboo":
+                return (
+                    "After taking down an enemy with normal or skill attack, for 5 turns, recovers 16% of max hp each turn and increases atk, def, spd by 66%, crit and crit damage by 33%. "
+                    "Cannot be triggered when buff effect is active."
+                )
+            case "Rose":
+                return (
+                    "Heal efficiency is increased by 22%, def is increased by 11%. Before heal, increase target's heal efficiency by 88% for 2 turns. "
+                    "Cannot be triggered by hp recover."
+                )
+            case "OldRusty":
+                return (
+                    "After using skill 1, 65% chance to reset cooldown of that skill."
+                )
+            case "Liquidation":
+                return (
+                    "When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 20%: hp, atk, def, spd."
+                )
+            case _:
+                return ""
 
     def get_raritytypeeqset_list(self):
         return self.rarity_list, self.type_list, self.eq_set_list
@@ -202,7 +265,12 @@ class Equip(Block):
             for i in range(extra_lines_to_generate):
                 attr = random.choice(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
                                       "crit", "critdmg", "critdef", "penetration", "heal_efficiency"])
-                value = normal_distribution(1, 4000, 1000, 1000) * 0.0001
+                if attr == "penetration":
+                    value = normal_distribution(1, 4000, 400, 600) * 0.0001
+                elif attr == "def_percent":
+                    value = normal_distribution(1, 4000, 1200, 1000) * 0.0001
+                else:
+                    value = normal_distribution(1, 4000, 1000, 1000) * 0.0001
                 setattr(self, attr, getattr(self, attr) + value)
         
         self.enhance_by_rarity()
@@ -255,7 +323,10 @@ class Equip(Block):
             selected_attributes = random.sample(attributes, extra_lines_to_generate)
             
             for attr in selected_attributes:
-                value = normal_distribution(1, 2000, 500, 500) * 0.00015
+                if attr == "penetration":
+                    value = normal_distribution(1, 2000, 400, 500) * 0.0001
+                else:
+                    value = normal_distribution(1, 2000, 500, 500) * 0.00015
                 setattr(self, attr, getattr(self, attr) + value)
         
         self.enhance_by_rarity()
@@ -291,7 +362,7 @@ class Equip(Block):
         if current_level == self.level_max:
             return 0
         base_cost = 0.01  
-        return int(base_cost * (current_level ** 1.955))  # Approximatly 2500000 from 1 to 1000
+        return int(base_cost * (current_level ** 1.985))  # Approximatly 2500000 from 1 to 1000
     
     def level_up_cost_multilevel(self, levels: int) -> int:
         # calculate the cost of leveling up multiple levels from current level
@@ -320,9 +391,9 @@ class Equip(Block):
 
     def estimate_market_price(self):
         base_value = sum([self.maxhp_flat, self.atk_flat * 20, self.def_flat * 20, self.spd_flat * 20])
-        base_value_b = sum([self.maxhp_percent * 200, self.atk_percent * 4000, self.def_percent * 4000, self.spd * 4000, 
+        base_value_b = sum([self.maxhp_percent * 200, self.atk_percent * 4000, self.def_percent * 3333, self.spd * 4000, 
                             self.eva * 4000, self.acc * 4000, self.crit * 4000, 
-                          self.critdmg * 4000, self.critdef * 4000, self.penetration * 6000, self.heal_efficiency * 3000])
+                          self.critdmg * 4000, self.critdef * 4000, self.penetration * 8000, self.heal_efficiency * 3000])
         base_value_b /= 40
         base_value_c = sum([self.maxhp_extra * 0.6, self.atk_extra * 12, self.def_extra * 12, self.spd_extra * 12])
         rarity_values = [1.00, 1.10, 1.25, 1.45, 1.70, 2.00]
@@ -464,22 +535,31 @@ class Equip(Block):
         if self.eq_set == "Void":
             return stats
         if self.stars_rating < self.stars_rating_max:
-            stats += f"<font color=#AF6E4D>Stars enhancement cost: {self.star_enhence_cost} </font>\n"
+            stats += f"<font color=#AF6E4D>Stars Enhancement Cost: {self.star_enhence_cost} </font>\n"
         else:
-            stats += f"<font color=#AF6E4D>Stars enhancement cost: MAX </font>\n"
+            stats += f"<font color=#AF6E4D>Stars Enhancement Cost: MAX </font>\n"
         if self.level < self.level_max:
-            stats += f"<font color=#702963>Level up cost: {self.level_cost} </font>\n"
+            stats += f"<font color=#702963>Level Up Cost: {self.level_cost} </font>\n"
         else:
-            stats += f"<font color=#702963>Level up cost: MAX </font>\n"
+            stats += f"<font color=#702963>Level Up Cost: MAX </font>\n"
         if include_market_price:
             stats += "<font color=" + market_color + ">" + f"Market Price: {int(self.market_value)}" + "</font>\n"
         stats += "</font>"
+
+        def set_effect_display_color():
+            if self.set_effect_is_acive:
+                return "#444B74"
+            else:
+                return "#BCC0D9"
+
+        if self.four_set_effect_description:
+            stats += f"<font color={set_effect_display_color()}>4 Set Effect:\n{self.four_set_effect_description}</font>"
 
         return stats
 
 
 def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rarity=None, random_full_eqset=False, 
-                         eq_level=40, include_void=False) -> list:
+                         eq_level=40, include_void=False, min_market_value=-1) -> list:
     items = []
     rarity_pool, types, eq_set_pool = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
     if not include_void:
@@ -499,7 +579,10 @@ def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rar
         if include_void and item_eq_set == "Void":
             item.generate_void()
         else:
-            item.generate()
+            while True:
+                item.generate()
+                if item.market_value >= min_market_value:
+                    break
         items.append(item)
 
     return items

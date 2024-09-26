@@ -244,7 +244,7 @@ class FoodPackage2(Consumable):
 class FoodPackage3(Consumable):
     def __init__(self, stack: int):
         super().__init__("Unique Sack", "Obtain 100 random unique or legendary rarity food.")
-        self.image = "large_sack_basket_of_fruits"
+        self.image = "food_basket"
         self.rarity = "Legendary"
         self.type = "Foodpackage"
         self.current_stack = max(1, stack)
