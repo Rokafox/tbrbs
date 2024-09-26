@@ -6,7 +6,6 @@ image/monster
 *.spec
 build/
 dist/
-notes.txt
 .venv/
 reports/
 logs/
