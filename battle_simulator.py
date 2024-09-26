@@ -1648,6 +1648,7 @@ if __name__ == "__main__":
             else:
                 global_vars.turn_info_string += "Battle ended with no result.\n"
             text_box.append_html_text(global_vars.turn_info_string)
+            save_player(player)
             return False
         
         for character in itertools.chain(party1, party2):
@@ -1707,6 +1708,7 @@ if __name__ == "__main__":
             else:
                 global_vars.turn_info_string += "Battle ended with no result.\n"
             text_box.append_html_text(global_vars.turn_info_string)
+            save_player(player)
             return False
         
         alive_characters = [x for x in itertools.chain(party1, party2) if x.is_alive()]
@@ -1767,8 +1769,10 @@ if __name__ == "__main__":
             else:
                 global_vars.turn_info_string += "Battle ended with no result.\n"
             text_box.append_html_text(global_vars.turn_info_string)
+            save_player(player)
             return False
         text_box.append_html_text(global_vars.turn_info_string)
+        save_player(player)
         return True
 
 
