@@ -105,13 +105,39 @@ class Character:
             if char == self:
                 return i
 
-    def record_damage_taken(self): 
+    def record_damage_taken(self) -> bool: 
+        if self.damage_taken_this_turn: # not []
+            # we will also return False if the damage is zero.
+            # the return value of this method is mainly used for drawing the graph every turn, so the return value will decide
+            # whether the graph will be drawn or not, this is important for performance.
+            for d, _, _ in self.damage_taken_this_turn:
+                if d > 0:
+                    return_value = True
+                elif d < 0:
+                    raise Exception("Negative damage taken recorded.")
+                else:
+                    return_value = False
+        else:
+            return_value = False
+
         self.damage_taken_history.append(self.damage_taken_this_turn)
         self.damage_taken_this_turn = []
+        return return_value
 
-    def record_healing_received(self):
+    def record_healing_received(self) -> bool: 
+        if self.healing_received_this_turn:
+            for h, _ in self.healing_received_this_turn:
+                if h > 0:
+                    return_value = True
+                elif h < 0:
+                    raise Exception("Negative healing received recorded.")
+                else:
+                    return_value = False
+        else:
+            return_value = False
         self.healing_received_history.append(self.healing_received_this_turn)
         self.healing_received_this_turn = []
+        return return_value
 
     def get_num_of_turns_not_taken_damage(self) -> int:
         # get the last few records of self.damage_taken_history, if are empty, return the number of records
@@ -2471,7 +2497,7 @@ class Raven(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Raven"
         self.skill1_description = "Apply Blackbird on your self for 16 turns. For 12 turns, neighbor allies lose 30% of their atk, add the reduced atk to your atk." \
-        " If you already have Blackbird, its duration is refreshed."
+        " If you already have Blackbird, its duration is refreshed, atk lose and gain is not triggered."
         self.skill2_description = "Attack enemy with lowest def 6 times with 285% atk."
         self.skill3_description = "After using 2 times of skill 2, apply a shield on neighbor allies after the skill, absorb damage up to 80% of total" \
         " damage dealt by skill 2."  

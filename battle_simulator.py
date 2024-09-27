@@ -1,5 +1,8 @@
 import inspect
 import os, json
+
+import pandas as pd
+import analyze
 from character import *
 import monsters
 from item import *
@@ -1730,20 +1733,38 @@ if __name__ == "__main__":
         shield_value_after = {character.name: character.get_shield_value() for character in itertools.chain(party1, party2)}
         shield_value_diff = {k: shield_value_after[k] - shield_value_before[k] for k in shield_value_before.keys()}
 
+        # print(shield_value_diff)
+        # {'Seth': 0, 'Air': 0, 'Yuri': 0, 'Lillia': 0, 'Cocoa': 0, 'Freya': 0, 'Fox': 0, 'Gabe': 0, 'Chei': 0, 'Luna': 0}
+
         redraw_ui(party1, party2, refill_image=True, main_char=the_chosen_one, 
                   buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
-                  shield_value_diff_dict=shield_value_diff, redraw_eq_slots=False, also_draw_chart=False)
+                  shield_value_diff_dict=shield_value_diff, redraw_eq_slots=False, also_draw_chart=False,
+                  optimize_for_auto_battle=True)
+
+        does_anyone_taken_any_damage = False
+        does_anyone_recieved_any_healing = False
 
         for character in itertools.chain(party1, party2):
-            character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
-            character.record_healing_received()
+            if character.record_damage_taken(): # Empty damage_taken this turn and add to damage_taken_history
+                does_anyone_taken_any_damage = True
+            if character.record_healing_received():
+                does_anyone_recieved_any_healing = True
 
         for character in itertools.chain(party1, party2):
             character.status_effects_after_damage_record()
 
-        create_tmp_damage_data_csv(party1, party2)
-        create_healing_data_csv(party1, party2)
-        draw_chart()
+        if does_anyone_taken_any_damage:
+            create_tmp_damage_data_csv(party1, party2)
+            if current_display_chart == "Damage Dealt Chart":
+                create_plot_damage_d_chart()
+            elif current_display_chart == "Damage Taken Chart":
+                create_plot_damage_r_chart()
+        if does_anyone_recieved_any_healing:
+            create_healing_data_csv(party1, party2)
+            if current_display_chart == "Healing Chart":
+                create_plot_healing_chart()
+        if does_anyone_taken_any_damage or does_anyone_recieved_any_healing:
+            draw_chart()
 
         if not is_someone_alive(party1) or not is_someone_alive(party2) or turn > 300:
 
@@ -1860,6 +1881,11 @@ if __name__ == "__main__":
     plot_healing_chart = None
 
     def create_tmp_damage_data_csv(p1, p2):
+        """
+        fetch data from p1 and p2 characters damage_taken_history and create a csv file
+        then the csv is processed by analyze.py to create a summary of the damage taken df_damage_summary
+        then the df_damage_summary is visualized by analyze.py to create a plot of the damage taken plot_damage_d_chart and plot_damage_r_chart
+        """
         global df_damage_summary, plot_damage_d_chart, plot_damage_r_chart
         if not os.path.exists("./.tmp"):
             os.makedirs("./.tmp")
@@ -1881,14 +1907,9 @@ if __name__ == "__main__":
             # [(6055, <character.Gabe object at 0x7a1d667b43a0>, 'normal')], [(5306, <character.Gabe object at 0x7a1d667b43a0>, 'normal')], [], 
             # [(4934, <character.Requina object at 0x7a1d667b4370>, 'normal')], [(500, <character.Requina object at 0x7a1d667b4370>, 'status')], 
             # [(500, <character.Requina object at 0x7a1d667b4370>, 'status'), (5146, <character.Requina object at 0x7a1d667b4370>, 'normal')], ...
-            # filtered_damage_taken_history = [
-            #     (record[0][0], record[0][1].name, record[0][2]) if record else record 
-            #     for record in character.damage_taken_history
-            # ] # Incorrect
             filtered_damage_taken_history = []
             for record in character.damage_taken_history:
                 if not record:
-                    filtered_damage_taken_history.append(record)
                     continue
                 else:
                     for abc_tuple in record:
@@ -1896,20 +1917,41 @@ if __name__ == "__main__":
               
             data[character.name] = filtered_damage_taken_history
 
-        with open("./.tmp/tmp_damage_data.csv", "w", newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(["Character", "Damage Taken History"])
 
-            for name, history in data.items():
-                writer.writerow([name, history])
+        # Create the DataFrame directly from the data dictionary
+        df_damage_taken_history = pd.DataFrame(list(data.items()), columns=['Character', 'Damage Taken History'])
+        # print(df_damage_taken_history)
+
+        # previous code
+        # with open("./.tmp/tmp_damage_data.csv", "w", newline='') as f:
+        #     writer = csv.writer(f)
+        #     writer.writerow(["Character", "Damage Taken History"])
+
+        #     for name, history in data.items():
+        #         writer.writerow([name, history])
                 
-        import analyze
-        df = analyze.create_damage_summary_new(original_character_list)
+        # df_damage_taken_history = pd.read_csv("./.tmp/tmp_damage_data.csv")
+        # print(df_damage_taken_history)
+
+        df = analyze.create_damage_summary_new(original_character_list, dataframe=df_damage_taken_history)
         df_damage_summary = df
-        plot_damage_r_chart, plot_damage_d_chart = analyze.damage_summary_visualize(df)
             
+    def create_plot_damage_d_chart() -> None:
+        global df_damage_summary, plot_damage_d_chart
+        if df_damage_summary is None:
+            return
+        plot_damage_d_chart = analyze.damage_summary_visualize(df_damage_summary, what_to_visualize="dealt")
+
+    def create_plot_damage_r_chart() -> None:
+        global df_damage_summary, plot_damage_r_chart
+        if df_damage_summary is None:
+            return
+        plot_damage_r_chart = analyze.damage_summary_visualize(df_damage_summary, what_to_visualize="received")
 
     def create_healing_data_csv(p1, p2):
+        """
+        Basically the same as create_tmp_damage_data_csv, but for healing_received_history
+        """
         global df_healing_summary, plot_healing_chart
         if not os.path.exists("./.tmp"):
             os.makedirs("./.tmp")
@@ -1926,7 +1968,7 @@ if __name__ == "__main__":
             filtered_healing_received_history = []
             for record in character.healing_received_history:
                 if not record:
-                    filtered_healing_received_history.append(record)
+                    # filtered_healing_received_history.append(record)
                     continue
                 else:
                     for ab_tuple in record:
@@ -1935,21 +1977,23 @@ if __name__ == "__main__":
                         else:
                             filtered_healing_received_history.append((ab_tuple[0], ab_tuple[1].name))
             data[character.name] = filtered_healing_received_history
-        with open("./.tmp/tmp_healing_data.csv", "w", newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(["Character", "Healing Received History"])
 
-            for name, history in data.items():
-                writer.writerow([name, history])
-        import analyze
-        df = analyze.create_healing_summary(original_character_list)
+        # Create the DataFrame directly from the data dictionary
+        df_healing_received_history = pd.DataFrame(list(data.items()), columns=['Character', 'Healing Received History'])
+        # print(df_healing_received_history)
+
+        df = analyze.create_healing_summary(original_character_list, dataframe=df_healing_received_history)
         df_healing_summary = df
-        plot_healing_chart = analyze.healing_summary_visualize(df)
 
+    def create_plot_healing_chart() -> None:
+        global df_healing_summary, plot_healing_chart
+        if df_healing_summary is None:
+            return
+        plot_healing_chart = analyze.healing_summary_visualize(df_healing_summary)
 
             
     def restart_battle():
-        global turn
+        global turn, auto_battle_active
         global_vars.turn_info_string = ""
         for character in all_characters + all_monsters:
             character.reset_stats()
@@ -1962,6 +2006,10 @@ if __name__ == "__main__":
         redraw_ui(party1, party2, redraw_eq_slots=False)
         turn = 1
         text_box.append_html_text(global_vars.turn_info_string)
+
+        if auto_battle_active and use_random_consumable_selection_menu.selected_option[0] == "True":
+            use_random_consumable()
+
 
     def is_in_manipulatable_game_states() -> bool:
         """
@@ -2050,9 +2098,6 @@ if __name__ == "__main__":
             character.battle_entry_effects_activate()
         redraw_ui(party1, party2)
         text_box.append_html_text(global_vars.turn_info_string)
-
-        if auto_battle_active and use_random_consumable_selection_menu.selected_option[0] == "True":
-            use_random_consumable()
 
         return party1, party2
 
@@ -2247,12 +2292,12 @@ if __name__ == "__main__":
                                         pygame.Surface((500, 225)),
                                         ui_manager)
     # ./tmp/damage_dealt.png
-    damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
+    damage_graph_slot.set_image((images_item["405"]))
 
 
     def redraw_ui(party1, party2, *, refill_image=True, main_char=None,
                   buff_added_this_turn=None, debuff_added_this_turn=None, shield_value_diff_dict=None, redraw_eq_slots=True,
-                  also_draw_chart=True):
+                  also_draw_chart=True, optimize_for_auto_battle=False):
 
         def redraw_party(party, image_slots, equip_slots_weapon, equip_slots_armor, equip_slots_accessory, equip_stats_boots, 
                          labels, healthbar, equip_effect_slots):
@@ -2264,7 +2309,7 @@ if __name__ == "__main__":
                         image_slots[i].set_image(images_item["404"])
 
                 image_slots[i].set_tooltip(character.tooltip_string(), delay=0.1, wrap_width=250)
-
+                
 
                 if redraw_eq_slots:
                     ignore_draw_weapon = False
@@ -2317,7 +2362,12 @@ if __name__ == "__main__":
                 labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=500)
                 # Doesn't work so commented out
                 # labels[i].set_text_alpha(255) if character.is_alive() else labels[i].set_text_alpha(125)
-                healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value()))
+
+                # redraw healthbar is fairly expensive process, so we need to optimize it
+                if optimize_for_auto_battle and shield_value_diff_dict[character.name] == 0 and not character.damage_taken_this_turn and not character.healing_received_this_turn:
+                    pass
+                else:
+                    healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value()))
                 healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=400)
 
                 if main_char == character:
@@ -2422,33 +2472,33 @@ if __name__ == "__main__":
             case "Damage Dealt Chart":
                 if plot_damage_d_chart:
                     damage_graph_slot.set_image(plot_damage_d_chart)
-                if df_damage_summary is not None:
-                    tooltip_text = "Damage dealt summary:\n"
-                    for line in df_damage_summary.values:
-                        tooltip_text += f"{line[0]} dealt {line[6]} damage in total, {line[7]} normal damage, {line[8]} critical damage, {line[9]} status damage, and {line[10]} bypass damage.\n"
-                    damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                    if df_damage_summary is not None:
+                        tooltip_text = "Damage dealt summary:\n"
+                        for line in df_damage_summary.values:
+                            tooltip_text += f"{line[0]} dealt {line[6]} damage in total, {line[7]} normal damage, {line[8]} critical damage, {line[9]} status damage, and {line[10]} bypass damage.\n"
+                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
                 else:
-                    damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
+                    damage_graph_slot.set_image(images_item["405"])
             case "Damage Taken Chart":
                 if plot_damage_r_chart:
                     damage_graph_slot.set_image(plot_damage_r_chart)
-                if df_damage_summary is not None:
-                    tooltip_text = "Damage taken summary:\n"
-                    for line in df_damage_summary.values:
-                        tooltip_text += f"{line[0]} received {line[1]} damage in total, {line[2]} normal damage, {line[3]} critical damage, {line[4]} status damage, and {line[5]} bypass damage.\n"
-                    damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                    if df_damage_summary is not None:
+                        tooltip_text = "Damage taken summary:\n"
+                        for line in df_damage_summary.values:
+                            tooltip_text += f"{line[0]} received {line[1]} damage in total, {line[2]} normal damage, {line[3]} critical damage, {line[4]} status damage, and {line[5]} bypass damage.\n"
+                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
                 else:
-                    damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
+                    damage_graph_slot.set_image(images_item["405"])
             case "Healing Chart":
                 if plot_healing_chart:
                     damage_graph_slot.set_image(plot_healing_chart)
-                if df_healing_summary is not None:
-                    tooltip_text = "Healing summary:\n"
-                    for line in df_healing_summary.values:
-                        tooltip_text += f"{line[0]} received {line[1]} healing in total, {line[2]} healing is given.\n"
-                    damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                    if df_healing_summary is not None:
+                        tooltip_text = "Healing summary:\n"
+                        for line in df_healing_summary.values:
+                            tooltip_text += f"{line[0]} received {line[1]} healing in total, {line[2]} healing is given.\n"
+                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
                 else:
-                    damage_graph_slot.set_image(pygame.image.load("./image/item/405.png"))
+                    damage_graph_slot.set_image(images_item["405"])
             case _:
                 raise Exception(f"Unknown current_display_chart: {current_display_chart}")
 
@@ -2847,15 +2897,17 @@ if __name__ == "__main__":
                 if event.ui_element == button_left_change_chart:
                     if current_display_chart == "Damage Dealt Chart":
                         current_display_chart = "Damage Taken Chart"
+                        create_plot_damage_r_chart()
                         draw_chart()
                         button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
                     elif current_display_chart == "Damage Taken Chart":
-                        # current_display_chart = "Healing Chart" # Implemented
                         current_display_chart = "Healing Chart"
+                        create_plot_healing_chart()
                         draw_chart()
                         button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
                     elif current_display_chart == "Healing Chart":
                         current_display_chart = "Damage Dealt Chart"
+                        create_plot_damage_d_chart()
                         draw_chart()
                         button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
                 if event.ui_element == button1: # Shuffle party
