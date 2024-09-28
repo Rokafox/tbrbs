@@ -137,12 +137,11 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         }
 
     def build_inventory_slots(self):
-        global cheap_inventory_show_current_option
         # TODO: We have commented out the selected_item feature. TEST IT.
         self.selected_item = {}
         page = self.current_page
         try: # I do not think it is the best way to do this.
-            only_include = cheap_inventory_show_current_option
+            only_include = global_vars.cheap_inventory_show_current_option
         except NameError:
             only_include = "Equip"
         match only_include:
@@ -462,10 +461,13 @@ if __name__ == "__main__":
     antique_white = pygame.Color("#FAEBD7")
     deep_dark_blue = pygame.Color("#000022")
     light_yellow = pygame.Color("#FFFFE0")
+    light_purple = pygame.Color("#f0eaf5")
 
     display_surface = pygame.display.set_mode((1600, 900), flags=pygame.SCALED)
     ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
-    debug_ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
+    # debug_ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
+    # ui_manager.get_theme().load_theme("theme_light_purple.json")
+    # ui_manager.rebuild_all_from_changed_theme_data()
 
     pygame.display.set_caption("Battle Simulator")
 
@@ -1029,7 +1031,7 @@ if __name__ == "__main__":
             text_box_text_to_append += "No item is selected.\n"
             text_box.append_html_text(text_box_text_to_append)
             return
-        if cheap_inventory_show_current_option == "Equip":
+        if global_vars.cheap_inventory_show_current_option == "Equip":
             if not is_in_manipulatable_game_states():
                 text_box_text_to_append += "Cannot equip items when not in first turn or after the battle is concluded.\n"
                 text_box.append_html_text(text_box_text_to_append)
@@ -1062,7 +1064,7 @@ if __name__ == "__main__":
                     text_box_text_to_append += f"Can only equip items to alive characters.\n"
                     text_box.append_html_text(text_box_text_to_append)
                     return
-        elif cheap_inventory_show_current_option == "Consumable":
+        elif global_vars.cheap_inventory_show_current_option == "Consumable":
             for character in all_characters:
                 if character.name == character_selection_menu.selected_option[0].split()[-1]:
                     for consumable in selected_items:
@@ -1081,7 +1083,7 @@ if __name__ == "__main__":
                     # player.use_1_selected_item will correctly handle cases when consumable.current_stack is less than how_many_times
                     player.use_1_selected_item(True, use_how_many_times=how_many_times, who_the_character=character)
         # Remember to change this if decided item can also be used on characters
-        elif cheap_inventory_show_current_option == "Item":
+        elif global_vars.cheap_inventory_show_current_option == "Item":
             for item in selected_items:
                 event_str = item.E(None, player)
                 text_box_text_to_append += event_str + "\n"
@@ -1451,6 +1453,34 @@ if __name__ == "__main__":
     # =====================================
     # End of Equip Section
     # =====================================
+    # Theme Selection
+    # =====================================
+
+
+    theme_selection_menu = pygame_gui.elements.UIDropDownMenu(["Yellow Theme", "Purple Theme"],
+                                                            "Yellow Theme",
+                                                            pygame.Rect((1080, 20), (156, 35)),
+                                                            ui_manager)
+
+    def change_theme():
+        global_vars.theme = theme_selection_menu.selected_option[0]
+        if global_vars.theme == "Yellow Theme":
+            ui_manager.get_theme().load_theme("theme_light_yellow.json")
+            ui_manager.rebuild_all_from_changed_theme_data()
+
+        elif global_vars.theme == "Purple Theme":
+            ui_manager.get_theme().load_theme("theme_light_purple.json")
+            ui_manager.rebuild_all_from_changed_theme_data()
+        else:
+            raise ValueError(f"Unknown theme: {global_vars.theme}")
+        
+        redraw_ui(party1, party2)
+        player.build_inventory_slots()
+        if global_vars.player_is_in_shop:
+            redraw_ui_shop_edition()
+    # =====================================
+    # End of Theme Selection
+    # =====================================
     # Cheap Inventory Section
     # =====================================
 
@@ -1458,24 +1488,14 @@ if __name__ == "__main__":
     # 10 rows, 6 columns
     # each row and column have a empty space of 8 pixels
 
-    cheap_inventory_show_equipment_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 20), (156, 35)),
-                                        text='Show Equipment',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Show equipment in inventory")
-    cheap_inventory_show_equipment_button.set_tooltip("Show equipment in inventory.", delay=0.1, wrap_width=300)
+    cheap_inventory_what_to_show_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 60), (156, 35)),
+                                        "Inventory:",
+                                        ui_manager)
 
-    cheap_inventory_show_items_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 60), (156, 35)),
-                                        text='Show Items',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Show items in inventory")
-    cheap_inventory_show_items_button.set_tooltip("Show items in inventory.", delay=0.1, wrap_width=300)
-    
-    cheap_inventory_show_consumables_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 100), (156, 35)),
-                                        text='Show Consumables',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Show consumables in inventory")
-    cheap_inventory_show_consumables_button.set_tooltip("Show consumables in inventory.", delay=0.1, wrap_width=300)
-    cheap_inventory_show_current_option = "Equip"
+    cheap_inventory_what_to_show_selection_menu = pygame_gui.elements.UIDropDownMenu(["Equip", "Consumable", "Item"],
+                                                            "Equip",
+                                                            pygame.Rect((1080, 100), (156, 35)),
+                                                            ui_manager)
 
     cheap_inventory_sort_by_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
                                                             "Rarity",
@@ -2206,7 +2226,7 @@ if __name__ == "__main__":
 
 
     def create_healthbar(hp, maxhp, width, height, color_unfilled_bar=(255, 238, 186), color_filled_bar=(255, 193, 7), shield_value=0,
-                         shield_bar_color=(252, 248, 15)) -> pygame.Surface:
+                         shield_bar_color=(252, 248, 15), auto_color=False) -> pygame.Surface:
         """
         Creates a health bar.
 
@@ -2218,7 +2238,38 @@ if __name__ == "__main__":
         color_unfilled_bar (tuple): RGB color of the unfilled part of the health bar.
         color_filled_bar (tuple): RGB color of the filled part of the health bar.
         shield_value (int): Shield value of the character. Default is 0.
+        auto_color (bool): If True, the health bar color will change based on the global_vars.theme, theme change is not compatible
+        with defined color_filled_bar and color_unfilled_bar and shield_bar_color. Default is False.
         """
+        if auto_color:
+            match global_vars.theme:
+                case "Yellow Theme":
+                    color_unfilled_bar = (255, 238, 186)
+                    color_filled_bar = (255, 193, 7)
+                    shield_bar_color = (252, 248, 15)
+                case "Purple Theme":
+                    color_unfilled_bar = (248, 231, 255)
+                    color_filled_bar = (236, 192, 255)
+                    shield_bar_color = (198,153,255)
+                case "Blue Theme":
+                    color_unfilled_bar = (173, 216, 230)
+                    color_filled_bar = (0, 0, 255)
+                    shield_bar_color = (135, 206, 235)
+                case "Green Theme":
+                    color_unfilled_bar = (204, 255, 204)
+                    color_filled_bar = (0, 255, 0)
+                    shield_bar_color = (144, 238, 144)
+                case "Pink Theme":
+                    color_unfilled_bar = (255, 182, 193)
+                    color_filled_bar = (255, 105, 180)
+                    shield_bar_color = (255, 20, 147)
+                case "Red Theme":
+                    color_unfilled_bar = (255, 204, 203)
+                    color_filled_bar = (255, 0, 0)
+                    shield_bar_color = (255, 69, 0)
+                case _:
+                    raise Exception(f"Unknown theme: {global_vars.theme}")
+
         surface = pygame.Surface((width, height))
         surface.fill(color_unfilled_bar)
 
@@ -2367,7 +2418,7 @@ if __name__ == "__main__":
                 if optimize_for_auto_battle and shield_value_diff_dict[character.name] == 0 and not character.damage_taken_this_turn and not character.healing_received_this_turn:
                     pass
                 else:
-                    healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value()))
+                    healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value(), auto_color=True))
                 healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=400)
 
                 if main_char == character:
@@ -2990,63 +3041,6 @@ if __name__ == "__main__":
                     player.to_next_page()
                 if event.ui_element == cheap_inventory_sort_by_button:
                     cheap_inventory_sort()
-                if event.ui_element == cheap_inventory_show_equipment_button:
-                    player.current_page = 0
-                    cheap_inventory_show_current_option = "Equip"
-                    player.build_inventory_slots()
-                    use_item_button.set_text("Equip Item")
-                    eq_selection_menu.show()
-                    character_eq_unequip_button.show()
-                    eq_levelup_button.show()
-                    eq_levelup_buttonx10.show()
-                    eq_level_up_to_max_button.show()
-                    eq_stars_upgrade_button.show()
-                    eq_sell_selected_button.show()
-                    eq_sell_low_value_selection_menu.show()
-                    eq_sell_low_value_button.show()
-                    item_sell_button.hide()
-                    item_sell_half_button.hide()
-                    item_sell_all_button.hide()
-                    use_random_consumable_label.hide()
-                    use_random_consumable_selection_menu.hide()
-                if event.ui_element == cheap_inventory_show_items_button:
-                    player.current_page = 0
-                    cheap_inventory_show_current_option = "Item"
-                    player.build_inventory_slots()
-                    use_item_button.set_text("Use Item")
-                    eq_selection_menu.hide()
-                    character_eq_unequip_button.hide()
-                    eq_levelup_button.hide()
-                    eq_levelup_buttonx10.hide()
-                    eq_level_up_to_max_button.hide()
-                    eq_stars_upgrade_button.hide()
-                    eq_sell_selected_button.hide()
-                    eq_sell_low_value_selection_menu.hide()
-                    eq_sell_low_value_button.hide()
-                    item_sell_button.show()
-                    item_sell_half_button.show()
-                    item_sell_all_button.show()
-                    use_random_consumable_label.hide()
-                    use_random_consumable_selection_menu.hide()
-                if event.ui_element == cheap_inventory_show_consumables_button:
-                    player.current_page = 0
-                    cheap_inventory_show_current_option = "Consumable"
-                    player.build_inventory_slots()
-                    use_item_button.set_text("Use Item")
-                    eq_selection_menu.hide()
-                    character_eq_unequip_button.hide()
-                    eq_levelup_button.hide()
-                    eq_levelup_buttonx10.hide()
-                    eq_level_up_to_max_button.hide()
-                    eq_stars_upgrade_button.hide()
-                    eq_sell_selected_button.hide()
-                    eq_sell_low_value_selection_menu.hide()
-                    eq_sell_low_value_button.hide()
-                    item_sell_button.show()
-                    item_sell_half_button.show()
-                    item_sell_all_button.show()
-                    use_random_consumable_label.show()
-                    use_random_consumable_selection_menu.show()
                 if event.ui_element == use_item_button:
                     use_item()
                 if event.ui_element == use_itemx10_button:
@@ -3100,15 +3094,84 @@ if __name__ == "__main__":
                     # working correctly
                     print(f"Selected shop: {shop_select_a_shop.selected_option[0]}")
                     the_shop = redraw_ui_shop_edition()
+                if event.ui_element == theme_selection_menu:
+                    change_theme()
+                if event.ui_element == cheap_inventory_what_to_show_selection_menu:
+                    match cheap_inventory_what_to_show_selection_menu.selected_option[0]:
+                        case "Equip":
+                            player.current_page = 0
+                            global_vars.cheap_inventory_show_current_option = "Equip"
+                            player.build_inventory_slots()
+                            
+                            use_item_button.set_text("Equip Item")
+                            eq_selection_menu.show()
+                            character_eq_unequip_button.show()
+                            eq_levelup_button.show()
+                            eq_levelup_buttonx10.show()
+                            eq_level_up_to_max_button.show()
+                            eq_stars_upgrade_button.show()
+                            eq_sell_selected_button.show()
+                            eq_sell_low_value_selection_menu.show()
+                            eq_sell_low_value_button.show()
+                            item_sell_button.hide()
+                            item_sell_half_button.hide()
+                            item_sell_all_button.hide()
+                            use_random_consumable_label.hide()
+                            use_random_consumable_selection_menu.hide()
+                        case "Item":
+                            player.current_page = 0
+                            global_vars.cheap_inventory_show_current_option = "Item"
+                            player.build_inventory_slots()
+                            use_item_button.set_text("Use Item")
+                            eq_selection_menu.hide()
+                            character_eq_unequip_button.hide()
+                            eq_levelup_button.hide()
+                            eq_levelup_buttonx10.hide()
+                            eq_level_up_to_max_button.hide()
+                            eq_stars_upgrade_button.hide()
+                            eq_sell_selected_button.hide()
+                            eq_sell_low_value_selection_menu.hide()
+                            eq_sell_low_value_button.hide()
+                            item_sell_button.show()
+                            item_sell_half_button.show()
+                            item_sell_all_button.show()
+                            use_random_consumable_label.hide()
+                            use_random_consumable_selection_menu.hide()
+                        case "Consumable":
+                            player.current_page = 0
+                            global_vars.cheap_inventory_show_current_option = "Consumable"
+                            player.build_inventory_slots()
+                            use_item_button.set_text("Use Item")
+                            eq_selection_menu.hide()
+                            character_eq_unequip_button.hide()
+                            eq_levelup_button.hide()
+                            eq_levelup_buttonx10.hide()
+                            eq_level_up_to_max_button.hide()
+                            eq_stars_upgrade_button.hide()
+                            eq_sell_selected_button.hide()
+                            eq_sell_low_value_selection_menu.hide()
+                            eq_sell_low_value_button.hide()
+                            item_sell_button.show()
+                            item_sell_half_button.show()
+                            item_sell_all_button.show()
+                            use_random_consumable_label.show()
+                            use_random_consumable_selection_menu.show()
+                        case _:
+                            raise Exception("Unknown option selected in cheap_inventory_what_to_show_selection_menu")                                
+
+
 
             ui_manager.process_events(event)
 
         ui_manager.update(time_delta)
-        display_surface.fill(light_yellow)
+        if global_vars.theme == "Yellow Theme":
+            display_surface.fill(light_yellow)
+        elif global_vars.theme == "Purple Theme":
+            display_surface.fill(light_purple)
         ui_manager.draw_ui(display_surface)
 
-        debug_ui_manager.update(time_delta)
-        debug_ui_manager.draw_ui(display_surface)
+        # debug_ui_manager.update(time_delta)
+        # debug_ui_manager.draw_ui(display_surface)
 
         if auto_battle_active:
             time_acc += time_delta
