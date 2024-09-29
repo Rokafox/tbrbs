@@ -7,7 +7,7 @@
             "hovered_bg":"#C1E2B3",
             "disabled_bg":"#F0F0F0",
             "selected_bg":"#A3D9A5",
-            "dark_bg":"#C8E6C9",
+            "dark_bg":"#fefffe",
             "normal_text":"#000000",
             "hovered_text":"#FFFFFF",
             "selected_text":"#FFFFFF",

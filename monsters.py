@@ -895,7 +895,7 @@ class AssassinB(character.Character):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        new_multiplier_func = lambda self, target: 3.2 if target.hp < target.maxhp * 0.2 else 2.2
+        new_multiplier_func = lambda self, target, x, y: 3.2 if target.hp < target.maxhp * 0.2 else 2.2
         damage_dealt = self.attack(multiplier=2.2, repeat=5, target_kw1="n_lowest_attr", 
                                    target_kw2="1", target_kw3="hp", target_kw4="enemy", 
                                    func_for_multiplier=new_multiplier_func)

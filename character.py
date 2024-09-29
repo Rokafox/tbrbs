@@ -1,5 +1,8 @@
+from collections.abc import Callable
 import copy
 from typing import List, Tuple
+
+from numpy import character
 from effect import *
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
@@ -411,30 +414,25 @@ class Character:
                 raise Exception(f"Keyword not found. Keyword: {keyword}, Keyword2: {keyword2}, Keyword3: {keyword3}, Keyword4: {keyword4}")
 
 
-    def attack(self, target_kw1="Undefined", target_kw2="Undefined", 
-               target_kw3="Undefined", target_kw4="Undefined", multiplier=2, repeat=1, func_after_dmg=None,
-               func_damage_step=None, repeat_seq=1, func_after_miss=None, func_after_crit=None,
-               always_crit=False, additional_attack_after_dmg=None, always_hit=False, target_list=None,
-               force_dmg=None, ignore_protected_effect=False, func_for_multiplier=None) -> int:
-    # def attack(self, 
-    #         target_kw1: str = "Undefined", 
-    #         target_kw2: str = "Undefined", 
-    #         target_kw3: str = "Undefined", 
-    #         target_kw4: str = "Undefined", 
-    #         multiplier: float = 2.0, 
-    #         repeat: int = 1, 
-    #         func_after_dmg: callable | None = None,
-    #         func_damage_step: callable | None = None, 
-    #         repeat_seq: int = 1, 
-    #         func_after_miss: callable | None = None, 
-    #         func_after_crit: callable | None = None,
-    #         always_crit: bool = False, 
-    #         additional_attack_after_dmg: callable | None = None, 
-    #         always_hit: bool = False, 
-    #         target_list: list | None = None,
-    #         force_dmg: float | None = None, 
-    #         ignore_protected_effect: bool = False, 
-    #         func_for_multiplier: callable | None = None) -> int:
+    def attack(self, 
+            target_kw1: str = "Undefined", 
+            target_kw2: str = "Undefined", 
+            target_kw3: str = "Undefined", 
+            target_kw4: str = "Undefined", 
+            multiplier: float = 2.0, 
+            repeat: int = 1, 
+            func_after_dmg: Callable[[character, character], None] | None = None,
+            func_damage_step: Callable[[character, character, float], float] | None = None,
+            repeat_seq: int = 1, 
+            func_after_miss: Callable[[character, character], None] | None = None,
+            func_after_crit: Callable[[character, character, float, bool], Tuple[float, bool]] | None = None,
+            always_crit: bool = False, 
+            additional_attack_after_dmg: Callable[[character, character, bool], int] | None = None,
+            always_hit: bool = False, 
+            target_list: list | None = None,
+            force_dmg: float | None = None, 
+            ignore_protected_effect: bool = False, 
+            func_for_multiplier: Callable[[character, character, int, int], float] | None = None) -> int:
         """
         -> damage_dealt
         WARNING: DO NOT MESS WITH [repeat] AND [repeat_seq] TOGETHER, otherwise the result will be confusing.
@@ -463,7 +461,7 @@ class Character:
                     break
                 global_vars.turn_info_string += f"{self.name} is targeting {target.name}.\n"
                 if not force_dmg and func_for_multiplier is not None:
-                    multiplier = func_for_multiplier(self, target) # multiplier is overwritten.
+                    multiplier = func_for_multiplier(self, target, self.number_of_attacks, i) # multiplier is overwritten.
                 damage = self.atk * multiplier - target.defense * (1 - self.penetration) if not force_dmg else force_dmg
                 final_accuracy = self.acc - target.eva
                 dice = random.randint(1, 100)

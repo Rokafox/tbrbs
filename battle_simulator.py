@@ -462,6 +462,10 @@ if __name__ == "__main__":
     deep_dark_blue = pygame.Color("#000022")
     light_yellow = pygame.Color("#FFFFE0")
     light_purple = pygame.Color("#f0eaf5")
+    light_red = pygame.Color("#fbe4e4")
+    light_green = pygame.Color("#e5fae5")
+    light_blue = pygame.Color("#e6f3ff")
+    light_pink = pygame.Color("#fae5fa")
 
     display_surface = pygame.display.set_mode((1600, 900), flags=pygame.SCALED)
     ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
@@ -1457,7 +1461,7 @@ if __name__ == "__main__":
     # =====================================
 
 
-    theme_selection_menu = pygame_gui.elements.UIDropDownMenu(["Yellow Theme", "Purple Theme"],
+    theme_selection_menu = pygame_gui.elements.UIDropDownMenu(["Yellow Theme", "Purple Theme", "Red Theme", "Blue Theme", "Green Theme", "Pink Theme"],
                                                             "Yellow Theme",
                                                             pygame.Rect((1080, 20), (156, 35)),
                                                             ui_manager)
@@ -1466,14 +1470,20 @@ if __name__ == "__main__":
         global_vars.theme = theme_selection_menu.selected_option[0]
         if global_vars.theme == "Yellow Theme":
             ui_manager.get_theme().load_theme("theme_light_yellow.json")
-            ui_manager.rebuild_all_from_changed_theme_data()
-
         elif global_vars.theme == "Purple Theme":
             ui_manager.get_theme().load_theme("theme_light_purple.json")
-            ui_manager.rebuild_all_from_changed_theme_data()
+        elif global_vars.theme == "Red Theme":
+            ui_manager.get_theme().load_theme("theme_light_red.json")
+        elif global_vars.theme == "Blue Theme":
+            ui_manager.get_theme().load_theme("theme_light_blue.json")
+        elif global_vars.theme == "Green Theme":
+            ui_manager.get_theme().load_theme("theme_light_green.json")
+        elif global_vars.theme == "Pink Theme":
+            ui_manager.get_theme().load_theme("theme_light_pink.json")
         else:
             raise ValueError(f"Unknown theme: {global_vars.theme}")
         
+        ui_manager.rebuild_all_from_changed_theme_data()
         redraw_ui(party1, party2)
         player.build_inventory_slots()
         if global_vars.player_is_in_shop:
@@ -2252,21 +2262,21 @@ if __name__ == "__main__":
                     color_filled_bar = (236, 192, 255)
                     shield_bar_color = (198,153,255)
                 case "Blue Theme":
-                    color_unfilled_bar = (173, 216, 230)
-                    color_filled_bar = (0, 0, 255)
-                    shield_bar_color = (135, 206, 235)
+                    color_unfilled_bar = (220, 240, 255)  # 明るい青
+                    shield_bar_color = (173, 216, 230)    # 薄い青
+                    color_filled_bar = (200, 230, 255)    # ライトブルー
                 case "Green Theme":
-                    color_unfilled_bar = (204, 255, 204)
-                    color_filled_bar = (0, 255, 0)
-                    shield_bar_color = (144, 238, 144)
+                    color_unfilled_bar = (230, 255, 230)  # 明るい緑
+                    shield_bar_color = (144, 238, 144)    # ライトグリーン
+                    color_filled_bar = (193, 255, 193)    # ライトな緑色
                 case "Pink Theme":
-                    color_unfilled_bar = (255, 182, 193)
-                    color_filled_bar = (255, 105, 180)
-                    shield_bar_color = (255, 20, 147)
+                    color_unfilled_bar = (255, 238, 248)  # 明るいピンク
+                    shield_bar_color = (255, 170, 207)    # 薄いピンク
+                    color_filled_bar = (255, 209, 229)    # ライトピンク
                 case "Red Theme":
-                    color_unfilled_bar = (255, 204, 203)
-                    color_filled_bar = (255, 0, 0)
-                    shield_bar_color = (255, 69, 0)
+                    color_unfilled_bar = (255, 220, 220)  # 明るい赤
+                    color_filled_bar = (255, 160, 160)    # ライトレッド
+                    shield_bar_color = (255, 128, 128)    # ライトレッド
                 case _:
                     raise Exception(f"Unknown theme: {global_vars.theme}")
 
@@ -3168,6 +3178,14 @@ if __name__ == "__main__":
             display_surface.fill(light_yellow)
         elif global_vars.theme == "Purple Theme":
             display_surface.fill(light_purple)
+        elif global_vars.theme == "Red Theme":
+            display_surface.fill(light_red)
+        elif global_vars.theme == "Green Theme":
+            display_surface.fill(light_green)
+        elif global_vars.theme == "Blue Theme":
+            display_surface.fill(light_blue)
+        elif global_vars.theme == "Pink Theme":
+            display_surface.fill(light_pink)
         ui_manager.draw_ui(display_surface)
 
         # debug_ui_manager.update(time_delta)
