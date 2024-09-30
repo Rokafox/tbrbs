@@ -16,7 +16,7 @@ class Equip(Block):
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
-                            "Liquidation"]
+                            "Liquidation", "Cosmic"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -148,6 +148,10 @@ class Equip(Block):
             case "Liquidation":
                 return (
                     "When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 20%: hp, atk, def, spd."
+                )
+            case "Cosmic":
+                return (
+                    "Every turn, max hp is increased by 2% of current maxhp, effect is removed when max hp exceeds 200% of original max hp."
                 )
             case _:
                 return ""

@@ -1,3 +1,4 @@
+import traceback
 import character
 import inspect
 import monsters
@@ -261,6 +262,8 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
         except Exception as e:
             amount_of_error += 1
             print(f"Error: {e}")
+            traceback.print_exc()
+
             winner_party, turns, loser_party = None, 300, None
             # dump global_vars.turn_info_string to a logs/error.log file
             current_party_info = ""
@@ -270,8 +273,12 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
             current_party_info += "\nParty 2:\n"
             for character in party2:
                 current_party_info += f"{character}\n"
+            
             with open("logs/error.log", "a") as f:
-                f.write(global_vars.turn_info_string + "\n" + str(e) + "\n" + current_party_info + "\n\n\n\n\n")
+                # エラーの詳細なトレースバックを記録
+                f.write(global_vars.turn_info_string + "\n" + str(e) + "\n")
+                f.write(traceback.format_exc())  # トレースバックをログファイルに書き込み
+                f.write(current_party_info + "\n\n\n\n\n")
 
         turns_total += turns
         if winner_party is not None:
@@ -310,8 +317,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 8000
-    a, b = calculate_winrate_for_character(sample, get_all_characters(2), "suppress")
+        sample = 10000
+    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze

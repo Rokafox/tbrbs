@@ -1,9 +1,8 @@
 from collections.abc import Callable
-import copy
-from typing import List, Tuple
-
+import copy, random
+from typing import Tuple
 from numpy import character
-from effect import *
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousHealEffect, Effect, EffectShield1, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StunEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -193,6 +192,9 @@ class Character:
         pass
 
     def update_skill_cooldown(self, skill):
+        """
+        Set the cooldown of the skill to its maximum value allowed.
+        """
         match skill:
             case 1:
                 self.skill1_cooldown = self.skill1_cooldown_max
@@ -204,27 +206,29 @@ class Character:
     def normal_attack(self):
         self.attack()
 
-    def skill1(self):
+    def skill1(self, update_skillcooldown=True):
         # Warning: Following characters have their own skill1 function:
         # Pepper, Ophelia
         global_vars.turn_info_string += f"{self.name} cast skill 1.\n"
         if self.skill1_cooldown > 0:
             raise Exception
         damage_dealt = self.skill1_logic()
-        self.update_skill_cooldown(1)
+        if update_skillcooldown:
+            self.update_skill_cooldown(1)
         if self.get_equipment_set() == "OldRusty" and random.random() < 0.65:
             global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Old Rusty set effect.\n"
             self.skill1_cooldown = 0
         return None # for now
 
-    def skill2(self):
+    def skill2(self, update_skillcooldown=True):
         # Warning: Following characters have their own skill2 function:
         # Pepper, Ophelia
         global_vars.turn_info_string += f"{self.name} cast skill 2.\n"
         if self.skill2_cooldown > 0:
             raise Exception
         damage_dealt = self.skill2_logic()
-        self.update_skill_cooldown(2)
+        if update_skillcooldown:
+            self.update_skill_cooldown(2)
         return None # for now
     
     def skill1_logic(self):
@@ -960,7 +964,7 @@ class Character:
         """
         pass
 
-    def take_status_damage(self, value, attacker=None):
+    def take_status_damage(self, value, attacker=None, is_reflect=False):
         global_vars.turn_info_string += f"{self.name} is about to take {value} status damage.\n"
         if self.is_dead():
             return 0, attacker
@@ -970,9 +974,10 @@ class Character:
             copyed_buffs = self.buffs.copy() 
             copyed_debuffs = self.debuffs.copy()
             for effect in copyed_buffs:
-                damage = effect.apply_effect_during_damage_step(self, damage, attacker, "status")
+                damage = effect.apply_effect_during_damage_step(self, damage, attacker, "status", damage_is_reflect=is_reflect)
             for effect in copyed_debuffs:
-                damage = effect.apply_effect_during_damage_step(self, damage, attacker, "status")
+                damage = effect.apply_effect_during_damage_step(self, damage, attacker, "status", damage_is_reflect=is_reflect)
+
         damage = int(damage)
         damage = max(0, damage)
         if self.hp - damage < 0:
@@ -1186,8 +1191,9 @@ class Character:
             effect.apply_effect_on_turn(self)
 
     def status_effects_at_end_of_turn(self):
+        # TODO: Change this.
         # The following character/monster has a local implementation of this function:
-        # Character: BeastTamer Yuri
+        # Character: BeastTamer Yuri, Moonrabbit Beacon
         # Monster: Security Guard, Emperor
         buffs_copy = self.buffs.copy()
         debuffs_copy = self.debuffs.copy()
@@ -1205,6 +1211,9 @@ class Character:
 
 
     def update_cooldown(self):
+        """
+        Reduce the cooldown of the character's all skills by 1.
+        """
         if self.skill1_cooldown > 0:
             self.skill1_cooldown -= 1
         if self.skill2_cooldown > 0:
@@ -1275,6 +1284,20 @@ class Character:
             self.apply_effect(EquipmentSetEffect_OldRusty("OldRusty Set", -1, True))
         elif set_name == "Liquidation":
             self.apply_effect(EquipmentSetEffect_Liquidation("Liquidation Set", -1, True, 0.20))
+        elif set_name == "Cosmic":
+            effect_cosmic = StatsEffect("Cosmic Set", -1, True, {"maxhp": 1.02}, condition=lambda char: char.is_alive(),
+                                        use_active_flag=False)
+            effect_cosmic.is_set_effect = True
+            effect_cosmic.sort_priority = 2000
+            effect_cosmic.original_maxhp = self.maxhp
+            def new_apply_effect_at_end_of_turn(effect, char):
+                if char.maxhp > effect.original_maxhp * 2:
+                    effect.flag_for_remove = True
+                    # print(f"{char.name} has reached the max hp limit.")
+
+            # Bind the new method to the effect_cosmic instance
+            effect_cosmic.apply_effect_at_end_of_turn = new_apply_effect_at_end_of_turn.__get__(effect_cosmic, type(effect_cosmic))
+            self.apply_effect(effect_cosmic)
         else:
             raise Exception("Effect not implemented.")
         
@@ -1329,6 +1352,9 @@ class Character:
         elif set_name == "Liquidation":
             str += "Liquidation\n" \
                 "When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 20%: hp, atk, def, spd.\n"
+        elif set_name == "Cosmic":
+            str += "Cosmic\n" \
+                "Every turn, max hp is increased by 2% of current maxhp, effect is removed when max hp exceeds 200% of original max hp.\n"
         else:
             str += "Unknown set effect."
 
@@ -2980,7 +3006,7 @@ class April(Character):
         self.skill1_description = "Attack closest enemy with 300% atk 3 times. For each attack, if target has a beneficial effect, create a" \
         " copy of that effect and apply it on self. Effect created this way always have a duration of 12 turns." \
         " Each effect can only be copied once. Equippment set effect cannot be copied."
-        self.skill2_description = "Attack 3 enemy with 300% atk. If you have beneficial effect, for each effect you have," \
+        self.skill2_description = "Attack 3 enemy with 330% atk. If you have beneficial effect, for each effect you have," \
         " attack enemy of highest hp with 200% atk."
         self.skill3_description = "Before taking damage, for each beneficial effect you have, reduce damage taken by 6%."
         self.skill1_cooldown_max = 5
@@ -3013,7 +3039,7 @@ class April(Character):
             return admg
             
         damage_dealt = self.attack(target_kw1="n_random_enemy", target_kw2="3",
-                                   multiplier=3.0, repeat=1, additional_attack_after_dmg=additional_attack)
+                                   multiplier=3.3, repeat=1, additional_attack_after_dmg=additional_attack)
         return damage_dealt
 
     def skill3(self):
@@ -3164,12 +3190,12 @@ class Cocoa(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Cocoa"
-        self.skill1_description = "Focus attack closest enemy with 440% atk 3 times, if you have higher maxhp than the target, double the damage."
+        self.skill1_description = "Focus attack closest enemy with 380% atk 3 times, if you have higher maxhp than the target, double the damage."
         self.skill2_description = "Select an ally of highest atk, reduce the allys skill cooldown by 2," \
-        " and increase the allys speed by 200% for 3 turns. If the same effect is applied, duration is refreshed." \
+        " and increase the allys speed by 200% for 2 turns. If the same effect is applied, duration is refreshed." \
         " if the selected ally is Cocoa, hp is recovered by 30%."
         self.skill3_description = "If haven't taken damage for 5 turns, fall asleep. This effect does not reduce evasion." \
-        " While asleep, recover 30% hp each turn. When this effect is removed, for 12 turns," \
+        " While asleep, recover 10% hp each turn. When this effect is removed, for 12 turns," \
         " atk and defense is increased by 30%."
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
@@ -3187,23 +3213,21 @@ class Cocoa(Character):
             if self.maxhp > target.maxhp:
                 final_damage *= 2.0
             return final_damage
-        damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=4.4, repeat_seq=3, func_damage_step=damage_amplify)
+        damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=3.8, repeat_seq=3, func_damage_step=damage_amplify)
         return damage_dealt
 
     def skill2_logic(self):
         def speed_effect(target: Character):
             spd_e = target.get_effect_that_named("Speed Up", "Cocoa_Speed_Up")
             if not spd_e:
-                spd_e = StatsEffect("Speed Up", 3, True, {"spd": 3.0})
+                spd_e = StatsEffect("Speed Up", 2, True, {"spd": 3.0})
                 spd_e.additional_name = "Cocoa_Speed_Up"
                 target.apply_effect(spd_e)
             else:
                 spd_e.duration = 3
 
-            target.update_skill_cooldown(1)
-            target.update_skill_cooldown(1)
-            target.update_skill_cooldown(2)
-            target.update_skill_cooldown(2)
+            target.update_cooldown()
+            target.update_cooldown()
             if target == self:
                 self.heal_hp(self.maxhp * 0.3, self)
         ally = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
@@ -3219,7 +3243,7 @@ class Cocoa(Character):
         effect.is_buff = True
         effect.additional_name = "Cocoa_Sleep"
         def new_apply_effect_on_trigger(character):
-            character.heal_hp(character.maxhp * 0.3, character)
+            character.heal_hp(character.maxhp * 0.10, character)
         def new_apply_effect_on_apply(character):
             pass
         def new_apply_effect_on_remove(character):
@@ -3234,12 +3258,80 @@ class Cocoa(Character):
         self.apply_effect(NotTakingDamageEffect("Shopping date", -1, True, 5, effect))
 
 
+class Beacon(Character):
+    """
+
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Beacon"
+        self.skill1_description = "Redistribute hp percentage for all allies, allies with higher hp takes status damage," \
+        " allies with lower hp heals hp. If this skill has no effect, apply AbsorptionShield on all allies for 12 turns." \
+        " Shield absorbs 500% atk + 500% def damage. When comparing the HP percentages, they can be considered the same with a margin of error of 1% or less."
+        self.skill2_description = "Attack 4 enemies with 300% atk, for 12 turns, their critical defense is reduced by 30%."
+        self.skill3_description = "If you are the only one alive, redistributing hp use 300% of your maxhp as additional base when calculating average," \
+        " before redistributing, revive as many allies as possible with 1 hp. All skill cooldown is reduced by 2 actions at the end of turn" \
+        " if you are the only one alive."
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 4
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        # check if all allies has same hp percentage, if so, do nothing
+        hp_percentages = [ally.hp / ally.maxhp for ally in self.ally]
+        if len(self.ally) > 1 and max(hp_percentages) - min(hp_percentages) <= 0.01:
+            for a in self.ally:
+                a.apply_effect(AbsorptionShield("Absorption Shield", 12, True, self.atk * 5.0 + self.defense * 5.0, False))
+            global_vars.turn_info_string += f"{self.name} skipped the skill as all allies have same hp percentage.\n"
+            return 0
+        if not len(self.ally) == 1:
+            # if not, redistribute hp percentage
+            # calculate avg
+            avg_hp = sum([a.hp for a in self.ally]) / len(self.ally)
+            avg_hp = int(avg_hp)
+            for a in self.ally:
+                if a.hp > avg_hp:
+                    a.take_status_damage(a.hp - avg_hp, None)
+                elif a.hp < avg_hp:
+                    self.heal(target_list=[a], value=avg_hp - a.hp)
+        else:
+            # are the only one alive
+            for m in self.party:
+                if m.is_dead():
+                    m.revive(1, 0, self)
+            self.update_ally_and_enemy()
+            avg_hp = (int(self.maxhp * 3.0) + sum([a.hp for a in self.ally])) / len(self.ally)
+            avg_hp = int(avg_hp)
+            # print(self.maxhp)
+            # print(avg_hp)
+            for a in self.ally:
+                if a.hp > avg_hp:
+                    a.take_status_damage(a.hp - avg_hp, None)
+                elif a.hp < avg_hp:
+                    self.heal(target_list=[a], value=avg_hp - a.hp)
+
+    def skill2_logic(self):
+        def crit_def_debuff(self, target):
+            target.apply_effect(StatsEffect("Critdef Down", 12, False, {"critdef": -0.3}))
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_random_enemy", target_kw2="4", func_after_dmg=crit_def_debuff)
+        return damage_dealt
 
 
+    def skill3(self):
+        pass
+
+    def status_effects_at_end_of_turn(self):
+        self.update_ally_and_enemy()
+        if len(self.ally) == 1:
+            self.update_cooldown()
+            self.update_cooldown()
+        return super().status_effects_at_end_of_turn()
 
 
-
-
+# Aurora, Scout, Timber
 
 
 

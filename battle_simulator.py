@@ -434,7 +434,7 @@ def get_all_characters():
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
-                       "Nata", "Chei", "Cocoa"]
+                       "Nata", "Chei", "Cocoa", "Beacon"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -1091,7 +1091,8 @@ if __name__ == "__main__":
             for item in selected_items:
                 event_str = item.E(None, player)
                 text_box_text_to_append += event_str + "\n"
-            player.use_1_selected_item(True)
+            if not "but nothing happened" in event_str:
+                player.use_1_selected_item(True)
 
         redraw_ui(party1, party2) # slow but necessary. We could also consider only redraw the character that is selected,
         # but some equipment set effect may affact other characters.
@@ -1943,7 +1944,8 @@ if __name__ == "__main__":
                     continue
                 else:
                     for abc_tuple in record:
-                        filtered_damage_taken_history.append((abc_tuple[0], abc_tuple[1].name, abc_tuple[2]))
+                        if abc_tuple[1] is not None:
+                            filtered_damage_taken_history.append((abc_tuple[0], abc_tuple[1].name, abc_tuple[2]))
               
             data[character.name] = filtered_damage_taken_history
 
@@ -2425,10 +2427,11 @@ if __name__ == "__main__":
                 # labels[i].set_text_alpha(255) if character.is_alive() else labels[i].set_text_alpha(125)
 
                 # redraw healthbar is fairly expensive process, so we need to optimize it
-                if optimize_for_auto_battle and shield_value_diff_dict[character.name] == 0 and not character.damage_taken_this_turn and not character.healing_received_this_turn:
-                    pass
-                else:
-                    healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value(), auto_color=True))
+                # if optimize_for_auto_battle and shield_value_diff_dict[character.name] == 0 and not character.damage_taken_this_turn and not character.healing_received_this_turn:
+                #     pass
+                # else:
+                # Edit on 2.2.9: Optimize is removed because we wont be able to catch skills that change maxhp or shield
+                healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value(), auto_color=True))
                 healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=400)
 
                 if main_char == character:

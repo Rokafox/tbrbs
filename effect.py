@@ -52,7 +52,7 @@ class Effect:
         pass
 
     def apply_effect_after_damage_record(self, character):
-        # Please do not trigger and damage related effect in this process.
+        # Please DO NOT trigger and damage related effect in this process.
         pass
 
     def apply_effect_when_adding_stacks(self, character, stats_income):
@@ -316,6 +316,7 @@ class EffectShield2(Effect):
     When taking damage that would exceed [hp_threshold]*100% of maxhp, reduce the part of excessive damage by [damage_reduction]*100%. 
     For every turn passed, damage reduction effect is reduced by [shrink_rate]*100%.
     If [damage_reflect_function] is specified, reflect damage to the attacker.
+    Damage coming from reflect can not be reflected again.
     """
     def __init__(self, name, duration, is_buff, cc_immunity, damage_reduction=0.5, 
                  shrink_rate=0.02, hp_threshold=0.1, damage_reflect_function=None, 
@@ -337,15 +338,20 @@ class EffectShield2(Effect):
         delta = abs(damage_original - damage)
         if self.damage_reflect_function and delta > 0:
             damage_to_reflect = self.damage_reflect_function(delta)
-            # print(f"{character.name} reflects {damage_to_reflect} damage to {attacker.name}.")
-            attacker.take_status_damage(damage_to_reflect, character)
+            # If this is true, we know it is coming from reflect damage, so no reflect is allowed.
+            is_reflect_damage_condition = keywords.get('damage_is_reflect', False) and keywords["damage_is_reflect"]
+            # not reflect damage:
+            if not is_reflect_damage_condition:
+                # print(f"{character.name} reflects {damage_to_reflect} damage to {attacker.name}.")
+                if attacker is not None:
+                    attacker.take_status_damage(damage_to_reflect, character, is_reflect=True)
         return damage
     
     def apply_effect_on_trigger(self, character):
         self.damage_reduction = max(self.damage_reduction - self.shrink_rate, 0)
         if self.damage_reduction == 0:
             self.flag_for_remove = True
-    
+
     def tooltip_description(self):
         str = f"Reduces damage exceeding {self.hp_threshold*100:.1f}% of max HP by {self.damage_reduction*100:.1f}%. "
         if self.shrink_rate > 0:
@@ -384,7 +390,10 @@ class CancellationShield(Effect):
             if self.uses == 0 and self.remove_this_effect_when_use_is_zero:
                 character.remove_effect(self)
             elif self.uses < 0:
-                raise Exception(f"Logic Error: {self.name} uses is negative. Character: {character.name}, attacker: {attacker.name}")
+                # raise Exception(f"Logic Error: {self.name} uses is negative. Character: {character.name}, attacker: {attacker.name}")
+                # This may happen on recursion. Take a close look at Character.take_damage() method, 
+                # effects are copied but during apply_effect_during_damage_step process damage may trigger.
+                character.remove_effect(self)
             global_vars.turn_info_string += f"{character.name} shielded the attack!\n"
             if self.cancel_excessive_instead:
                 damage = min(damage, character.maxhp * self.threshold)
@@ -1493,6 +1502,8 @@ class EquipmentSetEffect_Liquidation(Effect):
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if damage == 0:
             return 0
+        if attacker is None:
+            return damage
         for key in ["hp", "atk", "defense", "spd"]:
             if getattr(character, key) < getattr(attacker, key):
                 damage = damage * (1 - self.damage_reduction)
