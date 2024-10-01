@@ -2,7 +2,7 @@ from collections.abc import Callable
 import copy, random
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousHealEffect, Effect, EffectShield1, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StunEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousHealEffect, Effect, EffectShield1, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StunEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -229,6 +229,9 @@ class Character:
         damage_dealt = self.skill2_logic()
         if update_skillcooldown:
             self.update_skill_cooldown(2)
+        if self.get_equipment_set() == "Purplestar" and random.random() < 1.00:
+            global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Purplestar set effect.\n"
+            self.skill2_cooldown = 0
         return None # for now
     
     def skill1_logic(self):
@@ -491,15 +494,15 @@ class Character:
                         self_target_index_diff = self.get_self_index() - target.get_self_index()
                         self_target_index_diff = abs(self_target_index_diff)
                         final_damage *= rainbow_amplifier_dict[self_target_index_diff]
-                    if self.get_equipment_set() == "Dawn":
+                    elif self.get_equipment_set() == "Dawn":
                         if self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active:
                             final_damage *= 2.20
                             global_vars.turn_info_string += f"Damage increased by 120% due to Dawn Set effect.\n"
                             self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active = False
-                    if self.get_equipment_set() == "Newspaper":
-                        # if the enemy has more maxhp then self, damage is increased by 4% of the maxhp difference.
+                    elif self.get_equipment_set() == "Newspaper":
+                        # if the enemy has more maxhp then self, damage is increased by 15% of the maxhp difference.
                         if target.maxhp > self.maxhp:
-                            newspaper_effect_maxhp_diff = (target.maxhp - self.maxhp) * 0.04
+                            newspaper_effect_maxhp_diff = (target.maxhp - self.maxhp) * 0.15
                             final_damage += newspaper_effect_maxhp_diff
                             global_vars.turn_info_string += f"Damage increased by {newspaper_effect_maxhp_diff} due to Newspaper Set effect.\n"
                     if final_damage < 0:
@@ -734,6 +737,12 @@ class Character:
                 return True
         return False
 
+    def trigger_hidden_effect_on_allies(self):
+        self.update_ally_and_enemy()
+        for a in self.ally:
+            if a.is_hidden():
+                a.get_effect_that_named("Hide", class_name="HideEffect").apply_effect_on_trigger(a)
+
     def can_take_action(self):
         if self.is_stunned():
             return False, "Stunned"
@@ -953,6 +962,8 @@ class Character:
             self.damage_taken_this_turn.append((damage, attacker, "normal"))
         if self.is_dead():
             self.defeated_by_taken_damage(damage, attacker)
+        if self.is_dead():
+            self.trigger_hidden_effect_on_allies()
         return None
     
     def take_damage_before_calculation(self, damage, attacker):
@@ -1001,6 +1012,8 @@ class Character:
         self.damage_taken_this_turn.append((damage, attacker, "status"))
         if self.is_dead():
             self.defeated_by_taken_damage(damage, attacker)
+        if self.is_dead():
+            self.trigger_hidden_effect_on_allies()
         return None
 
     def take_bypass_status_effect_damage(self, value, attacker=None):
@@ -1019,6 +1032,8 @@ class Character:
         self.damage_taken_this_turn.append((damage, attacker, "bypass"))
         if self.is_dead():
             self.defeated_by_taken_damage(damage, attacker)
+        if self.is_dead():
+            self.trigger_hidden_effect_on_allies()
         return None
 
     def has_effect_that_is(self, effect: Effect):
@@ -1288,24 +1303,36 @@ class Character:
             self.apply_effect(belove_girl_self_effect)
         elif set_name == "OldRusty":
             self.apply_effect(EquipmentSetEffect_OldRusty("OldRusty Set", -1, True))
+        elif set_name == "Purplestar":
+            self.apply_effect(EquipmentSetEffect_Purplestar("Purplestar Set", -1, True))
         elif set_name == "Liquidation":
             self.apply_effect(EquipmentSetEffect_Liquidation("Liquidation Set", -1, True, 0.20))
         elif set_name == "Cosmic":
-            effect_cosmic = StatsEffect("Cosmic Set", -1, True, {"maxhp": 1.02}, condition=lambda char: char.is_alive(),
+            effect_cosmic = StatsEffect("Cosmic Set", -1, True, {"maxhp": 1.018}, condition=lambda char: char.is_alive(),
                                         use_active_flag=False)
             effect_cosmic.is_set_effect = True
             effect_cosmic.sort_priority = 2000
-            effect_cosmic.original_maxhp = self.maxhp
-            def new_apply_effect_at_end_of_turn(effect, char):
-                if char.maxhp > effect.original_maxhp * 2:
-                    effect.flag_for_remove = True
-                    # print(f"{char.name} has reached the max hp limit.")
+            # effect_cosmic.original_maxhp = self.maxhp
+            # def new_apply_effect_at_end_of_turn(effect, char):
+            #     if char.maxhp > effect.original_maxhp * 200:
+            #         effect.flag_for_remove = True
+            #         # print(f"{char.name} has reached the max hp limit.")
 
-            # Bind the new method to the effect_cosmic instance
-            effect_cosmic.apply_effect_at_end_of_turn = new_apply_effect_at_end_of_turn.__get__(effect_cosmic, type(effect_cosmic))
+            # # Bind the new method to the effect_cosmic instance
+            # effect_cosmic.apply_effect_at_end_of_turn = new_apply_effect_at_end_of_turn.__get__(effect_cosmic, type(effect_cosmic))
             self.apply_effect(effect_cosmic)
         elif set_name == "Newspaper":
             self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
+        elif set_name == "Cloud":
+            cloud_hide_effect_spd_boost = StatsEffect("More Cloudy", 10, True, {"spd": 2.00})
+            cloud_hide_effect = HideEffect("Hide", 40, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
+            cloud_hide_effect.is_set_effect = True
+            cloud_hide_effect.sort_priority = 2000
+            cloud_speed_effect = StatsEffect("Cloudy", -1, True, {"spd": 1.05})
+            cloud_speed_effect.is_set_effect = True
+            cloud_speed_effect.sort_priority = 2000
+            self.apply_effect(cloud_hide_effect)
+            self.apply_effect(cloud_speed_effect)
         else:
             raise Exception("Effect not implemented.")
         
@@ -1357,15 +1384,23 @@ class Character:
         elif set_name == "OldRusty":
             str += "Old Rusty\n" \
                 "After using skill 1, 65% chance to reset cooldown of that skill.\n"
+        elif set_name == "Purplestar":
+            str += "Purplestar\n" \
+                "After using skill 2, 100% chance to reset cooldown of that skill.\n"
         elif set_name == "Liquidation":
             str += "Liquidation\n" \
                 "When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 20%: hp, atk, def, spd.\n"
         elif set_name == "Cosmic":
             str += "Cosmic\n" \
-                "Every turn, max hp is increased by 2% of current maxhp, effect is removed when max hp exceeds 200% of original max hp.\n"
+                "Every turn, max hp is increased by 1.8% of current maxhp.\n"
         elif set_name == "Newspaper":
             str += "Newspaper\n" \
-                "When dealing damage to enemy, if the enemy has more maxhp then self, damage is increased by 4% of the maxhp difference.\n"
+                "When dealing damage to enemy, if the enemy has more maxhp then self, damage is increased by 15% of the maxhp difference.\n"
+        elif set_name == "Cloud":
+            str += "Cloud\n" \
+                "Increase speed by 5%" \
+                " and grant Hide for 40 turns at the start of battle. You cannot be targeted by enemies unless for skills that targets 5 enemies." \
+                " Hide effect is removed when all allies are hidden. When this hide effect is removed, for 10 turns, speed is increased by 100%.\n"
         else:
             str += "Unknown set effect."
 
@@ -3277,11 +3312,11 @@ class Beacon(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Beacon"
-        self.skill1_description = "Redistribute hp percentage for all allies, allies with higher hp takes status damage," \
-        " allies with lower hp heals hp. If this skill has no effect, apply AbsorptionShield on all allies for 12 turns." \
+        self.skill1_description = "Redistribute hp percentage for all allies, allies with higher hp percentage takes status damage," \
+        " allies with lower hp percentage heals hp until equal percentage. If this skill has no effect, apply AbsorptionShield on all allies for 12 turns." \
         " Shield absorbs 500% atk + 500% def damage. When comparing the HP percentages, they can be considered the same with a margin of error of 1% or less."
         self.skill2_description = "Attack 4 enemies with 300% atk, for 12 turns, their critical defense is reduced by 30%."
-        self.skill3_description = "If you are the only one alive, redistributing hp use 300% of your maxhp as additional base when calculating average," \
+        self.skill3_description = "If you are the only one alive, redistributing hp use 400% as base percentage when calculating average," \
         " before redistributing, revive as many allies as possible with 1 hp. All skill cooldown is reduced by 2 actions at the end of turn" \
         " if you are the only one alive."
         self.skill1_cooldown_max = 3
@@ -3300,29 +3335,26 @@ class Beacon(Character):
             return 0
         if not len(self.ally) == 1:
             # if not, redistribute hp percentage
-            # calculate avg
-            avg_hp = sum([a.hp for a in self.ally]) / len(self.ally)
-            avg_hp = int(avg_hp)
+            avg_hp_percentage = sum([a.hp / a.maxhp for a in self.ally]) / len(self.ally)
             for a in self.ally:
-                if a.hp > avg_hp:
-                    a.take_status_damage(a.hp - avg_hp, None)
-                elif a.hp < avg_hp:
-                    self.heal(target_list=[a], value=avg_hp - a.hp)
+                target_hp = avg_hp_percentage * a.maxhp
+                if a.hp > target_hp:
+                    a.take_status_damage(a.hp - target_hp, None)
+                elif a.hp < target_hp:
+                    self.heal(target_list=[a], value=target_hp - a.hp)
         else:
             # are the only one alive
             for m in self.party:
                 if m.is_dead():
                     m.revive(1, 0, self)
             self.update_ally_and_enemy()
-            avg_hp = (int(self.maxhp * 3.0) + sum([a.hp for a in self.ally])) / len(self.ally)
-            avg_hp = int(avg_hp)
-            # print(self.maxhp)
-            # print(avg_hp)
+            avg_hp_percentage = 4.00 / len(self.ally)
             for a in self.ally:
-                if a.hp > avg_hp:
-                    a.take_status_damage(a.hp - avg_hp, None)
-                elif a.hp < avg_hp:
-                    self.heal(target_list=[a], value=avg_hp - a.hp)
+                target_hp = avg_hp_percentage * a.maxhp
+                if a.hp > target_hp:
+                    a.take_status_damage(a.hp - target_hp, None)
+                elif a.hp < target_hp:
+                    self.heal(target_list=[a], value=target_hp - a.hp)
 
     def skill2_logic(self):
         def crit_def_debuff(self, target):

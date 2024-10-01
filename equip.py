@@ -16,7 +16,7 @@ class Equip(Block):
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
-                            "Liquidation", "Cosmic", "Newspaper"]
+                            "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -151,11 +151,20 @@ class Equip(Block):
                 )
             case "Cosmic":
                 return (
-                    "Every turn, max hp is increased by 2% of current maxhp, effect is removed when max hp exceeds 200% of original max hp."
+                    "Every turn, max hp is increased by 1.8% of current maxhp."
                 )
             case "Newspaper":
                 return (
-                    "When dealing damage to enemy, if the enemy has more maxhp then self, damage is increased by 4% of the maxhp difference."
+                    "When dealing damage to enemy, if the enemy has more maxhp then self, damage is increased by 15% of the maxhp difference."
+                )
+            case "Cloud":
+                return (
+                    "increase speed by 5% and grant hide for 40 turns at the start of battle. You cannot be targeted unless for skills that targets 5 enemies." \
+                    " Hide effect is removed when all allies are hidden. When this hide effect is removed, for 10 turns, speed is increased by 100%."
+                )
+            case "Purplestar":
+                return (
+                    "After using skill 2, 100% chance to reset cooldown of that skill."
                 )
             case _:
                 return ""

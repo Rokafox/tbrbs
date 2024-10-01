@@ -2809,7 +2809,7 @@ if __name__ == "__main__":
             if start_with_max_level:
                 player = Nine(5000000000)
                 player.cleared_stages = 2199 # 2199
-                package_of_equips = [EquipPackage(100), EquipPackage2(100), EquipPackage3(100), EquipPackage4(10), 
+                package_of_equips = [EquipPackage(100), EquipPackage2(100), EquipPackage3(100), EquipPackage4(100), 
                                     EquipPackage5(100), EquipPackage6(100), FoodPackage(100), FoodPackage2(100), FoodPackage3(100)]
                 player.add_package_of_items_to_inventory(package_of_equips)
                 package_of_ingots = [SliverIngot(1), GoldIngot(1), DiamondIngot(1)]

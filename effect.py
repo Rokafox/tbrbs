@@ -842,7 +842,10 @@ class TimedBombEffect(Effect):
                 character.apply_effect(self.new_effect)
 
     def tooltip_description(self):
-        return f"Take {self.damage} status damage when expired. {self.new_effect.name} effect is applied after damage."
+        if self.new_effect is None:
+            return f"Take {self.damage} status damage when expired."
+        else:
+            return f"Take {self.damage} status damage when expired. {self.new_effect.name} effect is applied after damage."
 
 
 # =========================================================
@@ -1093,9 +1096,8 @@ class StingEffect(Effect):
 class HideEffect(Effect):
     """
     cannot be targeted by enemy. Unless for n_random_targets and n_random_enemies where n >= 5.
-    NOTE: Not used and not tested.
     """
-    def __init__(self, name, duration, is_buff, cc_immunity=False, remove_on_damage=False):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, remove_on_damage=False, effect_apply_to_character_on_remove: Effect=None):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.name = "Hide"
         self.is_buff = is_buff
@@ -1103,22 +1105,32 @@ class HideEffect(Effect):
         self.sort_priority = 2000
         self.is_active = True
         self.remove_on_damage = remove_on_damage
+        self.effect_apply_to_character_on_remove = effect_apply_to_character_on_remove
 
     def apply_effect_on_trigger(self, character):
         if character.is_dead():
             character.remove_effect(self)
             return
+        character.update_ally_and_enemy()
         hidden_allies = [ally for ally in character.ally if ally.has_effect_that_named(self.name, None, "HideEffect")]
         if len(hidden_allies) == len(character.ally):
-            self.is_active = False
-        if not self.is_active:
-            self.flag_for_remove = True
+            global_vars.turn_info_string += f"All allies are hidden, {self.name} is no longer active.\n"
+            # print(f"All allies are hidden, {self.name} is no longer active.")
+            character.remove_effect(self)
+        #     self.is_active = False
+        # if not self.is_active:
+        #     self.flag_for_remove = True
         
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if self.remove_on_damage:
             global_vars.turn_info_string += f"{character.name} is no longer hidden!\n"
             character.remove_effect(self)
         return damage
+
+    def apply_effect_on_remove(self, character):
+        if self.effect_apply_to_character_on_remove:
+            character.apply_effect(self.effect_apply_to_character_on_remove)
+
 
     def tooltip_description(self):
         string = f"Enemy attack and skill that target less than 5 enemies will not target this character. "
@@ -1483,6 +1495,15 @@ class EquipmentSetEffect_Rose(Effect):
 # OldRusty
 # See character.py for implementation.
 class EquipmentSetEffect_OldRusty(Effect):
+    def __init__(self, name, duration, is_buff):
+        super().__init__(name, duration, is_buff)
+        self.is_set_effect = True
+        self.sort_priority = 2000
+
+# ---------------------------------------------------------
+# Purplestar
+# See character.py for implementation.
+class EquipmentSetEffect_Purplestar(Effect):
     def __init__(self, name, duration, is_buff):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
