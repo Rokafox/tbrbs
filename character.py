@@ -2,7 +2,7 @@ from collections.abc import Callable
 import copy, random
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousHealEffect, Effect, EffectShield1, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StunEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousHealEffect, Effect, EffectShield1, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StunEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -496,6 +496,12 @@ class Character:
                             final_damage *= 2.20
                             global_vars.turn_info_string += f"Damage increased by 120% due to Dawn Set effect.\n"
                             self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active = False
+                    if self.get_equipment_set() == "Newspaper":
+                        # if the enemy has more maxhp then self, damage is increased by 4% of the maxhp difference.
+                        if target.maxhp > self.maxhp:
+                            newspaper_effect_maxhp_diff = (target.maxhp - self.maxhp) * 0.04
+                            final_damage += newspaper_effect_maxhp_diff
+                            global_vars.turn_info_string += f"Damage increased by {newspaper_effect_maxhp_diff} due to Newspaper Set effect.\n"
                     if final_damage < 0:
                         final_damage = 0
                     target.take_damage(final_damage, self, is_crit=critical, disable_protected_effect=ignore_protected_effect)
@@ -1298,6 +1304,8 @@ class Character:
             # Bind the new method to the effect_cosmic instance
             effect_cosmic.apply_effect_at_end_of_turn = new_apply_effect_at_end_of_turn.__get__(effect_cosmic, type(effect_cosmic))
             self.apply_effect(effect_cosmic)
+        elif set_name == "Newspaper":
+            self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
         else:
             raise Exception("Effect not implemented.")
         
@@ -1355,6 +1363,9 @@ class Character:
         elif set_name == "Cosmic":
             str += "Cosmic\n" \
                 "Every turn, max hp is increased by 2% of current maxhp, effect is removed when max hp exceeds 200% of original max hp.\n"
+        elif set_name == "Newspaper":
+            str += "Newspaper\n" \
+                "When dealing damage to enemy, if the enemy has more maxhp then self, damage is increased by 4% of the maxhp difference.\n"
         else:
             str += "Unknown set effect."
 

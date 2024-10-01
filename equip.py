@@ -16,7 +16,7 @@ class Equip(Block):
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
-                            "Liquidation", "Cosmic"]
+                            "Liquidation", "Cosmic", "Newspaper"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -152,6 +152,10 @@ class Equip(Block):
             case "Cosmic":
                 return (
                     "Every turn, max hp is increased by 2% of current maxhp, effect is removed when max hp exceeds 200% of original max hp."
+                )
+            case "Newspaper":
+                return (
+                    "When dealing damage to enemy, if the enemy has more maxhp then self, damage is increased by 4% of the maxhp difference."
                 )
             case _:
                 return ""
