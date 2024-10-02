@@ -78,8 +78,8 @@ class Shop:
 class Armory_Banana(Shop):
     def __init__(self, name, description):
         super().__init__(name, description)
-        self.equippricedecide_random_low = 380
-        self.equippricedecide_random_high = 420
+        self.equippricedecide_random_low = 440
+        self.equippricedecide_random_high = 460
         self.equipdiscountdecide_chance = 0.1
         if not self.description:
             self.description = "バナナ兵器工場は、究極の武器と防具を提供するショップです。" \
@@ -94,9 +94,9 @@ class Armory_Banana(Shop):
         package_of_items = []
         
 
-        package_of_items.extend(equip.generate_equips_list(3, eq_level=1, locked_rarity="Legendary", min_market_value=120))
-        package_of_items.extend(equip.generate_equips_list(4, eq_level=1, locked_rarity="Unique", min_market_value=100))
-        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, locked_rarity="Epic", min_market_value=80))
+        package_of_items.extend(equip.generate_equips_list(3, eq_level=1, locked_rarity="Legendary", min_market_value=200))
+        package_of_items.extend(equip.generate_equips_list(4, eq_level=1, locked_rarity="Unique", min_market_value=180))
+        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, locked_rarity="Epic", min_market_value=160))
 
         # Choose 5 random items from the package_of_items
         if len(package_of_items) < 5:

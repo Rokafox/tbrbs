@@ -164,7 +164,7 @@ class Equip(Block):
                 )
             case "Purplestar":
                 return (
-                    "After using skill 2, 100% chance to reset cooldown of that skill."
+                    "After using skill 2, 85% chance to reset cooldown of that skill."
                 )
             case _:
                 return ""
@@ -286,6 +286,8 @@ class Equip(Block):
                     value = normal_distribution(1, 4000, 400, 600) * 0.0001
                 elif attr == "def_percent":
                     value = normal_distribution(1, 4000, 1200, 1000) * 0.0001
+                elif attr == "eva":
+                    value = normal_distribution(1, 4000, 750, 800) * 0.0001
                 else:
                     value = normal_distribution(1, 4000, 1000, 1000) * 0.0001
                 setattr(self, attr, getattr(self, attr) + value)
@@ -341,6 +343,10 @@ class Equip(Block):
             
             for attr in selected_attributes:
                 if attr == "penetration":
+                    value = normal_distribution(1, 2000, 400, 500) * 0.0001
+                elif attr == "def_percent":
+                    value = normal_distribution(1, 2000, 800, 500) * 0.00015
+                elif attr == "eva":
                     value = normal_distribution(1, 2000, 400, 500) * 0.0001
                 else:
                     value = normal_distribution(1, 2000, 500, 500) * 0.00015
@@ -409,7 +415,7 @@ class Equip(Block):
     def estimate_market_price(self):
         base_value = sum([self.maxhp_flat, self.atk_flat * 20, self.def_flat * 20, self.spd_flat * 20])
         base_value_b = sum([self.maxhp_percent * 200, self.atk_percent * 4000, self.def_percent * 3333, self.spd * 4000, 
-                            self.eva * 4000, self.acc * 4000, self.crit * 4000, 
+                            self.eva * 4400, self.acc * 4000, self.crit * 4000, 
                           self.critdmg * 4000, self.critdef * 4000, self.penetration * 8000, self.heal_efficiency * 3000])
         base_value_b /= 40
         base_value_c = sum([self.maxhp_extra * 0.6, self.atk_extra * 12, self.def_extra * 12, self.spd_extra * 12])

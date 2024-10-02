@@ -2,7 +2,7 @@ from collections.abc import Callable
 import copy, random
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousHealEffect, Effect, EffectShield1, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StunEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, Effect, EffectShield1, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -96,6 +96,7 @@ class Character:
         self.battle_entry = False if reset_battle_entry else self.battle_entry
         self.number_of_attacks = 0 # counts how many attacks the character has made
         self.battle_turns = 0 # counts how many turns the character has been in battle
+        self.number_of_take_downs: int = 0 # counts how many enemies the character has taken down
 
         self.clear_others()
 
@@ -229,7 +230,7 @@ class Character:
         damage_dealt = self.skill2_logic()
         if update_skillcooldown:
             self.update_skill_cooldown(2)
-        if self.get_equipment_set() == "Purplestar" and random.random() < 1.00:
+        if self.get_equipment_set() == "Purplestar" and random.random() < 0.85:
             global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Purplestar set effect.\n"
             self.skill2_cooldown = 0
         return None # for now
@@ -438,7 +439,8 @@ class Character:
             always_hit: bool = False, 
             target_list: list | None = None,
             force_dmg: float | None = None, 
-            ignore_protected_effect: bool = False, 
+            ignore_protected_effect: bool = False,
+            damage_type: str = "normal", 
             func_for_multiplier: Callable[[character, character, int, int], float] | None = None) -> int:
         """
         -> damage_dealt
@@ -460,7 +462,8 @@ class Character:
                 else:
                     raise e
             if repeat_seq > 1:
-                attack_sequence = list(mit.repeat_each(attack_sequence, repeat_seq))
+                # attack_sequence = list(mit.repeat_each(attack_sequence, repeat_seq))
+                attack_sequence: list[Character] = list(mit.repeat_each(attack_sequence, repeat_seq))
             for target in attack_sequence:
                 if target.is_dead():
                     continue
@@ -507,7 +510,14 @@ class Character:
                             global_vars.turn_info_string += f"Damage increased by {newspaper_effect_maxhp_diff} due to Newspaper Set effect.\n"
                     if final_damage < 0:
                         final_damage = 0
-                    target.take_damage(final_damage, self, is_crit=critical, disable_protected_effect=ignore_protected_effect)
+                    if damage_type == "normal":
+                        target.take_damage(final_damage, self, is_crit=critical, disable_protected_effect=ignore_protected_effect)
+                    elif damage_type == "status":
+                        target.take_status_damage(final_damage, self)
+                    elif damage_type == "bypass":
+                        target.take_bypass_status_effect_damage(final_damage, self)
+                    else:
+                        raise Exception("Invalid damage type.")
                     damage_dealt += final_damage
                     if target.is_dead():
                         if self.get_equipment_set() == "Bamboo":
@@ -518,6 +528,8 @@ class Character:
                     if additional_attack_after_dmg is not None:
                         damage_dealt += additional_attack_after_dmg(self, target, is_crit=critical)
                 else:
+                    if func_after_miss is not None:
+                        func_after_miss(self, target)
                     global_vars.turn_info_string += f"Missed! {self.name} attacked {target.name} but missed.\n"
 
         return damage_dealt
@@ -739,7 +751,7 @@ class Character:
 
     def trigger_hidden_effect_on_allies(self):
         self.update_ally_and_enemy()
-        for a in self.ally:
+        for a in self.party:
             if a.is_hidden():
                 a.get_effect_that_named("Hide", class_name="HideEffect").apply_effect_on_trigger(a)
 
@@ -964,6 +976,8 @@ class Character:
             self.defeated_by_taken_damage(damage, attacker)
         if self.is_dead():
             self.trigger_hidden_effect_on_allies()
+            if attacker is not None:
+                attacker.number_of_take_downs += 1
         return None
     
     def take_damage_before_calculation(self, damage, attacker):
@@ -1014,6 +1028,8 @@ class Character:
             self.defeated_by_taken_damage(damage, attacker)
         if self.is_dead():
             self.trigger_hidden_effect_on_allies()
+            if attacker is not None:
+                attacker.number_of_take_downs += 1
         return None
 
     def take_bypass_status_effect_damage(self, value, attacker=None):
@@ -1034,6 +1050,8 @@ class Character:
             self.defeated_by_taken_damage(damage, attacker)
         if self.is_dead():
             self.trigger_hidden_effect_on_allies()
+            if attacker is not None:
+                attacker.number_of_take_downs += 1
         return None
 
     def has_effect_that_is(self, effect: Effect):
@@ -1386,7 +1404,7 @@ class Character:
                 "After using skill 1, 65% chance to reset cooldown of that skill.\n"
         elif set_name == "Purplestar":
             str += "Purplestar\n" \
-                "After using skill 2, 100% chance to reset cooldown of that skill.\n"
+                "After using skill 2, 85% chance to reset cooldown of that skill.\n"
         elif set_name == "Liquidation":
             str += "Liquidation\n" \
                 "When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 20%: hp, atk, def, spd.\n"
@@ -3239,9 +3257,9 @@ class Cocoa(Character):
         self.skill1_description = "Focus attack closest enemy with 380% atk 3 times, if you have higher maxhp than the target, double the damage."
         self.skill2_description = "Select an ally of highest atk, reduce the allys skill cooldown by 2," \
         " and increase the allys speed by 200% for 2 turns. If the same effect is applied, duration is refreshed." \
-        " if the selected ally is Cocoa, hp is recovered by 30%."
+        " if the selected ally is Cocoa, hp is recovered by 300% atk."
         self.skill3_description = "If haven't taken damage for 5 turns, fall asleep. This effect does not reduce evasion." \
-        " While asleep, recover 10% hp each turn. When this effect is removed, for 12 turns," \
+        " While asleep, recover 8% hp each turn. When this effect is removed, for 12 turns," \
         " atk and defense is increased by 30%."
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
@@ -3275,7 +3293,7 @@ class Cocoa(Character):
             target.update_cooldown()
             target.update_cooldown()
             if target == self:
-                self.heal_hp(self.maxhp * 0.3, self)
+                self.heal_hp(self.atk * 3.0, self)
         ally = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
         speed_effect(ally)
         return 0
@@ -3289,7 +3307,7 @@ class Cocoa(Character):
         effect.is_buff = True
         effect.additional_name = "Cocoa_Sleep"
         def new_apply_effect_on_trigger(character):
-            character.heal_hp(character.maxhp * 0.10, character)
+            character.heal_hp(character.maxhp * 0.08, character)
         def new_apply_effect_on_apply(character):
             pass
         def new_apply_effect_on_remove(character):
@@ -3375,6 +3393,142 @@ class Beacon(Character):
 
 
 # Aurora, Scout, Timber
+class Timber(Character):
+    """
+
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Timber"
+        self.skill1_description = "For 6 turns, increase accuracy by 40%, and attack 3 closest enemies with 270% atk." \
+        " Enemy is poisoned for 6 turns, poison deals 3% of maxhp as status damage per turn."
+        self.skill2_description = "Attack 1 closest enemy with 250% atk 4 times. If the target has poison effect, deal 30% more damage." \
+        " Damage is increased by 2% of target maxhp."
+        self.skill3_description = "Normal attack damage increased by 2% of target maxhp."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        self.apply_effect(StatsEffect("Accuracy Up", 6, True, {"acc": 0.4}))
+        def poison_effect(self, target):
+            target.apply_effect(ContinuousDamageEffect_Poison("Poison", 6, False, ratio=0.03, imposter=self, base="maxhp"))
+        damage_dealt = self.attack(multiplier=2.7, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=poison_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def damage_amplify(self, target, final_damage):
+            if target.has_effect_that_named("Poison"):
+                final_damage *= 1.3
+            final_damage += target.maxhp * 0.02
+            return final_damage
+        damage_dealt = self.attack(multiplier=2.5, repeat=4, target_kw1="enemy_in_front", func_damage_step=damage_amplify)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def damage_amplify(self, target, final_damage):
+            final_damage += target.maxhp * 0.02
+            return final_damage
+        damage_dealt = self.attack(func_damage_step=damage_amplify)
+        return damage_dealt
+
+
+class Scout(Character):
+    """
+
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Scout"
+        self.skill1_description = "Attack all enemies with 250% atk and apply Apple for 6 turns." \
+        " Apple: when taking damage, take 30% of your atk as status damage."
+        self.skill2_description = "Select one enemy with highest take down number, attack with 600% atk."  \
+        " for each ally the enemy has taken down, attack multipler increased by 600%. Depending on the take down number, effect strengthens." \
+        " 1: This attack never misses. 2: This attack will guarantee a critical hit. 3: Before attacking, atk and critdmg is increased by 30% for 12 turns, final damage taken is decreased to 20%." \
+        " 4: Convert damage to bypass all damage. 5: Attack all enemies." 
+        self.skill3_description = "Gain unremovable reborn effect at start of battle." \
+        " When defeated, revive with 100 * lvl hp and apply Eight Camps for 20 turns." \
+        " Eight Camps: def and critdef is increased by 40%."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 4
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def sting_effect(self, target):
+            target.apply_effect(StingEffect("Apple", 6, False, self.atk * 0.3, self))
+        damage_dealt = self.attack(multiplier=2.5, repeat=1, func_after_dmg=sting_effect, target_kw1="n_random_enemy", target_kw2="5")
+        return damage_dealt
+
+    def skill2_logic(self):
+        selection = max(self.enemy, key=lambda x: x.number_of_take_downs)
+        multiplier = 6.0 + 6.0 * selection.number_of_take_downs
+        if selection.number_of_take_downs == 0:
+            damage_dealt = self.attack(target_list=[selection], multiplier=multiplier)
+            return damage_dealt
+        elif selection.number_of_take_downs == 1:
+            damage_dealt = self.attack(target_list=[selection], multiplier=multiplier, always_hit=True)
+            return damage_dealt
+        elif selection.number_of_take_downs == 2:
+            damage_dealt = self.attack(target_list=[selection], multiplier=multiplier, always_hit=True, always_crit=True)
+            return damage_dealt
+        elif selection.number_of_take_downs == 3:
+            self.apply_effect(StatsEffect("Punishment Sword", 12, True, {"atk": 1.3, "critdmg": 0.3, 'final_damage_taken_multipler': -0.8}))
+            damage_dealt = self.attack(target_list=[selection], multiplier=multiplier, always_hit=True, always_crit=True)
+            return damage_dealt
+        elif selection.number_of_take_downs == 4:
+            self.apply_effect(StatsEffect("Punishment Sword", 12, True, {"atk": 1.3, "critdmg": 0.3, 'final_damage_taken_multipler': -0.8}))
+            damage_dealt = self.attack(target_list=[selection], multiplier=multiplier, always_hit=True, always_crit=True, damage_type="bypass")
+            return damage_dealt
+        elif selection.number_of_take_downs >= 5:
+            global_vars.turn_info_string += f"True judgement!\n"
+            self.apply_effect(StatsEffect("Punishment Sword", 12, True, {"atk": 1.3, "critdmg": 0.3, 'final_damage_taken_multipler': -0.8}))
+            damage_dealt = self.attack(multiplier=multiplier, always_hit=True, always_crit=True, damage_type="bypass",
+                                       target_kw1="n_random_enemy", target_kw2="5")
+            return damage_dealt
+        else:
+            raise Exception("Invalid take down number")
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(RebornEffect("Reborn", -1, True, effect_value=0, cc_immunity=False, buff_applier=self, 
+                                       effect_value_constant=100 * self.lvl))
+        
+    def after_revive(self):
+        self.apply_effect(StatsEffect("Eight Camps", 20, True, {"defense": 1.4, "critdef": 0.4}))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

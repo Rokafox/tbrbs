@@ -9,7 +9,7 @@ def normal_distribution(min_value, max_value, mean, std):
 
 data = []
 for i in range(6000):
-    data.append(normal_distribution(1, 4000, 1200, 1000)) 
+    data.append(normal_distribution(1, 4000, 750, 800)) 
 
 plt.figure(figsize=(10, 6))
 plt.hist(data, bins=50, alpha=0.7)

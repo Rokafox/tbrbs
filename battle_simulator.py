@@ -434,7 +434,7 @@ def get_all_characters():
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
-                       "Nata", "Chei", "Cocoa", "Beacon"]
+                       "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -1392,8 +1392,10 @@ if __name__ == "__main__":
             text_box.append_html_text(f"Sold {item_to_sell} in inventory and gained {eq_market_value} cash.\n")
         player.remove_selected_item_from_inventory(True)
 
-    eq_sell_low_value_selection_menu = pygame_gui.elements.UIDropDownMenu(["50", "60", "70", "80", "90", "100", "200", "500", "1000", "2000", "3000", "4000", "5000"],
-                                                            "50",
+    eq_sell_low_value_selection_menu = pygame_gui.elements.UIDropDownMenu(["50", "60", "70", "80", "90", "100", "120",
+                                                                           "140", "160", "180", "200", "220", "240", "260", "280", "300",
+                                                                           "320", "340", "360", "380", "400"],
+                                                            "100",
                                                             pygame.Rect((1080, 540), (156, 35)),
                                                             ui_manager)
 

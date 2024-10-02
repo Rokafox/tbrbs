@@ -1568,6 +1568,85 @@ class Captain(character.Character):
 # ====================================
 # End of hp related
 # ====================================
+# Maxhp related
+# ====================================
+
+
+
+class Wizard(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Wizard"
+        self.skill1_description = "Poison all enemies for 10 turns. Poison: takes 4% of lost hp status damage per turn."
+        self.skill2_description = "Poison all enemies for 10 turns. Poison: takes 2% of maxhp status damage per turn."
+        self.skill3_description = "Normal attack deals 100% more damage to poisoned enemies."
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        for e in self.enemy:
+            e.apply_effect(ContinuousDamageEffect_Poison('Poison', duration=10, is_buff=False, ratio=0.04, imposter=self, base="losthp"))
+
+    def skill2_logic(self):
+        for e in self.enemy:
+            e.apply_effect(ContinuousDamageEffect_Poison('Poison', duration=10, is_buff=False, ratio=0.02, imposter=self, base="maxhp"))
+        
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def poison_damage(self, target, final_damage):
+            if target.has_effect_that_named("Poison"):
+                final_damage *= 2.0
+            return final_damage
+        self.attack(func_damage_step=poison_damage)
+
+
+class WizardB(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "WizardB"
+        self.skill1_description = "Poison all enemies for 12 turns. Poison: takes 2% of lost hp status damage per turn." \
+        " Reduce their evasion by 110% for 16 turns."
+        self.skill2_description = "Attack random enemies 5 times with 200% atk, damage increased by 4% of target maxhp."
+        self.skill3_description = "Normal attack deals additional damage by 1.5% of target maxhp."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        for e in self.enemy:
+            e.apply_effect(ContinuousDamageEffect_Poison('Poison', duration=12, is_buff=False, ratio=0.04, imposter=self, base="losthp"))
+            e.apply_effect(StatsEffect('Eva Down', 16, False, {'eva' : -1.1}))
+
+    def skill2_logic(self):
+        def maxhp_damage(self, target, final_damage):
+            final_damage += 0.04 * target.maxhp
+            return final_damage
+        self.attack(multiplier=2.0, repeat=5, func_damage_step=maxhp_damage)
+        
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def maxhp_damage(self, target, final_damage):
+            final_damage += 0.015 * target.maxhp
+            return final_damage
+        self.attack(func_damage_step=maxhp_damage)
+
+
+
+
+# ====================================
+# End of Maxhp related
+# ====================================
 # spd related
 # ====================================
 
@@ -2757,6 +2836,74 @@ class Cobold(character.Character):
         self.apply_effect(StatsEffect('Cobold Passive', -1, True, {'acc' : 0.5}, can_be_removed_by_skill=False))
 
 
+class MimicB(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "MimicB"
+        self.skill1_description = "Attack 1 closest enemy with 800% atk. If this attack misses, reduce target's evasion by 80% for 5 turns."
+        self.skill2_description = "Attack 1 closest enemy with 800% atk. This attack cannot miss."
+        self.skill3_description = "When taking damage, 50% chance to reduce the target's evasion by 50% for 5 turns."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def evasion_reduction(self, target):
+            target.apply_effect(StatsEffect('Evasion Down', 5, False, {'eva' : -0.8}))
+        damage_dealt = self.attack(multiplier=8.0, repeat=1, func_after_miss=evasion_reduction, target_kw1="enemy_in_front", always_hit=False)
+        return damage_dealt
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=8.0, repeat=1, target_kw1="enemy_in_front", always_hit=True)
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+    def take_damage_aftermath(self, damage, attacker):
+        dice = random.randint(1, 100)
+        if dice <= 50:
+            attacker.apply_effect(StatsEffect('Evasion Down', 5, False, {'eva' : -0.5}))
+        return damage
+
+
+class Swordman(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Swordman"
+        self.skill1_description = "Increase accuracy by 120% for all allies for 20 turns."
+        self.skill2_description = "Attack 1 closest enemy with 220% atk 6 times. This attack cannot miss." \
+        " Deals 2% of target's maxhp as status damage per hit."
+        self.skill3_description = "Atk and spd is increased by 10%."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        allies = self.ally
+        for ally in allies:
+            ally.apply_effect(StatsEffect('Swordman', 20, True, {'acc' : 1.2}))
+        return 0
+
+    def skill2_logic(self):
+        def status_damage(self, target):
+            if target.is_alive():
+                target.take_status_damage(0.02 * target.maxhp, self) 
+        damage_dealt = self.attack(multiplier=2.2, repeat=6, func_after_dmg=status_damage, target_kw1="enemy_in_front", always_hit=True)
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Swordman Passive', -1, True, {'atk' : 1.1, 'spd' : 1.1}, can_be_removed_by_skill=False))
+
 # ====================================
 # End of Evasion related
 # ====================================
@@ -2847,6 +2994,51 @@ class Orklord(character.Character):
     def battle_entry_effects(self):
         self.apply_effect(StatsEffect('Orklord Passive', -1, True, {'maxhp' : 1.50, 'defense' : 1.50}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
+
+
+# Poison instead of Burn
+class MageB(character.Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "MageB"
+        self.skill1_description = "Attack 3 closest enemies with 280% atk and inflict Poison for 6 turns. Poison deals 2% of lost hp of atk as status damage per turn. If target has negative status, inflict 3 Poison effects" \
+        " instead, the poison effects deal damage based on lost hp, maxhp and current hp."
+        self.skill2_description = "Attack closest enemy 3 times with 300% atk, if target has negative status, each attack inflict 3 Poison effects for 6 turns."
+        self.skill3_description = "Increase accuracy by 70%"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def poison_effect(self, target):
+            if len(target.debuffs) > 0:
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison A', duration=6, is_buff=False, ratio=0.02, imposter=self, base="losthp"))
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison B', duration=6, is_buff=False, ratio=0.02, imposter=self, base="maxhp"))
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison C', duration=6, is_buff=False, ratio=0.02, imposter=self, base="hp"))
+            else:
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison A', duration=6, is_buff=False, ratio=0.02, imposter=self, base="losthp"))
+
+        damage_dealt = self.attack(multiplier=2.8, repeat=1, func_after_dmg=poison_effect, target_kw1="n_enemy_in_front", target_kw2="3")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def poison_effect(self, target):
+            if len(target.debuffs) > 0:
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison A', duration=6, is_buff=False, ratio=0.02, imposter=self, base="losthp"))
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison B', duration=6, is_buff=False, ratio=0.02, imposter=self, base="maxhp"))
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison C', duration=6, is_buff=False, ratio=0.02, imposter=self, base="hp"))
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, func_after_dmg=poison_effect, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('MageB Passive', -1, True, {'acc' : 0.7}, can_be_removed_by_skill=False))
+
 
 
 
@@ -3510,7 +3702,7 @@ class Priest(character.Character):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Priest"
         self.skill1_description = "Heal 1 ally of lowest hp by 600% atk."
-        self.skill2_description = "Heal all allies by 300% atk."
+        self.skill2_description = "Heal all allies by 300% atk. Before healing, increase their heal efficiency by 30% for 6 turns."
         self.skill3_description = "Maxhp is increased by 20%. When you are defeated, heal all allies except you by 600% atk."
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -3524,6 +3716,8 @@ class Priest(character.Character):
 
 
     def skill2_logic(self):
+        for ally in self.ally:
+            ally.apply_effect(StatsEffect('Heal Efficiency Up', 6, True, {'heal_efficiency' : 0.3}))
         self.heal(target_kw1="n_random_ally", target_kw2="5", value=3.0)
 
 
@@ -3661,7 +3855,8 @@ class Darkpriest(character.Character):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Darkpriest"
         self.skill1_description = "Attack all enemies with 300% atk, reduce their heal efficiency by 40% for 10 turns."
-        self.skill2_description = "Attack closest enemy with 600% atk, reduce heal efficiency by 90% for 10 turns."
+        self.skill2_description = "Attack closest enemy with 600% atk, reduce heal efficiency by 90% for 10 turns." \
+        " Before attacking, increase accuracy by 30% for 6 turns."
         self.skill3_description = "Heal efficiency is reduced by 90%. When you are defeated, all allies except you take 300% atk status damage."
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -3678,6 +3873,7 @@ class Darkpriest(character.Character):
 
 
     def skill2_logic(self):
+        self.apply_effect(StatsEffect('Accuracy Up', 6, True, {'acc' : 0.3}))
         def heal_down(self, target):
             target.apply_effect(StatsEffect('Heal Down', 10, False, {'heal_efficiency' : -0.9}))
         damage_dealt = self.attack(multiplier=6.0, repeat=1, func_after_dmg=heal_down, target_kw1="enemy_in_front")
@@ -4120,3 +4316,6 @@ class EvilKing(character.Character):
 # ====================================
 # End of Late Game Powercreep
 # ====================================
+# No ally
+# ====================================
+# Monster in this category either punish for being solo alive or gain benefit for being solo alive

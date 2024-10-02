@@ -1057,22 +1057,23 @@ class RebornEffect(Effect):
     """
     revive with [effect_value*100]% hp the turn after defeated.
     """
-    def __init__(self, name, duration, is_buff, effect_value, cc_immunity, buff_applier):
+    def __init__(self, name, duration, is_buff, effect_value, cc_immunity, buff_applier, effect_value_constant=0):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.effect_value = effect_value
         self.cc_immunity = cc_immunity
         self.buff_applier = buff_applier
+        self.effect_value_constant = effect_value_constant
     
     def apply_effect_on_trigger(self, character):
         if character.is_dead():
-            character.revive(0, self.effect_value, self.buff_applier)
+            character.revive(self.effect_value_constant, self.effect_value, self.buff_applier)
             if hasattr(character, "after_revive"):
                 character.after_revive()
             character.remove_effect(self)
 
     def tooltip_description(self):
-        return f"Revive with {self.effect_value*100}% hp the next turn after fallen."
+        return f"Revive with {self.effect_value*100}% + {self.effect_value_constant} hp the next turn after fallen."
 
 
 class StingEffect(Effect):
@@ -1112,8 +1113,8 @@ class HideEffect(Effect):
             character.remove_effect(self)
             return
         character.update_ally_and_enemy()
-        hidden_allies = [ally for ally in character.ally if ally.has_effect_that_named(self.name, None, "HideEffect")]
-        if len(hidden_allies) == len(character.ally):
+        all_allies_hidden_check = all([m.has_effect_that_named(self.name, None, "HideEffect") for m in character.party if m.is_alive()])
+        if all_allies_hidden_check:
             global_vars.turn_info_string += f"All allies are hidden, {self.name} is no longer active.\n"
             # print(f"All allies are hidden, {self.name} is no longer active.")
             character.remove_effect(self)
