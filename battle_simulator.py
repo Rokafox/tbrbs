@@ -377,6 +377,20 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         else:
             self.current_page = 0
         self.build_inventory_slots()
+        
+    def to_next_page_jump_n(self, n: int):
+        if self.current_page + n > self.max_pages:
+            self.current_page = self.max_pages
+        else:
+            self.current_page += n
+        self.build_inventory_slots()
+
+    def to_previous_page_jump_n(self, n: int):
+        if self.current_page - n < 0:
+            self.current_page = 0
+        else:
+            self.current_page -= n
+        self.build_inventory_slots()
 
     def get_cash(self):
         self.cash = 0
@@ -434,7 +448,7 @@ def get_all_characters():
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
-                       "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout"]
+                       "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -1460,13 +1474,17 @@ if __name__ == "__main__":
     # =====================================
     # End of Equip Section
     # =====================================
-    # Theme Selection
+    # Settings Section
     # =====================================
+
+    settings_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 20), (156, 35)),
+                                        "Settings:",
+                                        ui_manager)
 
 
     theme_selection_menu = pygame_gui.elements.UIDropDownMenu(["Yellow Theme", "Purple Theme", "Red Theme", "Blue Theme", "Green Theme", "Pink Theme"],
                                                             "Yellow Theme",
-                                                            pygame.Rect((1080, 20), (156, 35)),
+                                                            pygame.Rect((1080, 60), (156, 35)),
                                                             ui_manager)
 
     def change_theme():
@@ -1491,8 +1509,26 @@ if __name__ == "__main__":
         player.build_inventory_slots()
         if global_vars.player_is_in_shop:
             redraw_ui_shop_edition()
+
+
+    language_selection_menu = pygame_gui.elements.UIDropDownMenu(["English", "日本語"],
+                                                            "English",
+                                                            pygame.Rect((1080, 100), (156, 35)),
+                                                            ui_manager)
+
+    def swap_language():
+        global_vars.language = language_selection_menu.selected_option[0]
+        redraw_ui(party1, party2)
+        player.build_inventory_slots()
+        if global_vars.player_is_in_shop:
+            redraw_ui_shop_edition() 
+        # print(f"Language changed to {global_vars.language}.")
+
+
+
+
     # =====================================
-    # End of Theme Selection
+    # End of Settings Section
     # =====================================
     # Cheap Inventory Section
     # =====================================
@@ -1501,25 +1537,25 @@ if __name__ == "__main__":
     # 10 rows, 6 columns
     # each row and column have a empty space of 8 pixels
 
-    cheap_inventory_what_to_show_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 60), (156, 35)),
-                                        "Inventory:",
-                                        ui_manager)
+    # cheap_inventory_what_to_show_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 60), (156, 35)),
+    #                                     "Inventory:",
+    #                                     ui_manager)
 
     cheap_inventory_what_to_show_selection_menu = pygame_gui.elements.UIDropDownMenu(["Equip", "Consumable", "Item"],
                                                             "Equip",
-                                                            pygame.Rect((1080, 100), (156, 35)),
+                                                            pygame.Rect((1300, 20), (230, 35)),
                                                             ui_manager)
 
     cheap_inventory_sort_by_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
                                                             "Rarity",
-                                                            pygame.Rect((1300, 20), (230, 35)),
+                                                            pygame.Rect((1300, 60), (230, 35)),
                                                             ui_manager)
 
-    cheap_inventory_sort_by_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1300, 60), (230, 35)),
-                                        text='Sort',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Sort inventory by selected option")
-    cheap_inventory_sort_by_button.set_tooltip("Sort inventory by selected option.", delay=0.1, wrap_width=300)
+    # cheap_inventory_sort_by_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1300, 60), (230, 35)),
+    #                                     text='Sort',
+    #                                     manager=ui_manager,
+    #                                     tool_tip_text = "Sort inventory by selected option")
+    # cheap_inventory_sort_by_button.set_tooltip("Sort inventory by selected option.", delay=0.1, wrap_width=300)
 
     def cheap_inventory_sort():
         match cheap_inventory_sort_by_selection_menu.selected_option[0]:
@@ -1539,35 +1575,45 @@ if __name__ == "__main__":
                 print(f"Warning: Unknown option: {cheap_inventory_sort_by_selection_menu.selected_option[0]}")
 
 
-    cheap_inventory_cheap_label = pygame_gui.elements.UILabel(pygame.Rect((1372, 100), (72, 35)),
-                                                              "Inventory",
-                                                              ui_manager)
+    # cheap_inventory_cheap_label = pygame_gui.elements.UILabel(pygame.Rect((1372, 100), (72, 35)),
+    #                                                           "Inventory",
+    #                                                           ui_manager)
 
     cheap_inventory_page_label = pygame_gui.elements.UILabel(pygame.Rect((1372, 140), (72, 35)),
                                         "1/1",
                                         ui_manager)
-    cheap_inventory_cheap_label.set_tooltip("ページ/最大ページ", delay=0.1)
+    cheap_inventory_page_label.set_tooltip("ページ/最大ページ", delay=0.1)
 
     cheap_inventory_skip_to_first_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1300, 140), (50, 35)),
-                                        text='<<',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Skip to first page of inventory")
+                                        text='<<<',
+                                        manager=ui_manager,)
     cheap_inventory_skip_to_first_page_button.set_tooltip("Jump to first page of inventory.", delay=0.1, wrap_width=300)
-    cheap_inventory_previous_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1300, 100), (50, 35)),
+
+    cheap_inventory_previous_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1355, 100), (50, 35)),
                                         text='<',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Previous page of inventory")
+                                        manager=ui_manager,)
     cheap_inventory_previous_page_button.set_tooltip("Previous page of inventory.", delay=0.1, wrap_width=300)
+
+    cheap_inventory_previous_n_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1300, 100), (50, 35)),
+                                        text='<<',
+                                        manager=ui_manager,)
+    cheap_inventory_previous_n_button.set_tooltip("Previous page of inventory.", delay=0.1, wrap_width=300)
+
     cheap_inventory_skip_to_last_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1480, 140), (50, 35)),
-                                        text='>>',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Skip to last page of inventory")
+                                        text='>>>',
+                                        manager=ui_manager,)
     cheap_inventory_skip_to_last_page_button.set_tooltip("Jump to last page of inventory.", delay=0.1, wrap_width=300)
-    cheap_inventory_next_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1480, 100), (50, 35)),
+
+    cheap_inventory_next_n_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1480, 100), (50, 35)),
+                                        text='>>',
+                                        manager=ui_manager,)
+    cheap_inventory_next_n_button.set_tooltip("Next page of inventory.", delay=0.1, wrap_width=300)
+
+    cheap_inventory_next_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1425, 100), (50, 35)),
                                         text='>',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Next page of inventory")
+                                        manager=ui_manager,)
     cheap_inventory_next_page_button.set_tooltip("Next page of inventory.", delay=0.1, wrap_width=300)
+
 
     def create_inventory_image_slots(n, start_x, start_y, slot_width, slot_height, spacing, ui_manager, column=6) -> list:
         # -> list of UIImage
@@ -2373,7 +2419,11 @@ if __name__ == "__main__":
                     except Exception:
                         image_slots[i].set_image(images_item["404"])
 
-                image_slots[i].set_tooltip(character.tooltip_string(), delay=0.1, wrap_width=250)
+
+                if global_vars.language == "日本語" and hasattr(character, "tooltip_string_jp"):
+                    image_slots[i].set_tooltip(character.tooltip_string_jp(), delay=0.1, wrap_width=250)
+                else:
+                    image_slots[i].set_tooltip(character.tooltip_string(), delay=0.1, wrap_width=250)
                 
 
                 if redraw_eq_slots:
@@ -2424,7 +2474,11 @@ if __name__ == "__main__":
                     equip_effect_slots[i].hide()
 
                 labels[i].set_text(f"lv {character.lvl} {character.name}")
-                labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=500)
+
+                if global_vars.language == "日本語" and hasattr(character, "skill_tooltip_jp"):
+                    labels[i].set_tooltip(character.skill_tooltip_jp(), delay=0.1, wrap_width=500)
+                else:
+                    labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=500)
                 # Doesn't work so commented out
                 # labels[i].set_text_alpha(255) if character.is_alive() else labels[i].set_text_alpha(125)
 
@@ -3052,10 +3106,12 @@ if __name__ == "__main__":
                     player.to_last_page()
                 if event.ui_element == cheap_inventory_previous_page_button:
                     player.to_previous_page()
+                if event.ui_element == cheap_inventory_previous_n_button:
+                    player.to_previous_page_jump_n(5)
                 if event.ui_element == cheap_inventory_next_page_button:
                     player.to_next_page()
-                if event.ui_element == cheap_inventory_sort_by_button:
-                    cheap_inventory_sort()
+                if event.ui_element == cheap_inventory_next_n_button:
+                    player.to_next_page_jump_n(5)
                 if event.ui_element == use_item_button:
                     use_item()
                 if event.ui_element == use_itemx10_button:
@@ -3105,6 +3161,10 @@ if __name__ == "__main__":
 
 
             if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+                if event.ui_element == language_selection_menu:
+                    swap_language()
+                if event.ui_element == cheap_inventory_sort_by_selection_menu:
+                    cheap_inventory_sort()
                 if event.ui_element == shop_select_a_shop:
                     # working correctly
                     print(f"Selected shop: {shop_select_a_shop.selected_option[0]}")

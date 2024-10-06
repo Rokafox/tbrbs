@@ -618,6 +618,26 @@ class Character:
             f"exp/maxexp/perc: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n"
             # f"battle turns: {self.battle_turns}\n"
 
+    def tooltip_string_jp(self):
+        level = self.lvl if self.lvl < self.lvl_max else "MAX"
+        return f"{self.name}\n" \
+            f"レベル: {level}\n" \
+            f"HP: {self.hp}/{self.maxhp}\n" \
+            f"攻撃力: {self.atk}\n" \
+            f"防御力: {self.defense}\n" \
+            f"速度: {self.spd}\n" \
+            f"回避: {self.eva*100:.2f}%\n" \
+            f"命中: {self.acc*100:.2f}%\n" \
+            f"クリティカル: {self.crit*100:.2f}%\n" \
+            f"クリティカルダメージ: {self.critdmg*100:.2f}%\n" \
+            f"クリティカル防御: {self.critdef*100:.2f}%\n" \
+            f"貫通: {self.penetration*100:.2f}%\n" \
+            f"回復効率: {self.heal_efficiency*100:.2f}%\n" \
+            f"最終ダメージ倍率: {self.final_damage_taken_multipler*100:.2f}%\n" \
+            f"最大スキルクールダウン: {self.skill1_cooldown_max}/{self.skill2_cooldown_max}\n" \
+            f"経験値/最大経験値/パーセント: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n"
+            # f"バトルターン数: {self.battle_turns}\n"
+
     def tooltip_status_effects(self):
         str = "Status Effects:\n"
         str += "=" * 20 + "\n"
@@ -749,11 +769,19 @@ class Character:
                 return True
         return False
 
-    def trigger_hidden_effect_on_allies(self):
+    def trigger_hidden_effect_on_allies(self, attacker: 'Character'=None, damage_overkill: int | float=-1):
         self.update_ally_and_enemy()
         for a in self.party:
             if a.is_hidden():
                 a.get_effect_that_named("Hide", class_name="HideEffect").apply_effect_on_trigger(a)
+        if not self.ally or not self.enemy:
+            return
+        if attacker is not None and attacker.has_effect_that_named("Golden Arrow", additional_name="Kyle_Golden_Arrow") and damage_overkill > 0:
+            # Select a ally with the lowest hp percentage
+            lowest_hp_ally = min(self.ally, key=lambda x: x.hp/x.maxhp)
+            global_vars.turn_info_string += f"Golden Arrow effect triggered by {attacker.name}.\n"
+            lowest_hp_ally.take_damage(damage_overkill, attacker=attacker)
+
 
     def can_take_action(self):
         if self.is_stunned():
@@ -952,9 +980,12 @@ class Character:
         damage = self.take_damage_before_calculation(damage, attacker)
         damage = int(damage)
         damage = max(0, damage)
+        damage_overkill = -1
 
         if self.hp - damage < 0:
+            dmr = damage
             damage = self.hp
+            damage_overkill = dmr - damage
         self.hp -= damage
         if func_after_dmg is not None:
             func_after_dmg(self, damage, attacker)
@@ -975,7 +1006,7 @@ class Character:
         if self.is_dead():
             self.defeated_by_taken_damage(damage, attacker)
         if self.is_dead():
-            self.trigger_hidden_effect_on_allies()
+            self.trigger_hidden_effect_on_allies(attacker=attacker, damage_overkill=damage_overkill)
             if attacker is not None:
                 attacker.number_of_take_downs += 1
         return None
@@ -1469,11 +1500,17 @@ class Lillia(Character):
         self.skill1_description = "12 hits on random enemies, 180% atk each hit. After 1 critical hit, all hits following will be critical and hit nearby targets for 30% of damage as status damage."
         self.skill2_description = "Apply Infinite Spring on self for 30 turns, gain immunity to CC and reduce damage taken by 35%. Refreshes duration if already active. Infinite Spring cannot be removed by skills."
         self.skill3_description = "Heal 8% of your maximum HP when Infinite Spring is active."
+        self.skill1_description_jp = "ランダムな敵に攻撃力180%12回攻撃。1回のクリティカルヒット後、その後の全ての攻撃がクリティカルヒットとなり、周囲の敵に30%のダメージを与える。"
+        self.skill2_description_jp = "自身に無限の泉を30ターン付与し、CC無効、ダメージを35%軽減。効果が既に付与されている場合、効果時間更新される。無限の泉はスキルによって除去されない。"
+        self.skill3_description_jp = "行動時、無限の泉が付与されている場合、最大HPの8%回復。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill_tooltip_jp(self):
+        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def skill1_logic(self):
         def water_splash(self, target, final_damage, always_crit):
@@ -1513,11 +1550,17 @@ class Poppy(Character):
         self.skill1_description = "8 hits on random enemies, 240% atk each hit."
         self.skill2_description = "590% atk on enemy with highest speed. Target speed is decreased by 30% for 8 turns."
         self.skill3_description = "On taking normal attack or skill damage, 60% chance to inflict Burn to attacker for 6 turns. Burn deals 50% atk status damage."
+        self.skill1_description_jp = "ランダムな敵に攻撃力240%8回攻撃。"
+        self.skill2_description_jp = "速度一番高いの敵に攻撃力590%攻撃。8ターンの間、対象の速度を30%減少。"
+        self.skill3_description_jp = "通常攻撃またはスキル攻撃を受けた時、攻撃者に6ターンの間、攻撃力50%の燃焼効果を付与する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill_tooltip_jp(self):
+        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.4, repeat=8)      
@@ -3392,7 +3435,6 @@ class Beacon(Character):
         return super().status_effects_at_end_of_turn()
 
 
-# Aurora, Scout, Timber
 class Timber(Character):
     """
 
@@ -3510,11 +3552,67 @@ class Scout(Character):
         self.apply_effect(StatsEffect("Eight Camps", 20, True, {"defense": 1.4, "critdef": 0.4}))
 
 
+class Kyle(Character):
+    """
 
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Kyle"
+        self.skill1_description = "Select 1 neighbor ally of highest atk, apply Golden Arrow and Atk Up for 30|10 turns." \
+        " Golden Arrow: When taking down an enemy, the remaining damage is dealt to enemy of lowest hp percentage." \
+        " Atk Up: atk increased by 30%. Status and bypass damage does not trigger Golden Arrow."
+        self.skill2_description = "Select 1 neighbor ally of highest atk, apply Sliver Arrow and Def Up for 30|10 turns." \
+        " Sliver Allow: Damage taken that exceeds 10% of maxhp is reduced by 50%." \
+        " Def Up: defense increased by 30%."
+        self.skill3_description = "Before a normal attack, heal yourself or a neighbor ally of lowest hp percentage by 300% atk." \
+        " At start of battle, apply Sliver Arrow for all allies for 12 turns."
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
+    def skill1_logic(self):
+        two_neighbor = self.get_neighbor_allies_not_including_self()
+        if len(two_neighbor) == 0:
+            return 0
+        ally = max(two_neighbor, key=lambda x: x.atk)
+        golden_allow_e = Effect("Golden Arrow", 30, True, False,
+                                tooltip_str="When taking down an enemy, the remaining damage is dealt to enemy of lowest hp percentage.")
+        golden_allow_e.additional_name = "Kyle_Golden_Arrow"
+        golden_allow_e.apply_rule = "stack"
+        ally.apply_effect(golden_allow_e)
+        ally.apply_effect(StatsEffect("Atk Up", 10, True, {"atk": 1.3}))
+        return 0
 
+    def skill2_logic(self):
+        two_neighbor = self.get_neighbor_allies_not_including_self()
+        if len(two_neighbor) == 0:
+            return 0
+        ally = max(two_neighbor, key=lambda x: x.atk)
+        silver_allow_e = EffectShield2("Silver Arrow", 30, True, False, damage_reduction=0.5, shrink_rate=0.0, hp_threshold=0.1)
+        silver_allow_e.additional_name = "Kyle_Silver_Arrow"
+        silver_allow_e.apply_rule = "stack"
+        ally.apply_effect(silver_allow_e)
+        ally.apply_effect(StatsEffect("Def Up", 10, True, {"defense": 1.3}))
+        return 0
 
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        two_neighbor = self.get_neighbor_allies_including_self()
+        if len(two_neighbor) == 0:
+            return 0
+        ally = min(two_neighbor, key=lambda x: x.hp / x.maxhp)
+        self.heal(target_list=[ally], value=self.atk * 3.0)
+        return self.attack()
+
+    def battle_entry_effects(self):
+        for a in self.ally:
+            a.apply_effect(EffectShield2("Silver Arrow", 12, True, False, damage_reduction=0.5, shrink_rate=0.0, hp_threshold=0.1))
 
 
 

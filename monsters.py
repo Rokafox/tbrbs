@@ -1871,7 +1871,7 @@ class Queen(character.Character):
 
     def skill2_logic(self):
         def critdef_decrease(self, target):
-            target.apply_effect(StatsEffect('Compliance', 8, True, {'critdef' : -0.3}))
+            target.apply_effect(StatsEffect('Compliance', 8, False, {'critdef' : -0.3}))
         damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=critdef_decrease, target_kw1="n_enemy_in_front", target_kw2="3")
         if self.is_alive():
             self.apply_effect(StatsEffect('Control', 6, True, {'critdmg' : 0.20}))
@@ -3712,13 +3712,13 @@ class Priest(character.Character):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        self.heal(target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="ally", value=6.0)
+        self.heal(target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="ally", value=self.atk * 6)
 
 
     def skill2_logic(self):
         for ally in self.ally:
             ally.apply_effect(StatsEffect('Heal Efficiency Up', 6, True, {'heal_efficiency' : 0.3}))
-        self.heal(target_kw1="n_random_ally", target_kw2="5", value=3.0)
+        self.heal(target_kw1="n_random_ally", target_kw2="5", value=self.atk * 3)
 
 
     def skill3(self):

@@ -7,5 +7,5 @@ image/monster
 build/
 dist/
 .venv/
-reports/
 logs/
+image_backup/
