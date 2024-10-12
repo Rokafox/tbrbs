@@ -1156,6 +1156,10 @@ class Character:
         if effect.apply_rule == "stack" and self.is_alive():
             for e in self.debuffs.copy() + self.buffs.copy():
                 if e.name == effect.name:
+                    # if they both have attr additional_name, they must match
+                    if hasattr(e, "additional_name") and hasattr(effect, "additional_name") and e.additional_name != effect.additional_name:
+                        continue
+                    
                     if e.duration < effect.duration and e.duration > 0:
                         e.duration = effect.duration
                     e.apply_effect_when_adding_stacks(self, effect.stacks)
@@ -3560,12 +3564,14 @@ class Kyle(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Kyle"
-        self.skill1_description = "Select 1 neighbor ally of highest atk, apply Golden Arrow and Atk Up for 30|10 turns." \
+        self.skill1_description = "Select 1 neighbor ally of highest atk, apply Golden Arrow and Atk Up for 30|20 turns." \
         " Golden Arrow: When taking down an enemy, the remaining damage is dealt to enemy of lowest hp percentage." \
-        " Atk Up: atk increased by 30%. Status and bypass damage does not trigger Golden Arrow."
-        self.skill2_description = "Select 1 neighbor ally of highest atk, apply Sliver Arrow and Def Up for 30|10 turns." \
+        " Atk Up: atk increased by 30%. Status and bypass damage does not trigger Golden Arrow." \
+        " When same effect is applied, duration is refreshed."
+        self.skill2_description = "Select 1 neighbor ally of highest atk, apply Sliver Arrow and Def Up for 30|20 turns." \
         " Sliver Allow: Damage taken that exceeds 10% of maxhp is reduced by 50%." \
-        " Def Up: defense increased by 30%."
+        " Def Up: defense increased by 30%." \
+        " When same effect is applied, duration is refreshed."
         self.skill3_description = "Before a normal attack, heal yourself or a neighbor ally of lowest hp percentage by 300% atk." \
         " At start of battle, apply Sliver Arrow for all allies for 12 turns."
         self.skill1_cooldown_max = 4
@@ -3584,7 +3590,10 @@ class Kyle(Character):
         golden_allow_e.additional_name = "Kyle_Golden_Arrow"
         golden_allow_e.apply_rule = "stack"
         ally.apply_effect(golden_allow_e)
-        ally.apply_effect(StatsEffect("Atk Up", 10, True, {"atk": 1.3}))
+        atk_up_e = StatsEffect("Atk Up", 20, True, {"atk": 1.3})
+        atk_up_e.additional_name = "Kyle_Atk_Up"
+        atk_up_e.apply_rule = "stack"
+        ally.apply_effect(atk_up_e)
         return 0
 
     def skill2_logic(self):
@@ -3596,7 +3605,10 @@ class Kyle(Character):
         silver_allow_e.additional_name = "Kyle_Silver_Arrow"
         silver_allow_e.apply_rule = "stack"
         ally.apply_effect(silver_allow_e)
-        ally.apply_effect(StatsEffect("Def Up", 10, True, {"defense": 1.3}))
+        def_up_e = StatsEffect("Def Up", 20, True, {"defense": 1.3})
+        def_up_e.additional_name = "Kyle_Def_Up"
+        def_up_e.apply_rule = "stack"
+        ally.apply_effect(def_up_e)
         return 0
 
     def skill3(self):

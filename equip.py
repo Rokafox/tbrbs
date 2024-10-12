@@ -312,13 +312,15 @@ class Equip(Block):
             extra_lines_to_generate = 4
         elif 1000 <= level < 2000:
             extra_lines_to_generate = 5
-        elif 2000 <= level:
-            extra_lines_to_generate = 5
+        elif 2000 <= level < 2400:
+            extra_lines_to_generate = 6
+        elif 2400 <= level:
+            extra_lines_to_generate = 7
         else:
             extra_lines_to_generate = 0
         
         if self.type == self.type_list[2]:
-            self.maxhp_flat = max(normal_distribution(1, 5000, 2000, 500), 1)
+            self.maxhp_flat = max(normal_distribution(1, 8000, 4000, 1200), 1)
             self.maxhp_flat /= 40
             self.maxhp_flat *= level
         elif self.type == self.type_list[0]:
@@ -326,7 +328,7 @@ class Equip(Block):
             self.atk_flat /= 40
             self.atk_flat *= level
         elif self.type == self.type_list[1]:
-            self.def_flat = max(normal_distribution(1, 3000, 1200, 500) * 0.05, 1)
+            self.def_flat = max(normal_distribution(1, 4000, 1600, 666) * 0.05, 1)
             self.def_flat /= 40
             self.def_flat *= level
         elif self.type == self.type_list[3]:

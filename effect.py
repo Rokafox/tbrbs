@@ -225,9 +225,13 @@ class ReductionShield(Effect):
         self.damage_function = damage_function
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
-        if self.requirement is not None and not self.requirement(character, attacker):
-            global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, requirement not met.\n"
-            return damage
+        if self.requirement is not None:
+            if not attacker:
+                global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, attacker not found.\n"
+                return damage
+            elif not self.requirement(character, attacker):
+                global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, requirement not met.\n"
+                return damage
         if self.is_buff:
             damage = damage * (1 - self.effect_value)
         else:
