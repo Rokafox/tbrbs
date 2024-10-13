@@ -1932,6 +1932,10 @@ if __name__ == "__main__":
 
         create_tmp_damage_data_csv(party1, party2)
         create_healing_data_csv(party1, party2)
+        create_plot_damage_d_chart()
+        create_plot_damage_r_chart()
+        create_plot_healing_chart()
+        draw_chart()
         redraw_ui(party1, party2, redraw_eq_slots=False)
 
         text_box.set_text("=====================================\n")

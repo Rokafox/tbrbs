@@ -133,7 +133,7 @@ class Equip(Block):
                 )
             case "Bamboo":
                 return (
-                    "After taking down an enemy with normal or skill attack, for 5 turns, recovers 16% of max hp each turn and increases atk, def, spd by 66%, crit and crit damage by 33%. "
+                    "After taking down an enemy with normal or skill attack, for 5 turns, recovers 16% of max hp each turn and increases atk, def, spd by 88%, crit and crit damage by 44%. "
                     "Cannot be triggered when buff effect is active."
                 )
             case "Rose":

@@ -776,10 +776,10 @@ class Character:
                 a.get_effect_that_named("Hide", class_name="HideEffect").apply_effect_on_trigger(a)
         if not self.ally or not self.enemy:
             return
-        if attacker is not None and attacker.has_effect_that_named("Golden Arrow", additional_name="Kyle_Golden_Arrow") and damage_overkill > 0:
+        if attacker is not None and attacker.has_effect_that_named("Dragon Drawing", additional_name="Kyle_Dragon_Drawing") and damage_overkill > 0:
             # Select a ally with the lowest hp percentage
             lowest_hp_ally = min(self.ally, key=lambda x: x.hp/x.maxhp)
-            global_vars.turn_info_string += f"Golden Arrow effect triggered by {attacker.name}.\n"
+            global_vars.turn_info_string += f"Dragon Drawing effect triggered by {attacker.name}.\n"
             lowest_hp_ally.take_damage(damage_overkill, attacker=attacker)
 
 
@@ -1348,7 +1348,7 @@ class Character:
         elif set_name == "Dawn":
             self.apply_effect(EquipmentSetEffect_Dawn("Dawn Set", -1, True, {"atk": 1.24, "crit": 0.12}))
         elif set_name == "Bamboo":
-            self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.66, "defense": 1.66, "spd": 1.66, "crit": 0.33, "critdmg": 0.33}))
+            self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.88, "defense": 1.88, "spd": 1.88, "crit": 0.44, "critdmg": 0.44}))
         elif set_name == "Rose":
             self.apply_effect(EquipmentSetEffect_Rose("Rose Set", -1, True, he_bonus_before_heal=0.88))
             belove_girl_self_effect = StatsEffect("Beloved Girl", -1, True, {"heal_efficiency": 0.22, "defense": 1.11})
@@ -1428,7 +1428,7 @@ class Character:
         elif set_name == "Bamboo":
             str += "Bamboo\n" \
                 "After taking down an enemy with normal or skill attack, for 5 turns," \
-                " recovers 16% of max hp each turn and increases atk, def, spd by 66%, crit and crit damage by 33%." \
+                " recovers 16% of max hp each turn and increases atk, def, spd by 88%, crit and crit damage by 44%." \
                 " Cannot be triggered when buff effect is active.\n"
         elif set_name == "Rose":
             str += "Rose\n" \
@@ -2396,7 +2396,8 @@ class Air(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Air"
-        self.skill1_description = "For 20 turns, all allies have their accuracy increased by 120% of their evasion."
+        self.skill1_description = "For 20 turns, all allies have their accuracy increased by 120% of their evasion." \
+        " Minimum accuracy bonus is 10%."
         self.skill2_description = "Focus attack on closest enemy 3 times with 230% atk."
         self.skill3_description = "At start of battle, apply Blessing of Air to all allies." \
         " Before the ally is about to take damage, damage taken is reduced by 30%, then 30% of the damage is taken by you." \
@@ -2410,9 +2411,10 @@ class Air(Character):
     def skill1_logic(self):
         for ally in self.ally:
             is_buff = True
-            if ally.eva < 0:
-                is_buff = False
-            e = StatsEffect("Accuracy Up", 20, is_buff, {"acc": ally.eva * 1.2})
+            # if ally.eva < 0:
+            #     is_buff = False
+            eva_bonus = max(0.1, ally.eva * 1.2)
+            e = StatsEffect("Accuracy Up", 20, is_buff, {"acc": eva_bonus})
             ally.apply_effect(e)
         return 0
 
@@ -3353,7 +3355,10 @@ class Cocoa(Character):
         effect = SleepEffect("Sleep", -1, True, True)
         effect.is_buff = True
         effect.additional_name = "Cocoa_Sleep"
-        def new_apply_effect_on_trigger(character):
+        def new_apply_effect_on_trigger(character: Character):
+            if character.is_dead():
+                character.remove_effect(effect)
+                return
             character.heal_hp(character.maxhp * 0.08, character)
         def new_apply_effect_on_apply(character):
             pass
@@ -3564,16 +3569,16 @@ class Kyle(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Kyle"
-        self.skill1_description = "Select 1 neighbor ally of highest atk, apply Golden Arrow and Atk Up for 30|20 turns." \
-        " Golden Arrow: When taking down an enemy, the remaining damage is dealt to enemy of lowest hp percentage." \
-        " Atk Up: atk increased by 30%. Status and bypass damage does not trigger Golden Arrow." \
+        self.skill1_description = "Select 1 neighbor ally of highest atk, apply Dragon Drawing and Atk Up for 30|20 turns." \
+        " Dragon Drawing: When taking down an enemy, the remaining damage is dealt to enemy of lowest hp percentage." \
+        " Atk Up: atk and speed increased by 40%. Status and bypass damage does not trigger Dragon Drawing." \
         " When same effect is applied, duration is refreshed."
-        self.skill2_description = "Select 1 neighbor ally of highest atk, apply Sliver Arrow and Def Up for 30|20 turns." \
-        " Sliver Allow: Damage taken that exceeds 10% of maxhp is reduced by 50%." \
-        " Def Up: defense increased by 30%." \
+        self.skill2_description = "Select 1 neighbor ally of highest atk, apply Mountain Drawing and Def Up for 30|20 turns." \
+        " Mountain Drawing: Damage taken that exceeds 10% of maxhp is reduced by 50%." \
+        " Def Up: defense and speed increased by 40%." \
         " When same effect is applied, duration is refreshed."
         self.skill3_description = "Before a normal attack, heal yourself or a neighbor ally of lowest hp percentage by 300% atk." \
-        " At start of battle, apply Sliver Arrow for all allies for 12 turns."
+        " "
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
@@ -3585,12 +3590,12 @@ class Kyle(Character):
         if len(two_neighbor) == 0:
             return 0
         ally = max(two_neighbor, key=lambda x: x.atk)
-        golden_allow_e = Effect("Golden Arrow", 30, True, False,
+        golden_allow_e = Effect("Dragon Drawing", 30, True, False,
                                 tooltip_str="When taking down an enemy, the remaining damage is dealt to enemy of lowest hp percentage.")
-        golden_allow_e.additional_name = "Kyle_Golden_Arrow"
+        golden_allow_e.additional_name = "Kyle_Dragon_Drawing"
         golden_allow_e.apply_rule = "stack"
         ally.apply_effect(golden_allow_e)
-        atk_up_e = StatsEffect("Atk Up", 20, True, {"atk": 1.3})
+        atk_up_e = StatsEffect("Atk Up", 20, True, {"atk": 1.4, "spd": 1.4})
         atk_up_e.additional_name = "Kyle_Atk_Up"
         atk_up_e.apply_rule = "stack"
         ally.apply_effect(atk_up_e)
@@ -3601,11 +3606,11 @@ class Kyle(Character):
         if len(two_neighbor) == 0:
             return 0
         ally = max(two_neighbor, key=lambda x: x.atk)
-        silver_allow_e = EffectShield2("Silver Arrow", 30, True, False, damage_reduction=0.5, shrink_rate=0.0, hp_threshold=0.1)
-        silver_allow_e.additional_name = "Kyle_Silver_Arrow"
+        silver_allow_e = EffectShield2("Mountain Drawing", 30, True, False, damage_reduction=0.5, shrink_rate=0.0, hp_threshold=0.1)
+        silver_allow_e.additional_name = "Kyle_Mountain_Drawing"
         silver_allow_e.apply_rule = "stack"
         ally.apply_effect(silver_allow_e)
-        def_up_e = StatsEffect("Def Up", 20, True, {"defense": 1.3})
+        def_up_e = StatsEffect("Def Up", 20, True, {"defense": 1.4, "spd": 1.4})
         def_up_e.additional_name = "Kyle_Def_Up"
         def_up_e.apply_rule = "stack"
         ally.apply_effect(def_up_e)
@@ -3622,9 +3627,9 @@ class Kyle(Character):
         self.heal(target_list=[ally], value=self.atk * 3.0)
         return self.attack()
 
-    def battle_entry_effects(self):
-        for a in self.ally:
-            a.apply_effect(EffectShield2("Silver Arrow", 12, True, False, damage_reduction=0.5, shrink_rate=0.0, hp_threshold=0.1))
+    # def battle_entry_effects(self):
+    #     for a in self.ally:
+    #         a.apply_effect(EffectShield2("Mountain Drawing", 12, True, False, damage_reduction=0.5, shrink_rate=0.0, hp_threshold=0.1))
 
 
 
