@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from collections import Counter
 import random
 import global_vars
@@ -24,6 +25,7 @@ class Effect:
         self.tooltip_str = tooltip_str
         self.can_be_removed_by_skill = can_be_removed_by_skill
         self.show_stacks = show_stacks
+        self.is_protected_effect = False
     
     def is_permanent(self):
         return self.duration == -1
@@ -119,6 +121,38 @@ class Effect:
         string += self.tooltip_description()
         return string
     
+    def print_stats_html_jp(self):
+        color_buff = "#659a00"
+        color_debuff = "#ff0000"
+        string_unremovable = ""
+        if not self.can_be_removed_by_skill or self.is_set_effect:
+            string_unremovable += ":除去不可"
+        if self.is_buff:
+            if self.duration == -1:
+                string = "<font color=" + color_buff + ">" + self.name + ":永続" + string_unremovable + "</font>" + "\n"
+            else:
+                string = "<font color=" + color_buff + ">" + self.name + ":" + str(self.duration) + "ターン" + string_unremovable + "</font>" + "\n"
+        else:
+            if self.duration == -1:
+                string = "<font color=" + color_debuff + ">" + self.name + ":永続" + string_unremovable + "</font>" + "\n"
+            else:
+                string = "<font color=" + color_debuff + ">" + self.name + ":" + str(self.duration) + "ターン" + string_unremovable + "</font>" + "\n"
+        if self.cc_immunity:
+            string += "CC無効。"
+        if self.delay_trigger > 0:
+            string += str(self.delay_trigger) + "ターン後に発動。"
+        if self.show_stacks:
+            string += "現在のスタック数:" + str(self.stacks)
+        if hasattr(self, "tooltip_description_jp"):
+            if self.tooltip_description_jp():
+                string += self.tooltip_description_jp()
+            else:
+                print(f"Tooltip description not found for {self.name}.")
+        else:
+            string += self.tooltip_description()
+        return string
+
+
     def tooltip_description(self):
         if self.tooltip_str:
             return self.tooltip_str
@@ -172,6 +206,11 @@ class ProtectedEffect(Effect):
         reduction_info = f"Damage reduction: {(1 - self.damage_after_reduction_multiplier) * 100:.1f}%."
         redirect_info = f"{self.damage_redirect_percentage * 100}% of the damage is redirected."
         return f"Protected by {self.protector.name}. {reduction_info} {redirect_info}"
+    
+    def tooltip_description_jp(self):
+        reduction_info = f"ダメージ軽減:{(1 - self.damage_after_reduction_multiplier) * 100:.1f}%。"
+        redirect_info = f"ダメージの{self.damage_redirect_percentage * 100:.1f}%が引き受けてくれる。"
+        return f"{self.protector.name}による保護されている。{reduction_info}{redirect_info}"
 
 
 # =========================================================
@@ -203,6 +242,9 @@ class AbsorptionShield(Effect):
         
     def tooltip_description(self):
         return f"Absorbs up to {self.shield_value:.1f} damage."
+    
+    def tooltip_description_jp(self):
+        return f"{self.shield_value:.1f}ダメージを吸収する。"
 
 #---------------------------------------------------------
 
@@ -214,7 +256,7 @@ class ReductionShield(Effect):
     further calculate damage.
     """
     def __init__(self, name, duration, is_buff, effect_value, cc_immunity, *, requirement=None, 
-                 requirement_description=None, damage_function=None):
+                 requirement_description=None, damage_function=None, cover_status_damage=True, cover_normal_damage=True):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.effect_value = effect_value
@@ -223,6 +265,8 @@ class ReductionShield(Effect):
         self.requirement_description = requirement_description
         self.sort_priority = 200
         self.damage_function = damage_function
+        self.cover_status_damage = cover_status_damage
+        self.cover_normal_damage = cover_normal_damage
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if self.requirement is not None:
@@ -233,9 +277,15 @@ class ReductionShield(Effect):
                 global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, requirement not met.\n"
                 return damage
         if self.is_buff:
-            damage = damage * (1 - self.effect_value)
+            if self.cover_normal_damage and which_ds == "normal":
+                damage = damage * (1 - self.effect_value)
+            elif self.cover_status_damage and which_ds == "status":
+                damage = damage * (1 - self.effect_value)
         else:
-            damage = damage * (1 + self.effect_value)
+            if self.cover_normal_damage and which_ds == "normal":
+                damage = damage * (1 + self.effect_value)
+            elif self.cover_status_damage and which_ds == "status":
+                damage = damage * (1 + self.effect_value)
         if self.damage_function:
             damage = self.damage_function(character, attacker, damage)
         return damage
@@ -245,21 +295,152 @@ class ReductionShield(Effect):
         if self.effect_value > 0:
             if self.is_buff:
                 str += f"Reduces damage taken by {self.effect_value*100}%."
+                if self.cover_normal_damage and self.cover_status_damage:
+                    str += " Applies to all damage."
+                elif self.cover_normal_damage:
+                    str += " Applies to normal damage."
+                elif self.cover_status_damage:
+                    str += " Applies to status damage."
             else:
                 str += f"Increases damage taken by {self.effect_value*100}%."
+                if self.cover_normal_damage and self.cover_status_damage:
+                    str += " Applies to all damage."
+                elif self.cover_normal_damage:
+                    str += " Applies to normal damage."
+                elif self.cover_status_damage:
+                    str += " Applies to status damage."
         elif self.damage_function:
             str += f" Damage reduction is further calculated by a function."
         if self.requirement_description is not None:
             str += f" Requirement: {self.requirement_description}"
         return str
     
+    def tooltip_description_jp(self):
+        str = ""
+        if self.effect_value > 0:
+            if self.is_buff:
+                str += f"受けるダメージを{self.effect_value*100:.1f}%軽減。"
+                if self.cover_normal_damage and self.cover_status_damage:
+                    str += "全てのダメージに適用。"
+                elif self.cover_normal_damage:
+                    str += "通常ダメージに適用。"
+                elif self.cover_status_damage:
+                    str += "状態異常ダメージに適用。"
+            else:
+                str += f"受けるダメージを{self.effect_value*100:.1f}%増加。"
+                if self.cover_normal_damage and self.cover_status_damage:
+                    str += "全てのダメージに適用。"
+                elif self.cover_normal_damage:
+                    str += "通常ダメージに適用。"
+                elif self.cover_status_damage:
+                    str += "状態異常ダメージに適用。"
+        elif self.damage_function:
+            str += f"ダメージ軽減は関数によってさらに計算される。"
+        if self.requirement_description is not None:
+            str += f"条件:{self.requirement_description}"
+        return str
+    
+
+#---------------------------------------------------------
+
+
+class AntiMultiStrikeReductionShield(Effect):
+    """
+    AntiMultiStrikeReductionShield is an effect that reduces or increases the damage taken by a certain percentage.
+    The effect is applied multiplicatively each time the character is damaged within the same turn.
+    This means that the damage reduction (or increase) becomes stronger with each subsequent attack in the same turn.
+
+    For example, if the effect reduces damage by 20% (effect_value = 0.2), and the character is attacked three times in the same turn,
+    the damage taken from each attack will be multiplied by 0.8^n, where n is the number of times the character has been attacked.
+    So the third attack would have its damage reduced by 1 - (0.8^3) = 48.8%.
+
+    Parameters:
+        name (str): The name of the effect.
+        duration (int): The duration of the effect in turns.
+        is_buff (bool): True if the effect is a buff (reduces damage), False if it's a debuff (increases damage).
+        effect_value (float): The percentage reduction/increase per attack (as a decimal, e.g., 0.2 for 20%).
+        cc_immunity (bool): Whether the effect grants crowd control immunity.
+        requirement (callable, optional): A function that takes (character, attacker) and returns True if the effect should be applied.
+        requirement_description (str, optional): A description of the requirement for the effect.
+    """
+
+    def __init__(self, name, duration, is_buff, effect_value, cc_immunity, *, requirement=None, 
+                 requirement_description=None, effect_value_increase_per_attack=0):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.effect_value = effect_value
+        self.cc_immunity = cc_immunity
+        self.requirement = requirement
+        self.requirement_description = requirement_description
+        self.sort_priority = 200
+        self.how_many_times_triggered_this_turn = 1
+        self.character_current_turn = 0
+        self.effect_value_increase_per_attack = effect_value_increase_per_attack
+
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        if self.requirement is not None:
+            if not attacker:
+                global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, attacker not found.\n"
+                return damage
+            elif not self.requirement(character, attacker):
+                global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, requirement not met.\n"
+                return damage
+        if self.character_current_turn != character.battle_turns:
+            self.character_current_turn = character.battle_turns
+            self.how_many_times_triggered_this_turn = 1
+        else:
+            self.how_many_times_triggered_this_turn += 1
+        reduction_value = self.effect_value + self.effect_value_increase_per_attack * (self.how_many_times_triggered_this_turn - 1)
+        if self.is_buff:
+            for i in range(self.how_many_times_triggered_this_turn):
+                damage = damage * (1 - reduction_value)
+        else:
+            for i in range(self.how_many_times_triggered_this_turn):
+                damage = damage * (1 + reduction_value)
+        return damage
+
+    def tooltip_description(self):
+        description = ""
+        if self.effect_value > 0:
+            percentage = self.effect_value * 100
+            if self.is_buff:
+                description += f"Reduces damage taken by {percentage}% multiplicatively for each attack received in the same turn."
+                description += f" Reduction increases by {self.effect_value_increase_per_attack * 100}% per attack."
+            else:
+                description += f"Increases damage taken by {percentage}% multiplicatively for each attack received in the same turn."
+                description += f" Damage increases by {self.effect_value_increase_per_attack * 100}% per attack."
+        if self.requirement_description is not None:
+            description += f" Requirement: {self.requirement_description}"
+        return description
+    
+    def tooltip_description_jp(self):
+        description = ""
+        if self.effect_value > 0:
+            percentage = self.effect_value * 100
+            if self.is_buff:
+                description += f"同じターンに受けるダメージを{percentage}%ずつ減少させる。"
+                description += f"ダメージ軽減は{self.effect_value_increase_per_attack * 100}%ずつ増加する。"
+            else:
+                description += f"同じターンに受けるダメージを{percentage}%ずつ増加させる。"
+                description += f"ダメージ増加は{self.effect_value_increase_per_attack * 100}%ずつ増加する。"
+        if self.requirement_description is not None:
+            description += f"条件:{self.requirement_description}"
+        return description
+
+
+
+
+
+
+
 #---------------------------------------------------------
 class EffectShield1(Effect):
     """
     Before damage calculation, if character hp is below [hp_threshold]*100%, heal hp for [heal_function] amount before damage calculation.
     """
     def __init__(self, name, duration, is_buff, hp_threshold, heal_function, cc_immunity,
-                require_above_zero_dmg=False, effect_applier=None):
+                require_above_zero_dmg=False, effect_applier=None, cover_status_damage=False, cover_normal_damage=True,
+                cancel_damage=False):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.hp_threshold = hp_threshold
@@ -268,6 +449,9 @@ class EffectShield1(Effect):
         self.sort_priority = 200
         self.require_above_zero_dmg = require_above_zero_dmg
         self.effect_applier = effect_applier
+        self.cover_status_damage = cover_status_damage
+        self.cover_normal_damage = cover_normal_damage
+        self.cancel_damage = cancel_damage
 
     def apply_effect_at_end_of_turn(self, character):
         if self.effect_applier.is_dead():
@@ -275,11 +459,60 @@ class EffectShield1(Effect):
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if character.hp < character.maxhp * self.hp_threshold and (not self.require_above_zero_dmg or damage > 0):
-            character.heal_hp(self.heal_function(self.effect_applier), self.effect_applier)
+            if self.cover_normal_damage and which_ds == "normal":
+                character.heal_hp(self.heal_function(self.effect_applier), self.effect_applier)
+                if self.cancel_damage:
+                    return 0
+            elif self.cover_status_damage and which_ds == "status":
+                character.heal_hp(self.heal_function(self.effect_applier), self.effect_applier)
+                if self.cancel_damage:
+                    return 0
         return damage
     
     def tooltip_description(self):
-        return f"When hp is below {self.hp_threshold*100:.1f}%, heal for {self.heal_function(self.effect_applier):.1f} hp before damage calculation."
+        description = f"When HP is below {self.hp_threshold*100:.1f}%, heal for {self.heal_function(self.effect_applier):.1f} HP before damage calculation."
+        
+        # Determine which types of damage the effect applies to
+        if self.cover_normal_damage and self.cover_status_damage:
+            description += " Applies to all damage."
+        else:
+            if self.cover_normal_damage:
+                description += " Applies to normal damage."
+            if self.cover_status_damage:
+                description += " Applies to status damage."
+        
+        # Include whether the effect cancels incoming damage
+        if self.cancel_damage:
+            description += " Incoming damage is canceled."
+        
+        # Include if the effect requires the incoming damage to be above zero
+        if self.require_above_zero_dmg:
+            description += " Only triggers if incoming damage is above zero."
+        
+        return description
+
+    def tooltip_description_jp(self):
+        description = f"HPが{self.hp_threshold*100:.1f}%未満の時、ダメージ計算前に{self.heal_function(self.effect_applier):.1f}回復する。"
+        
+        # Determine which types of damage the effect applies to
+        if self.cover_normal_damage and self.cover_status_damage:
+            description += "全てのダメージに適用。"
+        else:
+            if self.cover_normal_damage:
+                description += "通常ダメージに適用。"
+            if self.cover_status_damage:
+                description += "状態異常ダメージに適用。"
+        
+        # Include whether the effect cancels incoming damage
+        if self.cancel_damage:
+            description += "受けるダメージを無効化。"
+        
+        # Include if the effect requires the incoming damage to be above zero
+        if self.require_above_zero_dmg:
+            description += "受けるダメージがゼロ以上の時のみ発動。"
+        
+        return description
+
 
 
 #---------------------------------------------------------
@@ -312,6 +545,8 @@ class EffectShield1_healoncrit(Effect):
     def tooltip_description(self):
         return f"When taking critical damage, heal for {self.heal_function(self.effect_applier):.1f} hp before damage calculation."
 
+    def tooltip_description_jp(self):
+        return f"クリティカルダメージを受けた時、ダメージ計算前に{self.heal_function(self.effect_applier):.1f}回復する。"
 
 
 #---------------------------------------------------------
@@ -360,6 +595,14 @@ class EffectShield2(Effect):
         str = f"Reduces damage exceeding {self.hp_threshold*100:.1f}% of max HP by {self.damage_reduction*100:.1f}%. "
         if self.shrink_rate > 0:
             str += f"Each turn, the damage reduction decreases by {self.shrink_rate*100:.1f}%. "
+        if self.damage_reflect_description:
+            str += self.damage_reflect_description
+        return str
+
+    def tooltip_description_jp(self):
+        str = f"最大HPの{self.hp_threshold*100:.1f}%を超えるダメージを{self.damage_reduction*100:.1f}%減少させる。"
+        if self.shrink_rate > 0:
+            str += f"毎ターン、ダメージ軽減が{self.shrink_rate*100:.1f}%減少する。"
         if self.damage_reflect_description:
             str += self.damage_reflect_description
         return str
@@ -417,6 +660,15 @@ class CancellationShield(Effect):
             string += " Cancel the damage below."
         return string
 
+    def tooltip_description_jp(self):
+        string = f"最大HPの{self.threshold*100:.1f}%を超えるダメージを{str(self.uses)}回まで無効化する。"
+        if self.cancel_excessive_instead:
+            string += "超過ダメージをキャンセルする。"
+        if self.cancel_below_instead:
+            string += "未満ダメージをキャンセルする。"
+        return string
+
+
 
 class RenkaEffect(Effect):
     """
@@ -458,7 +710,10 @@ class RenkaEffect(Effect):
         f"When taking damage, reduce damage taken by {self.damage_reduction*100:.1f}% + {self.stacks * self.damage_reduction_per_stack*100:.1f}%. " \
         f"Currently has {self.stacks} stack(s)."
     
-
+    def tooltip_description_jp(self):
+        return f"「連花」効果:致命的なダメージを受けた時、スタックを1消費し、ダメージを無効化し、HPを{self.hp_recover_percentage*100:.1f}%回復する。" \
+        f"ダメージを受けた時、ダメージを{self.damage_reduction*100:.1f}% + {self.stacks * self.damage_reduction_per_stack*100:.1f}%軽減する。" \
+        f"現在のスタック数:{self.stacks}。"
 
 
 
@@ -488,6 +743,9 @@ class StunEffect(Effect):
     
     def tooltip_description(self):
         return "Cannot take action and evasion is reduced by 100%."
+    
+    def tooltip_description_jp(self):
+        return "行動不可、回避率が100%減少。"
 
     
 class FrozenEffect(Effect):
@@ -573,6 +831,9 @@ class SilenceEffect(Effect):
     
     def tooltip_description(self):
         return "Cannot use skill."
+    
+    def tooltip_description_jp(self):
+        return "スキルが使用不可。"
 
 
 class SleepEffect(Effect):
@@ -599,6 +860,9 @@ class SleepEffect(Effect):
 
     def tooltip_description(self):
         return "Cannot act, effect is removed when taking damage, evasion is reduced by 100%."
+    
+    def tooltip_description_jp(self):
+        return "行動不可、ダメージを受けると解除される、回避率が100%減少。"
 
 
 class ConfuseEffect(Effect):
@@ -613,6 +877,10 @@ class ConfuseEffect(Effect):
     
     def tooltip_description(self):
         return "Attack random ally or enemy."
+    
+    def tooltip_description_jp(self):
+        return "ランダムな味方または敵を攻撃。"
+
 
 
 class CharmEffect(Effect):
@@ -627,6 +895,9 @@ class CharmEffect(Effect):
     
     def tooltip_description(self):
         return "Attack random ally"
+    
+    def tooltip_description_jp(self):
+        return "ランダムな味方を攻撃。"
 
 
 
@@ -690,6 +961,41 @@ class FearEffect(Effect):
                 else:
                     str += f"{key} is decreased by {-value*100}%."
         return str
+    
+    def tooltip_description_jp(self):
+        str = "恐怖に取り憑かれた。\n"
+        if not self.stats_dict:
+            return str + "現在効果なし。"
+        for key, value in self.stats_dict.items():
+            if key in ["maxhp", "hp", "atk", "defense", "spd"]:
+                key = self.translate_key(key)
+                str += f"{key}が{value*100:.2f}%に調整される。"
+            else:
+                if value > 0:
+                    key = self.translate_key(key)
+                    str += f"{key}が{value*100}%増加する。"
+                else:
+                    key = self.translate_key(key)
+                    str += f"{key}が{-value*100}%減少する。"
+        return str
+    
+    def translate_key(self, key):
+        translations = {
+            "maxhp": "最大HP",
+            "hp": "HP",
+            "atk": "攻撃力",
+            "defense": "防御力",
+            "spd": "速度",
+            "eva": "回避",
+            "acc": "命中",
+            "crit": "クリティカル",
+            "critdmg": "クリティカルダメージ",
+            "critdef": "クリティカル防御",
+            "penetration": "貫通",
+            "heal efficiency": "回復効率",
+            "final damage taken multipler": "最終ダメージ倍率"
+        }
+        return translations.get(key, key)
 
 # =========================================================
 # End of CC effects
@@ -805,9 +1111,9 @@ class StatsEffect(Effect):
                 else:
                     processed_key = key.replace("_", " ")
                     if value > 0:
-                        string += f"{processed_key} is increased by {value*100}%."
+                        string += f"{processed_key} is increased by {value*100:.2f}%."
                     else:
-                        string += f"{processed_key} is decreased by {-value*100}%."
+                        string += f"{processed_key} is decreased by {-value*100:.2f}%."
         if self.main_stats_additive_dict:
             for key, value in self.main_stats_additive_dict.items():
                 if key in ["maxhp", "hp", "atk", "defense", "spd"]:
@@ -817,6 +1123,56 @@ class StatsEffect(Effect):
                         string += f"{key} is decreased by {value}."
         return string
     
+    def tooltip_description_jp(self):
+        string = ""
+        if self.condition is not None:
+            if self.condition:
+                string += "効果が発動中です。"
+            else:
+                string += "効果が発動していません。"
+            if self.use_active_flag:
+                string += "発動中は、"
+            else:
+                string += "各ターンで発動中は、"
+        if self.stats_dict:
+            for key, value in self.stats_dict.items():
+                if key in ["maxhp", "hp", "atk", "defense", "spd"]:
+                    japanese_key = self.translate_key(key)
+                    string += f"{japanese_key}が{value*100:.2f}%に調整される。"
+                else:
+                    processed_key = key.replace("_", " ")
+                    processed_key = self.translate_key(processed_key)
+                    if value > 0:
+                        string += f"{processed_key}が{value*100:.2f}%増加する。"
+                    else:
+                        string += f"{processed_key}が{-value*100:.2f}%減少する。"
+        if self.main_stats_additive_dict:
+            for key, value in self.main_stats_additive_dict.items():
+                japanese_key = self.translate_key(key)
+                if key in ["maxhp", "hp", "atk", "defense", "spd"]:
+                    if value > 0:
+                        string += f"{japanese_key}が{value}増加する。"
+                    else:
+                        string += f"{japanese_key}が{value}減少する。"
+        return string
+
+    def translate_key(self, key):
+        translations = {
+            "maxhp": "最大HP",
+            "hp": "HP",
+            "atk": "攻撃力",
+            "defense": "防御力",
+            "spd": "速度",
+            "eva": "回避",
+            "acc": "命中",
+            "crit": "クリティカル",
+            "critdmg": "クリティカルダメージ",
+            "critdef": "クリティカル防御",
+            "penetration": "貫通",
+            "heal efficiency": "回復効率",
+            "final damage taken multipler": "最終ダメージ倍率"
+        }
+        return translations.get(key, key)
 
 # =========================================================
 # End of Stats effects
@@ -850,6 +1206,12 @@ class TimedBombEffect(Effect):
             return f"Take {self.damage} status damage when expired."
         else:
             return f"Take {self.damage} status damage when expired. {self.new_effect.name} effect is applied after damage."
+        
+    def tooltip_description_jp(self):
+        if self.new_effect is None:
+            return f"効果終了時に{self.damage}のステータスダメージを受ける。"
+        else:
+            return f"効果終了時に{self.damage}のステータスダメージを受ける。ダメージ後、{self.new_effect.name}効果が適用される。"
 
 
 # =========================================================
@@ -876,6 +1238,9 @@ class ContinuousHealEffect(Effect):
     
     def tooltip_description(self):
         return f"Recovers hp each turn, amount: {self.value_function_description}."
+    
+    def tooltip_description_jp(self):
+        return f"毎ターンHPを回復する。回復量:{self.value_function_description}。"
 
 
 class ContinuousDamageEffect(Effect):
@@ -911,9 +1276,21 @@ class ContinuousDamageEffect(Effect):
             character.remove_effect(self)
 
     def tooltip_description(self):
-        s = f"Take {int(self.value)} {self.damage_type} damage each turn."
+        s = f"Take {(self.value):.2f} {self.damage_type} damage each turn."
         if self.remove_by_heal:
             s += " This effect can be removed by healing."
+        return s
+    
+    def tooltip_description_jp(self):
+        damage_type_dict = {
+            "status": "状態異常",
+            "bypass": "状態異常無視",
+            "normal": "通常"
+        }
+        damage_type = damage_type_dict.get(self.damage_type, self.damage_type)
+        s = f"毎ターン{(self.value):.2f} {damage_type}ダメージを受ける。"
+        if self.remove_by_heal:
+            s += "この効果は回復によって解除される。"
         return s
 
 
@@ -992,11 +1369,25 @@ class ContinuousDamageEffect_Poison(Effect):
                     a.apply_effect(self)
 
     def tooltip_description(self):
-        s = f"Take {int(self.ratio*100)}% {self.base} damage each turn."
+        s = f"Take {(self.ratio*100):.2f}% {self.base} damage each turn."
         if self.remove_by_heal:
             s += " This effect can be removed by healing."
         if self.is_plague:
             s += f" At end of turn, {int(self.is_plague_transmission_chance*100)}% chance to apply the same effect to a neighbor ally."
+        return s
+
+    def tooltip_description_jp(self):
+        base_dict = {
+            "maxhp": "最大HP",
+            "hp": "HP",
+            "losthp": "損失HP"
+        }
+        base = base_dict.get(self.base, self.base)
+        s = f"毎ターン{(self.ratio*100):.2f}%の{base}ダメージを受ける。"
+        if self.remove_by_heal:
+            s += "この効果は回復によって解除される。"
+        if self.is_plague:
+            s += f"ターン終了時、隣接する味方に同じ効果を適用する確率{int(self.is_plague_transmission_chance*100)}%。"
         return s
 
 
@@ -1055,6 +1446,9 @@ class NewYearFireworksEffect(Effect):
 
     def tooltip_description(self):
         return f"Happy New Year! Get ready for some fireworks! The fireworks currently has {self.current_counters} counters." 
+    
+    def tooltip_description_jp(self):
+        return f"あけましておめでとうございます！花火をお楽しみください！現在のカウンター数:{self.current_counters}。"
 
 
 class RebornEffect(Effect):
@@ -1078,6 +1472,9 @@ class RebornEffect(Effect):
 
     def tooltip_description(self):
         return f"Revive with {self.effect_value*100}% + {self.effect_value_constant} hp the next turn after fallen."
+    
+    def tooltip_description_jp(self):
+        return f"倒れた次のターンに{self.effect_value*100}% + {self.effect_value_constant}HPで復活する。"
 
 
 class StingEffect(Effect):
@@ -1096,6 +1493,9 @@ class StingEffect(Effect):
 
     def tooltip_description(self):
         return f"Take {self.value} status damage every time after taking damage."
+    
+    def tooltip_description_jp(self):
+        return f"ダメージを受けた後、{self.value}の状態異常ダメージを受ける。"
     
 
 class HideEffect(Effect):
@@ -1143,24 +1543,32 @@ class HideEffect(Effect):
         if self.remove_on_damage:
             string += f"Effect is removed when taking damage."
         return string
+    
+    def tooltip_description_jp(self):
+        string = f"5体未満の敵を対象とする攻撃やスキルはこのキャラクターを対象にできない。"
+        string += f"全ての味方が隠れている場合、次のターンの開始時にこの効果は解除される。"
+        if self.remove_on_damage:
+            string += f"ダメージを受けると効果が解除されます。"
+        return string
 
 
 class SinEffect(StatsEffect):
     """
     When defeated, all allies take status damage equal to [value].
     """
-    def __init__(self, name, duration, is_buff, value, stats_dict):
+    def __init__(self, name, duration, is_buff, value, stats_dict, applier):
         super().__init__(name, duration, is_buff, stats_dict)
         self.value = value
         self.sort_priority = 2000
         self.can_be_removed_by_skill = False
+        self.applier = applier
 
     def apply_effect_on_trigger(self, character):
         if character.is_dead():
             for ally in character.ally:
                 if ally.is_dead():
                     continue
-                ally.take_status_damage(self.value, character)
+                ally.take_status_damage(self.value, self.applier)
             global_vars.turn_info_string += f"{character.name} has been defeated!\n"
             character.remove_effect(self)
         return super().apply_effect_on_trigger(character)
@@ -1178,6 +1586,10 @@ class SinEffect(StatsEffect):
     def tooltip_description(self):
         string = super().tooltip_description()
         return string + f"When defeated, all allies take status damage equal to {self.value}."
+    
+    def tooltip_description_jp(self):
+        string = super().tooltip_description_jp()
+        return string + f"倒された場合、全ての味方に{self.value}の状態異常ダメージを与える。"
 
 
 class NotTakingDamageEffect(Effect):
@@ -1526,14 +1938,18 @@ class EquipmentSetEffect_Liquidation(Effect):
         self.damage_reduction = damage_reduction
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        # if damage_taken_by_protector in keywords and its True, effect is reduced by 50%.
+        damage_reduction_final = self.damage_reduction
+        if "damage_taken_by_protector" in keywords and keywords["damage_taken_by_protector"]:
+            damage_reduction_final *= 0.5
         if damage == 0:
             return 0
         if attacker is None:
             return damage
         for key in ["hp", "atk", "defense", "spd"]:
             if getattr(character, key) < getattr(attacker, key):
-                damage = damage * (1 - self.damage_reduction)
-                global_vars.turn_info_string += f"{character.name}'s {key} is lower than {attacker.name}'s, damage is reduced by {int(self.damage_reduction*100)}%.\n"
+                damage = damage * (1 - damage_reduction_final)
+                global_vars.turn_info_string += f"{character.name}'s {key} is lower than {attacker.name}'s, damage is reduced by {int(damage_reduction_final*100)}%.\n"
         return damage
 
 # ---------------------------------------------------------
@@ -1586,8 +2002,12 @@ class RequinaGreatPoisonEffect(Effect):
         self.apply_effect_on_apply(character)
 
     def tooltip_description(self):
-        return f"Great Poison stacks: {self.stacks}. Take {int(self.value_onestack * self.stacks * 100)}% max hp status damage each turn." \
+        return f"Great Poison stacks: {self.stacks}. Take {(self.value_onestack * self.stacks * 100):.2f}% max hp status damage each turn." \
             f" Stats are decreased by {self.stacks}%."
+    
+    def tooltip_description_jp(self):
+        return f"猛毒のスタック数: {self.stacks}。毎ターン最大HPの{(self.value_onestack * self.stacks * 100):.2f}%の状態異常ダメージを受ける。" \
+            f"ステータスが{self.stacks}%減少する。"
 
 
 class PharaohPassiveEffect(Effect):
@@ -1604,7 +2024,10 @@ class PharaohPassiveEffect(Effect):
                 return
     
     def tooltip_description(self):
-        return f"At the end of turn, if there is a cursed enemy, increase atk by {self.value*100}% for 3 turns."
+        return f"At the end of turn, if there is a cursed enemy, increase atk by {self.value*100:.2f}% for 3 turns."
+    
+    def tooltip_description_jp(self):
+        return f"ターン終了時、呪われた敵がいる場合、3ターンの間、攻撃力が{self.value*100:.2f}%増加する。"
     
 
 class BakeNekoSupressionEffect(Effect):
@@ -1624,6 +2047,9 @@ class BakeNekoSupressionEffect(Effect):
 
     def tooltip_description(self):
         return f"Attack damage increased by the ratio of self hp to target hp if self has more hp than target. Max bonus damage: 1000%."
+    
+    def tooltip_description_jp(self):
+        return f"自分のHPがターゲットのHPよりも多い場合、ダメージが増加する。増加率は自分のHP/ターゲットのHP。最大増加率: 1000%。"
 
 
 class TrialofDragonEffect(StatsEffect):
@@ -1645,6 +2071,10 @@ class TrialofDragonEffect(StatsEffect):
     def tooltip_description(self):
         string = super().tooltip_description()
         return string + f"Deal {self.damage} status damage to self and stun for {self.stun_duration} turns when effect expires."
+    
+    def tooltip_description_jp(self):
+        string = super().tooltip_description_jp()
+        return string + f"効果終了時、{self.damage}の状態異常ダメージを受け、{self.stun_duration}ターンスタンする。"
 
 
 # ---------------------------------------------------------

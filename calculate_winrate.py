@@ -31,7 +31,7 @@ def get_all_characters(test_mode: int):
     all_characters = [cls(name, 40) for name, cls in character.__dict__.items() 
                     if inspect.isclass(cls) and issubclass(cls, character.Character) and cls != character.Character]
     all_monsters = [cls(name, 40) for name, cls in monsters.__dict__.items() 
-                    if inspect.isclass(cls) and issubclass(cls, character.Character) and cls != character.Character]
+                    if inspect.isclass(cls) and issubclass(cls, character.Character) and cls != character.Character and cls != monsters.Monster]
     print(f"All characters: {[x.name for x in all_characters]}")
     print(f"All monsters: {[x.name for x in all_monsters]}")
 

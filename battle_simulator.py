@@ -65,6 +65,7 @@ def load_player(filename="player_data.json"):
                         setattr(item, attr, value)
                 item.estimate_market_price()
                 item.four_set_effect_description = item.assign_four_set_effect_description()
+                item.four_set_effect_description_jp = item.assign_four_set_effect_description_jp()
             case (_, "Food"): 
                 item_class = globals().get(item_data['name'])
                 if item_class:
@@ -205,7 +206,10 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                             case _:
                                 print(f"Warning: Unknown item type: {item.type} in Nine.build_inventory_slots()")
                                 ui_image.set_image(images_item["404"])
-            ui_image.set_tooltip(item.print_stats_html(), delay=0.1, wrap_width=300)
+            if global_vars.language == "日本語" and hasattr(item, "print_stats_html_jp"):
+                ui_image.set_tooltip(item.print_stats_html_jp(), delay=0.1, wrap_width=300)
+            else:
+                ui_image.set_tooltip(item.print_stats_html(), delay=0.1, wrap_width=300)
         update_inventory_section(self)
 
     def add_to_inventory(self, item, rebuild_inventory_slots=True):
@@ -458,7 +462,7 @@ def get_all_characters():
 
 all_characters = get_all_characters()
 all_monsters = [cls(name, 1) for name, cls in monsters.__dict__.items() 
-                if inspect.isclass(cls) and issubclass(cls, Character) and cls != Character]
+                if inspect.isclass(cls) and issubclass(cls, Character) and cls != Character and cls != monsters.Monster]
 
 
 
@@ -483,6 +487,7 @@ if __name__ == "__main__":
 
     display_surface = pygame.display.set_mode((1600, 900), flags=pygame.SCALED)
     ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
+    ui_manager_overlay = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
     # debug_ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
     # ui_manager.get_theme().load_theme("theme_light_purple.json")
     # ui_manager.rebuild_all_from_changed_theme_data()
@@ -613,6 +618,45 @@ if __name__ == "__main__":
 
     image_slots_party1 = [image_slot1, image_slot2, image_slot3, image_slot4, image_slot5]
     image_slots_party2 = [image_slot6, image_slot7, image_slot8, image_slot9, image_slot10]
+
+    image_slot_overlay1 = pygame_gui.elements.UIImage(pygame.Rect((100, 0), (156, 210)),
+                                        pygame.Surface((156, 210)),
+                                        ui_manager_overlay)
+    image_slot_overlay2 = pygame_gui.elements.UIImage(pygame.Rect((300, 0), (156, 210)),
+                                        pygame.Surface((156, 210)),
+                                        ui_manager_overlay)
+    image_slot_overlay3 = pygame_gui.elements.UIImage(pygame.Rect((500, 0), (156, 210)),
+                                        pygame.Surface((156, 210)),
+                                        ui_manager_overlay)
+    image_slot_overlay4 = pygame_gui.elements.UIImage(pygame.Rect((700, 0), (156, 210)),
+                                        pygame.Surface((156, 210)),
+                                        ui_manager_overlay)
+    image_slot_overlay5 = pygame_gui.elements.UIImage(pygame.Rect((900, 0), (156, 210)),
+                                        pygame.Surface((156, 210)),
+                                        ui_manager_overlay)
+    image_slot_overlay_party1 = [image_slot_overlay1, image_slot_overlay2, image_slot_overlay3, image_slot_overlay4, image_slot_overlay5]
+    for i in image_slot_overlay_party1:
+        i.set_image(images_item["405"])
+    image_slot_overlay6 = pygame_gui.elements.UIImage(pygame.Rect((100, 550), (156, 256)),
+                                        pygame.Surface((156, 256)),
+                                        ui_manager_overlay)
+    image_slot_overlay7 = pygame_gui.elements.UIImage(pygame.Rect((300, 550), (156, 256)),
+                                        pygame.Surface((156, 256)),
+                                        ui_manager_overlay)
+    image_slot_overlay8 = pygame_gui.elements.UIImage(pygame.Rect((500, 550), (156, 256)),
+                                        pygame.Surface((156, 256)),
+                                        ui_manager_overlay)
+    image_slot_overlay9 = pygame_gui.elements.UIImage(pygame.Rect((700, 550), (156, 256)),
+                                        pygame.Surface((156, 256)),
+                                        ui_manager_overlay)
+    image_slot_overlay10 = pygame_gui.elements.UIImage(pygame.Rect((900, 550), (156, 256)),
+                                        pygame.Surface((156, 256)),
+                                        ui_manager_overlay)
+    image_slot_overlay_party2 = [image_slot_overlay6, image_slot_overlay7, image_slot_overlay8, image_slot_overlay9, image_slot_overlay10]
+    for i in image_slot_overlay_party2:
+        i.set_image(images_item["405"])
+
+
 
     # Equip Slots
     # ==============================
@@ -850,23 +894,25 @@ if __name__ == "__main__":
                                         tool_tip_text = "Switch between Casual Training Mode and Adventure Mode")
     switch_game_mode_button.set_tooltip("Switch between adventure mode and training mode.", delay=0.1, wrap_width=300)
 
-    def adventure_mode_generate_stage():
+    def adventure_mode_generate_stage(force_regenerate_stage: bool = False):
         global current_game_mode, adventure_mode_current_stage, adventure_mode_stages
         for m in all_monsters:
             m.lvl = adventure_mode_current_stage
         # Boss monsters have attribute is_boss = True, every 10 stages, starting from stage 10, summon a boss monster
         # Stage 1000 to 2400, every stage has a boss monster in the middle of the stage.
         # Howerver, on stage 2400 and later, there will be no restriction on whether boss or not.
-        if (adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000) and adventure_mode_current_stage < 2400:
+        if (adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000) and adventure_mode_current_stage < 2000:
             new_selection_of_monsters = random.sample([x for x in all_monsters if not x.is_boss], k=4)
             boss_monster = random.choice([x for x in all_monsters if x.is_boss])
             new_selection_of_monsters.insert(2, boss_monster)
-        elif adventure_mode_current_stage >= 2400:
+        elif adventure_mode_current_stage >= 2000:
             new_selection_of_monsters = random.sample(all_monsters, k=5)
         else:
             new_selection_of_monsters = random.sample([x for x in all_monsters if not x.is_boss], k=5)
-        if not adventure_mode_stages.get(adventure_mode_current_stage):
+
+        if not adventure_mode_stages.get(adventure_mode_current_stage) or force_regenerate_stage:
             adventure_mode_stages[adventure_mode_current_stage] = new_selection_of_monsters
+
         # if adventure_mode_current_stage > 1000:
         if adventure_mode_current_stage < 500:
             for m in adventure_mode_stages[adventure_mode_current_stage]:
@@ -893,7 +939,7 @@ if __name__ == "__main__":
         global current_game_mode, adventure_mode_current_stage
         if current_game_mode == "Training Mode":
             raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
-        if adventure_mode_current_stage == 2500:
+        if adventure_mode_current_stage == 3000:
             text_box.set_text("We have reached the end of the world.\n")
             return False
         if player.cleared_stages < adventure_mode_current_stage:
@@ -915,6 +961,12 @@ if __name__ == "__main__":
         adventure_mode_generate_stage()
         set_up_characters_adventure_mode()
 
+    def adventure_mode_stage_refresh():
+        global current_game_mode, adventure_mode_current_stage
+        if current_game_mode == "Training Mode":
+            raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
+        adventure_mode_generate_stage(force_regenerate_stage=True)
+        set_up_characters_adventure_mode()
 
     def adventure_mode_exp_reward():
         global adventure_mode_current_stage, party1
@@ -1317,7 +1369,10 @@ if __name__ == "__main__":
             text_box_text_to_append += f"Stars: {int(a)} -> {int(b)}\n"
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_upgrade:
-                    k.set_tooltip(item_to_upgrade.print_stats_html(), delay=0.1, wrap_width=300)
+                    if global_vars.language == "English":
+                        k.set_tooltip(item_to_upgrade.print_stats_html(), delay=0.1, wrap_width=300)
+                    elif global_vars.language == "日本語":
+                        k.set_tooltip(item_to_upgrade.print_stats_html_jp(), delay=0.1, wrap_width=300)
         if cost_total > 0:
             player.lose_cash(cost_total, False)
             text_box_text_to_append += f"Upgraded {len(selected_items)} items for {cost_total} cash.\n"
@@ -1373,7 +1428,10 @@ if __name__ == "__main__":
             text_box_text_to_append += f"Level: {int(a)} -> {int(b)}\n"
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_level_up:
-                    k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=300)
+                    if global_vars.language == "English":
+                        k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=300)
+                    elif global_vars.language == "日本語":
+                        k.set_tooltip(item_to_level_up.print_stats_html_jp(), delay=0.1, wrap_width=300)
         if cost_total > 0:
             player.lose_cash(cost_total, False)
             text_box_text_to_append += f"Leveled {len(selected_items)} items for {cost_total} cash.\n"
@@ -1466,7 +1524,10 @@ if __name__ == "__main__":
                 text_box.append_html_text(f"Cannot level up {item_to_level_up} in inventory.\n")
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_level_up:
-                    k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=300)
+                    if global_vars.language == "English":
+                        k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=300)
+                    elif global_vars.language == "日本語":
+                        k.set_tooltip(item_to_level_up.print_stats_html_jp(), delay=0.1, wrap_width=300)
 
 
 
@@ -1491,16 +1552,22 @@ if __name__ == "__main__":
         global_vars.theme = theme_selection_menu.selected_option[0]
         if global_vars.theme == "Yellow Theme":
             ui_manager.get_theme().load_theme("theme_light_yellow.json")
+            ui_manager_overlay.get_theme().load_theme("theme_light_yellow.json")
         elif global_vars.theme == "Purple Theme":
             ui_manager.get_theme().load_theme("theme_light_purple.json")
+            ui_manager_overlay.get_theme().load_theme("theme_light_purple.json")
         elif global_vars.theme == "Red Theme":
             ui_manager.get_theme().load_theme("theme_light_red.json")
+            ui_manager_overlay.get_theme().load_theme("theme_light_red.json")
         elif global_vars.theme == "Blue Theme":
             ui_manager.get_theme().load_theme("theme_light_blue.json")
+            ui_manager_overlay.get_theme().load_theme("theme_light_blue.json")
         elif global_vars.theme == "Green Theme":
             ui_manager.get_theme().load_theme("theme_light_green.json")
+            ui_manager_overlay.get_theme().load_theme("theme_light_green.json")
         elif global_vars.theme == "Pink Theme":
             ui_manager.get_theme().load_theme("theme_light_pink.json")
+            ui_manager_overlay.get_theme().load_theme("theme_light_pink.json")
         else:
             raise ValueError(f"Unknown theme: {global_vars.theme}")
         
@@ -2403,6 +2470,121 @@ if __name__ == "__main__":
     health_bar_party2 = [character_healthbar_slot_buttom1, character_healthbar_slot_buttom2, character_healthbar_slot_buttom3, character_healthbar_slot_buttom4, character_healthbar_slot_buttom5]
 
 
+    # each healthbar is divided into 3 parts, a overlay is created on top of it.
+    # this overlay will be used to show status effects tooltips,
+    # we create 3 pages because often, status effects have too much text to be shown in one page
+    character_healthbar_slot_top1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 220), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 220), (59, 30)),
+                                        pygame.Surface((59, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 220), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 220), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 220), (59, 30)),
+                                        pygame.Surface((59, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 220), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 220), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 220), (59, 30)),
+                                        pygame.Surface((59, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 220), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 220), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 220), (59, 30)),
+                                        pygame.Surface((59, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 220), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 220), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 220), (59, 30)),
+                                        pygame.Surface((59, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_top5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 220), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 825), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 825), (59, 30)),
+                                        pygame.Surface((59, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 825), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 825), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 825), (59, 30)),
+                                        pygame.Surface((59, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 825), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 825), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 825), (59, 30)),
+                                        pygame.Surface((59, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 825), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 825), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 825), (59, 30)),
+                                        pygame.Surface((59, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 825), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 825), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 825), (59, 30)),
+                                        pygame.Surface((59, 30)),
+                                        ui_manager_overlay)
+    character_healthbar_slot_buttom5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 825), (58, 30)),
+                                        pygame.Surface((58, 30)),
+                                        ui_manager_overlay)
+    health_bar_party1_overlay = [[character_healthbar_slot_top1_o1, character_healthbar_slot_top1_o2, character_healthbar_slot_top1_o3],
+                                [character_healthbar_slot_top2_o1, character_healthbar_slot_top2_o2, character_healthbar_slot_top2_o3],
+                                [character_healthbar_slot_top3_o1, character_healthbar_slot_top3_o2, character_healthbar_slot_top3_o3],
+                                [character_healthbar_slot_top4_o1, character_healthbar_slot_top4_o2, character_healthbar_slot_top4_o3],
+                                [character_healthbar_slot_top5_o1, character_healthbar_slot_top5_o2, character_healthbar_slot_top5_o3]]
+    for t in health_bar_party1_overlay:
+        for overlay in t:
+            overlay.set_image((images_item["405"]))
+    
+    health_bar_party2_overlay = [[character_healthbar_slot_buttom1_o1, character_healthbar_slot_buttom1_o2, character_healthbar_slot_buttom1_o3],
+                                [character_healthbar_slot_buttom2_o1, character_healthbar_slot_buttom2_o2, character_healthbar_slot_buttom2_o3],
+                                [character_healthbar_slot_buttom3_o1, character_healthbar_slot_buttom3_o2, character_healthbar_slot_buttom3_o3],
+                                [character_healthbar_slot_buttom4_o1, character_healthbar_slot_buttom4_o2, character_healthbar_slot_buttom4_o3],
+                                [character_healthbar_slot_buttom5_o1, character_healthbar_slot_buttom5_o2, character_healthbar_slot_buttom5_o3]]
+    for t in health_bar_party2_overlay:
+        for overlay in t:
+            overlay.set_image((images_item["405"]))
+
+
+
+
+
     damage_graph_slot = pygame_gui.elements.UIImage(pygame.Rect((1080, 655), (500, 225)),
                                         pygame.Surface((500, 225)),
                                         ui_manager)
@@ -2415,7 +2597,7 @@ if __name__ == "__main__":
                   also_draw_chart=True, optimize_for_auto_battle=False):
 
         def redraw_party(party, image_slots, equip_slots_weapon, equip_slots_armor, equip_slots_accessory, equip_stats_boots, 
-                         labels, healthbar, equip_effect_slots):
+                         labels, healthbar, equip_effect_slots, image_slots_overlays, healthbar_overlays):
             for i, character in enumerate(party):
                 if refill_image:
                     try:
@@ -2460,14 +2642,24 @@ if __name__ == "__main__":
                         equip_stats_boots[i].hide()
                         ignore_draw_boots = True
 
-                    if not ignore_draw_weapon:
-                        equip_slots_weapon[i].set_tooltip(character.equip["Weapon"].print_stats_html(), delay=0.1, wrap_width=300)
-                    if not ignore_draw_armor:
-                        equip_slots_armor[i].set_tooltip(character.equip["Armor"].print_stats_html(), delay=0.1, wrap_width=300)
-                    if not ignore_draw_accessory:
-                        equip_slots_accessory[i].set_tooltip(character.equip["Accessory"].print_stats_html(), delay=0.1, wrap_width=300)
-                    if not ignore_draw_boots:
-                        equip_stats_boots[i].set_tooltip(character.equip["Boots"].print_stats_html(), delay=0.1, wrap_width=300)
+                    if global_vars.language == "日本語":
+                        if not ignore_draw_weapon:
+                            equip_slots_weapon[i].set_tooltip(character.equip["Weapon"].print_stats_html_jp(), delay=0.1, wrap_width=300)
+                        if not ignore_draw_armor:
+                            equip_slots_armor[i].set_tooltip(character.equip["Armor"].print_stats_html_jp(), delay=0.1, wrap_width=300)
+                        if not ignore_draw_accessory:
+                            equip_slots_accessory[i].set_tooltip(character.equip["Accessory"].print_stats_html_jp(), delay=0.1, wrap_width=300)
+                        if not ignore_draw_boots:
+                            equip_stats_boots[i].set_tooltip(character.equip["Boots"].print_stats_html_jp(), delay=0.1, wrap_width=300)
+                    elif global_vars.language == "English":
+                        if not ignore_draw_weapon:
+                            equip_slots_weapon[i].set_tooltip(character.equip["Weapon"].print_stats_html(), delay=0.1, wrap_width=300)
+                        if not ignore_draw_armor:
+                            equip_slots_armor[i].set_tooltip(character.equip["Armor"].print_stats_html(), delay=0.1, wrap_width=300)
+                        if not ignore_draw_accessory:
+                            equip_slots_accessory[i].set_tooltip(character.equip["Accessory"].print_stats_html(), delay=0.1, wrap_width=300)
+                        if not ignore_draw_boots:
+                            equip_stats_boots[i].set_tooltip(character.equip["Boots"].print_stats_html(), delay=0.1, wrap_width=300)
 
 
                 # This should always be redrawn
@@ -2492,7 +2684,33 @@ if __name__ == "__main__":
                 # else:
                 # Edit on 2.2.9: Optimize is removed because we wont be able to catch skills that change maxhp or shield
                 healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value(), auto_color=True))
-                healthbar[i].set_tooltip(character.tooltip_status_effects(), delay=0.1, wrap_width=400)
+
+                character_status_effect_str = character.tooltip_status_effects()
+                # Sometimes the string is very long, so we need to wrap it to next 'page':
+                # healthbar_overlays[i][1] and healthbar_overlays[i][2] are the other pages
+                # One plan is to count how many \n there are in the string, and then split it into 3 parts
+
+                lines = character_status_effect_str.split('\n')
+                max_lines_per_page = 16
+
+                # Split lines into three parts
+                part1 = '\n'.join(lines[:max_lines_per_page])
+                part2 = '\n'.join(lines[max_lines_per_page:max_lines_per_page*2])
+                part3 = '\n'.join(lines[max_lines_per_page*2:max_lines_per_page*3])
+
+                # Set tooltips for each part
+                if part1:
+                    healthbar_overlays[i][0].set_tooltip(part1, delay=0.1, wrap_width=400)
+                else:
+                    healthbar_overlays[i][0].set_tooltip("", delay=0.1, wrap_width=400)
+                if part2:
+                    healthbar_overlays[i][1].set_tooltip(part2, delay=0.1, wrap_width=400)
+                else:
+                    healthbar_overlays[i][1].set_tooltip("", delay=0.1, wrap_width=400)
+                if part3:
+                    healthbar_overlays[i][2].set_tooltip(part3, delay=0.1, wrap_width=400)
+                else:
+                    healthbar_overlays[i][2].set_tooltip("", delay=0.1, wrap_width=400)
 
                 if main_char == character:
                     labels[i].set_text(f"--> lv {character.lvl} {character.name}")
@@ -2501,6 +2719,8 @@ if __name__ == "__main__":
                     image_slots[i].set_image(new_image)
 
                 # self.damage_taken_this_turn = [] # list of tuples (damage, attacker, damage_type)
+                image_slots_overlays[i].set_image(images_item["405"])
+                character_image_overlay = image_slots_overlays[i].image
                 current_offset_for_damage_and_healing = 10
                 if character.damage_taken_this_turn:
                     image = image_slots[i].image
@@ -2508,16 +2728,17 @@ if __name__ == "__main__":
                     for a, b, c in character.damage_taken_this_turn:
                         match c:
                             case "normal" | "bypass":
-                                create_yellow_text(new_image, str(a), 25, (255, 0, 0), current_offset_for_damage_and_healing)
+                                create_yellow_text(character_image_overlay, str(a), 25, (255, 0, 0), current_offset_for_damage_and_healing)
                             case "status":
                                 # orange text
-                                create_yellow_text(new_image, str(a), 25, (255, 165, 0), current_offset_for_damage_and_healing)
+                                create_yellow_text(character_image_overlay, str(a), 25, (255, 165, 0), current_offset_for_damage_and_healing)
                             case "normal_critical":
-                                create_yellow_text(new_image, str(a), 25, (255, 0, 0), current_offset_for_damage_and_healing, bold=True, italic=True)
+                                create_yellow_text(character_image_overlay, str(a), 25, (255, 0, 0), current_offset_for_damage_and_healing, bold=True, italic=True)
                             case _:
                                 raise Exception(f"Unknown damage type: {c}")
                         current_offset_for_damage_and_healing += 12
                     image_slots[i].set_image(new_image)
+                    image_slots_overlays[i].set_image(character_image_overlay)
                 if character.healing_received_this_turn:
                     image = image_slots[i].image
                     new_image = add_outline_to_image(image, (0, 255, 0), 4)
@@ -2525,9 +2746,10 @@ if __name__ == "__main__":
                     healing_list = [x[0] for x in character.healing_received_this_turn]
                     # show healing on image
                     for healing in healing_list:
-                        create_yellow_text(new_image, str(healing), 25, (0, 255, 0), current_offset_for_damage_and_healing)
+                        create_yellow_text(character_image_overlay, str(healing), 25, (0, 255, 0), current_offset_for_damage_and_healing)
                         current_offset_for_damage_and_healing += 12
                     image_slots[i].set_image(new_image)
+                    image_slots_overlays[i].set_image(character_image_overlay)
 
                 if buff_added_this_turn:
                     value = buff_added_this_turn[character.name]
@@ -2582,9 +2804,9 @@ if __name__ == "__main__":
 
 
         redraw_party(party1, image_slots_party1, equip_slot_party1_weapon, equip_slot_party1_armor, equip_slot_party1_accessory, equip_slot_party1_boots,
-                     label_party1, health_bar_party1, equip_set_slot_party1)
+                     label_party1, health_bar_party1, equip_set_slot_party1, image_slot_overlay_party1, health_bar_party1_overlay)
         redraw_party(party2, image_slots_party2, equip_slot_party2_weapon, equip_slot_party2_armor, equip_slot_party2_accessory, equip_slot_party2_boots,
-                     label_party2, health_bar_party2, equip_set_slot_party2)
+                     label_party2, health_bar_party2, equip_set_slot_party2, image_slot_overlay_party2, health_bar_party2_overlay)
         if also_draw_chart:
             draw_chart()
 
@@ -2638,17 +2860,26 @@ if __name__ == "__main__":
     text_box_introduction_text += "Hover over character health bar to show status effects.\n"
     text_box.set_text(text_box_introduction_text)
 
-    box_submenu_previous_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((300, 560), (120, 35)),
-                                                                    text='Previous Stage',
+    box_submenu_previous_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((300, 560), (75, 35)),
+                                                                    text='Prev',
                                                                     manager=ui_manager)
     box_submenu_previous_stage_button.set_tooltip("Go to previous stage.", delay=0.1)
 
-    box_submenu_next_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((425, 560), (120, 35)),
-                                                                    text='Next Stage',
+    box_submenu_next_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((380, 560), (75, 35)),
+                                                                    text='Next',
                                                                     manager=ui_manager)
     box_submenu_next_stage_button.set_tooltip("Advance to the next stage. You can proceed only if the current stage has been cleared.", delay=0.1)
+
+    box_submenu_refresh_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((460, 560), (75, 35)),
+                                                                    text='Refresh',
+                                                                    manager=ui_manager)
+    box_submenu_refresh_stage_button.set_tooltip("Refresh the current stage, get a new set of monsters.", delay=0.1)
+
+
     box_submenu_previous_stage_button.hide()
     box_submenu_next_stage_button.hide()
+    box_submenu_refresh_stage_button.hide()
+
     box_submenu_stage_info_label = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((550, 560), (80, 35)),
                                                                     text='Current Stage: 1',
                                                                     manager=ui_manager)
@@ -2823,7 +3054,10 @@ if __name__ == "__main__":
                             case _:
                                 print(f"Warning: Unknown item type: {item.type} in redraw_ui_shop_edition()")
                                 ui_image.set_image(images_item["404"])
-            ui_image.set_tooltip(item.print_stats_html(), delay=0.1, wrap_width=300)
+            if global_vars.language == "日本語" and hasattr(item, "print_stats_html_jp"):
+                ui_image.set_tooltip(item.print_stats_html_jp(), delay=0.1, wrap_width=300)
+            else:
+                ui_image.set_tooltip(item.print_stats_html(), delay=0.1, wrap_width=300)
         # set up prices
         price_labels = [shop_price_labela, shop_price_labelb, shop_price_labelc, shop_price_labeld, shop_price_labele]
         for price_label, (p, d, f) in mit.zip_equal(price_labels, list(shop_instance.inventory.values())): 
@@ -2894,7 +3128,7 @@ if __name__ == "__main__":
                 c.lvl = character_info_dict[c.name][0]
                 c.exp = character_info_dict[c.name][1]
                 if character_info_dict[c.name][2]:
-                    print(f"Trying to read equipment data and equip items for {c.name}...")
+                    # print(f"Trying to read equipment data and equip items for {c.name}...")
                     for d in character_info_dict[c.name][2]:
                         item = Equip("foo", "Weapon", "Common")
                         for attr, value in d.items():
@@ -2902,16 +3136,17 @@ if __name__ == "__main__":
                                 setattr(item, attr, value)
                         item.estimate_market_price()
                         item.four_set_effect_description = item.assign_four_set_effect_description()
+                        item.four_set_effect_description_jp = item.assign_four_set_effect_description_jp()
                         c.equip_item(item)
-                        print(f"Equipped {str(item)} to {c.name}.")
+                        # print(f"Equipped {str(item)} to {c.name}.")
         return player
 
     player = initiate_player_data()
 
-    adventure_mode_stages = {} # int : list of monsters
+    adventure_mode_stages: dict[int, list[monsters.Monster]] = {}
     if player.cleared_stages > 0:
         print(f"Loading adventure mode stages from player data. Current stage: {player.cleared_stages}")
-        adventure_mode_current_stage = min(player.cleared_stages + 1, 2500)
+        adventure_mode_current_stage = min(player.cleared_stages + 1, 3000)
     else:
         adventure_mode_current_stage = 1
     adventure_mode_generate_stage()
@@ -3050,6 +3285,7 @@ if __name__ == "__main__":
                         text_box.set_dimensions((556, 255))
                         box_submenu_previous_stage_button.show()
                         box_submenu_next_stage_button.show()
+                        box_submenu_refresh_stage_button.show()
                         box_submenu_stage_info_label.show()
                         box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
                         box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
@@ -3065,6 +3301,7 @@ if __name__ == "__main__":
                         text_box.set_dimensions((556, 295))
                         box_submenu_previous_stage_button.hide()
                         box_submenu_next_stage_button.hide()
+                        box_submenu_refresh_stage_button.hide()
                         box_submenu_stage_info_label.hide()
                         box_submenu_enter_shop_button.hide()
                         box_submenu_exit_shop_button.hide()
@@ -3135,6 +3372,11 @@ if __name__ == "__main__":
                     turn = 1
                 if event.ui_element == box_submenu_next_stage_button:
                     adventure_mode_stage_increase()
+                    box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
+                    box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
+                    turn = 1
+                if event.ui_element == box_submenu_refresh_stage_button:
+                    adventure_mode_stage_refresh()
                     box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
                     box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
                     turn = 1
@@ -3243,6 +3485,7 @@ if __name__ == "__main__":
             ui_manager.process_events(event)
 
         ui_manager.update(time_delta)
+        ui_manager_overlay.update(time_delta)
         if global_vars.theme == "Yellow Theme":
             display_surface.fill(light_yellow)
         elif global_vars.theme == "Purple Theme":
@@ -3256,7 +3499,7 @@ if __name__ == "__main__":
         elif global_vars.theme == "Pink Theme":
             display_surface.fill(light_pink)
         ui_manager.draw_ui(display_surface)
-
+        ui_manager_overlay.draw_ui(display_surface)
         # debug_ui_manager.update(time_delta)
         # debug_ui_manager.draw_ui(display_surface)
 

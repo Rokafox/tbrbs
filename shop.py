@@ -168,6 +168,7 @@ class Big_Food_Market(Shop):
         package_of_items.append(consumable.Strawberry(random.randint(1, 300)))
         package_of_items.append(consumable.Pancake(random.randint(1, 300)))
         package_of_items.append(consumable.Mantou(random.randint(1, 300)))
+        package_of_items.append(consumable.Orange(random.randint(1, 300)))
 
         # Choose 5 random items from the package_of_items
         if len(package_of_items) < 5:

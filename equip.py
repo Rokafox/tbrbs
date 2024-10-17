@@ -55,6 +55,7 @@ class Equip(Block):
         self.set_effect_is_acive = False
         self.four_set_effect_description = ""
         self.four_set_effect_description = self.assign_four_set_effect_description()
+        self.four_set_effect_description_jp = self.assign_four_set_effect_description_jp()
 
     def to_dict(self):
         return {
@@ -147,7 +148,8 @@ class Equip(Block):
                 )
             case "Liquidation":
                 return (
-                    "When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 20%: hp, atk, def, spd."
+                    "When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 20%: hp, atk, def, spd." \
+                    " If the protector is taking damage for an ally, damage reduction effect is reduced by 50%."
                 )
             case "Cosmic":
                 return (
@@ -168,6 +170,86 @@ class Equip(Block):
                 )
             case _:
                 return ""
+
+
+    def assign_four_set_effect_description_jp(self):
+        match self.eq_set:
+            case "Arasaka":
+                return (
+                    "バトル中に一度だけ、致命的なダメージを受けた時にHP1で生存する。発動時、3ターンの間ダメージ無効。"
+                )
+            case "KangTao":
+                return (
+                    "攻撃力と防御力を比較し、より高い方の値の700%を吸収シールドとしてバトル開始時に自身に付与する。"
+                )
+            case "Militech":
+                return (
+                    "HPが30%未満になった時、速度が120%増加する。"
+                )
+            case "NUSA":
+                return (
+                    "自分を含む味方の生存数に応じて、攻撃力、防御力、最大HPがそれぞれ6%増加する。"
+                )
+            case "Sovereign":
+                return (
+                    "ダメージを受けた時に主権効果を付与する。攻撃力を20%増加させ、4ターン持続する。最大5つの効果が同時に適用される。"
+                )
+            case "Snowflake":
+                return (
+                    "行動終了時に雪花の一片を獲得。ピースを6つ集まるとHPが25%回復し、6ターンの間以下の効果を得ます：攻撃力、防御力、最大HP、速度が25%増加。この効果の発動ごとに、ステータスボーナスと回復量が25%増加する。"
+                )
+            case "Flute":
+                return (
+                    "1回の行動で敵を4回攻撃に成功すると、全ての敵に自身の攻撃力の130%に相当する状態異常ダメージを与える。"
+                )
+            case "Rainbow":
+                return (
+                    "攻撃時、対象との距離に応じてダメージが60%/30%/0%/-30%/-60%に変動する。"
+                )
+            case "Dawn":
+                return (
+                    "HPが満タンの時、攻撃力が24%、クリティカル率が12%増加する。1回のみ、通常攻撃またはスキル攻撃時にダメージが120%増加する。"
+                )
+            case "Bamboo":
+                return (
+                    "通常攻撃またはスキル攻撃で敵を倒した後、5ターンの間毎ターン最大HPの16%を回復し、攻撃力、防御力、速度が88%、クリティカル率とクリティカルダメージが44%増加する。"
+                    "バフ効果が既に発動された場合は発動しない。"
+                )
+            case "Rose":
+                return (
+                    "回復効率が22%、防御力が11%増加する。治療の前に、対象の回復効率を2ターンの間88%増加させる。"
+                    "HP回復効果は発動しない。"
+                )
+            case "OldRusty":
+                return (
+                    "スキル1を使用した後、65%の確率でそのスキルのクールダウンをリセットする。"
+                )
+            case "Liquidation":
+                return (
+                    "ダメージを受けた時、以下のステータスのうち、攻撃側より低いもの1つにつき、ダメージが20％減少：HP、攻撃力、防御力、速度。" \
+                    "守護者が味方のためにダメージを受けている場合、ダメージ軽減効果が50%減少。"
+                )
+            case "Cosmic":
+                return (
+                    "毎ターン、現在の最大HPの1.8%に相当する最大HPが増加する。"
+                )
+            case "Newspaper":
+                return (
+                    "敵にダメージを与えた際、敵の最大HPが自身よりも高い場合、その最大HPの差分の15%分ダメージが増加する。"
+                )
+            case "Cloud":
+                return (
+                    "バトル開始時に速度が5%増加し、40ターンの間雲隠状態を付与される。雲隠状態中は、5体の敵を対象とするスキル以外のターゲットにはされません。"
+                    "雲隠状態が解除されると、10ターンの間速度が100%増加する。"
+                )
+            case "Purplestar":
+                return (
+                    "スキル2を使用した後、85%の確率でそのスキルのクールダウンをリセットする。"
+                )
+            case _:
+                return ""
+
+
 
     def get_raritytypeeqset_list(self):
         return self.rarity_list, self.type_list, self.eq_set_list
@@ -312,15 +394,15 @@ class Equip(Block):
             extra_lines_to_generate = 4
         elif 1000 <= level < 2000:
             extra_lines_to_generate = 5
-        elif 2000 <= level < 2400:
+        elif 2000 <= level < 2500:
             extra_lines_to_generate = 6
-        elif 2400 <= level:
+        elif 2500 <= level:
             extra_lines_to_generate = 7
         else:
             extra_lines_to_generate = 0
         
         if self.type == self.type_list[2]:
-            self.maxhp_flat = max(normal_distribution(1, 8000, 4000, 1200), 1)
+            self.maxhp_flat = max(normal_distribution(1, 4000, 1000, 1000), 1)
             self.maxhp_flat /= 40
             self.maxhp_flat *= level
         elif self.type == self.type_list[0]:
@@ -581,6 +663,120 @@ class Equip(Block):
             stats += f"<font color={set_effect_display_color()}>4 Set Effect:\n{self.four_set_effect_description}</font>"
 
         return stats
+
+
+    def print_stats_html_jp(self, include_market_price=True):
+        match self.rarity:
+            case "Common":
+                color = "#2c2c2c"
+            case "Uncommon":
+                color = "#B87333"
+            case "Rare":
+                color = "#FF0000"
+            case "Epic":
+                color = "#659a00"
+            case "Unique":
+                color = "#9966CC"
+            case "Legendary":
+                color = "#21d6ff"
+        
+        star_color = "#3746A7"  # 青
+        market_color = "#202d82"  # 青
+        star_color_purple = "#9B30FF"  # 紫
+        star_color_red = "#FF0000"  # 赤
+        star_color_gold = "#FFD700"  # 金色
+        
+        def eq_set_str():
+            if self.eq_set == "None":
+                return ""
+            else:
+                return str(self.eq_set) + " "
+
+        if not self.eq_set == "Void":
+            stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>" + "レベル" + str(self.level) + " " + eq_set_str() + self.rarity + " " + self.type + "</b></font></shadow>\n"
+        else:
+            stats = f"虚空の呪\n"
+        
+        if self.stars_rating > 0:
+            stats += "<font color=" + star_color + ">" + '★'*min(int(self.stars_rating), 5) + "</font>"
+        if self.stars_rating > 5:
+            stats += "<font color=" + star_color_purple + ">" + '★'*min(int(self.stars_rating-5), 5) + "</font>"
+        if self.stars_rating > 10:
+            stats += "<font color=" + star_color_red + ">" + '★'*min(int(self.stars_rating-10), 5) + "</font>"
+        stats += "\n" if self.stars_rating > 0 else ""
+        stats += "<font color=" + color + ">"
+        
+        def star_font_color() -> str:
+            if self.stars_rating <= 5:
+                return star_color
+            elif 5 < self.stars_rating <= 10:
+                return star_color_purple
+            elif 10 < self.stars_rating <= 15:
+                return star_color_red
+            else:
+                return star_color_gold
+        
+        def add_stat_with_color(stat_name_jp: str, stat_value: int, stat_extra: int) -> str:
+            return stat_name_jp + ": " + str(stat_value) + "<font color=" + star_font_color() + ">" + f" (+{stat_extra})" + "</font>" + "\n"
+        
+        if self.maxhp_flat != 0:
+            stats += add_stat_with_color("最大HP", round(self.maxhp_flat, 3), self.maxhp_extra)
+        if self.atk_flat != 0:
+            stats += add_stat_with_color("攻撃", round(self.atk_flat, 3), self.atk_extra)
+        if self.def_flat != 0:
+            stats += add_stat_with_color("防御", round(self.def_flat, 3), self.def_extra)
+        if self.spd_flat != 0:
+            stats += add_stat_with_color("速度", round(self.spd_flat, 3), self.spd_extra)
+        
+        if self.maxhp_percent != 0:
+            stats += "最大HP: " + "{:.2f}%".format(self.maxhp_percent*100) + "\n"
+        if self.atk_percent != 0:
+            stats += "攻撃: " + "{:.2f}%".format(self.atk_percent*100) + "\n"
+        if self.def_percent != 0:
+            stats += "防御: " + "{:.2f}%".format(self.def_percent*100) + "\n"
+        if self.spd != 0:
+            stats += "速度: " + "{:.2f}%".format(self.spd*100) + "\n"
+        if self.eva != 0:
+            stats += "回避: " + "{:.2f}%".format(self.eva*100) + "\n"
+        if self.acc != 0:
+            stats += "命中: " + "{:.2f}%".format(self.acc*100) + "\n"
+        if self.crit != 0:
+            stats += "クリティカル確率: " + "{:.2f}%".format(self.crit*100) + "\n"
+        if self.critdmg != 0:
+            stats += "クリティカルダメージ: " + "{:.2f}%".format(self.critdmg*100) + "\n"
+        if self.critdef != 0:
+            stats += "クリティカル防御: " + "{:.2f}%".format(self.critdef*100) + "\n"
+        if self.penetration != 0:
+            stats += "貫通: " + "{:.2f}%".format(self.penetration*100) + "\n"
+        if self.heal_efficiency != 0:
+            stats += "回復効率: " + "{:.2f}%".format(self.heal_efficiency*100) + "</font>\n"
+        
+        if self.eq_set == "Void":
+            return stats
+        if self.stars_rating < self.stars_rating_max:
+            stats += f"<font color=#AF6E4D>スター強化コスト: {self.star_enhence_cost} </font>\n"
+        else:
+            stats += f"<font color=#AF6E4D>スター強化コスト: MAX </font>\n"
+        if self.level < self.level_max:
+            stats += f"<font color=#702963>レベルアップコスト: {self.level_cost} </font>\n"
+        else:
+            stats += f"<font color=#702963>レベルアップコスト: MAX </font>\n"
+        
+        if include_market_price:
+            stats += "<font color=" + market_color + ">" + f"市場価格: {int(self.market_value)}" + "</font>\n"
+        stats += "</font>"
+        
+        def set_effect_display_color():
+            if self.set_effect_is_acive:
+                return "#444B74"
+            else:
+                return "#BCC0D9"
+
+        if self.four_set_effect_description_jp:
+            stats += f"<font color={set_effect_display_color()}>4セット効果:\n{self.four_set_effect_description_jp}</font>"
+        
+        return stats
+
 
 
 def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rarity=None, random_full_eqset=False, 

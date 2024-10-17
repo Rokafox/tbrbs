@@ -402,6 +402,39 @@ class Mantou(Consumable):
         else:
             return user.hp < user.maxhp - 300000
 
+
+class Orange(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Orange", "Apply Shield to user for 12 turns. Damage is reduced by 25%, each subsequent damage taken on the same turn is further reduced by 25%.")
+        self.image = "orange"
+        self.rarity = "Unique"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 8000
+
+    def E(self, user, player):
+        orange_effect = AntiMultiStrikeReductionShield('Orange', 12, True, 0.25, False)
+        orange_effect.additional_name = "Food_Orange"
+        orange_effect.apply_rule = "stack"
+        user.apply_effect(orange_effect)
+        return f"{user.name} applied Orange Shield for 12 turns."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Orange", additional_name="Food_Orange"):
+                return False
+            else:
+                return True
+        
+
+
+
+
+
+
 def get_1_random_consumable():
-    consumable_list = [Banana(1), Kiwi(1), Strawberry(1), Pancake(1), Mantou(1)]
+    consumable_list = [Banana(1), Kiwi(1), Strawberry(1), Pancake(1), Mantou(1), Orange(1)]
     return random.choice(consumable_list)
