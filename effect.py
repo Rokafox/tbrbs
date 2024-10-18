@@ -6,7 +6,7 @@ import global_vars
 
 class Effect:
     def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0, is_set_effect=False, 
-                 tooltip_str=None, can_be_removed_by_skill=True, show_stacks=False):
+                 tooltip_str=None, tooltip_str_jp=None, can_be_removed_by_skill=True, show_stacks=False):
         self.name = name
         self.duration = duration
         self.is_buff = bool(is_buff)
@@ -23,6 +23,7 @@ class Effect:
         self.apply_rule = "default" # "default", "stack"
         self.is_cc_effect = False
         self.tooltip_str = tooltip_str
+        self.tooltip_str_jp = tooltip_str_jp
         self.can_be_removed_by_skill = can_be_removed_by_skill
         self.show_stacks = show_stacks
         self.is_protected_effect = False
@@ -95,7 +96,25 @@ class Effect:
 
     def __str__(self):
         return self.name
-    
+
+    def translate_key(self, key):
+        translations = {
+            "maxhp": "最大HP",
+            "hp": "HP",
+            "atk": "攻撃力",
+            "defense": "防御力",
+            "spd": "速度",
+            "eva": "回避",
+            "acc": "命中",
+            "crit": "クリティカル",
+            "critdmg": "クリティカルダメージ",
+            "critdef": "クリティカル防御",
+            "penetration": "貫通",
+            "heal efficiency": "回復効率",
+            "final damage taken multipler": "最終ダメージ倍率"
+        }
+        return translations.get(key, key)
+
     def print_stats_html(self):
         color_buff = "#659a00"
         color_debuff = "#ff0000"
@@ -144,10 +163,16 @@ class Effect:
         if self.show_stacks:
             string += "現在のスタック数:" + str(self.stacks)
         if hasattr(self, "tooltip_description_jp"):
-            if self.tooltip_description_jp():
-                string += self.tooltip_description_jp()
+            s = self.tooltip_description_jp()
+            es = self.tooltip_description()
+            if s == "説明なし。" and es != "No description available.":
+                string += es
             else:
-                print(f"Tooltip description not found for {self.name}.")
+                if s is not None:
+                    string += s
+                else:
+                    string += es
+
         else:
             string += self.tooltip_description()
         return string
@@ -158,6 +183,13 @@ class Effect:
             return self.tooltip_str
         else:
             return "No description available."
+
+    def tooltip_description_jp(self):
+        if self.tooltip_str_jp:
+            return self.tooltip_str_jp
+        else:
+            return "説明なし。"
+
 
 
 # =========================================================
@@ -256,17 +288,20 @@ class ReductionShield(Effect):
     further calculate damage.
     """
     def __init__(self, name, duration, is_buff, effect_value, cc_immunity, *, requirement=None, 
-                 requirement_description=None, damage_function=None, cover_status_damage=True, cover_normal_damage=True):
+                 requirement_description=None, requirement_description_jp=None, damage_function=None, 
+                 cover_status_damage=True, cover_normal_damage=True):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.effect_value = effect_value
         self.cc_immunity = cc_immunity
         self.requirement = requirement
         self.requirement_description = requirement_description
+        self.requirement_description_jp = requirement_description_jp
         self.sort_priority = 200
         self.damage_function = damage_function
         self.cover_status_damage = cover_status_damage
         self.cover_normal_damage = cover_normal_damage
+
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if self.requirement is not None:
@@ -336,8 +371,8 @@ class ReductionShield(Effect):
                     str += "状態異常ダメージに適用。"
         elif self.damage_function:
             str += f"ダメージ軽減は関数によってさらに計算される。"
-        if self.requirement_description is not None:
-            str += f"条件:{self.requirement_description}"
+        if self.requirement_description_jp is not None:
+            str += f"条件:{self.requirement_description_jp}"
         return str
     
 
@@ -405,10 +440,12 @@ class AntiMultiStrikeReductionShield(Effect):
             percentage = self.effect_value * 100
             if self.is_buff:
                 description += f"Reduces damage taken by {percentage}% multiplicatively for each attack received in the same turn."
-                description += f" Reduction increases by {self.effect_value_increase_per_attack * 100}% per attack."
+                if self.effect_value_increase_per_attack > 0:
+                    description += f" Reduction increases by {self.effect_value_increase_per_attack * 100}% per attack."
             else:
                 description += f"Increases damage taken by {percentage}% multiplicatively for each attack received in the same turn."
-                description += f" Damage increases by {self.effect_value_increase_per_attack * 100}% per attack."
+                if self.effect_value_increase_per_attack > 0:
+                    description += f" Damage increases by {self.effect_value_increase_per_attack * 100}% per attack."
         if self.requirement_description is not None:
             description += f" Requirement: {self.requirement_description}"
         return description
@@ -419,10 +456,12 @@ class AntiMultiStrikeReductionShield(Effect):
             percentage = self.effect_value * 100
             if self.is_buff:
                 description += f"同じターンに受けるダメージを{percentage}%ずつ減少させる。"
-                description += f"ダメージ軽減は{self.effect_value_increase_per_attack * 100}%ずつ増加する。"
+                if self.effect_value_increase_per_attack > 0:
+                    description += f"ダメージ軽減は{self.effect_value_increase_per_attack * 100}%ずつ増加する。"
             else:
                 description += f"同じターンに受けるダメージを{percentage}%ずつ増加させる。"
-                description += f"ダメージ増加は{self.effect_value_increase_per_attack * 100}%ずつ増加する。"
+                if self.effect_value_increase_per_attack > 0:
+                    description += f"ダメージ増加は{self.effect_value_increase_per_attack * 100}%ずつ増加する。"
         if self.requirement_description is not None:
             description += f"条件:{self.requirement_description}"
         return description
@@ -712,7 +751,7 @@ class RenkaEffect(Effect):
     
     def tooltip_description_jp(self):
         return f"「連花」効果:致命的なダメージを受けた時、スタックを1消費し、ダメージを無効化し、HPを{self.hp_recover_percentage*100:.1f}%回復する。" \
-        f"ダメージを受けた時、ダメージを{self.damage_reduction*100:.1f}% + {self.stacks * self.damage_reduction_per_stack*100:.1f}%軽減する。" \
+        f"ダメージを受けた時、ダメージを{self.damage_reduction*100:.1f}%+{self.stacks * self.damage_reduction_per_stack*100:.1f}%軽減する。" \
         f"現在のスタック数:{self.stacks}。"
 
 
@@ -876,10 +915,10 @@ class ConfuseEffect(Effect):
         self.is_cc_effect = True
     
     def tooltip_description(self):
-        return "Attack random ally or enemy."
+        return "Target random ally or enemy."
     
     def tooltip_description_jp(self):
-        return "ランダムな味方または敵を攻撃。"
+        return "ランダムな味方または敵をターゲットする。"
 
 
 
@@ -894,10 +933,10 @@ class CharmEffect(Effect):
         self.is_cc_effect = True
     
     def tooltip_description(self):
-        return "Attack random ally"
+        return "Enemy is ally, ally is enemy."
     
     def tooltip_description_jp(self):
-        return "ランダムな味方を攻撃。"
+        return "敵は味方、味方は敵。"
 
 
 
@@ -979,23 +1018,6 @@ class FearEffect(Effect):
                     str += f"{key}が{-value*100}%減少する。"
         return str
     
-    def translate_key(self, key):
-        translations = {
-            "maxhp": "最大HP",
-            "hp": "HP",
-            "atk": "攻撃力",
-            "defense": "防御力",
-            "spd": "速度",
-            "eva": "回避",
-            "acc": "命中",
-            "crit": "クリティカル",
-            "critdmg": "クリティカルダメージ",
-            "critdef": "クリティカル防御",
-            "penetration": "貫通",
-            "heal efficiency": "回復効率",
-            "final damage taken multipler": "最終ダメージ倍率"
-        }
-        return translations.get(key, key)
 
 # =========================================================
 # End of CC effects
@@ -1156,23 +1178,6 @@ class StatsEffect(Effect):
                         string += f"{japanese_key}が{value}減少する。"
         return string
 
-    def translate_key(self, key):
-        translations = {
-            "maxhp": "最大HP",
-            "hp": "HP",
-            "atk": "攻撃力",
-            "defense": "防御力",
-            "spd": "速度",
-            "eva": "回避",
-            "acc": "命中",
-            "crit": "クリティカル",
-            "critdmg": "クリティカルダメージ",
-            "critdef": "クリティカル防御",
-            "penetration": "貫通",
-            "heal efficiency": "回復効率",
-            "final damage taken multipler": "最終ダメージ倍率"
-        }
-        return translations.get(key, key)
 
 # =========================================================
 # End of Stats effects
@@ -1203,15 +1208,15 @@ class TimedBombEffect(Effect):
 
     def tooltip_description(self):
         if self.new_effect is None:
-            return f"Take {self.damage} status damage when expired."
+            return f"Take {int(self.damage)} status damage when expired."
         else:
-            return f"Take {self.damage} status damage when expired. {self.new_effect.name} effect is applied after damage."
+            return f"Take {int(self.damage)} status damage when expired. {self.new_effect.name} effect is applied after damage."
         
     def tooltip_description_jp(self):
         if self.new_effect is None:
-            return f"効果終了時に{self.damage}のステータスダメージを受ける。"
+            return f"効果終了時に{int(self.damage)}の状態異常ダメージを受ける。"
         else:
-            return f"効果終了時に{self.damage}のステータスダメージを受ける。ダメージ後、{self.new_effect.name}効果が適用される。"
+            return f"効果終了時に{int(self.damage)}の状態異常ダメージを受ける。ダメージ後、{self.new_effect.name}効果が適用される。"
 
 
 # =========================================================
@@ -1288,9 +1293,9 @@ class ContinuousDamageEffect(Effect):
             "normal": "通常"
         }
         damage_type = damage_type_dict.get(self.damage_type, self.damage_type)
-        s = f"毎ターン{(self.value):.2f} {damage_type}ダメージを受ける。"
+        s = f"毎ターン{(self.value):.2f}{damage_type}ダメージを受ける。"
         if self.remove_by_heal:
-            s += "この効果は回復によって解除される。"
+            s += "この効果は回復によって解除できる。"
         return s
 
 
@@ -1379,15 +1384,15 @@ class ContinuousDamageEffect_Poison(Effect):
     def tooltip_description_jp(self):
         base_dict = {
             "maxhp": "最大HP",
-            "hp": "HP",
-            "losthp": "損失HP"
+            "hp": "現在のHP",
+            "losthp": "失ったHP"
         }
         base = base_dict.get(self.base, self.base)
-        s = f"毎ターン{(self.ratio*100):.2f}%の{base}ダメージを受ける。"
+        s = f"毎ターン{(self.ratio*100):.2f}%の{base}に応じたダメージを受ける。"
         if self.remove_by_heal:
-            s += "この効果は回復によって解除される。"
+            s += "この効果は回復されると解除される。"
         if self.is_plague:
-            s += f"ターン終了時、隣接する味方に同じ効果を適用する確率{int(self.is_plague_transmission_chance*100)}%。"
+            s += f"ターン終了時に、{int(self.is_plague_transmission_chance*100)}%の確率で隣接する味方に同じ効果が伝染する。"
         return s
 
 
@@ -1596,7 +1601,7 @@ class NotTakingDamageEffect(Effect):
     """
     On [require_turns_without_damage] turns without taking damage, apply a Effect to character.
     """
-    def __init__(self, name, duration, is_buff, require_turns_without_damage, effect_to_apply):
+    def __init__(self, name, duration, is_buff, require_turns_without_damage, effect_to_apply: Effect):
         super().__init__(name, duration, is_buff)
         self.require_turns_without_damage = require_turns_without_damage
         self.effect_to_apply = effect_to_apply
@@ -1607,6 +1612,14 @@ class NotTakingDamageEffect(Effect):
         twd = character.get_num_of_turns_not_taken_damage()
         if twd >= self.require_turns_without_damage:
             character.apply_effect(self.effect_to_apply)
+
+    def tooltip_description(self):
+        return f"Apply {self.effect_to_apply.name} effect after {self.require_turns_without_damage} turns without taking damage."
+    
+    def tooltip_description_jp(self):
+        return f"{self.require_turns_without_damage}ターン攻撃を受けていないと{self.effect_to_apply.name}効果が付与される。"
+
+
 
 # =========================================================
 # End of Special effects
@@ -1640,6 +1653,9 @@ class EquipmentSetEffect_Arasaka(Effect):
 
     def tooltip_description(self):
         return f"Leave with 1 hp when taking fatal damage."
+    
+    def tooltip_description_jp(self):
+        return f"致命的なダメージを受けたとき、1HPで生き残る。"
 
 
 #---------------------------------------------------------
@@ -1666,6 +1682,9 @@ class EquipmentSetEffect_KangTao(Effect):
         
     def tooltip_description(self):
         return f"Shield that absorbs up to {self.shield_value} damage."
+    
+    def tooltip_description_jp(self):
+        return f"{self.shield_value}ダメージを吸収する。"
     
 
 #---------------------------------------------------------
@@ -1708,9 +1727,25 @@ class EquipmentSetEffect_Militech(Effect):
                 string += "Effect is not active. "
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                string += f"{key} is scaled to {value*100}% on condition."
+                string += f"{key} is scaled to {value*100:.2f}% on condition."
             else:
-                string += f"{key} is increased by {value*100}% on condition."
+                string += f"{key} is increased by {value*100:.2f}% on condition."
+        return string
+    
+    def tooltip_description_jp(self):
+        string = ""
+        if self.condition is not None:
+            if self.flag_is_active:
+                string += "効果が発動中。"
+            else:
+                string += "効果が発動していない。"
+        for key, value in self.stats_dict.items():
+            if key in ["maxhp", "hp", "atk", "defense", "spd"]:
+                key_jp = self.translate_key(key)
+                string += f"{key_jp}が{value*100:.2f}%に調整される。"
+            else:
+                key_jp = self.translate_key(key)
+                string += f"{key_jp}が{value*100:.2f}%増加する。"
         return string
 
 
@@ -1747,9 +1782,24 @@ class EquipmentSetEffect_NUSA(Effect):
         string = ""
         for key, value in self.stats_dict.items():
             if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                string += f"{key} is scaled to {value*100}%."
+                string += f"{key} is scaled to {value*100:.2f}%."
             else:
-                string += f"{key} is increased by {value*100}%."
+                string += f"{key} is increased by {value*100:.2f}%."
+        return string
+    
+    def tooltip_description_jp(self):
+        string = ""
+        for key, value in self.stats_dict.items():
+            if key in ["maxhp", "hp", "atk", "defense", "spd"]:
+                japanese_key = self.translate_key(key)
+                string += f"{japanese_key}が{value*100:.2f}%に調整される。"
+            else:
+                processed_key = key.replace("_", " ")
+                processed_key = self.translate_key(processed_key)
+                if value > 0:
+                    string += f"{processed_key}が{value*100:.2f}%増加する。"
+                else:
+                    string += f"{processed_key}が{-value*100:.2f}%減少する。"
         return string
 
 
@@ -1774,6 +1824,8 @@ class EquipmentSetEffect_Sovereign(Effect):
     def tooltip_description(self):
         return f"Accumulate 1 stack of Sovereign when taking damage."
 
+    def tooltip_description_jp(self):
+        return f"ダメージを受けると主権のスタックが1つ蓄積される。"
 
 # ---------------------------------------------------------
 # Snowflake
@@ -1811,6 +1863,9 @@ class EquipmentSetEffect_Snowflake(Effect):
 
     def tooltip_description(self):
         return f"Collected pieces: {self.collected_pieces}, Activation count: {self.activation_count}. Collect 6 pieces to activate effect."
+    
+    def tooltip_description_jp(self):
+        return f"集めたピース:{self.collected_pieces}、発動回数:{self.activation_count}。6つのピースを集めて効果を発動する。"
 
 
 # ---------------------------------------------------------
@@ -1870,6 +1925,16 @@ class EquipmentSetEffect_Dawn(Effect):
             string += "Onetime damage bonus is active."
         if not self.flag_is_active and not self.flag_onetime_damage_bonus_active:
             string += "Effect is not active."
+        return string
+    
+    def tooltip_description_jp(self):
+        string = ""
+        if self.flag_is_active:
+            string += "攻撃力とクリティカルボーナスが有効です。"
+        if self.flag_onetime_damage_bonus_active:
+            string += "一度限りのダメージボーナスが有効です。"
+        if not self.flag_is_active and not self.flag_onetime_damage_bonus_active:
+            string += "効果は無効です。"
         return string
 
 # ---------------------------------------------------------

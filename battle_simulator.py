@@ -1,5 +1,6 @@
 import inspect
 import os, json
+import statistics
 
 import pandas as pd
 import analyze
@@ -787,31 +788,35 @@ if __name__ == "__main__":
 
     # Some buttons
     #  =====================================
-    # Left Side
+    # Left Side Buttons
 
-    button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 300), (156, 50)),
+    button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 300), (156, 35)),
                                         text='Shuffle Party',
                                         manager=ui_manager,
                                         tool_tip_text = "Shuffle party and restart the battle")
     button1.set_tooltip("Shuffle the party and restart battle.", delay=0.1, wrap_width=300)
 
-    button4 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 360), (156, 50)),
+    button4 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 340), (156, 35)),
                                         text='Restart Battle',
                                         manager=ui_manager,
                                         tool_tip_text = "Restart battle")
     button4.set_tooltip("Restart battle.", delay=0.1)
 
-    button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 420), (156, 50)),
+    button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 380), (156, 35)),
                                         text='All Turns',
                                         manager=ui_manager,
                                         tool_tip_text = "Skip to the end of the battle.")
     button3.set_tooltip("Skip to the end of the battle but no reward.", delay=0.1, wrap_width=300)
 
-    # button_left_clear_board = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
-    #                                     text='Clear Board',
-    #                                     manager=ui_manager,
-    #                                     tool_tip_text = "Remove all text from the text box, text box will be slower if there are too many text.")
-    # button_left_clear_board.set_tooltip("Remove all text from the text box, text box will be slower if there are too many text.", delay=0.1, wrap_width=300)
+    button_left_simulate_current_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 420), (78, 50)),
+                                        text='Simulate',
+                                        manager=ui_manager)
+    button_left_simulate_current_battle.set_tooltip("Simulate current battle n times and print the result.", delay=0.1, wrap_width=300)
+
+    selection_simulate_current_battle = pygame_gui.elements.UIDropDownMenu(["100", "200", "500", "1000", "2000"],
+                                                            "100",
+                                                            pygame.Rect((180, 420), (76, 50)),
+                                                            ui_manager)
 
     current_display_chart = "Damage Dealt Chart"
     button_left_change_chart = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
@@ -1943,7 +1948,7 @@ if __name__ == "__main__":
         return True
 
 
-    def all_turns(party1: list[Character], party2: list[Character]):
+    def all_turns(party1: list[Character], party2: list[Character], for_simulation: bool = False):
         # Warning: Constant logging on text_box is slowing down the simulation
         global turn, current_game_mode
         if not is_someone_alive(party1) or not is_someone_alive(party2):
@@ -1997,31 +2002,95 @@ if __name__ == "__main__":
 
             turn += 1
 
-        create_tmp_damage_data_csv(party1, party2)
-        create_healing_data_csv(party1, party2)
-        create_plot_damage_d_chart()
-        create_plot_damage_r_chart()
-        create_plot_healing_chart()
-        draw_chart()
-        redraw_ui(party1, party2, redraw_eq_slots=False)
+        if not for_simulation:
+            create_tmp_damage_data_csv(party1, party2)
+            create_healing_data_csv(party1, party2)
+            create_plot_damage_d_chart()
+            create_plot_damage_r_chart()
+            create_plot_healing_chart()
+            draw_chart()
+            redraw_ui(party1, party2, redraw_eq_slots=False)
 
+            text_box.set_text("=====================================\n")
+            text_box.append_html_text(f"Turn {turn}\n")
+
+            if turn >= 300:
+                text_box.append_html_text("Battle is taking too long.\n")
+            elif not is_someone_alive(party1) and not is_someone_alive(party2):
+                text_box.append_html_text("Both parties are defeated.\n")
+            elif not is_someone_alive(party1):
+                if current_game_mode == "Adventure Mode":
+                    text_box.append_html_text("Defeated.\n")
+                else:
+                    text_box.append_html_text("Party 1 is defeated.\n")
+            elif not is_someone_alive(party2):
+                if current_game_mode == "Adventure Mode":
+                    text_box.append_html_text("Victory!\n")
+                else:
+                    text_box.append_html_text("Party 2 is defeated.\n")
+            return None
+        else:
+            if turn >= 300:
+                return None
+            elif not is_someone_alive(party1) and not is_someone_alive(party2):
+                print("Both parties are defeated.")
+                return None
+            elif not is_someone_alive(party1):
+                return "party2"
+            elif not is_someone_alive(party2):
+                return "party1"
+            else:
+                raise ValueError("Unexpected result in all_turns simulation.")
+
+
+    def all_turns_simulate_current_battle(party1: list[Character], party2: list[Character], n: int):
+        """
+        This function set on text_box the result of n simulations of the current battle.
+        We want to know how many times party1 wins, party2 wins, or both parties are defeated.
+        And the winrate of party1 and party2. 
+        """
+        global turn
+        n = int(n)
+        results = {"party1": 0, "party2": 0, "No Result": 0}
+        turn_results = []
+        for i in range(n):
+            turn = 1
+            for c in itertools.chain(party1, party2):
+                c.reset_stats()
+            reset_ally_enemy_attr(party1, party2)
+            for c in itertools.chain(party1, party2):
+                c.battle_entry_effects()
+            # for c in itertools.chain(party1, party2):
+            #     print(c)
+            result = all_turns(party1, party2, for_simulation=True)
+            turn_results.append(turn)
+            if result == "party1":
+                results["party1"] += 1
+            elif result == "party2":
+                results["party2"] += 1
+            else:
+                results["No Result"] += 1
         text_box.set_text("=====================================\n")
-        text_box.append_html_text(f"Turn {turn}\n")
+        total = sum(results.values())
+        text_box.append_html_text(f"Simulated {n} games.\n")
+        text_box.append_html_text(f"Party 1: {party1[0].name} {party1[1].name} {party1[2].name} {party1[3].name} {party1[4].name}\n")
+        text_box.append_html_text(f"Party 2: {party2[0].name} {party2[1].name} {party2[2].name} {party2[3].name} {party2[4].name}\n")
+        text_box.append_html_text(f"Party 1 wins {results["party1"]} times ({results["party1"] / total:.2%}).\n")
+        text_box.append_html_text(f"Party 2 wins {results["party2"]} times ({results["party2"] / total:.2%}).\n")
+        text_box.append_html_text(f"No result {results['No Result']} times ({results['No Result'] / total:.2%}).\n")
+        # The average number of turns in the simulation
+        text_box.append_html_text(f"Average number of turns: {sum(turn_results) / n:.2f}.\n")
+        # The median number of turns in the simulation
+        text_box.append_html_text(f"Median number of turns: {statistics.median(turn_results)}.\n")
+        # Fastest recorded game
+        text_box.append_html_text(f"Fastest game: {min(turn_results)} turns.\n")
+        # Slowest recorded game
+        text_box.append_html_text(f"Slowest game: {max(turn_results)} turns.\n")
+        redraw_ui(party1, party2)
 
-        if turn >= 300:
-            text_box.append_html_text("Battle is taking too long.\n")
-        elif not is_someone_alive(party1) and not is_someone_alive(party2):
-            text_box.append_html_text("Both parties are defeated.\n")
-        elif not is_someone_alive(party1):
-            if current_game_mode == "Adventure Mode":
-                text_box.append_html_text("Defeated.\n")
-            else:
-                text_box.append_html_text("Party 1 is defeated.\n")
-        elif not is_someone_alive(party2):
-            if current_game_mode == "Adventure Mode":
-                text_box.append_html_text("Victory!\n")
-            else:
-                text_box.append_html_text("Party 2 is defeated.\n")
+
+
+
 
 
     df_damage_summary = None
@@ -2150,9 +2219,7 @@ if __name__ == "__main__":
             character.reset_stats()
         reset_ally_enemy_attr(party1, party2)
         global_vars.turn_info_string += "Battle entry effects:\n"
-        for character in party1:
-            character.battle_entry_effects_activate()
-        for character in party2:
+        for character in party1 + party2:
             character.battle_entry_effects_activate()
         redraw_ui(party1, party2, redraw_eq_slots=False)
         turn = 1
@@ -2685,32 +2752,40 @@ if __name__ == "__main__":
                 # Edit on 2.2.9: Optimize is removed because we wont be able to catch skills that change maxhp or shield
                 healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value(), auto_color=True))
 
-                character_status_effect_str = character.tooltip_status_effects()
-                # Sometimes the string is very long, so we need to wrap it to next 'page':
-                # healthbar_overlays[i][1] and healthbar_overlays[i][2] are the other pages
-                # One plan is to count how many \n there are in the string, and then split it into 3 parts
+                # 2.7.0 Implemention:
+                # character_status_effect_str = character.tooltip_status_effects()
+                # # Sometimes the string is very long, so we need to wrap it to next 'page':
+                # # healthbar_overlays[i][1] and healthbar_overlays[i][2] are the other pages
+                # # One plan is to count how many \n there are in the string, and then split it into 3 parts
 
-                lines = character_status_effect_str.split('\n')
-                max_lines_per_page = 16
+                # lines = character_status_effect_str.split('\n')
+                # max_lines_per_page = 16
 
-                # Split lines into three parts
-                part1 = '\n'.join(lines[:max_lines_per_page])
-                part2 = '\n'.join(lines[max_lines_per_page:max_lines_per_page*2])
-                part3 = '\n'.join(lines[max_lines_per_page*2:max_lines_per_page*3])
+                # # Split lines into three parts
+                # part1 = '\n'.join(lines[:max_lines_per_page])
+                # part2 = '\n'.join(lines[max_lines_per_page:max_lines_per_page*2])
+                # part3 = '\n'.join(lines[max_lines_per_page*2:max_lines_per_page*3])
 
-                # Set tooltips for each part
-                if part1:
-                    healthbar_overlays[i][0].set_tooltip(part1, delay=0.1, wrap_width=400)
-                else:
-                    healthbar_overlays[i][0].set_tooltip("", delay=0.1, wrap_width=400)
-                if part2:
-                    healthbar_overlays[i][1].set_tooltip(part2, delay=0.1, wrap_width=400)
-                else:
-                    healthbar_overlays[i][1].set_tooltip("", delay=0.1, wrap_width=400)
-                if part3:
-                    healthbar_overlays[i][2].set_tooltip(part3, delay=0.1, wrap_width=400)
-                else:
-                    healthbar_overlays[i][2].set_tooltip("", delay=0.1, wrap_width=400)
+                # # Set tooltips for each part
+                # if part1:
+                #     healthbar_overlays[i][0].set_tooltip(part1, delay=0.1, wrap_width=400)
+                # else:
+                #     healthbar_overlays[i][0].set_tooltip("", delay=0.1, wrap_width=400)
+                # if part2:
+                #     healthbar_overlays[i][1].set_tooltip(part2, delay=0.1, wrap_width=400)
+                # else:
+                #     healthbar_overlays[i][1].set_tooltip("", delay=0.1, wrap_width=400)
+                # if part3:
+                #     healthbar_overlays[i][2].set_tooltip(part3, delay=0.1, wrap_width=400)
+                # else:
+                #     healthbar_overlays[i][2].set_tooltip("", delay=0.1, wrap_width=400)
+
+                character_status_effect_str_sp, character_status_effect_str_buff, character_status_effect_str_debuff = character.tooltip_status_effects()
+                healthbar_overlays[i][0].set_tooltip(character_status_effect_str_sp, delay=0.1, wrap_width=400)
+                healthbar_overlays[i][1].set_tooltip(character_status_effect_str_buff, delay=0.1, wrap_width=400)
+                healthbar_overlays[i][2].set_tooltip(character_status_effect_str_debuff, delay=0.1, wrap_width=400)
+
+
 
                 if main_char == character:
                     labels[i].set_text(f"--> lv {character.lvl} {character.name}")
@@ -2819,32 +2894,50 @@ if __name__ == "__main__":
                 if plot_damage_d_chart:
                     damage_graph_slot.set_image(plot_damage_d_chart)
                     if df_damage_summary is not None:
-                        tooltip_text = "Damage dealt summary:\n"
-                        for line in df_damage_summary.values:
-                            tooltip_text += f"{line[0]} dealt {line[6]} damage in total, {line[7]} normal damage, {line[8]} critical damage, {line[9]} status damage, and {line[10]} bypass damage.\n"
+                        if global_vars.language == "日本語":
+                            tooltip_text = "与えたダメージ合計:\n"
+                            for line in df_damage_summary.values:
+                                tooltip_text += f"{line[0]}は合計で{line[6]}のダメージを与えました。通常ダメージ{line[7]}、クリティカルダメージ{line[8]}、異常状態ダメージ{line[9]}、異常状態無視ダメージ{line[10]}。\n"
+                        elif global_vars.language == "English":
+                            tooltip_text = "Damage dealt summary:\n"
+                            for line in df_damage_summary.values:
+                                tooltip_text += f"{line[0]} dealt {line[6]} damage in total, {line[7]} normal damage, {line[8]} critical damage, {line[9]} status damage, and {line[10]} bypass damage.\n"
                         damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
                 else:
                     damage_graph_slot.set_image(images_item["405"])
+                    damage_graph_slot.set_tooltip("", delay=0.1, wrap_width=600)
             case "Damage Taken Chart":
                 if plot_damage_r_chart:
                     damage_graph_slot.set_image(plot_damage_r_chart)
                     if df_damage_summary is not None:
-                        tooltip_text = "Damage taken summary:\n"
-                        for line in df_damage_summary.values:
-                            tooltip_text += f"{line[0]} received {line[1]} damage in total, {line[2]} normal damage, {line[3]} critical damage, {line[4]} status damage, and {line[5]} bypass damage.\n"
+                        if global_vars.language == "日本語":
+                            tooltip_text = "受けたダメージ合計:\n"
+                            for line in df_damage_summary.values:
+                                tooltip_text += f"{line[0]}は合計で{line[1]}のダメージを受けました。通常ダメージ{line[2]}、クリティカルダメージ{line[3]}、異常状態ダメージ{line[4]}、異常状態無視ダメージ{line[5]}。\n"
+                        elif global_vars.language == "English":
+                            tooltip_text = "Damage taken summary:\n"
+                            for line in df_damage_summary.values:
+                                tooltip_text += f"{line[0]} received {line[1]} damage in total, {line[2]} normal damage, {line[3]} critical damage, {line[4]} status damage, and {line[5]} bypass damage.\n"
                         damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
                 else:
                     damage_graph_slot.set_image(images_item["405"])
+                    damage_graph_slot.set_tooltip("", delay=0.1, wrap_width=600)
             case "Healing Chart":
                 if plot_healing_chart:
                     damage_graph_slot.set_image(plot_healing_chart)
                     if df_healing_summary is not None:
-                        tooltip_text = "Healing summary:\n"
-                        for line in df_healing_summary.values:
-                            tooltip_text += f"{line[0]} received {line[1]} healing in total, {line[2]} healing is given.\n"
+                        if global_vars.language == "日本語":
+                            tooltip_text = "受けた回復合計:\n"
+                            for line in df_healing_summary.values:
+                                tooltip_text += f"{line[0]}は合計で{line[1]}の回復を受けました。{line[2]}の回復を行いました。\n"
+                        elif global_vars.language == "English":
+                            tooltip_text = "Healing summary:\n"
+                            for line in df_healing_summary.values:
+                                tooltip_text += f"{line[0]} received {line[1]} healing in total, {line[2]} healing is given.\n"
                         damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
                 else:
                     damage_graph_slot.set_image(images_item["405"])
+                    damage_graph_slot.set_tooltip("", delay=0.1, wrap_width=600)
             case _:
                 raise Exception(f"Unknown current_display_chart: {current_display_chart}")
 
@@ -3322,6 +3415,8 @@ if __name__ == "__main__":
                 if event.ui_element == button_quit_game:
                     save_player(player)
                     running = False
+                if event.ui_element == button_left_simulate_current_battle:
+                    all_turns_simulate_current_battle(party1, party2, selection_simulate_current_battle.selected_option[0])
                 if event.ui_element == eq_stars_upgrade_button:
                     eq_stars_upgrade(True)
                 if event.ui_element == character_replace_button:

@@ -1,5 +1,6 @@
 from collections.abc import Callable
 import copy, random
+import re
 from typing import Tuple
 from numpy import character
 from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, Effect, EffectShield1, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
@@ -641,26 +642,118 @@ class Character:
 
     def tooltip_status_effects(self):
         if global_vars.language == "日本語":
-            str = "状態異常効果:\n"
+            str_sp = "スペシャル効果:\n"
+            str_buff = "バフ効果:\n"
+            str_debuff = "デバフ効果:\n"
         elif global_vars.language == "English":
-            str = "Status Effects:\n"
-        str += "=" * 20 + "\n"
+            str_sp = "Special Status Effects:\n"
+            str_buff = "Buff Effects:\n"
+            str_debuff = "Debuff Effects:\n"
+        str_sp += "=" * 20 + "\n"
+        str_buff += "=" * 20 + "\n"
+        str_debuff += "=" * 20 + "\n"
+        
+        book_sp = []
+        book_buff = []
+        book_debuff = []
+        # Collect all buffs and debuffs into the book list
         for effect in self.buffs:
             if not effect.is_set_effect:
-                if global_vars.language == "日本語" and hasattr(effect, "print_stats_html_jp"):
-                    str += effect.print_stats_html_jp()
+                if effect.duration == -1 and effect.can_be_removed_by_skill == False:
+                    if global_vars.language == "日本語" and hasattr(effect, "print_stats_html_jp"):
+                        book_sp.append(effect.print_stats_html_jp())
+                    else:
+                        book_sp.append(effect.print_stats_html())
                 else:
-                    str += effect.print_stats_html()
-                str += "\n"
-        str += "=" * 20 + "\n"
+                    if global_vars.language == "日本語" and hasattr(effect, "print_stats_html_jp"):
+                        book_buff.append(effect.print_stats_html_jp())
+                    else:
+                        book_buff.append(effect.print_stats_html())
+
         for effect in self.debuffs:
             if not effect.is_set_effect:
-                if global_vars.language == "日本語" and hasattr(effect, "print_stats_html_jp"):
-                    str += effect.print_stats_html_jp()
+                if effect.duration == -1 and effect.can_be_removed_by_skill == False:
+                    if global_vars.language == "日本語" and hasattr(effect, "print_stats_html_jp"):
+                        book_sp.append(effect.print_stats_html_jp())
+                    else:
+                        book_sp.append(effect.print_stats_html())
                 else:
-                    str += effect.print_stats_html()
-                str += "\n"
-        return str
+                    if global_vars.language == "日本語" and hasattr(effect, "print_stats_html_jp"):
+                        book_debuff.append(effect.print_stats_html_jp())
+                    else:
+                        book_debuff.append(effect.print_stats_html())
+        
+        # Process duplicates: merging same effects and counting occurrences
+        def process_duplicates(book):
+            effect_dict = {}
+            for effect_str in book:
+                # Extract the core effect description without the duration
+                effect_key, duration = extract_effect_key_and_duration(effect_str)
+                if effect_key in effect_dict:
+                    effect_dict[effect_key]['count'] += 1
+                    if duration:
+                        effect_dict[effect_key]['durations'].append(duration)
+                else:
+                    effect_dict[effect_key] = {'count': 1, 'effect_str': effect_str, 'durations': [duration] if duration else []}
+            return effect_dict
+
+        def extract_effect_key_and_duration(effect_str):
+            # For English
+            match_en = re.search(r'(\d+)\s*turn\(s\)', effect_str)
+            # For Japanese
+            match_jp = re.search(r'(\d+)\s*ターン', effect_str)
+            if match_en:
+                duration = match_en.group(1)
+                effect_key = effect_str.replace(match_en.group(0), 'X turn(s)')
+            elif match_jp:
+                duration = match_jp.group(1)
+                effect_key = effect_str.replace(match_jp.group(0), 'Xターン')
+            else:
+                duration = None
+                effect_key = effect_str
+            return effect_key, duration
+
+        sp_count = process_duplicates(book_sp)
+        buff_count = process_duplicates(book_buff)
+        debuff_count = process_duplicates(book_debuff)
+
+        def build_effect_string(effect_dict, section_str):
+            result = section_str
+            for effect_key, data in effect_dict.items():
+                count = data['count']
+                durations = data['durations']
+                effect_str = effect_key
+                if durations:
+                    # If there's only one unique duration, replace 'X' with that duration
+                    unique_durations = list(set(durations))
+                    if len(unique_durations) == 1:
+                        effect_str = effect_key.replace('X', unique_durations[0])
+                    else:
+                        # Replace 'X' with '?' if multiple durations
+                        effect_str = effect_key.replace('X', '?')
+                result += effect_str
+                if count > 1:
+                    color_repeat = "#6600ff"
+                    if durations:
+                        # List all durations
+                        durations_str = ', '.join(durations)
+                        if global_vars.language == "日本語":
+                            result += f'\n<font color="{color_repeat}">同じ効果が{count}回適用されている。持続時間: {durations_str}ターン。</font>'
+                        else:
+                            result += f'\n<font color="{color_repeat}">The same effect is applied {count} times. Durations: {durations_str} turn(s).</font>'
+                    else:
+                        if global_vars.language == "日本語":
+                            result += f'\n<font color="{color_repeat}">同じ効果が{count}回適用されている。</font>'
+                        else:
+                            result += f'\n<font color="{color_repeat}">The same effect is applied {count} times.</font>'
+                result += "\n"
+            return result
+
+        str_sp = build_effect_string(sp_count, str_sp)
+        str_buff = build_effect_string(buff_count, str_buff)
+        str_debuff = build_effect_string(debuff_count, str_debuff)
+
+        return str_sp, str_buff, str_debuff
 
     def calculate_maxexp(self):
         base_exp = 10  
@@ -1423,12 +1516,18 @@ class Character:
         str += "=" * 20 + "\n"
         for effect in self.buffs:
             if effect.is_set_effect:
-                str += effect.print_stats_html()
+                if global_vars.language == "English":
+                    str += effect.print_stats_html()
+                elif global_vars.language == "日本語":
+                    str += effect.print_stats_html_jp()
                 str += "\n"
         str += "=" * 20 + "\n"
         for effect in self.debuffs:
             if effect.is_set_effect:
-                str += effect.print_stats_html()
+                if global_vars.language == "English":
+                    str += effect.print_stats_html()
+                elif global_vars.language == "日本語":
+                    str += effect.print_stats_html_jp()
                 str += "\n"
         return str
 
@@ -1593,7 +1692,8 @@ class Cate(Character):
     def battle_entry_effects(self):
         effect = ReductionShield("Passive Effect", -1, True, 0.4, cc_immunity=False, 
                                  requirement=lambda a, b: a.hp <= a.maxhp * 0.4,
-                                 requirement_description="hp below 40%.")
+                                 requirement_description="hp below 40%.",
+                                 requirement_description_jp="HPが40%以下。")
         effect.can_be_removed_by_skill = False
         self.apply_effect(effect)
         effect2 = StatsEffect("Passive Effect", -1, True, {"atk": 1.2, "critdmg": 0.2})
@@ -1745,7 +1845,7 @@ class Clover(Character):
         self.skill2_description_jp = "HPが最も低い味方1体を対象に、攻撃力350%で治療し、攻撃力350%吸収シールドを付与。"
         self.skill3_description_jp = "味方が治療される度、その量の60%で自分を治療。"
         self.skill1_cooldown_max = 3
-        self.skill2_cooldown_max = 3
+        self.skill2_cooldown_max = 2
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
@@ -2109,16 +2209,16 @@ class Pheonix(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Pheonix"
-        self.skill1_description = "Attack all enemies with 160% atk, 80% chance to inflict burn for 30 turns. Burn deals 25% atk damage per turn."
+        self.skill1_description = "Attack all enemies with 160% atk, 80% chance to inflict burn for 30 turns. Burn deals 20% atk damage per turn."
         self.skill2_description = "First time cast: apply Reborn to all neighbor allies. " \
         "Reborn: when defeated, revive with 40% hp. Second and further cast: attack random enemy pair with 260% atk, 80% chance to inflict burn for 30 turns. " \
-        "Burn deals 25% atk damage per turn."
+        "Burn deals 20% atk damage per turn."
         self.skill3_description = "Revive with 80% hp the next turn after fallen. If revived by this effect, increase atk by 20% for 30 turns." \
         " This effect cannot be removed by skill."
-        self.skill1_description_jp = "全ての敵に190%の攻撃を行い、8ターンの間80%の確率で燃焼を付与する。燃焼は毎ターン攻撃力の25%の状態ダメージを与える。"
+        self.skill1_description_jp = "全ての敵に190%の攻撃を行い、8ターンの間80%の確率で燃焼を付与する。燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
         self.skill2_description_jp = "初回発動時: 隣接する全ての味方に再生を付与する。" \
-                                    "再生:倒された場合、HP40%で復活する。2回目以降の発動:ランダムな敵のペアに260%の攻撃を行い、8ターンの間80%の確率で燃焼を付与する。 " \
-                                    "燃焼は毎ターン攻撃力の25%の状態ダメージを与える。"
+                                    "再生:倒された場合、HP40%で復活する。2回目以降の発動:ランダムな敵のペアに260%の攻撃を行い、8ターンの間80%の確率で燃焼を付与する。" \
+                                    "燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
         self.skill3_description_jp = "倒れた次のターンにHP80%で復活する。この効果で復活した場合、攻撃力が30ターンの間20%増加する。" \
                                     "この効果はスキルで取り除くことができない。"
         self.first_time = True
@@ -2137,7 +2237,7 @@ class Pheonix(Character):
     def skill1_logic(self):
         def burn_effect(self, target):
             if random.randint(1, 100) <= 80:
-                target.apply_effect(ContinuousDamageEffect("Burn", 30, False, self.atk * 0.25, self))
+                target.apply_effect(ContinuousDamageEffect("Burn", 30, False, self.atk * 0.20, self))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=1.6, repeat=1, func_after_dmg=burn_effect)         
         return damage_dealt
 
@@ -2153,7 +2253,7 @@ class Pheonix(Character):
         else:
             def burn_effect(self, target):
                 if random.randint(1, 100) <= 80:
-                    target.apply_effect(ContinuousDamageEffect("Burn", 30, False, self.atk * 0.25, self))
+                    target.apply_effect(ContinuousDamageEffect("Burn", 30, False, self.atk * 0.20, self))
             damage_dealt = self.attack(target_kw1="random_enemy_pair", multiplier=2.6, repeat=1, func_after_dmg=burn_effect)         
             return damage_dealt   
 
@@ -2183,7 +2283,7 @@ class Tian(Character):
         " if defeated, all allies take status damage equal to 300% of self atk. This effect cannot be removed by skill."
         self.skill3_description = "Normal attack deals 120% more damage, before attacking, for 1 turn, increase critical chance by 40%."
         self.skill1_description_jp = "最も近い3体の敵に400%の攻撃を行い、30ターンの間難局を付与する。難局:クリティカル確率が100%減少する。"
-        self.skill2_description_jp = "自身に30ターンの間ソウルガードを付与する。ソウルガード:攻撃力が30%増加し、被ダメージが30%軽減される。同じ効果が付与された場合、効果時間がリフレッシュされる。" \
+        self.skill2_description_jp = "自身に30ターンの間ソウルガードを付与する。ソウルガード:攻撃力が30%増加し、被ダメージが30%軽減される。同じ効果が付与された場合、効果時間が更新される。" \
                                     "最も攻撃力の高い1体の敵に30ターンの間罪悪を付与する。罪悪:攻撃力とクリティカルダメージが30%減少し、" \
                                     "倒された場合、全ての味方が自身の攻撃力の600%に相当する状態ダメージを受ける。この効果はスキルで取り除くことができない。"
         self.skill3_description_jp = "通常攻撃のダメージが120%増加し、攻撃前に1ターンの間クリティカル確率が40%増加する。"
@@ -2410,7 +2510,8 @@ class Fox(Character):
                 new_memory = Effect("Memory", -1, True, False, can_be_removed_by_skill=False, show_stacks=True)
                 new_memory.stacks += stacks_to_gain
                 new_memory.additional_name = "MessengerRoseiri_Memory"
-                new_memory.tooltip_str =  "Cherished for 200 years."
+                new_memory.tooltip_str =  ".Cherished for 200 years."
+                new_memory.tooltip_str_jp = "。200年の思い。"
                 self.apply_effect(new_memory)
             global_vars.turn_info_string += f"{self.name} gained {stacks_to_gain} memories.\n"
         super().status_effects_at_end_of_turn()
@@ -2757,7 +2858,7 @@ class Raven(Character):
         self.skill3_description = "After using 2 times of skill 2, apply a shield on neighbor allies after the skill, absorb damage up to 80% of total" \
         " damage dealt by skill 2."
         self.skill1_description_jp = "自身に30ターンの間ブラックバードを適用する。15ターンの間、隣接する味方の攻撃力が30%減少し、その減少分を自身の攻撃力に加える。" \
-                                    "すでにブラックバードがある場合、持続時間がリフレッシュされ、攻撃力の減少および増加は発動しない。"
+                                    "すでにブラックバードがある場合、持続時間が更新され、攻撃力の減少および増加は発動しない。"
         self.skill2_description_jp = "最も防御力の低い敵に285%の攻撃力で6回攻撃する。"
         self.skill3_description_jp = "スキル2を2回使用後、スキル使用後に隣接する味方にシールドを適用し、スキル2によって与えた総ダメージの80%までを吸収する。"
         self.skill1_cooldown_max = 5
@@ -2943,13 +3044,13 @@ class Requina(Character):
         " Each stack of Great Poison reduces atk, defense, heal efficiency by 1%, Each turn, deals 0.3% maxhp status damage. " \
         " Maximum stacks: 70." \
         " Effect last 20 turns. Same effect applied refreshes the duration."
-        self.skill2_description = "Attack 2 closest enemies with 240% atk, if target has Great Poison, apply 6 stacks of Great Poison."
+        self.skill2_description = "Attack 2 closest enemies with 220% atk, if target has Great Poison, apply 6 stacks of Great Poison."
         self.skill3_description = "Normal attack has 95% chance to apply 1 stack of Great Poison."
-        self.skill1_description_jp = "最も近い3体の敵に200%の攻撃を行い、50%の確率で猛毒を6スタック付与し、50%の確率で4スタック付与する。" \
+        self.skill1_description_jp = "最も近い3体の敵に180%の攻撃を行い、50%の確率で猛毒を6スタック付与し、50%の確率で4スタック付与する。" \
                                     "猛毒の各スタックは、攻撃力、防御力、回復効率を1%減少させ、毎ターン最大HPの0.3%の状態異常ダメージを与える。" \
-                                    "最大スタック数: 70。" \
-                                    "効果は20ターン持続し、同じ効果が適用された場合、持続時間がリフレッシュされる。"
-        self.skill2_description_jp = "最も近い2体の敵に300%の攻撃を行い、対象が猛毒の影響を受けている場合、猛毒を6スタック付与する。"
+                                    "最大スタック数:70。" \
+                                    "効果は20ターン持続し、同じ効果が適用された場合、持続時間が更新される。"
+        self.skill2_description_jp = "最も近い2体の敵に220%の攻撃を行い、対象が猛毒の影響を受けている場合、猛毒を6スタック付与する。"
         self.skill3_description_jp = "通常攻撃に95%の確率で猛毒を1スタック付与する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 5
@@ -2975,7 +3076,7 @@ class Requina(Character):
             if target.has_effect_that_named("Great Poison"):
                 target.apply_effect(RequinaGreatPoisonEffect("Great Poison", 20, False, 0.003, {"atk": 1.00, "defense": 1.00, "heal_efficiency": 0.00}, self, 6))
             return final_damage
-        damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="2", multiplier=2.4, repeat=1, func_damage_step=damage_step_effect)
+        damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="2", multiplier=2.2, repeat=1, func_damage_step=damage_step_effect)
         return damage_dealt
         
     def skill3(self):
@@ -3121,7 +3222,7 @@ class Yuri(Character):
         self.skill3_description = "Normal attack targets closest enemy."
         self.skill1_description_jp = "クマ、オオカミ、ワシ、ネコを順に召喚する。通常攻撃は召喚に応じた追加効果を得る。" \
                                     "クマ:20%の確率で10ターンの間スタンさせ、通常攻撃のダメージが100%増加する。" \
-                                    "オオカミ:通常攻撃が最も近い3体の敵を対象とし、各攻撃には5ターンの間燃焼を付与する確率が40%ある。燃焼は毎ターン攻撃力の50%の状態異常ダメージを与える。" \
+                                    "オオカミ:通常攻撃が最も近い3体の敵を対象とし、各攻撃には40%で5ターンの間燃焼を付与する。燃焼は毎ターン攻撃力の50%の状態異常ダメージを与える。" \
                                     "ワシ:各通常攻撃が同じ対象に追加の4回の集中攻撃を行い、各攻撃は攻撃力の150%のダメージを与える。" \
                                     "ネコ:通常攻撃後、最も攻撃力の高い味方に10ターンの間「ゴールドカード」効果を付与する。ゴールドカード:攻撃力、防御力、クリティカルダメージが30%増加する。" \
                                     "上記の4召喚が完了した後、このスキルは使用できなくなる。"
@@ -3160,7 +3261,9 @@ class Yuri(Character):
     def skill1_logic(self):
         match (self.bt_bear, self.bt_wolf, self.bt_eagle, self.bt_cat) :
             case (False, False, False, False):
-                bear_effect = Effect("Bear", -1, True, False)
+                bear_effect = Effect("Bear", -1, True, False,
+                                     tooltip_str="Attack damage increases by 100, 20% chance to Stun for 10 turns.",
+                                     tooltip_str_jp="攻撃ダメージが100%増加し、20%の確率で10ターンの間スタンさせる。")
                 bear_effect.can_be_removed_by_skill = False
                 self.apply_effect(bear_effect)
                 global_vars.turn_info_string += f"{self.name} summoned Bear.\n"
@@ -3169,7 +3272,9 @@ class Yuri(Character):
                 self.heal_hp(self.maxhp * 0.15, self)
                 return 0
             case (True, False, False, False):
-                wolf_effect = Effect("Wolf", -1, True, False)
+                wolf_effect = Effect("Wolf", -1, True, False,
+                                    tooltip_str="Attack 3 closest enemies, each attack has 40% chance to inflict burn for 20 turns.",
+                                    tooltip_str_jp="攻撃が最も近い3体の敵を対象とし、各攻撃には確率40%で5ターンの間燃焼を付与する。")
                 wolf_effect.can_be_removed_by_skill = False
                 self.apply_effect(wolf_effect)
                 global_vars.turn_info_string += f"{self.name} summoned Wolf.\n"
@@ -3178,7 +3283,9 @@ class Yuri(Character):
                 self.heal_hp(self.maxhp * 0.15, self)
                 return 0
             case (True, True, False, False):
-                eagle_effect = Effect("Eagle", -1, True, False)
+                eagle_effect = Effect("Eagle", -1, True, False,
+                                    tooltip_str="Each Normal attack gains 4 additional focus attacks on the same target, each attack deals 150% atk damage.",
+                                    tooltip_str_jp="各通常攻撃が同じ対象に追加の4回の集中攻撃を行い、各攻撃は攻撃力の150%のダメージを与える。")
                 eagle_effect.can_be_removed_by_skill = False
                 self.apply_effect(eagle_effect)
                 global_vars.turn_info_string += f"{self.name} summoned Eagle.\n"
@@ -3187,7 +3294,9 @@ class Yuri(Character):
                 self.heal_hp(self.maxhp * 0.15, self)
                 return 0
             case (True, True, True, False):
-                cat_effect = Effect("Cat", -1, True, False)
+                cat_effect = Effect("Cat", -1, True, False,
+                                    tooltip_str="After normal attack, an ally with highest atk gains 'Gold Card' effect for 10 turns.",
+                                    tooltip_str_jp="通常攻撃後、最も攻撃力の高い味方に10ターンの間「ゴールドカード」効果を付与する。")
                 cat_effect.can_be_removed_by_skill = False
                 self.apply_effect(cat_effect)
                 global_vars.turn_info_string += f"{self.name} summoned Cat.\n"
@@ -3275,6 +3384,7 @@ class Yuri(Character):
                 if self.is_alive():
                     gold_card = StatsEffect("Gold Card", 10, True, {"atk": 1.3, "defense": 1.3, "critdmg": 0.3})
                     gold_card.additional_name = "bt_gold_card"
+                    # gold_card.apply_rule = "stack"
                     ally_to_gold_card = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
                     ally_to_gold_card.apply_effect(gold_card)
                     global_vars.turn_info_string += f"{ally_to_gold_card.name} gained Gold Card.\n"
@@ -3298,11 +3408,12 @@ class April(Character):
         " Each effect can only be copied once. Equippment set effect cannot be copied."
         self.skill2_description = "Attack 3 enemy with 330% atk. If you have beneficial effect, for each effect you have," \
         " attack enemy of highest hp with 200% atk."
-        self.skill3_description = "Before taking damage, for each beneficial effect you have, reduce damage taken by 6%."
+        self.skill3_description = "Before taking normal damage, for each beneficial effect you have, reduce damage taken by 7%." \
+        " Maximum reduction is 70%."
         self.skill1_description_jp = "最も近い敵に300%の攻撃を3回行う。各攻撃ごとに、対象が有益な効果を持っている場合、その効果をコピーして自身に適用する。" \
                                     "この方法で作成された効果の持続時間は常に36ターンとなる。各効果は一度しかコピーできない。装備セット効果はコピーできない。"
         self.skill2_description_jp = "3体の敵に330%の攻撃を行う。自身が有益な効果を持っている場合、効果ごとに、最もHPが高い敵に200%の攻撃を行う。"
-        self.skill3_description_jp = "ダメージを受ける前に、有益な効果ごとに被ダメージが6%軽減される。"
+        self.skill3_description_jp = "通常ダメージを受ける前に、有益な効果ごとに被ダメージが7%軽減される。最大軽減率は70%。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
 
@@ -3343,7 +3454,8 @@ class April(Character):
         pass
 
     def take_damage_before_calculation(self, damage, attacker):
-        reduction = 0.06 * sum(1 for e in self.buffs if e.is_buff and not e.is_set_effect)
+        reduction = 0.07 * sum(1 for e in self.buffs if e.is_buff and not e.is_set_effect)
+        reduction = min(reduction, 0.7)
         return damage * (1 - reduction)
     
 
@@ -3441,7 +3553,7 @@ class Chei(Character):
         self.skill3_description = "At start of battle, apply Assist on yourself for 12 turns."
         self.skill1_description_jp = "4体の敵に280%の攻撃を行い、30ターンの間、自身にアシストを付与する。" \
                                     "アシスト:最大HPの15%を超えるダメージを受けた場合、その120%を状態異常ダメージとして攻撃者に反射する。" \
-                                    "被ダメージは最大HPの15%を超えない。同じ効果が適用された場合、持続時間がリフレッシュされる。"
+                                    "被ダメージは最大HPの15%を超えない。同じ効果が適用された場合、持続時間が更新される。"
         self.skill2_description_jp = "3体の敵に280%の攻撃を行い、60%の確率で20ターンの間燃焼を付与する。" \
                                     "燃焼:毎ターン攻撃力の50%の状態異常ダメージを与える。アシストがまだアクティブな場合、その持続時間が3ターン延長される。"
         self.skill3_description_jp = "戦闘開始時に、12ターンの間、自身にアシストを付与する。"
@@ -3515,7 +3627,7 @@ class Cocoa(Character):
         " atk and defense is increased by 30%."
         self.skill1_description_jp = "最も近い敵に380%の攻撃を3回集中して行う。自身の最大HPが対象より高い場合、ダメージが2倍になる。"
         self.skill2_description_jp = "最も攻撃力が高い味方を選択し、その味方のスキルクールダウンを2減少させ、2ターンの間速度を200%増加させる。" \
-                                    "同じ効果が適用された場合、持続時間がリフレッシュされる。" \
+                                    "同じ効果が適用された場合、持続時間が更新される。" \
                                     "選択された味方が自分である場合、攻撃力の300%でHPが回復する。"
         self.skill3_description_jp = "5ターンの間ダメージを受けていない場合、眠りに落ちる。この効果は回避率を減少させない。" \
                                     "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、12ターンの間、攻撃力と防御力が30%増加する。"
@@ -3582,7 +3694,10 @@ class Cocoa(Character):
         effect.can_be_removed_by_skill = False
         def new_tooltip_description():
             return "While asleep, recover 8% hp each turn. When this effect is removed, for 10 turns, atk and defense is increased by 30%."
+        def new_tooltip_description_jp():
+            return "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、12ターんの間、攻撃力と防御力が30%増加する。"
         effect.tooltip_description = new_tooltip_description
+        effect.tooltip_description_jp = new_tooltip_description_jp
         self.apply_effect(NotTakingDamageEffect("Shopping date", -1, True, 5, effect))
 
 
@@ -3827,11 +3942,11 @@ class Kyle(Character):
         self.skill1_description_jp = "最も攻撃力が高い隣接する味方1体を選択し、30|20ターンの間「竜の描写」と「攻撃力アップ」を付与する。" \
                                     "竜の描写:敵を撃破した際、残りのダメージが最もHP割合の低い敵に与えられる。" \
                                     "攻撃力アップ:攻撃力と速度が40%増加する。状態異常および異常状態無視ダメージは「竜の描写」を発動しない。" \
-                                    "同じ効果が適用された場合、持続時間がリフレッシュされる。"
+                                    "同じ効果が適用された場合、持続時間が更新される。"
         self.skill2_description_jp = "最も攻撃力が高い隣接する味方1体を選択し、30|20ターンの間「山の描写」と「防御力アップ」を付与する。" \
                                     "山の描写:最大HPの10%を超えるダメージを受けた場合、そのダメージが50%軽減される。" \
                                     "防御力アップ:防御力と速度が40%増加する。" \
-                                    "同じ効果が適用された場合、持続時間がリフレッシュされる。"
+                                    "同じ効果が適用された場合、持続時間が更新される。"
         self.skill3_description_jp = "通常攻撃の前に、自身またはHP割合が最も低い隣接する味方を攻撃力の300%で治療する。"
 
         self.skill1_cooldown_max = 4
@@ -3849,7 +3964,8 @@ class Kyle(Character):
             return 0
         ally = max(two_neighbor, key=lambda x: x.atk)
         golden_allow_e = Effect("Dragon Drawing", 30, True, False,
-                                tooltip_str="When taking down an enemy, the remaining damage is dealt to enemy of lowest hp percentage.")
+                                tooltip_str="When taking down an enemy, the remaining damage is dealt to enemy of lowest hp percentage.",
+                                tooltip_str_jp="敵を撃破した際、残りのダメージが最もHP割合の低い敵に与える。")
         golden_allow_e.additional_name = "Kyle_Dragon_Drawing"
         golden_allow_e.apply_rule = "stack"
         ally.apply_effect(golden_allow_e)

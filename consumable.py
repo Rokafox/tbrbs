@@ -405,7 +405,7 @@ class Mantou(Consumable):
 
 class Orange(Consumable):
     def __init__(self, stack: int):
-        super().__init__("Orange", "Apply Shield to user for 12 turns. Damage is reduced by 25%, each subsequent damage taken on the same turn is further reduced by 25%.")
+        super().__init__("Orange", "Apply Shield to user for 6-12 turns. Damage is reduced by 25%, each subsequent damage taken on the same turn is further reduced by 25%.")
         self.image = "orange"
         self.rarity = "Unique"
         self.type = "Food"
@@ -414,11 +414,11 @@ class Orange(Consumable):
         self.market_value = 8000
 
     def E(self, user, player):
-        orange_effect = AntiMultiStrikeReductionShield('Orange', 12, True, 0.25, False)
+        d = random.randint(6, 12)
+        orange_effect = AntiMultiStrikeReductionShield('Orange', d, True, 0.25, False)
         orange_effect.additional_name = "Food_Orange"
-        orange_effect.apply_rule = "stack"
         user.apply_effect(orange_effect)
-        return f"{user.name} applied Orange Shield for 12 turns."
+        return f"{user.name} applied Orange Shield for {d} turns."
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():

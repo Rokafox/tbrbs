@@ -466,7 +466,7 @@ class MadScientist(Monster):
         self.skill1_description = "Attack all enemies with 250% atk and inflict plague for 20 turns with 60% chance each. Plague: at end of turn, 30% chance to apply the same effect to a neighbor ally, every turn, take 9% of lost hp as status damage."
         self.skill2_description = "Attack 3 closest enemies with 300% atk, if target is inflicted with plague, healing efficiency is reduced by 60% for 20 turns."
         self.skill3_description = "Normal attack have 30% chance to inflict plague for 20 turns and deals 40% more damage."
-        self.skill1_description_jp = "全ての敵に攻撃力250%のダメージを与え、確率60%で20ターンの間疫病を付与。疫病:ターン終了時、30%の確率で隣接する味方に同じ効果をかけ、毎ターン、失われたHPの9%を状態ダメージとして受ける。"
+        self.skill1_description_jp = "全ての敵に攻撃力250%のダメージを与え、確率60%で20ターンの間疫病を付与。疫病:ターン終了時、30%の確率で隣接する味方を伝染し、毎ターン、失われたHPの9%を状態ダメージとして受ける。"
         self.skill2_description_jp = "最も近い敵3体に攻撃力300%のダメージを与え、対象が疫病効果がある場合、20ターンの間回復効率が60%減少する。"
         self.skill3_description_jp = "通常攻撃に30%の確率で20ターンの間疫病を付与、ダメージが40%増加する。"
         self.skill1_cooldown_max = 4
@@ -653,10 +653,10 @@ class MachineGolem(Monster):
         self.original_name = "MachineGolem"
         self.skill1_description = "Install 2 timed bombs on all enemies. Bomb will explode after 32 turns, dealing 444% self atk as status damage."
         self.skill2_description = "Attack all enemies with 275% atk, 75% chance to inflict Burn for 20 turns. Burn deals 30% of self atk as status damage each turn."
-        self.skill3_description = "Increase atk by 20%, maxhp by 20%."
+        self.skill3_description = "Increase atk by 20%, maxhp by 20%, defense by 30%."
         self.skill1_description_jp = "全ての敵に時限爆弾2つを設置。32ターン後に爆発し、攻撃力444%の状態ダメージを与える。"
         self.skill2_description_jp = "全ての敵に攻撃力275%で攻撃し、確率75%で20ターンの間燃焼を付与。燃焼は攻撃力の30%を状態ダメージとして毎ターン受ける。"
-        self.skill3_description_jp = "攻撃力を20%、最大HPを20%増加させる。"
+        self.skill3_description_jp = "攻撃力を20%、最大HPを20%、防御力30%増加させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -682,7 +682,8 @@ class MachineGolem(Monster):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('MachineGolem Passive', -1, True, {'maxhp' : 1.2, 'atk' : 1.2}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('MachineGolem Passive', -1, True, {'maxhp' : 1.2, 'atk' : 1.2, 'defense' : 1.3}, 
+                                      can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -1185,12 +1186,12 @@ class WarriorB(Monster):
         self.original_name = "WarriorB"
         self.skill1_description = "Attack enemy of highest atk 4 times with 250% atk. Each attack inflict Dilemma, reducing crit rate by 30% for 25 turns."
         self.skill2_description = "Attack enemy of highest atk with 600% atk, ignore protected effects."
-        self.skill3_description = "Increase maxhp by 100%. After taking normal damage, apply Guard on all allies for 1 turn, reducing damage taken by 70%."
+        self.skill3_description = "Increase maxhp by 100% and defense by 30%. After taking normal damage, apply Guard on all allies for 1 turn, reducing damage taken by 70%."
         self.skill1_description_jp = "最も攻撃力が高い敵に攻撃力250%のダメージを4回与える。" \
         "それぞれの攻撃にジレンマを付与、25ターンの間クリティカル率を30%減少させる。"
         self.skill2_description_jp = "最も攻撃力が高い敵に攻撃力600%のダメージを与える。" \
         "対象の守護者からの保護効果を無視。"
-        self.skill3_description_jp = "最大HPを100%増加させる。通常ダメージを受けた後、全ての味方に1ターンの間ガードを付与。" \
+        self.skill3_description_jp = "最大HP100%、防御力30%増加させる。通常ダメージを受けた後、全ての味方に1ターンの間ガードを付与。" \
         "ガード:受けるダメージを70%減少させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -1221,7 +1222,8 @@ class WarriorB(Monster):
         return damage
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('WarriorB Passive', -1, True, {'maxhp' : 2.0}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('WarriorB Passive', -1, True, {'maxhp' : 2.0, 'defense' : 1.3}, 
+                                      can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -1371,7 +1373,8 @@ class Cavalier(Monster):
     def battle_entry_effects(self):
         effect = ReductionShield("Cavalier Passive", -1, True, 0.3, cc_immunity=False, 
                                  requirement=lambda a, b: a.spd > b.spd,
-                                 requirement_description="Have higher spd than attacker.")
+                                 requirement_description="Have higher spd than attacker.",
+                                 requirement_description_jp="攻撃者よりも速度が高い。")
         effect.can_be_removed_by_skill = False
         self.apply_effect(effect)
         self.apply_effect(StatsEffect('Cavalier Passive', -1, True, {'maxhp' : 1.6}, can_be_removed_by_skill=False))
@@ -1388,11 +1391,11 @@ class Warrior(Monster):
         self.skill1_description = "Attack enemy of highest atk 4 times with 250% atk. Ignore protected effects."
         self.skill2_description = "Attack enemy of highest atk with 500% atk, inflict Weaken and Bleed for 25 turns." \
         " Weaken: reduce atk by 30%. Bleed: take 30% of applier atk as status damage each turn."
-        self.skill3_description = "Increase maxhp by 80%. After taking damage, apply Guard on self for 1 turn, reducing damage taken by 70%."
+        self.skill3_description = "Increase maxhp by 80%, defense by 20%. After taking damage, apply Guard on self for 1 turn, reducing damage taken by 70%."
         self.skill1_description_jp = "最も高い攻撃力の敵に攻撃力250%のダメージを4回与える。守護者からの守護効果を無視。"
         self.skill2_description_jp = "最も高い攻撃力の敵に攻撃力500%のダメージを与える。25ターンの間脆弱と出血を付与。" \
         "脆弱:攻撃力を30%減少。出血:攻撃力の30%を状態ダメージとして毎ターン受ける。"
-        self.skill3_description_jp = "最大HPを80%増加。ダメージを受けた後、自身に1ターンの間ガードを付与。受けるダメージを70%減少。"
+        self.skill3_description_jp = "最大HP80%、防御力20%増加。ダメージを受けた後、自身に1ターンの間ガードを付与。受けるダメージを70%減少。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -1419,7 +1422,8 @@ class Warrior(Monster):
         return damage
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Warrior Passive', -1, True, {'maxhp' : 1.8}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('Warrior Passive', -1, True, {'maxhp' : 1.8, 'defense' : 1.2}, 
+                                      can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -1591,7 +1595,7 @@ class Fairy(Monster):
         self.skill1_description_jp = "ランダムな敵4体に攻撃力300%のダメージを与え、8ターンの間混乱を付与。"
         self.skill2_description_jp = "1体の敵に攻撃力400%のダメージを3回与え、それぞれの攻撃に33%の確率で8ターンの間混乱を付与。"
         self.skill3_description_jp = "混乱している相手からダメージを受けた時、攻撃力300%分のHPを回復し、攻撃力を30%増加し、8ターンの間受けるダメージを40%減少。" \
-        "同じ効果が再度付与された場合、効果時間がリフレッシュされる。"
+        "同じ効果が再度付与された場合、効果時間が更新される。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -2655,6 +2659,9 @@ class Father(Monster):
         self.skill1_description = "Apply Cancellation Shield on 3 allies with lowest hp, all damage lower than 10% of maxhp is reduced to 0. Shield last 4 turns and provide 4 uses."
         self.skill2_description = "Attack 3 closest enemies with 450% atk."
         self.skill3_description = "All damage taken is reduced by 20%, damage taken lower than 10% of maxhp is reduced to 0 for 300 times."
+        self.skill1_description_jp = "最も低いHPの3体の味方にキャンセルシールドを付与。最大HPの10%以下のダメージは0になる。シールドは4ターン持続し、4回使用可能。"
+        self.skill2_description_jp = "最も近い敵3体に攻撃力450%で攻撃。"
+        self.skill3_description_jp = "受けるダメージを20%減少。最大HPの10%以下のダメージは300回まで0になる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2688,6 +2695,9 @@ class Kobold(Monster):
         self.skill1_description = "Recover hp by 30% of maxhp and increase defense by 20% for 21 turns. If you are the only one alive, effect is increased by 100%."
         self.skill2_description = "Attack 1 closest enemy with 800% atk, if you are the only one alive, increase damage by 100%."
         self.skill3_description = "Defence and maxhp is increased by 25%."
+        self.skill1_description_jp = "最大HPの30%回復し、防御を21ターンで20%増加。自分だけが生きている場合、効果は100%増加。"
+        self.skill2_description_jp = "最も近い敵に攻撃力800%で攻撃。自分だけが生きている場合、ダメージを100%増加。"
+        self.skill3_description_jp = "防御と最大HPを25%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2726,6 +2736,9 @@ class SoldierA(Monster):
         self.skill1_description = "Focus attack on enemy with highest defense with 360% atk 3 times, each attack will reduce target defense by 7% for 21 turns."
         self.skill2_description = "Attack all enemies with 200% atk and reduce defense by 12% for 21 turns."
         self.skill3_description = "Skill attack have 30% chance to inflict Bleed for 20 turns. Bleed: takes 10% of atk as status damage per turn."
+        self.skill1_description_jp = "最も高い防御力の敵に攻撃力360%で3回攻撃し、各攻撃で対象の防御力を21ターンで7%減少。"
+        self.skill2_description_jp = "全ての敵に攻撃力200%で攻撃し、防御力を21ターンで12%減少。"
+        self.skill3_description_jp = "スキル攻撃で20%の確率で20ターンの間出血を付与。出血：攻撃力の10%を状態ダメージとして毎ターン受ける。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -2763,6 +2776,9 @@ class FutureSoldier(Monster):
         self.skill1_description = "Attack random enemies 5 times with 200% atk, each attack reduces target defense by 8% for 24 turns."
         self.skill2_description = "Attack random enemies 7 times with 150% atk, if target has lower defense than self, increase damage by 100%."
         self.skill3_description = "Normal attack deals double damage if target has lower defense than self."
+        self.skill1_description_jp = "ランダムな敵に攻撃力200%で5回攻撃し、各攻撃で対象の防御力を24ターンで8%減少。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力150%で7回攻撃し、対象の防御力が自分より低い場合、ダメージを100%増加。"
+        self.skill3_description_jp = "通常攻撃は対象の防御力が自分より低い場合、ダメージが2倍になる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -2806,6 +2822,9 @@ class FutureElite(Monster):
         self.skill2_description = "Attack random enemies 8 times with 200% atk, if target has lower defense than self, damage increased by a percentage equal to the ratio between self and target defense."
         # for example: self.defense = 100, target.defense = 50, damage increased by 100%
         self.skill3_description = "defense is increased by 30%."
+        self.skill1_description_jp = "全ての敵に攻撃力400%で攻撃し、防御力を30ターンで10%減少させる。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力200%で8回攻撃し、対象の防御力が自分より低い場合、ダメージは自分と対象の防御力の比率に等しい割合で増加。"
+        self.skill3_description_jp = "防御力を30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -2841,6 +2860,9 @@ class SkeletonB(Monster):
         self.skill1_description = "Attack enemy with highest def with 300% atk 3 times."
         self.skill2_description = "Attack enemy with highest def with 900% atk, 80% chance to Stun for 8 turns."
         self.skill3_description = "Penetration is increased by 35%."
+        self.skill1_description_jp = "最も高い防御力の敵に攻撃力300%で3回攻撃。"
+        self.skill2_description_jp = "最も高い防御力の敵に攻撃力900%で攻撃し、8ターンの間80%の確率でスタンを付与。"
+        self.skill3_description_jp = "貫通を35%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2874,6 +2896,9 @@ class Mandrake(Monster):
         self.skill2_description = "2 neighbor allies gain regeneration for 24 turns, heal 25% of self def per turn." \
         " For 24 turns, their critical defense is increased by 12%."
         self.skill3_description = "Maxhp is increased by 15%, defense is increased by 150%."
+        self.skill1_description_jp = "隣接する2体の味方を防御力100%で回復し、防御力を24ターンで8%増加。"
+        self.skill2_description_jp = "隣接する2体の味方24ターンに再生を付与し、毎ターン自分の防御力の25%を回復。24ターンの間、クリティカル防御を12%増加。"
+        self.skill3_description_jp = "最大HPを15%増加し、防御力を150%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2918,6 +2943,9 @@ class Coward(Monster):
         self.skill2_description = "Attack 1 closest enemy with 550% atk."
         self.skill3_description = "Protect all allies. Damage taken is reduced 20%, 50% of damage taken is redirected to you." \
         " Start the battle with a Absorption Shield covering 40% maxhp."
+        self.skill1_description_jp = "20ターンの間、防御力を20%増加させる。同じ効果を重複して適用することはできない。"
+        self.skill2_description_jp = "最も近い敵に攻撃力550%で攻撃。"
+        self.skill3_description_jp = "全ての味方を保護する。受けるダメージを20%減少し、50%のダメージが自分が受ける。戦闘開始の時、最大HPの40%をカバーする吸収シールド自分に付与する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2959,11 +2987,14 @@ class Yamatanoorochi(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Yamatanoorochi"
-        self.skill1_description = "Attack random enemies 6 times with 300% atk. If hp is above 80%, attack 8 times instead." \
+        self.skill1_description = "Attack random enemies 6 times with 300% atk. If your hp is above 80%, attack 8 times instead." \
         " Each attack has 50% chance to inflict Poison for 3 turns. Poison: takes 3% of max hp as status damage each turn."
         self.skill2_description = "Recovers hp by 30% of maxhp and increase defense by 8% for all allies for 24 turns."
         self.skill3_description = "Protect all allies. Damage taken is reduced by 30%, 70% of damage taken is redirected to you." \
         " Increase maxhp by 60%, defense by 30%."
+        self.skill1_description_jp = "ランダムな敵に攻撃力300%で6回攻撃。自分のHPが80%以上の場合、8回攻撃。各攻撃で50%の確率で3ターンの間毒を付与。毒:毎ターン最大HPの3%を状態ダメージとして受ける。"
+        self.skill2_description_jp = "最大HPの30%回復し、全ての味方の防御力を24ターンで8%増加。"
+        self.skill3_description_jp = "全ての味方を保護する。受けるダメージを30%減少し、70%のダメージが自分が受ける。最大HPを60%、防御力を30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -3012,6 +3043,9 @@ class Hero(Monster):
         self.skill2_description = "For 12 turns, you and your neighbor allies have their atk and def increased by the percentage of your lost hp."
         self.skill3_description = "Protect 2 neighboring allies. Damage taken is reduced by 60%, 80% of damage taken is redirected to you." \
         " Atk, def and spd is increased by 20%."
+        self.skill1_description_jp = "最も低いHPの敵に攻撃力350%で3回攻撃。この攻撃または追加攻撃で敵を倒すと、再度攻撃。"
+        self.skill2_description_jp = "12ターンの間、隣接する味方と自分の攻撃力と防御力が自分失ったHPの割合で増加する。"
+        self.skill3_description_jp = "隣接する2体の味方を保護する。受けるダメージを60%減少し、80%のダメージが自分が受ける。攻撃力、防御力、速度を20%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 3
         self.is_boss = True
@@ -3061,6 +3095,9 @@ class HeroB(Monster):
         " shield absorbs damage equal to your lost hp."
         self.skill3_description = "Protect 2 neighboring allies. Damage taken is reduced by 50%, 50% of damage taken is redirected to you." \
         " Atk, def and spd is increased by 10%."
+        self.skill1_description_jp = "最も高いHPの敵に攻撃力300%で3回攻撃し、このスキルで敵を倒せない場合、再度攻撃。"
+        self.skill2_description_jp = "自分と2体の隣接する味方に12ターンの間シールドを付与し、シールドは自分の失ったHPに等しいダメージを吸収。"
+        self.skill3_description_jp = "隣接する2体の味方を保護。受けるダメージを50%減少し、50%のダメージが自分が受ける。攻撃力、防御力、速度を10%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 3
         self.is_boss = True
@@ -3106,6 +3143,9 @@ class Puppet(Monster):
         self.skill1_description = "For 20 turns, increase evasion by 50%."
         self.skill2_description = "Heal hp by 40% of maxhp."
         self.skill3_description = "Protect all allies. Damage taken is reduced 50%, 90% of damage taken is redirected to you."
+        self.skill1_description_jp = "20ターンの間、回避率を50%増加。"
+        self.skill2_description_jp = "最大HPの40%回復。"
+        self.skill3_description_jp = "全ての味方を保護。受けるダメージを50%減少し、90%のダメージが自分が受ける。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -3140,6 +3180,9 @@ class PuppetB(Monster):
         self.skill1_description = "For 20 turns, increase spd by 15%."
         self.skill2_description = "Apply absorption shield on your self, shield absorbs damage equal to 60% of maxhp."
         self.skill3_description = "Protect all allies. Damage taken is reduced 25%, 90% of damage taken is redirected to you."
+        self.skill1_description_jp = "20ターンの間、速度を15%増加。"
+        self.skill2_description_jp = "自分に吸収シールドを付与し、シールドは最大HPの60%のダメージを吸収。"
+        self.skill3_description_jp = "全ての味方を保護。受けるダメージを25%減少し、90%のダメージが自分が受ける。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -3191,6 +3234,9 @@ class Gryphon(Monster):
         self.skill2_description = "Attack 3 closest enemies with 250% atk 2 times, each attack has 70% chance to inflict Bleed for 20 turns." \
         "Bleed deals 15% of atk as status damage per turn."
         self.skill3_description = "Evasion is increased by 50%, speed is increased by 5%."
+        self.skill1_description_jp = "自分と隣接する2体の味方に20ターンの間、回避率を10%増加。"
+        self.skill2_description_jp = "最も近い敵3体に攻撃力250%で2回攻撃し、各攻撃で70%の確率で20ターンの間出血を付与。出血は攻撃力の15%を状態ダメージとして毎ターン受ける。"
+        self.skill3_description_jp = "回避率を50%増加し、速度を5%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -3231,6 +3277,9 @@ class Hermit(Monster):
         self.skill2_description = "Attack closest enemy with 500% atk, if evasion rate is higher than 70%, this attack will not miss and guarantee" \
         " to be a critical hit, then Inflict Blind for 21 turns, Blind: reduce accuracy by 25%."
         self.skill3_description = "Evasion increased by 20%. Final damage taken is reduced by 15%."
+        self.skill1_description_jp = "最も近い敵3体に攻撃力235%で4回攻撃し、回避率の割合でダメージを増加。攻撃後、20ターンの間回避率を40%増加。"
+        self.skill2_description_jp = "最も近い敵に攻撃力500%で攻撃し、回避率が70%以上の場合、この攻撃は外れず、必ずクリティカルヒット。その後、21ターンの間老眼を付与。老眼:命中率を25%減少。"
+        self.skill3_description_jp = "回避率を20%増加。最終ダメージを15%減少。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -3274,6 +3323,9 @@ class KungFuB(Monster):
         " 40% chance to inflict Bleed for 24 turns. Bleed: takes 10% of atk as status damage per turn."
         self.skill2_description = "For 20 turns, all allies gain atk equal to 30% of their current evasion rate if their evasion rate is higher than 0%."
         self.skill3_description = "All allies have increased evasion by 20% and accuracy by 40%."
+        self.skill1_description_jp = "1ターンの間、命中率を25%増加し、最も高い回避率を持つ敵に攻撃力240%で4回攻撃。各攻撃で100%の確率で8ターンの間スタンを付与、40%の確率で24ターンの間出血を付与。出血:攻撃力の10%を状態ダメージとして毎ターン受ける。"
+        self.skill2_description_jp = "20ターンの間、全ての味方の回避率が0%以上の場合、その味方が味方現在の回避率の30%分の攻撃力を増加。"
+        self.skill3_description_jp = "全ての味方の回避率を20%、命中率を40%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -3309,11 +3361,14 @@ class HauntedTree(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "HauntedTree"
-        self.skill1_description = "3 closest enemies are Rooted for 9 turns. Rooted: evasion is reduced by 55%, def and critdef is reduced by 20%." \
+        self.skill1_description = "3 closest enemies are Rooted for 18 turns. Rooted: evasion is reduced by 55%, def and critdef is reduced by 20%." \
         " Effect duration refreshes if same effect is applied again."
         self.skill2_description = "If no enemy is Rooted, this skill has no effect." \
         " Attack all Rooted enemies with 360% atk 3 times, each attack deals additional damage equal to 5% of self maxhp."
         self.skill3_description = "Damage taken is reduced by 70% from Rooted enemies. maxhp, def and critdef is increased by 30%."
+        self.skill1_description = "最も近い敵3体を18ターンの間ルートする。ルート:回避率が55%減少、防御力とクリティカル防御力が20%減少。同じ効果が再度適用されると効果時間が更新される。"
+        self.skill2_description = "ルートした敵がいない場合、このスキルは効果がない。ルートした敵全てに攻撃力360%で3回攻撃し、各攻撃は自分の最大HPの5%の分ダメージを追加。"
+        self.skill3_description = "ルートした敵から受けるダメージを70%減少。最大HP、防御力、クリティカル防御力を30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -3323,7 +3378,7 @@ class HauntedTree(Monster):
 
     def skill1_logic(self):
         targets = self.target_selection("n_enemy_in_front", "3")
-        eff = StatsEffect('Rooted', 9, False, {'eva' : -0.55, 'defense' : 0.8, 'critdef' : -0.2})
+        eff = StatsEffect('Rooted', 18, False, {'eva' : -0.55, 'defense' : 0.8, 'critdef' : -0.2})
         eff.additional_name = "HauntedTree_Rooted"
         eff.apply_rule = 'stack'
         for target in targets:
@@ -3362,6 +3417,9 @@ class Cobold(Monster):
         self.skill2_description = "Attack enemy with highest evasion with 300% atk 2 times, target evasion is reduced by 25% for 20 turns." \
         " This attack cannot miss."
         self.skill3_description = "Accuracy is increased by 50%."
+        self.skill1_description_jp = "最も低いHPの敵に攻撃力300%で3回攻撃。この攻撃は外れない。"
+        self.skill2_description_jp = "最も高い回避率を持つ敵に攻撃力300%で2回攻撃し、対象の回避率を20ターンの間25%減少。この攻撃は外れない。"
+        self.skill3_description_jp = "命中率を50%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -3392,7 +3450,10 @@ class MimicB(Monster):
         self.original_name = "MimicB"
         self.skill1_description = "Attack 1 closest enemy with 800% atk. If this attack misses, reduce target's evasion by 40% for 20 turns."
         self.skill2_description = "Attack 1 closest enemy with 800% atk. This attack cannot miss."
-        self.skill3_description = "When taking damage, 50% chance to reduce the target's evasion by 15% for 20 turns."
+        self.skill3_description = "When taking normal damage, 50% chance to reduce the target's evasion by 15% for 20 turns."
+        self.skill1_description_jp = "最も近い敵に攻撃力800%で攻撃。この攻撃が外れた場合、対象の回避率を20ターンの間40%減少。"
+        self.skill2_description_jp = "最も近い敵に攻撃力800%で攻撃。この攻撃は外れない。"
+        self.skill3_description_jp = "通常ダメージを受けた際、50%の確率で対象の回避率を20ターンの間15%減少。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -3428,6 +3489,9 @@ class Swordman(Monster):
         self.skill2_description = "Attack 1 closest enemy with 220% atk 6 times. This attack cannot miss." \
         " Deals 2% of target's maxhp as status damage per hit."
         self.skill3_description = "Atk and spd is increased by 10%."
+        self.skill1_description_jp = "全ての味方の命中率を20ターンの間120%増加。"
+        self.skill2_description_jp = "最も近い敵に攻撃力220%で6回攻撃。この攻撃は外れない。各攻撃で対象の最大HPの2%を状態ダメージとして受ける。"
+        self.skill3_description_jp = "攻撃力と速度を10%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -3467,6 +3531,9 @@ class Mage(Monster):
         self.skill1_description = "Attack 3 closest enemies with 300% atk and inflict Burn for 18 turns. Burn deals 13% of atk as status damage per turn. If target has negative status, inflict 3 Burn effects."
         self.skill2_description = "Attack closest enemy 3 times with 320% atk, if target has negative status, each attack inflict 3 Burn effects for 6 turns."
         self.skill3_description = "Increase atk by 10%"
+        self.skill1_description_jp = "最も近い敵3体に攻撃力300%で攻撃し、18ターンの間出血を付与。出血は攻撃力の13%を状態ダメージとして毎ターン受ける。対象がデバフを持っている場合、3つの出血効果を付与。"
+        self.skill2_description_jp = "最も近い敵に攻撃力320%で3回攻撃し、対象がデバフを持っている場合、各攻撃で6ターンの間3つの出血効果を付与。"
+        self.skill3_description_jp = "攻撃力を10%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -3512,6 +3579,9 @@ class Orklord(Monster):
         self.skill1_description = "Attack closest enemy with 260% atk 3 times. After all attack, if target has negative status effect, increase effect duration by 16 turns."
         self.skill2_description = "Attack 5 enemies with 400% atk and inflict Bleed for 24 turns. Bleed deals 22% of atk as status damage per turn."
         self.skill3_description = "Normal attack deals 200% more damage to target with Bleed. Increase maxhp and defense by 50%."
+        self.skill1_description_jp = "最も近い敵に攻撃力260%で3回攻撃。全ての攻撃後、対象がデバフを持っている場合、そのデバフの効果時間を16ターン増加。"
+        self.skill2_description_jp = "最も近い敵5体に攻撃力400%で攻撃し、24ターンの間出血を付与。出血は攻撃力の22%を状態ダメージとして毎ターン受ける。"
+        self.skill3_description_jp = "通常攻撃は出血を持つ対象に対して200%の追加ダメージを与える。最大HPと防御力を50%増加。"
         self.skill1_cooldown_max = 2
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -3556,8 +3626,11 @@ class MageB(Monster):
         self.original_name = "MageB"
         self.skill1_description = "Attack 3 closest enemies with 280% atk and inflict Poison for 18 turns. Poison deals 0.7% of lost hp of atk as status damage per turn. If target has negative status, inflict 3 Poison effects" \
         " instead, the poison effects deal damage based on lost hp, maxhp and current hp."
-        self.skill2_description = "Attack closest enemy 3 times with 300% atk, if target has negative status, each attack inflict 3 Poison effects for 18 turns."
+        self.skill2_description = "Attack closest enemy 3 times with 300% atk, if target has negative status, each attack inflict 3 kind of Poison effects for 18 turns."
         self.skill3_description = "Increase accuracy by 70%"
+        self.skill1_description_jp = "最も近い敵3体に攻撃力280%で攻撃し、18ターンの間毒を付与。毒は攻撃力の0.7%を失ったHPを状態ダメージとして毎ターン受ける。対象がデバフを持っている場合、3つの毒効果を付与し、毒効果は失ったHP、最大HP、現在HPに基づいてダメージを与える。"
+        self.skill2_description_jp = "最も近い敵に攻撃力300%で3回攻撃し、対象がデバフを持っている場合、各攻撃で18ターンの間3種類の毒効果を付与。"
+        self.skill3_description_jp = "命中率を70%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -3614,7 +3687,10 @@ class Thief(Monster):
         self.original_name = "Thief"
         self.skill1_description = "Attack 1 closest enemy with 600% atk."
         self.skill2_description = "Attack 2 closest enemies with 330% atk 2 times."
-        self.skill3_description = "Skill damage increased by 60% for each active buff on target." 
+        self.skill3_description = "Skill damage increased by 60% for each active buff on target."
+        self.skill1_description_jp = "最も近い敵に攻撃力600%で攻撃。"
+        self.skill2_description_jp = "最も近い敵2体に攻撃力330%で2回攻撃。"
+        self.skill3_description_jp = "対象がアクティブバフを持っている場合、スキルダメージを60%増加。" 
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -3653,6 +3729,9 @@ class Goliath(Monster):
         self.skill1_description = "Strike the closest enemy with 600% atk, for each active buff effect, strike again with 400% atk."
         self.skill2_description = "Reset skill cooldown of skill 1 and increase spd by 100% for 3 turns. Attack closest enemy 3 times with 300% atk. For each active buff on target, increase damage by 30%."
         self.skill3_description = "Increase atk, def, maxhp by 30%."
+        self.skill1_description_jp = "最も近い敵に攻撃力600%で攻撃し、アクティブバフ効果がある場合、バフ1つにつき400%で再度攻撃。"
+        self.skill2_description_jp = "スキル1のクールダウンをリセットし、3ターンの間速度を100%増加。最も近い敵に攻撃力300%で3回攻撃。対象がアクティブバフを持っている場合、バフ1つにつきダメージを30%増加。"
+        self.skill3_description_jp = "攻撃力、防御力、最大HPを30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 2
         self.is_boss = True
@@ -3701,6 +3780,9 @@ class ReconMecha(Monster):
         self.skill1_description = "Attack closest enemy with 280% atk 2 times, if target has no active buff, increase damage by 100%."
         self.skill2_description = "Attack closest enemy with 280% atk 2 times, if target has no active buff, target defense is reduced by 20% for 24 turns."
         self.skill3_description = "Every turn, at the end of turn, if an enemy is fallen in this turn, recover hp by 30% of maxhp."
+        self.skill1_description_jp = "最も近い敵に攻撃力280%で2回攻撃。対象がアクティブバフを持っていない場合、ダメージを100%増加。"
+        self.skill2_description_jp = "最も近い敵に攻撃力280%で2回攻撃。対象がアクティブバフを持っていない場合、24ターンの間防御力を20%減少。"
+        self.skill3_description_jp = "毎ターン、ターンの終わりに、このターンに敵が倒された場合、最大HPの30%回復。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -3743,6 +3825,9 @@ class SecurityRobot(Monster):
         self.skill1_description = "All enemies that without active buffs have their defense reduced by 8% for 24 turns, critical defense reduced by 16% for 24 turns."
         self.skill2_description = "Attack closest enemy for 300% atk 3 times, if target has no active buff, strike a critical hit."
         self.skill3_description = "Maxhp increased by 30%."
+        self.skill1_description_jp = "アクティブバフを持っていない全ての敵の防御力を8%減少させ、クリティカル防御力を16%減少させる。効果は24ターン持続する。"
+        self.skill2_description_jp = "最も近い敵に攻撃力300%で3回攻撃。対象がアクティブバフを持っていない場合、必ずクリティカルヒット。"
+        self.skill3_description_jp = "最大HPを30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -3787,6 +3872,9 @@ class Cockatorice(Monster):
         self.skill1_description = "Attack 3 closest enemies, with 300% atk."
         self.skill2_description = "Focus attack on closest enemy 3 times with 300% atk."
         self.skill3_description = "If not getting hit for 8 turns, increase atk by 77% and spd by 77% for 4 turns at the end of turn. Same effect cannot be applied twice."
+        self.skill1_description_jp = "最も近い敵3体に攻撃力300%で攻撃。"
+        self.skill2_description_jp = "最も近い敵に攻撃力300%で3回攻撃。"
+        self.skill3_description_jp = "8ターンの間攻撃を受けていないと、ターンの終わりに攻撃力と速度を77%増加。同じ効果は2回同時に適用されない。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -3818,6 +3906,9 @@ class Cockatrice(Monster):
         self.skill1_description = "Attack 3 closest enemies, with 270% atk, their defense is reduced by 20% for 8 turns."
         self.skill2_description = "Focus attack on closest enemy 3 times with 270% atk, each attack reduces target critdmg by 30% for 8 turns."
         self.skill3_description = "For 8 turns, if not getting hit, increase crit def by 77% and def by 77% for 8 turns at the end of turn. Same effect cannot be applied twice."
+        self.skill1_description_jp = "最も近い敵3体に攻撃力270%で攻撃し、8ターンの間防御力を20%減少。"
+        self.skill2_description_jp = "最も近い敵に攻撃力270%で3回攻撃し、各攻撃でクリティカルダメージを30%減少。"
+        self.skill3_description_jp = "8ターンの間攻撃を受けていない場合、ターンの終わりにクリティカル防御力と防御力を77%増加。同じ効果は2回同時に適用されない。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -3853,6 +3944,9 @@ class Fanatic(Monster):
         self.skill1_description = "Attack closest enemy with 340% atk 3 times. If has not getting hit for 6 turns, land critical strikes."
         self.skill2_description = "Attack closest enemy with 340% atk 3 times. If has not getting hit for 6 turns, damage is increased by 6% of target maxhp."
         self.skill3_description = "Recover hp by 30% of damage dealt in skill attacks."
+        self.skill1_description_jp = "最も近い敵に攻撃力340%で3回攻撃。6ターン攻撃を受けていない場合、必ずクリティカルヒットになる。"
+        self.skill2_description_jp = "最も近い敵に攻撃力340%で3回攻撃。6ターン攻撃を受けていない場合、ダメージは対象の最大HPの6%増加。"
+        self.skill3_description_jp = "スキル攻撃で与えたダメージの30%でHPを回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -3894,6 +3988,9 @@ class Emperor(Monster):
         self.skill1_description = "Attack closest enemy with 280% atk 2 times, for each alive ally, damage increased by 20%."
         self.skill2_description = "Attack closest enemy with 560% atk, for each alive ally, damage increased by 20%."
         self.skill3_description = "If has not getting hit for 10 turns, apply Pride to all allies for 10 turns at end of turn. Pride: increase atk, def, spd by 60%"
+        self.skill1_description_jp = "最も近い敵に攻撃力280%で2回攻撃し、生存している味方1体につき20%ダメージ増加。"
+        self.skill2_description_jp = "最も近い敵に攻撃力560%で攻撃し、生存している味方1体につき20%ダメージ増加。"
+        self.skill3_description_jp = "10ターン攻撃を受けていない場合、ターンの終わりに全ての味方に10ターン栄耀を付与。栄耀：攻撃力、防御力、速度を60%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -3940,6 +4037,9 @@ class Tanuki(Monster):
         self.skill1_description = "Boost atk for two allies of highest atk by 20% for 24 turns."
         self.skill2_description = "Attack closest enemy with 1 damage, increase self evasion by 20% for 18 turns."
         self.skill3_description = "Normal attack resets cooldown of skill 1 and deals 400% atk damage instead of 200% and attack 2 times."
+        self.skill1_description_jp = "最も攻撃力が高い2体の味方の攻撃力を20%増加させ、24ターン持続。"
+        self.skill2_description_jp = "最も近い敵に1ダメージで攻撃し、18ターンの間自身の回避率を20%増加。"
+        self.skill3_description_jp = "通常攻撃でスキル1のクールダウンをリセットし、攻撃力の400%で攻撃し、2回攻撃する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -3973,6 +4073,9 @@ class Werewolf(Monster):
         self.skill1_description = "Focus attack 1 enemy with highest atk with 250% atk 3 times. Each attack decreases target atk by 3% for 20 turns."
         self.skill2_description = "Attack 3 enemies with highest atk with 220% atk 2 times. If target has lower atk than self, increase damage by 40%."
         self.skill3_description = "Increase atk by 15%. At start of battle, increase atk by 15% for 15 turns for self and neighboring allies."
+        self.skill1_description_jp = "最も攻撃力が高い敵に攻撃力250%で3回集中攻撃。各攻撃で対象の攻撃力を3%減少させ、20ターン持続。"
+        self.skill2_description_jp = "最も攻撃力が高い敵3体に攻撃力220%で2回攻撃。対象の攻撃力が自身より低い場合、ダメージを40%増加。"
+        self.skill3_description_jp = "攻撃力を15%増加。戦闘開始時、自身と隣接する味方に15ターンの間攻撃力を15%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -4009,10 +4112,13 @@ class Kunoichi(Monster):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Kunoichi"
         self.skill1_description = "For 4 turns, increase accuracy by 20%, attack 3 closest enemies with 240% atk 2 times." \
-        " For 24 turns, target has 5% decreased atk."
-        self.skill2_description = "For 4 turns, increase atk by 20%, attack closest enemy with 450% atk." \
         " For 24 turns, target has 10% decreased atk."
+        self.skill2_description = "For 4 turns, increase atk by 20%, attack closest enemy with 450% atk." \
+        " For 24 turns, target has 20% decreased atk."
         self.skill3_description = "Self and neighboring allies have increased penetration by 20%."
+        self.skill1_description_jp = "4ターンの間、命中率を20%増加させ、最も近い敵3体に攻撃力240%で2回攻撃。24ターンの間、対象の攻撃力を10%減少。"
+        self.skill2_description_jp = "4ターンの間、攻撃力を20%増加させ、最も近い敵に攻撃力450%で攻撃。24ターンの間、対象の攻撃力を20%減少。"
+        self.skill3_description_jp = "自身と隣接する味方の貫通力を20%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -4023,14 +4129,14 @@ class Kunoichi(Monster):
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Acc Up', 4, True, {'acc' : 0.2}))
         def atk_down(self, target):
-            target.apply_effect(StatsEffect('Atk Down', 24, False, {'atk' : 0.95}))
+            target.apply_effect(StatsEffect('Atk Down', 24, False, {'atk' : 0.90}))
         damage_dealt = self.attack(multiplier=2.4, repeat_seq=2, func_after_dmg=atk_down, target_kw1="n_enemy_in_front", target_kw2="3")
         return damage_dealt
 
     def skill2_logic(self):
         self.apply_effect(StatsEffect('Atk Up', 4, True, {'atk' : 1.2}))
         def atk_down(self, target):
-            target.apply_effect(StatsEffect('Atk Down', 24, False, {'atk' : 0.90}))
+            target.apply_effect(StatsEffect('Atk Down', 24, False, {'atk' : 0.80}))
         damage_dealt = self.attack(multiplier=4.5, repeat=1, func_after_dmg=atk_down, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -4050,6 +4156,9 @@ class ArabianSoldier(Monster):
         self.skill1_description = "For 10 turns, increase atk by 20%, focus attack on enemy with highest atk with 300% atk 2 times."
         self.skill2_description = "For 10 turns, increase def by 20%, recover hp by 30% of maxhp."
         self.skill3_description = "At start of battle, increase atk and def by 20% for 15 turns for self and neighboring allies."
+        self.skill1_description_jp = "10ターンの間、攻撃力を20%増加させ、最も攻撃力が高い敵に攻撃力300%で2回集中攻撃。"
+        self.skill2_description_jp = "10ターンの間、防御力を20%増加させ、最大HPの30%回復。"
+        self.skill3_description_jp = "戦闘開始時、自身と隣接する味方に15ターンの間攻撃力と防御力を20%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -4083,6 +4192,9 @@ class Infantry(Monster):
         self.skill1_description = "Attack closest enemy with 280% atk 3 times, each attack has a 30% chance to inflict Atk Down for 24 turns, atk is decreased by 8%."
         self.skill2_description = "Attack closest enemy with 280% atk 4 times."
         self.skill3_description = "Skill damage increased by 50% if target atk is lower than self."
+        self.skill1_description_jp = "最も近い敵に攻撃力280%で3回攻撃。各攻撃30%確率で攻撃力を8%減少させる攻撃力ダウンを24ターン付与する。"
+        self.skill2_description_jp = "最も近い敵に攻撃力280%で4回攻撃。"
+        self.skill3_description_jp = "対象の攻撃力が自身より低い場合、スキルダメージを50%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -4128,6 +4240,9 @@ class Mushroom(Monster):
         self.skill1_description = "Focus attack on 3 closest enemies with 240% atk 2 times."
         self.skill2_description = "Heal 30% hp of maxhp and increase defense by 20% for 7 turns."
         self.skill3_description = "After taking non zero damage and hp is lower than maxhp, recover hp by 5% of maxhp."
+        self.skill1_description_jp = "最も近い敵3体に攻撃力240%で2回攻撃。"
+        self.skill2_description_jp = "最大HPの30%回復し、防御力を20%増加させる。"
+        self.skill3_description_jp = "0以上のダメージを受けた後、HPが最大HP未満の場合、最大HPの5%回復。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -4162,6 +4277,9 @@ class Vampire(Monster):
         self.skill1_description = "Focus attack on 3 closest enemies with 330% atk 2 times, recover hp by 60% of damage dealt."
         self.skill2_description = "Pay 20% of current hp, attack 3 closest enemies with 150% of the amount of hp paid as fixed damage. This skill has no effect if hp is lower than 20% of maxhp. Paying hp counts as taking status damage."
         self.skill3_description = "Every turn, recover hp by 6% of maxhp."
+        self.skill1_description_jp = "最も近い敵3体に攻撃力330%で攻撃し、2回攻撃。与えたダメージの60%をHP回復。"
+        self.skill2_description_jp = "現在のHPの20%を消費し、最も近い敵3体に現在のHPの150%の固定ダメージを与える。HPが最大HPの20%未満の場合、このスキルは効果がない。HP消費は状態異常ダメージとして扱われる。"
+        self.skill3_description_jp = "毎ターン、HPが最大HPの6%を回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -4205,6 +4323,9 @@ class Lich(Monster):
         self.skill2_description = "Attack closest enemy with 900% atk, reduce target heal efficiency by 50% for 16 turns."
         self.skill3_description = "Gain immunity to CC effect as long as having Undead effect. Undead: when defeated, revive with 100% hp next turn." \
         " Maxhp is increased by 10%. At start of battle, apply Undead effect 3 times."
+        self.skill1_description_jp = "最も近い敵に攻撃力400%で3回攻撃。"
+        self.skill2_description_jp = "最も近い敵に攻撃力900%で攻撃し、16ターンの間対象の回復効率を50%減少。"
+        self.skill3_description_jp = "アンデッド効果を持っている間、CC効果に対して免疫を獲得。アンデッド:撃破された場合、次のターンに100%のHPで復活。最大HPが10%増加。戦闘開始時、アンデッド効果を3回付与。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -4242,6 +4363,9 @@ class Cleric(Monster):
         self.skill1_description = "Heal 3 allies with lowest hp by 600% atk."
         self.skill2_description = "Target 3 allies with lowest hp, apply a shield that absorbs up to 300% atk damage for 12 turns."
         self.skill3_description = "Heal efficiency increased by 30%."
+        self.skill1_description_jp = "最もHPが低い味方3体を攻撃力600%で回復。"
+        self.skill2_description_jp = "HPが最も低い味方3体に、最大攻撃力の300%のダメージを吸収するシールドを12ターン付与。"
+        self.skill3_description_jp = "回復効率が30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -4273,6 +4397,9 @@ class Priest(Monster):
         self.skill1_description = "Heal 1 ally of lowest hp by 600% atk."
         self.skill2_description = "Heal all allies by 300% atk. Before healing, increase their heal efficiency by 10% for 22 turns."
         self.skill3_description = "Maxhp is increased by 20%. When you are defeated, heal all allies except you by 600% atk."
+        self.skill1_description_jp = "最もHPが低い味方1体を攻撃力600%で回復。"
+        self.skill2_description_jp = "全ての味方を攻撃力300%で回復。回復前に、22ターンの間回復効率を10%増加させる。"
+        self.skill3_description_jp = "最大HPが20%増加。撃破された場合、自分以外の全ての味方を自分の攻撃力600%で回復させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -4314,6 +4441,9 @@ class Kyubi(Monster):
         self.skill1_description = "Attack random enemies 6 times with 300% atk, recover hp by 100% of damage dealt."
         self.skill2_description = "Heal random allies 6 times with 900% atk each."
         self.skill3_description = "Cancels 90% of damage that exceeds 9% of maxhp when taking damage."
+        self.skill1_description_jp = "ランダムな敵に攻撃力300%で6回攻撃し、与えたダメージの100%をHP回復。"
+        self.skill2_description_jp = "ランダムな味方に攻撃力900%で6回回復。"
+        self.skill3_description_jp = "ダメージを受けた際、最大HPの9%を超えるダメージの90%を無効化する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -4356,6 +4486,9 @@ class Delf(Monster):
         " If target has lower than 50% hp, heal efficiency is further reduced by 40%."
         self.skill2_description = "Attack random enemies 6 times with 220% atk, each attack reduce their heal efficiency by 15% for 20 turns."
         self.skill3_description = "Accuracy is increased by 30%."
+        self.skill1_description_jp = "全ての敵に攻撃力220%で攻撃し、20ターンの間回復効率を20%減少させる。対象のHPが50%未満の場合、回復効率をさらに40%減少。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力220%で6回攻撃。各攻撃で20ターンの間回復効率を15%減少させる。"
+        self.skill3_description_jp = "命中率が30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -4392,6 +4525,9 @@ class DelfB(Monster):
         self.skill2_description = "Attack closest enemy with 400% atk, if target has lower than 30% hp, " \
         " apply poison, blind and heal efficiency down by 100% for 12 turns. Poison: deals 4% of lost hp each turn. Blind: reduce accuracy by 50%."
         self.skill3_description = "speed is increased by 20%, defense is increased by 20%."
+        self.skill1_description_jp = "最も近い敵に攻撃力250%で3回攻撃し、12ターンの間回復効率を35%減少させる。"
+        self.skill2_description_jp = "最も近い敵に攻撃力400%で攻撃。対象のHPが30%未満の場合、毒、暗闇を付与し、回復効率を100%減少させる。毒:失ったHPの4%のダメージ。暗闇:命中率を50%減少。"
+        self.skill3_description_jp = "速度が20%、防御力が20%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -4430,6 +4566,9 @@ class Darkpriest(Monster):
         self.skill2_description = "Attack closest enemy with 600% atk, reduce heal efficiency by 90% for 12 turns." \
         " Before attacking, increase accuracy by 30% for 6 turns."
         self.skill3_description = "Heal efficiency is reduced by 90%. When you are defeated, all allies except you take 300% atk status damage."
+        self.skill1_description_jp = "全ての敵に攻撃力300%で攻撃し、12ターンの間回復効率を60%減少させる。"
+        self.skill2_description_jp = "最も近い敵に攻撃力600%で攻撃し、12ターンの間回復効率を90%減少させる。攻撃前、6ターンの間命中率を30%増加。"
+        self.skill3_description_jp = "回復効率が90%減少。撃破された場合、自分以外の全ての味方に攻撃力300%の状態異常ダメージを与える。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -4478,6 +4617,12 @@ class Chimera(Monster):
         " Each attack has 70% chance to inflict Bleed for 20 turns, bleed deals 40% of atk status damage each turn."
         self.skill3_description = "Increase maxhp by 30%. Normal attack deals 50% more damage, 60% chance to inflict Bleed for 20 turns" \
         " and 60% chance for Heal Down for 20 turns, heal efficiency is reduced by 30%."
+        self.skill1_description_jp = "最も近い敵3体に攻撃力360%で攻撃し、20ターンの間回復効率を100%減少させる。" \
+        "10ターンの間出血を付与し、出血は攻撃力の40%の状態異常ダメージを与える。"
+        self.skill2_description_jp = "最も近い敵に攻撃力600%で2回攻撃。各攻撃で20ターンの間回復効率を60%減少させる。" \
+        "各攻撃70%確率で20ターン出血を付与する。出血は攻撃力の40%の状態異常ダメージを与える。"
+        self.skill3_description_jp = "最大HPが30%増加。通常攻撃が50%の追加ダメージを与える。" \
+        "60%の確率で20ターン出血を付与し、60%の確率で20ターン治療効率を30%減少させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -4534,6 +4679,9 @@ class ClericB(Monster):
         self.skill2_description = "Apply Absorption Shield for ally with highest atk, shield absorbs up to 1000% atk damage for 20 turns."
         self.skill3_description = "At start of battle, apply Absorption Shield for an ally with highest speed," \
         " shield absorbs up to 1000% atk damage for 20 turns."
+        self.skill1_description_jp = "最もHPが低い味方に、最大攻撃力の1000%のダメージを吸収するシールドを20ターン付与。"
+        self.skill2_description_jp = "最も攻撃力が高い味方に、最大攻撃力の1000%のダメージを吸収するシールドを20ターン付与。"
+        self.skill3_description_jp = "戦闘開始時、最も速度が高い味方に、最大攻撃力の1000%のダメージを吸収するシールドを20ターン付与。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -4568,6 +4716,10 @@ class ClericC(Monster):
         self.skill2_description = "Apply Cancelltion Shield on all allies, shield cancels all damage if damage is above 10% of maxhp for 12 turns," \
         " shield provides 5 uses."
         self.skill3_description = "Crit defense is increased by 20%, defense is increased by 10%."
+        self.skill1_description_jp = "全ての味方に、最大HPの10%を超えるダメージを50%減少させるシールドを12ターン付与。"
+        self.skill2_description_jp = "全ての味方に、最大HPの10%を超えるダメージのダメージを受けた時、そのダメージを無効化するシールドを12ターン付与。" \
+        "シールドは5回使用可能。"
+        self.skill3_description_jp = "クリティカル防御力が20%増加、防御力が10%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -4606,6 +4758,11 @@ class EarthSpirit(Monster):
         " Rooted: eva reduced by 60%, def and critdef reduced by 25%."
         self.skill3_description = "At start of battle, apply Absorption Shield for all allies," \
         " shield absorbs up to 600% atk + 800% def damage for 40 turns. Defense is increased by 30%."
+        self.skill1_description_jp = "HP割合が最も低い敵に攻撃力500%で攻撃し、8ターンの間回復効率を200%減少させる。"
+        self.skill2_description_jp = "全ての敵に攻撃力240%で攻撃。70%の確率で12ターンの間ルートを付与。" \
+        "ルート:回避率を60%減少、防御力とクリティカル防御力を25%減少。"
+        self.skill3_description_jp = "戦闘開始時、全ての味方に最大攻撃力の600%+最大防御力の800%のダメージを吸収するシールドを40ターン付与。" \
+        "防御力が30%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -4655,6 +4812,10 @@ class ArchAngel(Monster):
         self.skill2_description = "Target 1 ally with lowest hp, apply Absorption Shield that absorbs up to 600% atk damage for 8 turns." \
         " For 20 turns, increase target's defense by 30% and crit defense by 15%."
         self.skill3_description = "At start of battle, apply Absorption Shield that absorbs up to 1500% atk damage."
+        self.skill1_description_jp = "全ての味方に攻撃力300%で回復し、20ターンの間攻撃力を30%、速度を15%増加。"
+        self.skill2_description_jp = "HPが最も低い味方1体に、最大攻撃力の600%のダメージを吸収するシールドを8ターン付与。" \
+        "20ターンの間防御力を30%、クリティカル防御力を15%増加。"
+        self.skill3_description_jp = "戦闘開始時、最大攻撃力の1500%のダメージを吸収するシールドを付与。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -4689,6 +4850,9 @@ class Unicorn(Monster):
         self.skill1_description = "Attack closest enemy with 555% atk and cause Deep Wound for 14 turns. Deep Wound: deals 50% atk status damage per turn, can be removed by healing."
         self.skill2_description = "Apply Absorption Shield for ally in the middle, shield absorbs up to 500% of self atk damage for 10 turns."
         self.skill3_description = "Increase hp by 30%."
+        self.skill1_description_jp = "最も近い敵に攻撃力555%で攻撃し、14ターンの間重傷を付与。重傷:毎ターン攻撃力の50%の状態異常ダメージを与える。HP回復で解除可能。"
+        self.skill2_description_jp = "中央の味方に、最大攻撃力の500%のダメージを吸収するシールドを10ターン付与。"
+        self.skill3_description_jp = "HPが30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -4721,6 +4885,9 @@ class Zhenniao(Monster):
         self.skill1_description = "Ally in the middle gains 20% evasion and 20% spd for 20 turns and recover hp by 200% of self atk."
         self.skill2_description = "Ally in the middle gains 20% crit rate and 40% crit damage for 20 turns and recover hp by 100% of self atk."
         self.skill3_description = "Normal attack damage increased by 120% and attack 2 times. maxhp is increased by 30%."
+        self.skill1_description_jp = "中央の味方に、20%の回避率と20%の速度を20ターン付与し、自身の攻撃力の200%回復。"
+        self.skill2_description_jp = "中央の味方に、20%のクリティカル率と40%のクリティカルダメージを20ターン付与し、自身の攻撃力の100%回復。"
+        self.skill3_description_jp = "通常攻撃のダメージが120%増加し、2回攻撃。最大HPが30%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -4758,6 +4925,9 @@ class YataGarasu(Monster):
         self.skill1_description = "Ally in the middle gains 100% speed for 4 turns."
         self.skill2_description = "Apply Shield to 3 allies in the middle for 20 turns. Shield: the part of damage that exceeds 10% of maxhp is reduced by 50%."
         self.skill3_description = "Speed is increased by 10%. Normal attack inflict Burn for 20 turns. Burn: deals 35% atk status damage per turn."
+        self.skill1_description_jp = "中央の味方に、4ターンの間速度を100%増加。"
+        self.skill2_description_jp = "中央の味方3体に、20ターンの間シールドを付与。シールド:ダメージが最大HPの10%を超える部分を50%減少。"
+        self.skill3_description_jp = "速度が10%増加。通常攻撃で20ターンの間燃焼を付与。燃焼:毎ターン攻撃力の35%の状態異常ダメージを与える。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -4795,6 +4965,9 @@ class Anubis(Monster):
         self.skill1_description = "Attack 3 closest enemies with 270% atk, increase atk and def for all allies by 10% for 20 turns."
         self.skill2_description = "Attack random enemies 3 times with 240% atk, increase penetration for all allies by 10% for 20 turns."
         self.skill3_description = "When taking non zero damage, 12% chance to increase def for all allies by 12% for 20 turns."
+        self.skill1_description_jp = "最も近い敵3体に攻撃力270%で攻撃し、20ターンの間攻撃力と防御力を10%増加。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力240%で3回攻撃。20ターンの間貫通を10%増加。"
+        self.skill3_description_jp = "ダメージを受けた時、12%の確率で全ての味方の防御力を20ターン12%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -4838,6 +5011,10 @@ class FootSoldier(Monster):
         self.skill2_description = "Attack closest enemy with 550% atk, 80% chance to Cripple for 21 turns,"
         " Cripple: atk decreased by 5%, spd decreased by 10%, evasion decreased by 15%."
         self.skill3_description = "Increase atk and spd by 100%, every turn pass, effect decreases by 4% until 35th turn."
+        self.skill1_description_jp = "最も近い敵に攻撃力250%で3回攻撃。"
+        self.skill2_description_jp = "最も近い敵に攻撃力550%で攻撃し、80%の確率で21ターンの間障害を付与。" \
+        "障害:攻撃力が5%減少、速度が10%減少、回避率が15%減少。"
+        self.skill3_description_jp = "攻撃力と速度が100%増加。1ターン経過する度に効果が4%減少し、35ターン目で効果が消失する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -4883,6 +5060,12 @@ class Daji(Monster):
         " Every time this skill is used, shield amount is decreased by 100% of atk."
         self.skill3_description = "At end of turn, if the alive allies are more than the alive enemies, apply Pride to all allies for 8 turns." \
         " Pride: increase atk by 45%. The same effect cannot be applied more than once."
+        self.skill1_description_jp = "全ての味方の攻撃力を111%、命中率を10%、貫通を10%増加。" \
+        "このスキルを使用する度に、攻撃力ボーナスが33%減少。"
+        self.skill2_description_jp = "全ての味方を攻撃力の200%で回復し、最大攻撃力の300%のダメージを吸収するシールドを8ターン付与。" \
+        "このスキルを使用する度に、シールドの量が最大攻撃力の100%減少。"
+        self.skill3_description_jp = "ターン終了時、生存している味方が生存している敵より多い場合、全ての味方に8ターンの間栄耀を付与。" \
+        "栄耀:攻撃力が45%増加。同じ効果は複数回適用されない。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -4952,6 +5135,10 @@ class EvilKing(Monster):
         self.skill1_description = "Attack 3 closest enemies with 234% atk 3 times, multiplier increases by 2.5% for each turn passed."
         self.skill2_description = "Attack 1 cloeset enemy with 600% atk, inflict cripple for 12 turns, Cripple: atk decreased by 20%, spd decreased by 30%, evasion decreased by 40%."
         self.skill3_description = "Increase atk, defense, crit and crit damage by 1% every turn."
+        self.skill1_description_jp = "最も近い敵3体に攻撃力234%で3回攻撃。ターン経過する度に倍率が2.5%増加。"
+        self.skill2_description_jp = "最も近い敵に攻撃力600%で攻撃し、12ターンの間障害を付与。" \
+        "障害:攻撃力が20%減少、速度が30%減少、回避率が40%減少。"
+        self.skill3_description_jp = "1ターン経過する度に攻撃力、防御力、クリティカル率、クリティカルダメージが1%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
