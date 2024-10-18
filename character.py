@@ -2116,7 +2116,7 @@ class Pheonix(Character):
         self.skill3_description = "Revive with 80% hp the next turn after fallen. If revived by this effect, increase atk by 20% for 30 turns." \
         " This effect cannot be removed by skill."
         self.skill1_description_jp = "全ての敵に190%の攻撃を行い、8ターンの間80%の確率で燃焼を付与する。燃焼は毎ターン攻撃力の25%の状態ダメージを与える。"
-        self.skill2_description_jp = "初回発動時: 隣接する全ての味方に再生を付与する。 " \
+        self.skill2_description_jp = "初回発動時: 隣接する全ての味方に再生を付与する。" \
                                     "再生:倒された場合、HP40%で復活する。2回目以降の発動:ランダムな敵のペアに260%の攻撃を行い、8ターンの間80%の確率で燃焼を付与する。 " \
                                     "燃焼は毎ターン攻撃力の25%の状態ダメージを与える。"
         self.skill3_description_jp = "倒れた次のターンにHP80%で復活する。この効果で復活した場合、攻撃力が30ターンの間20%増加する。" \
@@ -3605,7 +3605,7 @@ class Beacon(Character):
         self.skill1_description_jp = "全ての味方のHP割合を再分配し、HP割合が高い味方は状態異常ダメージを受け、HP割合が低い味方は同じ割合になるまでHPが治療する。" \
                                     "このスキルに効果がない場合、全ての味方に12ターンの間吸収シールドを付与する。" \
                                     "シールドは攻撃力の500%+防御力の500%までのダメージを吸収する。HP割合を比較する際、1%以内の誤差で同じとみなされる。"
-        self.skill2_description_jp = "4体の敵に300%の攻撃を行い、20ターンの間クリティカル防御を30%減少させる。"
+        self.skill2_description_jp = "4体の敵に300%の攻撃を行い、20ターンの間クリティカル防御を50%減少させる。"
         self.skill3_description_jp = "自分だけが生き残っている場合、HP再分配時に基準割合として400%を使用して平均を計算し、再分配前に可能な限り多くの味方をHP1で復活させる。" \
                                     "全ての味方に20ターンの間保護を付与する。保護:受けるダメージが50%軽減される。" \
                                     "自分だけが生き残っている場合、ターン終了時に全てのスキルクールダウンが2行動分減少する。"

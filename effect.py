@@ -210,7 +210,7 @@ class ProtectedEffect(Effect):
     def tooltip_description_jp(self):
         reduction_info = f"ダメージ軽減:{(1 - self.damage_after_reduction_multiplier) * 100:.1f}%。"
         redirect_info = f"ダメージの{self.damage_redirect_percentage * 100:.1f}%が引き受けてくれる。"
-        return f"{self.protector.name}による保護されている。{reduction_info}{redirect_info}"
+        return f"{self.protector.name}に保護されている。{reduction_info}{redirect_info}"
 
 
 # =========================================================
@@ -2006,7 +2006,7 @@ class RequinaGreatPoisonEffect(Effect):
             f" Stats are decreased by {self.stacks}%."
     
     def tooltip_description_jp(self):
-        return f"猛毒のスタック数: {self.stacks}。毎ターン最大HPの{(self.value_onestack * self.stacks * 100):.2f}%の状態異常ダメージを受ける。" \
+        return f"猛毒のスタック数:{self.stacks}。毎ターン最大HPの{(self.value_onestack * self.stacks * 100):.2f}%の状態異常ダメージを受ける。" \
             f"ステータスが{self.stacks}%減少する。"
 
 
