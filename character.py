@@ -442,7 +442,8 @@ class Character:
             target_list: list | None = None,
             force_dmg: float | None = None, 
             ignore_protected_effect: bool = False,
-            damage_type: str = "normal", 
+            damage_type: str = "normal",
+            damage_is_based_on: str | None = None, 
             func_for_multiplier: Callable[[character, character, int, int], float] | None = None) -> int:
         """
         -> damage_dealt
@@ -450,6 +451,17 @@ class Character:
         use [repeat] for attacking [repeat] times, use [repeat_seq] for focusing on one target for [repeat_seq] times.
         If [func_for_multiplier] is not None, [multiplier] will be overwritten by the return value of [func_for_multiplier].
         """
+        if damage_is_based_on is None:
+            damage_is_based_on = self.atk
+        elif damage_is_based_on == "maxhp":
+            damage_is_based_on = self.maxhp
+        elif damage_is_based_on == "hp":
+            damage_is_based_on = self.hp
+        elif damage_is_based_on == "defense":
+            damage_is_based_on = self.defense
+        else:
+            raise Exception("Invalid damage_is_based_on.")
+
         damage_dealt = 0
         for i in range(repeat):
             if repeat > 1 and i > 0:
@@ -474,7 +486,7 @@ class Character:
                 global_vars.turn_info_string += f"{self.name} is targeting {target.name}.\n"
                 if not force_dmg and func_for_multiplier is not None:
                     multiplier = func_for_multiplier(self, target, self.number_of_attacks, i) # multiplier is overwritten.
-                damage = self.atk * multiplier - target.defense * (1 - self.penetration) if not force_dmg else force_dmg
+                damage = damage_is_based_on * multiplier - target.defense * (1 - self.penetration) if not force_dmg else force_dmg
                 final_accuracy = self.acc - target.eva
                 dice = random.randint(1, 100)
                 miss = False if dice <= final_accuracy * 100 else True
@@ -1450,7 +1462,7 @@ class Character:
             self.apply_effect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False))
         elif set_name == "KangTao":
             highest_stat = max(self.atk, self.defense)
-            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, highest_stat * 9.0, False))
+            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, highest_stat * 9.99, False))
         elif set_name == "Militech":
             def condition_func(self):
                 return self.hp <= self.maxhp * 0.30
@@ -4092,6 +4104,58 @@ class Moe(Character):
         sf.can_be_removed_by_skill = False
         self.apply_effect(sf)
 
+
+class Mitsuki(Character):
+    """
+    Counter status damage
+    Build: maxhp
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Mitsuki"
+        self.skill1_description = "Attack closest enemy with 3% of maxhp 12 times. Each attack has a 8% chance to Stun the target for 8 turns."
+        self.skill2_description = "All allies are healed by 1% of your maxhp, remove 2 random debuffs for each ally."
+        self.skill3_description = "At start of battle, apply unremovable Azure Sea for all allies." \
+        " Azure Sea: Status damage taken is reduced by 70%. Apply unremovable Sea Family for yourself," \
+        " When taking status damage, recover hp by 5% of maxhp."
+        # Japanese: 蒼海 蒼海の眷属
+        self.skill1_description_jp = "最も近い敵に最大HPの3%で12回攻撃する。各攻撃には8%の確率で8ターンの間、対象をスタンさせる。"
+        self.skill2_description_jp = "全ての味方のHPを自分の最大HPの1%分回復し、各味方からランダムなデバフを2つ解除する。"
+        self.skill3_description_jp = "戦闘開始時に全ての味方に解除不能な蒼海を付与する。蒼海:受ける状態異常ダメージが70%減少する。自身には解除不能な蒼海の眷属を付与する。状態異常ダメージを受けた時、最大HPの5%分のHPを回復する。"
+
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 3
+
+
+    def skill1_logic(self):
+        def stun_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 8:
+                target.apply_effect(StunEffect("Stun", 8, False, False))
+        damage_dealt = self.attack(multiplier=0.03, repeat=12, target_kw1="enemy_in_front", func_after_dmg=stun_effect,
+                                   damage_is_based_on="maxhp")
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        for a in self.ally:
+            self.heal(target_list=[a], value=self.maxhp * 0.01)
+            a.remove_random_amount_of_debuffs(2)
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        azure_sea = ReductionShield("Azure Sea", -1, True, 0.7, False, cover_status_damage=True, cover_normal_damage=False)
+        azure_sea.can_be_removed_by_skill = False
+        for a in self.ally:
+            a.apply_effect(azure_sea)
+        def heal_func(character: Character):
+            return character.maxhp * 0.05
+        sea_family = EffectShield1("Sea Family", -1, True, 1, heal_function=heal_func, cc_immunity=False, effect_applier=self,
+                                    cover_status_damage=True, cover_normal_damage=False)
+        sea_family.can_be_removed_by_skill = False
+        self.apply_effect(sea_family)
 
 
 

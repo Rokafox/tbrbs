@@ -712,9 +712,9 @@ class CancellationShield(Effect):
     def tooltip_description_jp(self):
         string = f"最大HPの{self.threshold*100:.1f}%を超えるダメージを{str(self.uses)}回まで無効化する。"
         if self.cancel_excessive_instead:
-            string += "超過ダメージをキャンセルする。"
+            string += "超過ダメージを無効化る。"
         if self.cancel_below_instead:
-            string += "未満ダメージをキャンセルする。"
+            string += "未満ダメージを無効化する。"
         return string
 
 
