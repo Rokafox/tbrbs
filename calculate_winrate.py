@@ -318,7 +318,7 @@ if __name__ == "__main__":
         sample = int(sys.argv[1])
     else:
         sample = 10000
-    a, b = calculate_winrate_for_character(sample, get_all_characters(2), "suppress")
+    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze

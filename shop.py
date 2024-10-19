@@ -118,19 +118,12 @@ class Gulid_SliverWolf(Shop):
         package_of_items = []
         
         # Stupid code
-        # package_of_items.append(consumable.EquipPackage(random.randint(1, 10)))
-        # package_of_items.append(consumable.EquipPackage2(random.randint(1, 10)))
-        # package_of_items.append(consumable.EquipPackage3(random.randint(1, 10)))
-        # package_of_items.append(consumable.EquipPackage4(random.randint(1, 10)))
-        # package_of_items.append(consumable.EquipPackage5(random.randint(1, 10)))
-        # package_of_items.append(consumable.EquipPackage6(random.randint(1, 10)))
-
-        package_of_items.append(consumable.EquipPackage(1))
-        package_of_items.append(consumable.EquipPackage2(1))
-        package_of_items.append(consumable.EquipPackage3(1))
-        package_of_items.append(consumable.EquipPackage4(1))
-        package_of_items.append(consumable.EquipPackage5(1))
-        package_of_items.append(consumable.EquipPackage6(1))
+        package_of_items.append(consumable.EquipPackage(random.randint(1, 10)))
+        package_of_items.append(consumable.EquipPackage2(random.randint(1, 10)))
+        package_of_items.append(consumable.EquipPackage3(random.randint(1, 10)))
+        package_of_items.append(consumable.EquipPackage4(random.randint(1, 10)))
+        package_of_items.append(consumable.EquipPackage5(random.randint(1, 10)))
+        package_of_items.append(consumable.EquipPackage6(random.randint(1, 10)))
 
         # Choose 5 random items from the package_of_items
         if len(package_of_items) < 5:
@@ -176,3 +169,35 @@ class Big_Food_Market(Shop):
         if len(package_of_items) >= 5:
             for item in random.sample(package_of_items, 5):
                 self.inventory[item] = (0, 0.0, 0)
+
+
+
+class Dev_Cheat(Shop):
+    def __init__(self, name, description):
+        super().__init__(name, description)
+        self.equippricedecide_random_low = 100
+        self.equippricedecide_random_high = 200
+        self.equipdiscountdecide_chance = 0.9
+        if not self.description:
+            self.description = "これは開発者向けの不正ショップ。"
+
+
+    def get_items_from_manufacturers(self):
+        package_of_items = []
+        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=300, locked_eq_set="NUSA"))
+
+        if len(package_of_items) < 5:
+            raise ValueError(f"Not enough items in the package_of_items, only {len(package_of_items)} items is available.")
+        if len(package_of_items) >= 5:
+            for item in random.sample(package_of_items, 5):
+                self.inventory[item] = (0, 0.0, 0)
+
+
+
+
+
+
+
+
+
+

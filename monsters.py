@@ -148,11 +148,11 @@ class Earth(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Earth"
-        self.skill1_description = "Attack all enemies with 240% atk, 50% chance to inflict Stun for 10 turns."
-        self.skill2_description = "Attack 1 closest enemy with 700% atk, 70% chance to inflict Stun for 10 turns."
+        self.skill1_description = "Attack all enemies with 240% atk, 30% chance to inflict Stun for 10 turns."
+        self.skill2_description = "Attack 1 closest enemy with 700% atk, 50% chance to inflict Stun for 10 turns."
         self.skill3_description = "hp is increased by 100%."
-        self.skill1_description_jp = "全ての敵に攻撃力240%のダメージを与え、確率50%で10ターンの間スタンさせる。"
-        self.skill2_description_jp = "最も近い敵に攻撃力700%のダメージを与え、確率70%で10ターンの間スタンさせる。"
+        self.skill1_description_jp = "全ての敵に攻撃力240%のダメージを与え、確率30%で10ターンの間スタンさせる。"
+        self.skill2_description_jp = "最も近い敵に攻撃力700%のダメージを与え、確率50%で10ターンの間スタンさせる。"
         self.skill3_description_jp = "最大HPを100%増加させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -165,7 +165,7 @@ class Earth(Monster):
     def skill1_logic(self):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
-            if dice <= 50:
+            if dice <= 30:
                 target.apply_effect(StunEffect('Stun', duration=10, is_buff=False))
         damage_dealt = self.attack(multiplier=2.4, repeat=1, func_after_dmg=stun_effect, target_kw1="n_random_enemy", target_kw2="5")
         return damage_dealt
@@ -174,7 +174,7 @@ class Earth(Monster):
     def skill2_logic(self):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
-            if dice <= 70:
+            if dice <= 50:
                 target.apply_effect(StunEffect('Stun', duration=10, is_buff=False))
         damage_dealt = self.attack(multiplier=7.0, repeat=1, func_after_dmg=stun_effect, target_kw1="enemy_in_front")
         return damage_dealt
@@ -772,7 +772,8 @@ class Salamander(Monster):
         pass
 
     def battle_entry_effects(self):
-        e = ContinuousHealEffect('Salamander Passive', -1, True, lambda x, y: x.maxhp * 0.02, self, "2% of maxhp")
+        e = ContinuousHealEffect('Salamander Passive', -1, True, lambda x, y: x.maxhp * 0.02, self, "2% of maxhp",
+                                 value_function_description_jp="最大HPの2%")
         e.can_be_removed_by_skill = False
         self.apply_effect(e)
 
@@ -898,7 +899,46 @@ class WaterSpirit(Monster):
 # ====================================
 
 
+class Sylphid(Monster):
+    """
+    Can be countered by status damage.
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Sylphid"
+        self.skill1_description = "Increase atk and defense by 20% for all allies for 24 turns, however, their heal efficiency is reduced by 40% for 24 turns."
+        self.skill2_description = "Attack enemies 7 times with 180% atk each."
+        self.skill3_description = "At start of battle, apply unremovable Air shield to all allies." \
+        " Air Shield: When taking normal damage, reduce damage taken by 45%."
+        self.skill1_description_jp = "全ての味方の攻撃力と防御力を24ターンの間、20%増加させる。ただし、回復効率が24ターンの間、40%減少する。"
+        self.skill2_description_jp = "敵を7回攻撃し、それぞれの攻撃は攻撃力の180%で行う。"
+        self.skill3_description_jp = "戦闘開始時に全ての味方に解除不能なエアシールドを付与する。エアシールド: 通常ダメージを受けた際、受けるダメージを45%減少させる。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 3
+        self.is_boss = True
 
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        for a in self.ally:
+            a.apply_effect(StatsEffect('Force', 24, True, {'atk' : 1.2, 'defense' : 1.2}))
+            a.apply_effect(StatsEffect('Weakness', 24, True, {'heal_efficiency' : -0.4}))
+        return 0
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=1.8, repeat=7)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        ashield = ReductionShield('Air Shield', -1, True, 0.45, False,
+                                    cover_status_damage=False, cover_normal_damage=True)
+        ashield.can_be_removed_by_skill = False
+        for a in self.ally:
+            a.apply_effect(ashield)
 
 
 
@@ -1121,12 +1161,12 @@ class Asura(Monster):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Asura"
         self.skill1_description = "Attack random enemies 6 times with 220% atk. 50% chance to apply vulnerable for 30 turns." \
-        " Vulnerable: take 8% more damage from all sources."
+        " Vulnerable: take 12% more damage from all sources."
         self.skill2_description = "Attack random enemies 6 times with 240% atk."
         self.skill3_description = "At start of battle, gain 6 uses of cancellation shield, shield will cancel all damage." \
         " Everytime you use a skill, shield uses is recharged to 6."
         self.skill1_description_jp = "敵に攻撃力220%のダメージを6回与え、それぞれの攻撃に50%の確率で30ターンの間脆弱を付与。" \
-        "脆弱:全てのダメージを8%多く受ける。"
+        "脆弱:最終ダメージ倍率12%増加する。"
         self.skill2_description_jp = "敵に攻撃力240%のダメージを6回与与える。"
         self.skill3_description_jp = "戦闘開始時、6回のキャンセルシールドを獲得。シールドは全てのダメージをキャンセルする。" \
         "スキルを使用する度、シールドの使用回数が6回にリチャージされる。"
@@ -1141,7 +1181,7 @@ class Asura(Monster):
         def vulnerable_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 50:
-                target.apply_effect(StatsEffect('Vulnerable', 30, False, {'final_damage_taken_multipler' : 0.08}))
+                target.apply_effect(StatsEffect('Vulnerable', 30, False, {'final_damage_taken_multipler' : 0.12}))
         damage_dealt = self.attack(multiplier=2.2, repeat=6, func_after_dmg=vulnerable_effect)
         shield = self.get_effect_that_named(effect_name="Asura Passive", class_name="CancellationShield")
         if not shield:
@@ -1543,11 +1583,11 @@ class Assassin(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Assassin"
-        self.skill1_description = "Increase atk and spd by 33% for 20 turns, recover hp by 333% atk."
+        self.skill1_description = "Increase atk and spd by 33% for 20 turns, recover hp by 444% atk."
         self.skill2_description = "Attack closest enemy with 177% atk 8 times, each attack inflict confuse for 12 turns with a 20% chance." \
         " If target is confused, damage is increased by 100%." # with a 83.22% chance to confuse the target.
         self.skill3_description = "Normal attack target closest enemy and attack 2 times, 20% chance to confuse the target for 6 turns."
-        self.skill1_description_jp = "攻撃力と速度を20ターンの間33%増加させ、攻撃力333%分のHPを回復。"
+        self.skill1_description_jp = "攻撃力と速度を20ターンの間33%増加させ、攻撃力444%分のHPを回復。"
         self.skill2_description_jp = "最も近い敵に攻撃力177%のダメージを8回与え、それぞれの攻撃に20%の確率で12ターンの間混乱を付与。" \
         "対象が混乱している場合、ダメージが100%増加。"
         self.skill3_description_jp = "通常攻撃は最も近い敵に2回攻撃。20%の確率で6ターンの間混乱を付与。"
@@ -1560,7 +1600,7 @@ class Assassin(Monster):
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Fast', 20, True, {'atk' : 1.33, 'spd' : 1.33}))
-        self.heal_hp(3.33 * self.atk, self)
+        self.heal_hp(4.44 * self.atk, self)
 
     def skill2_logic(self):
         def confuse_effect(self, target):
@@ -1927,7 +1967,8 @@ class Biobird(Monster):
         damage_dealt = self.attack(multiplier=4.0, repeat=2, target_kw1="enemy_in_front", func_damage_step=low_hp)
         if self.is_alive() and self.hp < self.maxhp * 0.2:
             self.apply_effect(StatsEffect('Maxhp Up', 20, True, {'maxhp' : 1.4}))
-            self.apply_effect(ContinuousHealEffect('Regen', 20, True, lambda x, y: x.maxhp * 0.04, self, "8% of maxhp"))
+            self.apply_effect(ContinuousHealEffect('Regen', 20, True, lambda x, y: x.maxhp * 0.04, self, "4% of maxhp",
+                                                   value_function_description_jp="最大HPの4%"))
         return damage_dealt
 
     def skill3(self):
@@ -2273,7 +2314,6 @@ class Agent(Monster):
         self.attack(func_damage_step=damage_increase, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="spd", target_kw4="enemy")
 
 
-
 class Windspirit(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
@@ -2366,7 +2406,7 @@ class Queen(Monster):
         self.skill1_description = "Attack random ememies with 230% atk 8 times, after each successful attack, increase critical damage by 80% for 3 turns."
         self.skill2_description = "Attack 3 front enemies with 300% atk, decrease their critical defense by 10%, for 24 turns. After this skill, increase critical damage by 80% for 6 turns."
         self.skill3_description = "Critical chance is increased by 60%. Speed is increased by 20%."
-        self.skill1_description_jp = "全ての敵に230%の攻撃力で8回攻撃し、各攻撃後、3ターンの間クリティカルダメージを80%増加。"
+        self.skill1_description_jp = "ランダムな敵に230%の攻撃力で8回攻撃し、各攻撃後、3ターンの間クリティカルダメージを80%増加。"
         self.skill2_description_jp = "最も近い3体敵に攻撃力300%で攻撃し、クリティカル防御を24ターンで10%減少させる。このスキル後、6ターンの間クリティカルダメージを80%増加。"
         self.skill3_description_jp = "クリティカル率を60%増加。速度を20%増加。"
         self.skill1_cooldown_max = 5
@@ -2452,7 +2492,7 @@ class PaladinB(Monster):
         self.skill1_description_jp = "隣接する味方のクリティカル防御を30ターンで25%増加。"
         self.skill2_description_jp = "最も近い敵に攻撃力300%で3回攻撃し、各攻撃で対象のクリティカル率を22ターンで20%減少させる。" \
         "与えたダメージの100%を回復。"
-        self.skill3_description_jp = "全ての味方を保護。受けるダメージを20%減少し、味方が受けたダメージの40%を自分が受ける。"
+        self.skill3_description_jp = "全ての味方を保護する。受けるダメージを20%減少し、味方が受けたダメージの40%を自分が受ける。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2490,29 +2530,29 @@ class Bat(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Bat"
-        self.skill1_description = "Increase crit rate and crit damage by 30% for 20 turns."
-        self.skill2_description = "Attack random ememy with 300% atk 2 times, 90% chance to poison the target for 3 turns," \
-        " poison deals 4% of losthp as status damage per turn."
+        self.skill1_description = "Increase crit rate by 10% and crit damage by 60% for 20 turns."
+        self.skill2_description = "Attack random ememy with 300% atk 3 times, 90% chance to poison the target for 3 turns," \
+        " poison deals 2% of losthp as status damage per turn."
         self.skill3_description = "Normal attack deals 50% more damage."
-        self.skill1_description_jp = "クリティカル率とクリティカルダメージ20ターンの間30%増加。"
-        self.skill2_description_jp = "ランダムな敵に攻撃力300%で2回攻撃し、対象に3ターンの間毒を付与。毒は失ったHPの4%を状態ダメージとして毎ターン受ける。"
-        self.skill3_description_jp = "通常攻撃は50%追加ダメージを与える。"
+        self.skill1_description_jp = "20ターンの間クリティカル率が10%、クリティカルダメージ60%増加。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力300%で3回攻撃し、90%の確率で対象に3ターンの間毒を付与。毒は失ったHPの2%を状態ダメージとして毎ターン受ける。"
+        self.skill3_description_jp = "通常攻撃ダメージは50%増加する。"
         self.skill1_cooldown_max = 3
-        self.skill2_cooldown_max = 5
+        self.skill2_cooldown_max = 4
         self.is_boss = False
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        self.apply_effect(StatsEffect('Bad Bat', 20, True, {'crit' : 0.3, 'critdmg' : 0.3}))
+        self.apply_effect(StatsEffect('Bad Bat', 20, True, {'crit' : 0.1, 'critdmg' : 0.6}))
         return 0
 
     def skill2_logic(self):
         def poison_effect(self, target):
             if random.random() < 0.9:
-                target.apply_effect(ContinuousDamageEffect_Poison('Poison', duration=3, is_buff=False, ratio=0.04, imposter=self, base="losthp"))
-        damage_dealt = self.attack(multiplier=3.0, repeat=2, func_after_dmg=poison_effect)
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison', duration=3, is_buff=False, ratio=0.02, imposter=self, base="losthp"))
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, func_after_dmg=poison_effect)
         return damage_dealt
 
     def skill3(self):
@@ -2571,8 +2611,8 @@ class Dryad(Monster):
         self.skill1_description = "Attack all enemies with 360% atk, 80% chance to reduce their crit rate by 30% for 26 turns."
         self.skill2_description = "Heal all allies by 340% of atk, 80% chance to increase their crit defense by 70% for 26 turns."
         self.skill3_description = "Increase maxhp by 100%. Every time you take critical damage, recover hp by 400% of atk."
-        self.skill1_description_jp = "全ての敵に攻撃力360%で攻撃し、80%の確率で対象のクリティカル率を26ターンで30%減少。"
-        self.skill2_description_jp = "全ての味方を攻撃力340%で回復し、80%の確率で味方のクリティカル防御を26ターンで70%増加。"
+        self.skill1_description_jp = "全ての敵に攻撃力360%で攻撃し、80%の確率で対象のクリティカル率を26ターンで40%減少。"
+        self.skill2_description_jp = "全ての味方を攻撃力340%で回復し、80%の確率で味方のクリティカル防御を26ターンで80%増加。"
         self.skill3_description_jp = "最大HPを100%増加。クリティカルダメージを受けるたび、攻撃力の400%でHPを回復。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -2584,7 +2624,7 @@ class Dryad(Monster):
     def skill1_logic(self):
         def critrate_down(self, target):
             if random.random() < 0.8:
-                target.apply_effect(StatsEffect('Critrate Down', 26, False, {'crit' : -0.3}))
+                target.apply_effect(StatsEffect('Critrate Down', 26, False, {'crit' : -0.4}))
         damage_dealt = self.attack(multiplier=3.6, repeat=1, func_after_dmg=critrate_down, target_kw1="n_random_enemy", target_kw2="5")
         return damage_dealt
 
@@ -2594,7 +2634,7 @@ class Dryad(Monster):
         for ally in allies:
             ally.heal_hp(self.atk * 3.4, self)
             if random.random() < 0.8:
-                ally.apply_effect(StatsEffect('Critdef Up', 26, True, {'critdef' : 0.7}))
+                ally.apply_effect(StatsEffect('Critdef Up', 26, True, {'critdef' : 0.8}))
         return 0
 
 
@@ -2604,7 +2644,8 @@ class Dryad(Monster):
     def battle_entry_effects(self):
         self.apply_effect(StatsEffect('Dryad Passive', -1, True, {'maxhp' : 2.0}, can_be_removed_by_skill=False))
         heal_on_crit = lambda x: x.atk * 4.0
-        e = EffectShield1_healoncrit('Tranquility', -1, True, 1.0, heal_on_crit, False, False, self)
+        e = EffectShield1_healoncrit('Tranquility', -1, True, 1.0, heal_on_crit, cc_immunity=False,
+                                     effect_applier=self)
         e.can_be_removed_by_skill = False
         self.apply_effect(e)
         self.hp = self.maxhp
@@ -2647,7 +2688,8 @@ class Paladin(Monster):
 
     def battle_entry_effects(self):
         shield = EffectShield2('Shielded', -1, True, False, damage_reduction=0.5, shrink_rate=0, hp_threshold=0.1, 
-                               damage_reflect_function=lambda x: x * 0.3, damage_reflect_description="Reflect 30% of damage reduced.")
+                               damage_reflect_function=lambda x: x * 0.3, damage_reflect_description="Reflect 30% of damage reduced.",
+                               damage_reflect_description_jp="減少したダメージの30%を相手に反射する.")
         shield.can_be_removed_by_skill = False
         self.apply_effect(shield)
          
@@ -2818,11 +2860,11 @@ class FutureElite(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "FutureElite"
-        self.skill1_description = "Attack all enemies with 400% atk, reduce defense by 10% for 30 turns."
+        self.skill1_description = "Attack all enemies with 400% atk, reduce defense by 15% for 30 turns."
         self.skill2_description = "Attack random enemies 8 times with 200% atk, if target has lower defense than self, damage increased by a percentage equal to the ratio between self and target defense."
         # for example: self.defense = 100, target.defense = 50, damage increased by 100%
         self.skill3_description = "defense is increased by 30%."
-        self.skill1_description_jp = "全ての敵に攻撃力400%で攻撃し、防御力を30ターンで10%減少させる。"
+        self.skill1_description_jp = "全ての敵に攻撃力400%で攻撃し、防御力を30ターンで15%減少させる。"
         self.skill2_description_jp = "ランダムな敵に攻撃力200%で8回攻撃し、対象の防御力が自分より低い場合、ダメージは自分と対象の防御力の比率に等しい割合で増加。"
         self.skill3_description_jp = "防御力を30%増加。"
         self.skill1_cooldown_max = 4
@@ -2834,7 +2876,7 @@ class FutureElite(Monster):
 
     def skill1_logic(self):
         def defence_break(self, target):
-            target.apply_effect(StatsEffect('Defence Break', 30, False, {'defense' : 0.9}))
+            target.apply_effect(StatsEffect('Defence Break', 30, False, {'defense' : 0.85}))
         damage_dealt = self.attack(multiplier=4.0, repeat=1, func_after_dmg=defence_break, target_kw1="n_random_enemy", target_kw2="5")
         return damage_dealt
 
@@ -2893,11 +2935,11 @@ class Mandrake(Monster):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Mandrake"
         self.skill1_description = "Heal 2 neighbor allies by 100% def and increase their defense by 8% for 24 turns."
-        self.skill2_description = "2 neighbor allies gain regeneration for 24 turns, heal 25% of self def per turn." \
+        self.skill2_description = "2 neighbor allies gain regeneration for 24 turns, regeneration heal 25% of the allys def per turn." \
         " For 24 turns, their critical defense is increased by 12%."
         self.skill3_description = "Maxhp is increased by 15%, defense is increased by 150%."
         self.skill1_description_jp = "隣接する2体の味方を防御力100%で回復し、防御力を24ターンで8%増加。"
-        self.skill2_description_jp = "隣接する2体の味方24ターンに再生を付与し、毎ターン自分の防御力の25%を回復。24ターンの間、クリティカル防御を12%増加。"
+        self.skill2_description_jp = "隣接する2体の味方24ターンに再生を付与し、毎ターンその味方自分の防御力の25%でHPを回復する。24ターンの間、クリティカル防御を12%増加。"
         self.skill3_description_jp = "最大HPを15%増加し、防御力を150%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -2916,7 +2958,8 @@ class Mandrake(Monster):
     def skill2_logic(self):
         neighbors = self.get_neighbor_allies_not_including_self()
         for n in neighbors:
-            n.apply_effect(ContinuousHealEffect('Regeneration', 24, True, lambda char, healer: 0.25 * char.defense, self, "100% of defense"))
+            n.apply_effect(ContinuousHealEffect('Regeneration', 24, True, lambda char, healer: 0.25 * char.defense, self, "25% of defense",
+                                                value_function_description_jp="防御力の25%"))
             n.apply_effect(StatsEffect('Critical Defense Up', 24, True, {'critdef' : 0.12}))
         return 0
     
@@ -3279,7 +3322,7 @@ class Hermit(Monster):
         self.skill3_description = "Evasion increased by 20%. Final damage taken is reduced by 15%."
         self.skill1_description_jp = "最も近い敵3体に攻撃力235%で4回攻撃し、回避率の割合でダメージを増加。攻撃後、20ターンの間回避率を40%増加。"
         self.skill2_description_jp = "最も近い敵に攻撃力500%で攻撃し、回避率が70%以上の場合、この攻撃は外れず、必ずクリティカルヒット。その後、21ターンの間老眼を付与。老眼:命中率を25%減少。"
-        self.skill3_description_jp = "回避率を20%増加。最終ダメージを15%減少。"
+        self.skill3_description_jp = "回避率を20%増加。最終ダメージ倍率を15%減少。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -3490,7 +3533,7 @@ class Swordman(Monster):
         " Deals 2% of target's maxhp as status damage per hit."
         self.skill3_description = "Atk and spd is increased by 10%."
         self.skill1_description_jp = "全ての味方の命中率を20ターンの間120%増加。"
-        self.skill2_description_jp = "最も近い敵に攻撃力220%で6回攻撃。この攻撃は外れない。各攻撃で対象の最大HPの2%を状態ダメージとして受ける。"
+        self.skill2_description_jp = "最も近い敵に攻撃力220%で6回攻撃。この攻撃は外れない。各攻撃で対象の最大HPの2%の追加状態異常ダメージを与える。"
         self.skill3_description_jp = "攻撃力と速度を10%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -3568,7 +3611,6 @@ class Mage(Monster):
         self.apply_effect(StatsEffect('Mage Passive', -1, True, {'atk' : 1.1}, can_be_removed_by_skill=False))
 
 
-# Increase debuff duration
 class Orklord(Monster):
     """
     Countered by debuff removal
@@ -3576,13 +3618,15 @@ class Orklord(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Orklord"
-        self.skill1_description = "Attack closest enemy with 260% atk 3 times. After all attack, if target has negative status effect, increase effect duration by 16 turns."
+        self.skill1_description = "Attack closest enemy with 220% atk 3 times. After all attack, if target has negative status effect, increase effect duration by 16 turns." \
+        " For each debuff on target, attack with 440% atk."
         self.skill2_description = "Attack 5 enemies with 400% atk and inflict Bleed for 24 turns. Bleed deals 22% of atk as status damage per turn."
         self.skill3_description = "Normal attack deals 200% more damage to target with Bleed. Increase maxhp and defense by 50%."
-        self.skill1_description_jp = "最も近い敵に攻撃力260%で3回攻撃。全ての攻撃後、対象がデバフを持っている場合、そのデバフの効果時間を16ターン増加。"
-        self.skill2_description_jp = "最も近い敵5体に攻撃力400%で攻撃し、24ターンの間出血を付与。出血は攻撃力の22%を状態ダメージとして毎ターン受ける。"
+        self.skill1_description_jp = "最も近い敵に攻撃力220%で3回攻撃。全ての攻撃後、対象がデバフを持っている場合、そのデバフの効果時間を16ターン増加。" \
+        "対象に付与されているデバフの数に応じて、攻撃力の440%で攻撃する。"
+        self.skill2_description_jp = "敵5体に攻撃力400%で攻撃し、24ターンの間出血を付与。出血は攻撃力の22%を状態ダメージとして毎ターン受ける。"
         self.skill3_description_jp = "通常攻撃は出血を持つ対象に対して200%の追加ダメージを与える。最大HPと防御力を50%増加。"
-        self.skill1_cooldown_max = 2
+        self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
@@ -3591,11 +3635,14 @@ class Orklord(Monster):
 
     def skill1_logic(self):
         target = next(self.target_selection(keyword="enemy_in_front"))
-        damage_dealt = self.attack(multiplier=2.6, repeat=3, target_list=[target])
+        damage_dealt = self.attack(multiplier=2.2, repeat=3, target_list=[target])
         if self.is_alive() and target.is_alive():
             for debuff in target.debuffs:
                 if debuff.duration > 0:
                     debuff.duration += 16
+                    damage_dealt += self.attack(multiplier=4.4, repeat=debuff.duration, target_list=[target])
+                if not target.is_alive():
+                    break
         return damage_dealt
 
     def skill2_logic(self):
@@ -3699,8 +3746,8 @@ class Thief(Monster):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        def buffed_target_amplify(self, target, final_damage):
-            buffs = [e for e in target.buffs if not e.is_set_effect and not e.duration == -1]
+        def buffed_target_amplify(self, target: character.Character, final_damage):
+            buffs = target.get_active_removable_effects(get_buffs=True, get_debuffs=False)
             new_final_damage = final_damage * (1 + 0.6 * len(buffs))
             # if len(buffs) > 0:
             #     print(f"Previous damage : {final_damage}, new damage : {new_final_damage}, buff count : {len(buffs)}")
@@ -3710,7 +3757,7 @@ class Thief(Monster):
 
     def skill2_logic(self):
         def buffed_target_amplify(self, target, final_damage):
-            buffs = [e for e in target.buffs if not e.is_set_effect and not e.duration == -1]
+            buffs = target.get_active_removable_effects(get_buffs=True, get_debuffs=False)
             return final_damage * (1 + 0.6 * len(buffs))
         damage_dealt = self.attack(target_kw1="n_enemy_in_front", target_kw2="2", multiplier=3.3, repeat_seq=2, func_damage_step=buffed_target_amplify)
         return damage_dealt
@@ -3741,7 +3788,7 @@ class Goliath(Monster):
 
     def skill1_logic(self):
         def buffed_target_amplify(self, target, is_crit):
-            buffs = len([e for e in target.buffs if not e.is_set_effect and not e.duration == -1])
+            buffs = len(target.get_active_removable_effects(get_buffs=True, get_debuffs=False))
             return self.attack(multiplier=4.0, repeat=buffs, target_list=[target])
         damage_dealt = self.attack(multiplier=6.0, repeat=1, target_kw1="n_enemy_in_front", target_kw2="1", additional_attack_after_dmg=buffed_target_amplify)
         return damage_dealt
@@ -3751,7 +3798,7 @@ class Goliath(Monster):
         self.skill1_cooldown = 0
         self.apply_effect(StatsEffect('Judgement', 3, True, {'spd' : 2.0}))
         def buff_amplify(self, target, final_damage):
-            buffs = len([e for e in target.buffs if not e.is_set_effect and not e.duration == -1])
+            buffs = len(target.get_active_removable_effects(get_buffs=True, get_debuffs=False))
             return final_damage * (1 + 0.3 * buffs)
         damage_dealt = self.attack(multiplier=3.0, repeat=3, target_kw1="enemy_in_front", func_damage_step=buff_amplify)
         return damage_dealt
@@ -4307,7 +4354,8 @@ class Vampire(Monster):
         pass
 
     def battle_entry_effects(self):
-        heal = ContinuousHealEffect('Vampire Passive', -1, True, lambda x, y: x.maxhp * 0.06, self, "6% of maxhp")
+        heal = ContinuousHealEffect('Vampire Passive', -1, True, lambda x, y: x.maxhp * 0.06, self, "6% of maxhp",
+                                    value_function_description_jp="最大HPの6%")
         heal.can_be_removed_by_skill = False
         self.apply_effect(heal)
 
@@ -4812,9 +4860,9 @@ class ArchAngel(Monster):
         self.skill2_description = "Target 1 ally with lowest hp, apply Absorption Shield that absorbs up to 600% atk damage for 8 turns." \
         " For 20 turns, increase target's defense by 30% and crit defense by 15%."
         self.skill3_description = "At start of battle, apply Absorption Shield that absorbs up to 1500% atk damage."
-        self.skill1_description_jp = "全ての味方に攻撃力300%で回復し、20ターンの間攻撃力を30%、速度を15%増加。"
+        self.skill1_description_jp = "全ての味方に攻撃力300%で回復し、20ターンの間攻撃力を30%、速度を15%増加させる。"
         self.skill2_description_jp = "HPが最も低い味方1体に、最大攻撃力の600%のダメージを吸収するシールドを8ターン付与。" \
-        "20ターンの間防御力を30%、クリティカル防御力を15%増加。"
+        "20ターンの間防御力を30%、クリティカル防御力を15%増加させる。"
         self.skill3_description_jp = "戦闘開始時、最大攻撃力の1500%のダメージを吸収するシールドを付与。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -4882,11 +4930,11 @@ class Zhenniao(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Zhenniao"
-        self.skill1_description = "Ally in the middle gains 20% evasion and 20% spd for 20 turns and recover hp by 200% of self atk."
-        self.skill2_description = "Ally in the middle gains 20% crit rate and 40% crit damage for 20 turns and recover hp by 100% of self atk."
+        self.skill1_description = "Ally in the middle gains 20% evasion and 20% spd for 24 turns and recover hp by 200% of self atk."
+        self.skill2_description = "Ally in the middle gains 20% crit rate and 40% crit damage for 24 turns and recover hp by 100% of self atk."
         self.skill3_description = "Normal attack damage increased by 120% and attack 2 times. maxhp is increased by 30%."
-        self.skill1_description_jp = "中央の味方に、20%の回避率と20%の速度を20ターン付与し、自身の攻撃力の200%回復。"
-        self.skill2_description_jp = "中央の味方に、20%のクリティカル率と40%のクリティカルダメージを20ターン付与し、自身の攻撃力の100%回復。"
+        self.skill1_description_jp = "中央の味方が24ターンの間回避率20%と速度20%を増加し、自身の攻撃力の200%回復。"
+        self.skill2_description_jp = "中央の味方が24ターンの間クリティカル率20%とクリティカルダメージ40%を増加し、自身の攻撃力の100%回復。"
         self.skill3_description_jp = "通常攻撃のダメージが120%増加し、2回攻撃。最大HPが30%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -4897,13 +4945,13 @@ class Zhenniao(Monster):
 
     def skill1_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
-        t.apply_effect(StatsEffect('Evasion Buff', 20, True, {'eva' : 0.20, 'spd' : 1.20}))
+        t.apply_effect(StatsEffect('Evasion Buff', 24, True, {'eva' : 0.20, 'spd' : 1.20}))
         t.heal_hp(self.atk * 2, self)
         return 0
 
     def skill2_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
-        t.apply_effect(StatsEffect('Crit Rate Buff', 20, True, {'crit' : 0.20, 'critdmg' : 0.40}))
+        t.apply_effect(StatsEffect('Crit Rate Buff', 24, True, {'crit' : 0.20, 'critdmg' : 0.40}))
         t.heal_hp(self.atk, self)
         return 0
 
@@ -4965,8 +5013,8 @@ class Anubis(Monster):
         self.skill1_description = "Attack 3 closest enemies with 270% atk, increase atk and def for all allies by 10% for 20 turns."
         self.skill2_description = "Attack random enemies 3 times with 240% atk, increase penetration for all allies by 10% for 20 turns."
         self.skill3_description = "When taking non zero damage, 12% chance to increase def for all allies by 12% for 20 turns."
-        self.skill1_description_jp = "最も近い敵3体に攻撃力270%で攻撃し、20ターンの間攻撃力と防御力を10%増加。"
-        self.skill2_description_jp = "ランダムな敵に攻撃力240%で3回攻撃。20ターンの間貫通を10%増加。"
+        self.skill1_description_jp = "最も近い敵3体に攻撃力270%で攻撃し、全ての味方が20ターンの間攻撃力と防御力を10%増加。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力240%で3回攻撃。全ての味方が20ターンの間貫通を10%増加。"
         self.skill3_description_jp = "ダメージを受けた時、12%の確率で全ての味方の防御力を20ターン12%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -4999,6 +5047,75 @@ class Anubis(Monster):
 
 # ====================================
 # End of All around Support
+# ====================================
+# Many Much Buffer
+# ====================================
+
+
+class Garuda(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Garuda"
+        self.skill1_description = "Apply random buffs to all allies until each ally has at least 4 buffs." \
+        " Buff duration is random between 10 and 30 turns."
+        self.skill2_description = "Attack all enemies with 400% atk."
+        self.skill3_description = "At start of battle, apply 1 random buff to all allies."
+        self.skill1_description_jp = "全ての味方にランダムなバフを付与し、各味方が最低4つのバフを持つまで付与する。バフの持続時間は10ターンから30ターンの間でランダムで決定される。"
+        self.skill2_description_jp = "全ての敵に攻撃力の400%で攻撃する。"
+        self.skill3_description_jp = "戦闘開始時に全ての味方にランダムなバフを1つ付与する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def generate_random_buff(self):
+        b1 = StatsEffect('Atk Up', 20, True, {'atk' : 1.3})
+        b2 = StatsEffect('Def Up', 20, True, {'defense' : 1.3})
+        b3 = StatsEffect('Spd Up', 20, True, {'spd' : 1.3})
+        b4 = StatsEffect('Crit Up', 20, True, {'crit' : 0.3})
+        b5 = StatsEffect('Critdmg Up', 20, True, {'critdmg' : 0.3})
+        b6 = StatsEffect('Penetration Up', 20, True, {'penetration' : 0.3})
+        b7 = StatsEffect('Evasion Up', 20, True, {'eva' : 0.3})
+        b8 = StatsEffect('Heal Efficiency Up', 20, True, {'heal_efficiency' : 0.3})
+        b9 = StatsEffect('Crit Def Up', 20, True, {'critdef' : 0.3})
+
+        all_buffs = [b1, b2, b3, b4, b5, b6, b7, b8, b9]
+        # select a random buff and return it
+        final_buff = random.choice(all_buffs)
+        final_buff.duration = random.randint(10, 30)
+        return final_buff
+
+    def skill1_logic(self):
+        for a in self.ally:
+            actual_buffs = [buff for buff in a.buffs if buff.duration > 0]
+            while len(actual_buffs) < 4:
+                new_buff = self.generate_random_buff()
+                a.apply_effect(new_buff)
+                actual_buffs.append(new_buff)
+        return 0
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=4.0, repeat=1, target_kw1="n_random_enemy", target_kw2="5")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        for a in self.ally:
+            a.apply_effect(self.generate_random_buff())
+
+
+
+
+
+
+
+
+# ====================================
+# End of Many Much Buffer
 # ====================================
 # Early Game Powercreep
 # ====================================

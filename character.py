@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, Effect, EffectShield1, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -495,7 +495,7 @@ class Character:
                     for eff in self.buffs.copy() + self.debuffs.copy():
                         final_damage = eff.apply_effect_in_attack_before_damage_step(self, target, final_damage)
                     if self.get_equipment_set() == "Rainbow":
-                        rainbow_amplifier_dict = {0: 1.60, 1: 1.30, 2: 1.00, 3: 0.70, 4: 0.40}
+                        rainbow_amplifier_dict = {0: 1.60, 1: 1.35, 2: 1.10, 3: 0.85, 4: 0.60}
                         self_target_index_diff = self.get_self_index() - target.get_self_index()
                         self_target_index_diff = abs(self_target_index_diff)
                         final_damage *= rainbow_amplifier_dict[self_target_index_diff]
@@ -1315,13 +1315,24 @@ class Character:
                 total += effect.shield_value
         return total
 
+    def get_active_removable_effects(self, get_buffs=True, get_debuffs=True) -> list:
+        active_effects = []
+        if get_buffs:
+            active_effects += [effect for effect in self.buffs if effect.can_be_removed_by_skill and effect.duration > 0]
+        if get_debuffs:
+            active_effects += [effect for effect in self.debuffs if effect.can_be_removed_by_skill and effect.duration > 0]
+        return active_effects
+
+
     def remove_all_effects(self):
         # Not used
         pass
 
-    def remove_random_amount_of_debuffs(self, amount) -> list:
+    def remove_random_amount_of_debuffs(self, amount, allow_infinite_duration=True) -> list:
         # -> list of removed effects
         debuffs_filtered = [effect for effect in self.debuffs if not effect.is_set_effect and effect.can_be_removed_by_skill]
+        if not allow_infinite_duration:
+            debuffs_filtered = [effect for effect in debuffs_filtered if effect.duration != -1]
         amount = min(amount, len(debuffs_filtered))
         if amount == 0:
             return []
@@ -1331,9 +1342,11 @@ class Character:
             self.remove_effect(effect)
         return removed_effects
 
-    def remove_random_amount_of_buffs(self, amount) -> list:
+    def remove_random_amount_of_buffs(self, amount, allow_infinite_duration=True) -> list:
         # -> list of removed effects
         buffs_filtered = [effect for effect in self.buffs if not effect.is_set_effect and effect.can_be_removed_by_skill]
+        if not allow_infinite_duration:
+            buffs_filtered = [effect for effect in buffs_filtered if effect.duration != -1]
         amount = min(amount, len(buffs_filtered))
         if amount == 0:
             return []
@@ -1401,7 +1414,10 @@ class Character:
             self.skill2_cooldown -= 1
 
     def skill_tooltip(self):
-        return ""
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill_tooltip_jp(self):
+        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def get_equipment_set(self):
         if not self.equip:
@@ -1434,7 +1450,7 @@ class Character:
             self.apply_effect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False))
         elif set_name == "KangTao":
             highest_stat = max(self.atk, self.defense)
-            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, highest_stat * 7.0, False))
+            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, highest_stat * 9.0, False))
         elif set_name == "Militech":
             def condition_func(self):
                 return self.hp <= self.maxhp * 0.30
@@ -1453,7 +1469,7 @@ class Character:
         elif set_name == "Rainbow":
             self.apply_effect(EquipmentSetEffect_Rainbow("Rainbow Set", -1, True))
         elif set_name == "Dawn":
-            self.apply_effect(EquipmentSetEffect_Dawn("Dawn Set", -1, True, {"atk": 1.24, "crit": 0.12}))
+            self.apply_effect(EquipmentSetEffect_Dawn("Dawn Set", -1, True, {"atk": 1.24, "crit": 0.24}))
         elif set_name == "Bamboo":
             self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.88, "defense": 1.88, "spd": 1.88, "crit": 0.44, "critdmg": 0.44}))
         elif set_name == "Rose":
@@ -1981,10 +1997,10 @@ class Fenrir(Character):
         self.name = "Fenrir"
         self.skill1_description = "Focus attack 3 times on closest enemy, 220% atk each hit. Reduce skill cooldown for neighbor allies by 2 turns."
         self.skill2_description = "390% atk on a closest enemy. Remove 2 debuffs for neighbor allies."
-        self.skill3_description = "Fluffy protection is applied to neighbor allies at start of battle. When the protected ally below 40% hp is about to take normal damage, the ally recovers hp by 60% of your current defense."
+        self.skill3_description = "Fluffy protection is applied to neighbor allies at start of battle. When the protected ally below 40% hp is about to take normal damage, the ally recovers hp by 55% of your current defense."
         self.skill1_description_jp = "最も近い敵に攻撃力220%で3回集中攻撃。隣接する味方のスキルクールダウンを2ターン減少。"
         self.skill2_description_jp = "最も近い敵に攻撃力390%攻撃。隣接する味方のデバフを2つ解除。"
-        self.skill3_description_jp = "戦闘開始時、隣接する味方にもふもふ守護を付与。保護された味方が40%以下のHPで通常ダメージを受ける時、自身の防御力の60%分味方を回復する。"
+        self.skill3_description_jp = "戦闘開始時、隣接する味方にもふもふ守護を付与。保護された味方が40%以下のHPで通常ダメージを受ける時、自身の防御力の55%分味方を回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -2016,7 +2032,7 @@ class Fenrir(Character):
     def battle_entry_effects(self):
         neighbors = self.get_neighbor_allies_not_including_self()
         for ally in neighbors:
-            e = EffectShield1("Fluffy Protection", -1, True, 0.4, lambda x: x.defense * 0.6, False, False, self, cover_status_damage=False)
+            e = EffectShield1("Fluffy Protection", -1, True, 0.4, lambda x: x.defense * 0.55, False, False, self, cover_status_damage=False)
             e.can_be_removed_by_skill = False
             ally.apply_effect(e)
 
@@ -2437,7 +2453,7 @@ class Fox(Character):
         self.skill2_description = "Using the angelic power gained through the contract, perform magic attack 4 times at" \
         " 160% atk against random enemies. If the number of stacks of 'Memory' is above 15 before the attack," \
         " 'Memory' is removed and Soul Sacrifice is activated instead of Angel Ray. Soul Sacrifice: Attack with" \
-        " 180% atk 4 times on random enemies. After that, the skill cooldown count of 2 neighbor allies is reduced by 2 and their atk is increased by 4% of your maximum HP, for 30 turns."
+        " 180% atk 4 times on random enemies. After that, the skill cooldown count of 2 neighbor allies is reduced by 2 and their atk is increased by 3.6% of your maximum HP, for 30 turns."
         self.skill3_description = "At the end of each turn, if an ally is affected by a debuff effect, granted 1 stack of Memory," \
         " then the number of stacks of Memory increases by the total number of debuff effects you and your allies are affected by (up to a maximum of 15 stacks)." \
         " When Memory is at 15 stacks, apply a Absorption Shield on self that absorb damage up to 30% of maxhp. If shield is active, increase shield value by 1% of maxhp."
@@ -2445,7 +2461,7 @@ class Fox(Character):
         self.skill2_description_jp = "契約によって得た天使の力を使用して、ランダムな敵に160%の攻撃を4回行う。攻撃前に「メモリー」のスタック数が15以上の場合、" \
                                     "「メモリー」は消費され、「エンジェルレイ」の代わりに「ソウルサクリファイス」が発動する。" \
                                     "ソウルサクリファイス:ランダムな敵に180%の攻撃を4回行う。その後、隣接する味方2体のスキルクールダウンカウントが2減少し、" \
-                                    "攻撃力が自分の最大HPの4%増加する。この効果は30ターン続く。"
+                                    "攻撃力が自分の最大HPの3.6%増加する。この効果は30ターン続く。"
         self.skill3_description_jp = "各ターン終了時、味方がデバフ効果を受けている場合、1スタックのメモリーを付与され、" \
                                     "自身および味方が受けているデバフ効果の合計数に応じてメモリースタックが増加する（最大15スタックまで）。" \
                                     "メモリーが15スタックに達すると、自身に最大HPの30%を吸収するシールドを適用する。シールドがある場合、" \
@@ -2477,7 +2493,7 @@ class Fox(Character):
                 ally.skill1_cooldown = max(ally.skill1_cooldown - 2, 0)
                 ally.skill2_cooldown = max(ally.skill2_cooldown - 2, 0)
                 global_vars.turn_info_string += f"{ally.name} skill cooldown reduced by 2.\n"
-                ally.apply_effect(StatsEffect("Atk Up", 30, True, main_stats_additive_dict={'atk': int(self.maxhp * 0.04)}))
+                ally.apply_effect(StatsEffect("Atk Up", 30, True, main_stats_additive_dict={'atk': int(self.maxhp * 0.036)}))
         else:
             damage_dealt = self.attack(multiplier=1.6, repeat=4)
         return damage_dealt
@@ -2811,7 +2827,8 @@ class Season(Character):
             return 0
         for ally in neighbors:
             ally.apply_effect(StatsEffect("Defense Up", 25, True, {"defense": 1.3}))
-            ally.apply_effect(ContinuousHealEffect("Regeneration", 25, True, lambda x, y: x.defense * 0.3, self, "30% of defense"))
+            ally.apply_effect(ContinuousHealEffect("Regeneration", 25, True, lambda x, y: x.defense * 0.3, self, "30% of defense",
+                                                   value_function_description_jp="防御力の30%"))
         return 0
 
     def skill2_logic(self):
@@ -2993,7 +3010,8 @@ class Ophelia(Character):
             raise Exception
         buff_to_remove_list = []
         for ally in self.ally:
-            ally.apply_effect(ContinuousHealEffect("Regeneration", 10, True, lambda x, y: x.maxhp * 0.05, self, "5% of max hp"))
+            ally.apply_effect(ContinuousHealEffect("Regeneration", 10, True, lambda x, y: x.maxhp * 0.05, self, "5% of max hp",
+                                                   value_function_description_jp="最大HPの5%"))
             for buff in self.buffs:
                 if buff.name == "Death Card":
                     ally.apply_effect(StatsEffect("Crit Dmg Up", 20, True, {"critdmg": 0.3}))
@@ -3605,35 +3623,38 @@ class Chei(Character):
     def battle_entry_effects(self):
         e = EffectShield2("Assist", 12, True, False, damage_reduction=1.0, shrink_rate=0.0, hp_threshold=0.15,
                                        damage_reflect_function=lambda x: x * 1.2, 
-                                       damage_reflect_description="reflect 120% of received damage that exceeds 15% of maxhp to the attacker.")
+                                       damage_reflect_description="reflect 120% of received damage that exceeds 15% of maxhp to the attacker.",
+                                       damage_reflect_description_jp="最大HPの15%を超えるダメージを受けた場合、その120%を状態異常ダメージとして攻撃者に反射する。")
         e.additional_name = "Chei_Assist"
         self.apply_effect(e)
 
 
 class Cocoa(Character):
     """
-
+    Weak on frequent status damage.
     Build: 
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Cocoa"
-        self.skill1_description = "Focus attack closest enemy with 380% atk 3 times, if you have higher maxhp than the target, double the damage."
+        self.skill1_description = "Focus attack closest enemy with 380% atk 3 times, if you have Sweet Dreams, double the damage."
         self.skill2_description = "Select an ally of highest atk, reduce the allys skill cooldown by 2," \
         " and increase the allys speed by 200% for 2 turns. If the same effect is applied, duration is refreshed." \
         " if the selected ally is Cocoa, hp is recovered by 300% atk."
         self.skill3_description = "If haven't taken damage for 5 turns, fall asleep. This effect does not reduce evasion." \
-        " While asleep, recover 8% hp each turn. When this effect is removed, for 12 turns," \
-        " atk and defense is increased by 30%."
-        self.skill1_description_jp = "最も近い敵に380%の攻撃を3回集中して行う。自身の最大HPが対象より高い場合、ダメージが2倍になる。"
+        " While asleep, recover 8% hp each turn. When this effect is removed, for 20 turns," \
+        " apply Sweet Dreams on yourself, atk and defense is increased by 30%."
+        self.skill1_description_jp = "最も近い敵に380%の攻撃を3回集中して行う。幻夢効果がある場合、ダメージが2倍になる。"
         self.skill2_description_jp = "最も攻撃力が高い味方を選択し、その味方のスキルクールダウンを2減少させ、2ターンの間速度を200%増加させる。" \
                                     "同じ効果が適用された場合、持続時間が更新される。" \
                                     "選択された味方が自分である場合、攻撃力の300%でHPが回復する。"
-        self.skill3_description_jp = "5ターンの間ダメージを受けていない場合、眠りに落ちる。この効果は回避率を減少させない。" \
-                                    "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、12ターンの間、攻撃力と防御力が30%増加する。"
+        self.skill3_description_jp = "5ターンの間攻撃されていない場合、眠りに落ちる。この効果は回避率を減少させない。" \
+                                    "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、20ターンの間、" \
+                                    "自身に幻夢を付与し、攻撃力と防御力が30%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
         self.skill3_used = False
+        self.has_effect_that_named
 
     def clear_others(self):
         self.skill3_used = False
@@ -3647,7 +3668,7 @@ class Cocoa(Character):
 
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
-            if self.maxhp > target.maxhp:
+            if self.has_effect_that_named("Sweet Dreams", "Cocoa_Sweet_Dreams"):
                 final_damage *= 2.0
             return final_damage
         damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=3.8, repeat_seq=3, func_damage_step=damage_amplify)
@@ -3687,7 +3708,9 @@ class Cocoa(Character):
         def new_apply_effect_on_apply(character):
             pass
         def new_apply_effect_on_remove(character):
-            character.apply_effect(StatsEffect("Sweet Dreams", 12, True, {"atk": 1.3, "defense": 1.3}))
+            sd = StatsEffect("Sweet Dreams", 20, True, {"atk": 1.3, "defense": 1.3})
+            sd.additional_name = "Cocoa_Sweet_Dreams"
+            character.apply_effect(sd)
         effect.apply_effect_on_trigger = new_apply_effect_on_trigger
         effect.apply_effect_on_apply = new_apply_effect_on_apply
         effect.apply_effect_on_remove = new_apply_effect_on_remove
@@ -4004,6 +4027,70 @@ class Kyle(Character):
     # def battle_entry_effects(self):
     #     for a in self.ally:
     #         a.apply_effect(EffectShield2("Mountain Drawing", 12, True, False, damage_reduction=0.5, shrink_rate=0.0, hp_threshold=0.1))
+
+
+class Moe(Character):
+    """
+    Counter crit and buffs
+    Main attacker
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Moe"
+        self.skill1_description = "Target an ememy of highest crit rate, if target have active buffs, attack with 400% atk," \
+        " otherwise attack with 200% atk. Attack 4 times, each attack removes 1 active buff from the target." \
+        " After the attack, apply Paradox on target for 24 turns, reduce crit damage by 60%."
+        self.skill2_description = "Attack all enemies with 200% atk, if enemy has active buffs, attack with 400% atk."
+        self.skill3_description = "When taking critical damage, recover hp by 300% atk, reduced that damage by 40%."
+        self.skill1_description_jp = "クリティカル率が最も高い敵を対象にする。対象にアクティブなバフがある場合、攻撃力の400%で攻撃し、ない場合は攻撃力の200%で攻撃する。4回攻撃し、各攻撃で1つのアクティブなバフを解除する。攻撃後、対象に24ターンの間「矛盾」を付与し、クリティカルダメージを60%減少させる。"
+        self.skill2_description_jp = "全ての敵に攻撃力の200%で攻撃し、敵にアクティブなバフがある場合は攻撃力の400%で攻撃する。"
+        self.skill3_description_jp = "クリティカルダメージを受けた際、攻撃力の300%分HPを回復し、そのダメージを40%軽減する。"
+
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+
+    def skill1_logic(self):
+        # ("n_highest_attr", n, attr, party)
+        t:Character = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="crit", keyword4="enemy"))
+
+        def remove_buffs(self, target: Character):
+            target.remove_random_amount_of_buffs(1, allow_infinite_duration=False)
+
+        def multipler_func(self, target, _, __):
+            if len(target.get_active_removable_effects(get_buffs=True, get_debuffs=False)) > 0:
+                return 4.0
+            else:
+                return 2.0
+
+        damage_dealt = self.attack(target_list=[t], repeat=4, func_after_dmg=remove_buffs, func_for_multiplier=multipler_func)
+        if t.is_alive() and self.is_alive():
+            t.apply_effect(StatsEffect("Paradox", 24, False, {"critdmg": -0.6}))
+
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def multipler_func(self, target, _, __):
+            if len(target.get_active_removable_effects(get_buffs=True, get_debuffs=False)) > 0:
+                return 4.0
+            else:
+                return 2.0
+        damage_dealt = self.attack(repeat=1, target_kw1="n_random_enemy", target_kw2="5", func_for_multiplier=multipler_func)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        def heal_func(character: Character):
+            return character.atk * 3.0
+        sf = EffectShield1_healoncrit("Sweets Fluffy", -1, True, 1, effect_applier=self, cc_immunity=False,
+                                      heal_function=heal_func, critdmg_reduction=0.4)
+        sf.can_be_removed_by_skill = False
+        self.apply_effect(sf)
 
 
 

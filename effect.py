@@ -145,7 +145,7 @@ class Effect:
         color_debuff = "#ff0000"
         string_unremovable = ""
         if not self.can_be_removed_by_skill or self.is_set_effect:
-            string_unremovable += ":除去不可"
+            string_unremovable += ":解除不可"
         if self.is_buff:
             if self.duration == -1:
                 string = "<font color=" + color_buff + ">" + self.name + ":永続" + string_unremovable + "</font>" + "\n"
@@ -559,8 +559,8 @@ class EffectShield1_healoncrit(Effect):
     """
     Before damage calculation, if character takes crit damage, heal hp for [heal_function] amount before damage calculation.
     """
-    def __init__(self, name, duration, is_buff, hp_threshold, heal_function, cc_immunity,
-                require_above_zero_dmg=False, effect_applier=None):
+    def __init__(self, name, duration, is_buff, hp_threshold, heal_function, cc_immunity, effect_applier,
+                require_above_zero_dmg=False, critdmg_reduction=0):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.hp_threshold = hp_threshold
@@ -569,6 +569,7 @@ class EffectShield1_healoncrit(Effect):
         self.sort_priority = 200
         self.require_above_zero_dmg = require_above_zero_dmg
         self.effect_applier = effect_applier
+        self.critdmg_reduction = critdmg_reduction
 
     def apply_effect_at_end_of_turn(self, character):
         if self.effect_applier.is_dead():
@@ -579,13 +580,21 @@ class EffectShield1_healoncrit(Effect):
         crit_condition = keywords.get('attack_is_crit', False) and keywords["attack_is_crit"]
         if crit_condition and (not self.require_above_zero_dmg or damage > 0) and character.hp < character.maxhp * self.hp_threshold:
             a,b,c = character.heal_hp(self.heal_function(self.effect_applier), self.effect_applier)
+            if self.critdmg_reduction > 0:
+                damage = damage * (1 - self.critdmg_reduction)
         return damage
     
     def tooltip_description(self):
-        return f"When taking critical damage, heal for {self.heal_function(self.effect_applier):.1f} hp before damage calculation."
+        s = f"When taking critical damage, heal for {self.heal_function(self.effect_applier):.1f} hp before damage calculation."
+        if self.critdmg_reduction > 0:
+            s += f" Reduces critical damage taken by {self.critdmg_reduction*100:.1f}%."
+        return s
 
     def tooltip_description_jp(self):
-        return f"クリティカルダメージを受けた時、ダメージ計算前に{self.heal_function(self.effect_applier):.1f}回復する。"
+        s = f"クリティカルダメージを受けた時、ダメージ計算前に{self.heal_function(self.effect_applier):.1f}回復する。"
+        if self.critdmg_reduction > 0:
+            s += f"受けるクリティカルダメージを{self.critdmg_reduction*100:.1f}%減少する。"
+        return s
 
 
 #---------------------------------------------------------
@@ -598,7 +607,7 @@ class EffectShield2(Effect):
     """
     def __init__(self, name, duration, is_buff, cc_immunity, damage_reduction=0.5, 
                  shrink_rate=0.02, hp_threshold=0.1, damage_reflect_function=None, 
-                 damage_reflect_description=None):
+                 damage_reflect_description=None, damage_reflect_description_jp=None):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.cc_immunity = cc_immunity
@@ -608,6 +617,7 @@ class EffectShield2(Effect):
         self.hp_threshold = hp_threshold
         self.damage_reflect_function = damage_reflect_function
         self.damage_reflect_description = damage_reflect_description
+        self.damage_reflect_description_jp = damage_reflect_description_jp
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         damage_original = damage
@@ -642,8 +652,8 @@ class EffectShield2(Effect):
         str = f"最大HPの{self.hp_threshold*100:.1f}%を超えるダメージを{self.damage_reduction*100:.1f}%減少させる。"
         if self.shrink_rate > 0:
             str += f"毎ターン、ダメージ軽減が{self.shrink_rate*100:.1f}%減少する。"
-        if self.damage_reflect_description:
-            str += self.damage_reflect_description
+        if self.damage_reflect_description_jp:
+            str += self.damage_reflect_description_jp
         return str
 
 
@@ -1229,12 +1239,14 @@ class ContinuousHealEffect(Effect):
     """
     heal hp returned by [value_function] each turn. [value_function] takes (character, buff_applier) as arguments and returns a value.
     """
-    def __init__(self, name, duration, is_buff, value_function, buff_applier=None, value_function_description=None):
+    def __init__(self, name, duration, is_buff, value_function, buff_applier=None, value_function_description=None,
+                 value_function_description_jp=None):
         super().__init__(name, duration, is_buff)
         self.is_buff = is_buff
         self.value_function = value_function
         self.buff_applier = buff_applier
         self.value_function_description = value_function_description
+        self.value_function_description_jp = value_function_description_jp
     
     def apply_effect_on_trigger(self, character):
         amount_to_heal = self.value_function(character, self.buff_applier)
@@ -1245,7 +1257,10 @@ class ContinuousHealEffect(Effect):
         return f"Recovers hp each turn, amount: {self.value_function_description}."
     
     def tooltip_description_jp(self):
-        return f"毎ターンHPを回復する。回復量:{self.value_function_description}。"
+        if self.value_function_description_jp:
+            return f"毎ターンHPを回復する。回復量:{self.value_function_description_jp}。"
+        else:
+            return f"毎ターンHPを回復する。回復量:{self.value_function_description}。"
 
 
 class ContinuousDamageEffect(Effect):
@@ -1646,7 +1661,7 @@ class EquipmentSetEffect_Arasaka(Effect):
             character.hp = 1
             global_vars.turn_info_string += f"{character.name} survived with 1 hp!\n"
             self.onehp_effect_triggered = True
-            self.duration = 3
+            self.duration = 6
             return 0
         else:
             return damage
@@ -1954,10 +1969,10 @@ class EquipmentSetEffect_Bamboo(Effect):
         if character.is_dead():
             return
         if not character.has_effect_that_named("Bamboo", additional_name="EquipmentSetEffect_Bamboo"):
-            effect_to_apply = StatsEffect("Bamboo", 5, True, self.stats_dict, is_set_effect=True)
+            effect_to_apply = StatsEffect("Bamboo", 7, True, self.stats_dict, is_set_effect=True)
             effect_to_apply.additional_name = "EquipmentSetEffect_Bamboo"
             character.apply_effect(effect_to_apply)
-            e = ContinuousHealEffect("Bamboo", 5, True, lambda x, y: x.maxhp * 0.16, self, "16% max hp")
+            e = ContinuousHealEffect("Bamboo", 7, True, lambda x, y: x.maxhp * 0.16, self, "16% max hp")
             e.is_set_effect = True
             character.apply_effect(e)
 

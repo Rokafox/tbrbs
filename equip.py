@@ -97,11 +97,11 @@ class Equip(Block):
         match self.eq_set:
             case "Arasaka":
                 return (
-                    "Once per battle, leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 3 turns."
+                    "Once per battle, leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 6 turns."
                 )
             case "KangTao":
                 return (
-                    "Compare atk and def, apply the higher value * 700% as absorption shield on self at start of battle."
+                    "Compare atk and def, apply the higher value * 900% as absorption shield on self at start of battle."
                 )
             case "Militech":
                 return (
@@ -126,15 +126,16 @@ class Equip(Block):
                 )
             case "Rainbow":
                 return (
-                    "While attacking, damage increases by 60%/30%/0%/-30%/-60% depending on the proximity of the target."
+                    # {0: 1.60, 1: 1.35, 2: 1.10, 3: 0.85, 4: 0.60}
+                    "While attacking, damage increases by 60%/35%/10%/-15%/-40% depending on the proximity of the target."
                 )
             case "Dawn":
                 return (
-                    "Atk increased by 24%, crit increased by 12% when hp is full. One time only, when dealing normal or skill attack damage, damage is increased by 120%."
+                    "Atk increased by 24%, crit increased by 24% when hp is full. One time only, when dealing normal or skill attack damage, damage is increased by 120%."
                 )
             case "Bamboo":
                 return (
-                    "After taking down an enemy with normal or skill attack, for 5 turns, recovers 16% of max hp each turn and increases atk, def, spd by 88%, crit and crit damage by 44%. "
+                    "After taking down an enemy with normal or skill attack, for 7 turns, recovers 16% of max hp each turn and increases atk, def, spd by 88%, crit and crit damage by 44%. "
                     "Cannot be triggered when buff effect is active."
                 )
             case "Rose":
@@ -176,11 +177,11 @@ class Equip(Block):
         match self.eq_set:
             case "Arasaka":
                 return (
-                    "バトル中に一度だけ、致命的なダメージを受けた時にHP1で生存する。発動時、3ターンの間ダメージ無効。"
+                    "バトル中に一度だけ、致命的なダメージを受けた時にHP1で生存する。発動時、6ターンの間ダメージ無効。"
                 )
             case "KangTao":
                 return (
-                    "攻撃力と防御力を比較し、より高い方の値の700%を吸収シールドとしてバトル開始時に自身に付与する。"
+                    "攻撃力と防御力を比較し、より高い方の値の900%の分を吸収シールドとしてバトル開始時に自身に付与する。"
                 )
             case "Militech":
                 return (
@@ -204,15 +205,15 @@ class Equip(Block):
                 )
             case "Rainbow":
                 return (
-                    "攻撃時、対象との距離に応じてダメージが60%/30%/0%/-30%/-60%に変動する。"
+                    "攻撃時、対象との距離に応じてダメージが60%/35%/10%/-15%/-40%に増加する。"
                 )
             case "Dawn":
                 return (
-                    "HPが満タンの時、攻撃力が24%、クリティカル率が12%増加する。1回のみ、通常攻撃またはスキル攻撃時にダメージが120%増加する。"
+                    "HPが満タンの時、攻撃力が24%、クリティカル率が24%増加する。1回のみ、通常攻撃またはスキル攻撃時にダメージが120%増加する。"
                 )
             case "Bamboo":
                 return (
-                    "通常攻撃またはスキル攻撃で敵を倒した後、5ターンの間毎ターン最大HPの16%を回復し、攻撃力、防御力、速度が88%、クリティカル率とクリティカルダメージが44%増加する。"
+                    "通常攻撃またはスキル攻撃で敵を倒した後、7ターンの間毎ターン最大HPの16%を回復し、攻撃力、防御力、速度が88%、クリティカル率とクリティカルダメージが44%増加する。"
                     "バフ効果が既に発動された場合は発動しない。"
                 )
             case "Rose":

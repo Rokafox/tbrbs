@@ -453,7 +453,7 @@ def get_all_characters():
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
-                       "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle"]
+                       "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe"]
 
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -3066,6 +3066,9 @@ if __name__ == "__main__":
                                                             "Banana Armory",
                                                             pygame.Rect((300, 500), (212, 35)),
                                                             ui_manager)
+    if start_with_max_level and global_vars.allow_cheat:
+        shop_select_a_shop.add_options(["CHEAT"])
+
     shop_shop_introduction_sign = pygame_gui.elements.UIImage(pygame.Rect((815, 500), (35, 35)),
                                         pygame.Surface((35, 35)),
                                         ui_manager)
@@ -3101,6 +3104,8 @@ if __name__ == "__main__":
                 shop_instance = shop.Gulid_SliverWolf("Silver Wolf Company", None)
             case "Big Food Market":
                 shop_instance = shop.Big_Food_Market("Big Food Market", None)
+            case "CHEAT":
+                shop_instance = shop.Dev_Cheat("CHEAT", None)
             case _:
                 raise Exception(f"Unknown shop name: {shop_name}")
         shop_instance.get_items_from_manufacturers()
