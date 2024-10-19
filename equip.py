@@ -135,12 +135,12 @@ class Equip(Block):
                 )
             case "Bamboo":
                 return (
-                    "After taking down an enemy with normal or skill attack, for 7 turns, recovers 16% of max hp each turn and increases atk, def, spd by 88%, crit and crit damage by 44%. "
+                    "After taking down an enemy with normal or skill attack, for 7 turns, recovers 20% of max hp each turn and increases atk, def, spd by 90%, crit and crit damage by 45%. "
                     "Cannot be triggered when buff effect is active."
                 )
             case "Rose":
                 return (
-                    "Heal efficiency is increased by 22%, def is increased by 11%. Before heal, increase target's heal efficiency by 88% for 2 turns. "
+                    "Heal efficiency is increased by 20%. Before heal, increase target's heal efficiency by 88% for 2 turns, increase your defense by 20% for 10 turns. "
                     "Cannot be triggered by hp recover."
                 )
             case "OldRusty":
@@ -213,12 +213,12 @@ class Equip(Block):
                 )
             case "Bamboo":
                 return (
-                    "通常攻撃またはスキル攻撃で敵を倒した後、7ターンの間毎ターン最大HPの16%を回復し、攻撃力、防御力、速度が88%、クリティカル率とクリティカルダメージが44%増加する。"
+                    "通常攻撃またはスキル攻撃で敵を倒した後、7ターンの間毎ターン最大HPの20%を回復し、攻撃力、防御力、速度が90%、クリティカル率とクリティカルダメージが45%増加する。"
                     "バフ効果が既に発動された場合は発動しない。"
                 )
             case "Rose":
                 return (
-                    "回復効率が22%、防御力が11%増加する。治療の前に、対象の回復効率を2ターンの間88%増加させる。"
+                    "回復効率が20%増加する。治療の前に、対象の回復効率を2ターンの間88%増加させ、自分の防御力を10ターン20%増加する。"
                     "HP回復効果は発動しない。"
                 )
             case "OldRusty":

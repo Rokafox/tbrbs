@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, DamageReflect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -570,6 +570,7 @@ class Character:
             for t in targets:
                 t.apply_effect(StatsEffect("Beloved Girl", 2, True, 
                 {"heal_efficiency": self.get_effect_that_named("Rose Set", None, "EquipmentSetEffect_Rose").he_bonus_before_heal}))
+            self.apply_effect(StatsEffect("Beloved Girl", 10, True, {"defense": 1.20}))
         for i in range(repeat):
             for t in targets:
                 healing, healer, overhealing = t.heal_hp(value, self)
@@ -1483,10 +1484,10 @@ class Character:
         elif set_name == "Dawn":
             self.apply_effect(EquipmentSetEffect_Dawn("Dawn Set", -1, True, {"atk": 1.24, "crit": 0.24}))
         elif set_name == "Bamboo":
-            self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.88, "defense": 1.88, "spd": 1.88, "crit": 0.44, "critdmg": 0.44}))
+            self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.90, "defense": 1.90, "spd": 1.90, "crit": 0.45, "critdmg": 0.45}))
         elif set_name == "Rose":
             self.apply_effect(EquipmentSetEffect_Rose("Rose Set", -1, True, he_bonus_before_heal=0.88))
-            belove_girl_self_effect = StatsEffect("Beloved Girl", -1, True, {"heal_efficiency": 0.22, "defense": 1.11})
+            belove_girl_self_effect = StatsEffect("Beloved Girl", -1, True, {"heal_efficiency": 0.20})
             belove_girl_self_effect.is_set_effect = True
             self.apply_effect(belove_girl_self_effect)
         elif set_name == "OldRusty":
@@ -1961,10 +1962,10 @@ class Olive(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Olive"
         self.skill1_description = "540% atk on 1 enemy with the highest atk. Decrease target's atk by 50% for 20 turns."
-        self.skill2_description = "Heal 3 allies with lowest hp by 270% atk and increase their speed by 40% for 20 turns. "
+        self.skill2_description = "Heal 3 allies with lowest hp by 270% atk and increase their speed by 35% for 20 turns. "
         self.skill3_description = "Normal attack deals 120% more damage if target has less speed than self."
         self.skill1_description_jp = "最も高い攻撃力の敵に攻撃力540%攻撃。対象の攻撃力を20ターンの間、50%減少。"
-        self.skill2_description_jp = "HPが最も低い味方3体を攻撃力270%で回復し、20ターンの間、速度を40%増加。"
+        self.skill2_description_jp = "HPが最も低い味方3体を攻撃力270%で回復し、20ターンの間、速度を35%増加。"
         self.skill3_description_jp = "通常攻撃時、対象の速度が自分より低い場合、ダメージが120%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -1984,7 +1985,7 @@ class Olive(Character):
 
     def skill2_logic(self):
         def effect(self, target, healing, overhealing):
-            target.apply_effect(StatsEffect("Tailwind", 20, True, {"spd": 1.4}))
+            target.apply_effect(StatsEffect("Tailwind", 20, True, {"spd": 1.35}))
         healing_done = self.heal("n_lowest_attr", "3", "hp", "ally", self.atk * 2.7, 1, func_after_each_heal=effect)
         return None
 
@@ -3242,7 +3243,7 @@ class Yuri(Character):
         " Bear: 20% chance to Stun for 10 turns, normal attack damage increases by 100%." \
         " Wolf: Normal attack attack 3 closest enemies, each attack has 40% chance to inflict burn for 20 turns. Burn deals 50% atk status damage per turn." \
         " Eagle: Each Normal attack gains 4 additional focus attacks on the same target, each attack deals 150% atk damage." \
-        " Cat: After normal attack, an ally with highest atk gains 'Gold Card' effect for 10 turns. Gold Card: atk, def, critical damage is increased by 30%." \
+        " Cat: After normal attack, an ally with highest atk gains 'Gold Card' effect for 8 turns. Gold Card: atk, def, critical damage is increased by 30%." \
         " After 4 summons above, this skill cannot be used."
         self.skill2_description = "This skill cannot be used. For each summon, recover 15% hp and gain buff effect for 20 turns." \
         " Bear: atk increased by 40%." \
@@ -3254,7 +3255,7 @@ class Yuri(Character):
                                     "クマ:20%の確率で10ターンの間スタンさせ、通常攻撃のダメージが100%増加する。" \
                                     "オオカミ:通常攻撃が最も近い3体の敵を対象とし、各攻撃には40%で5ターンの間燃焼を付与する。燃焼は毎ターン攻撃力の50%の状態異常ダメージを与える。" \
                                     "ワシ:各通常攻撃が同じ対象に追加の4回の集中攻撃を行い、各攻撃は攻撃力の150%のダメージを与える。" \
-                                    "ネコ:通常攻撃後、最も攻撃力の高い味方に10ターンの間「ゴールドカード」効果を付与する。ゴールドカード:攻撃力、防御力、クリティカルダメージが30%増加する。" \
+                                    "ネコ:通常攻撃後、最も攻撃力の高い味方に8ターンの間「ゴールドカード」効果を付与する。ゴールドカード:攻撃力、防御力、クリティカルダメージが30%増加する。" \
                                     "上記の4召喚が完了した後、このスキルは使用できなくなる。"
         self.skill2_description_jp = "このスキルは使用できない。各召喚ごとにHPが15%回復し、20ターンの間バフ効果を得る。" \
                                     "クマ:攻撃力が40%増加する。" \
@@ -3325,8 +3326,8 @@ class Yuri(Character):
                 return 0
             case (True, True, True, False):
                 cat_effect = Effect("Cat", -1, True, False,
-                                    tooltip_str="After normal attack, an ally with highest atk gains 'Gold Card' effect for 10 turns.",
-                                    tooltip_str_jp="通常攻撃後、最も攻撃力の高い味方に10ターンの間「ゴールドカード」効果を付与する。")
+                                    tooltip_str="After normal attack, an ally with highest atk gains 'Gold Card'.",
+                                    tooltip_str_jp="通常攻撃後、最も攻撃力の高い味方に「ゴールドカード」効果を付与する。")
                 cat_effect.can_be_removed_by_skill = False
                 self.apply_effect(cat_effect)
                 global_vars.turn_info_string += f"{self.name} summoned Cat.\n"
@@ -3412,7 +3413,7 @@ class Yuri(Character):
                 damage_dealt = self.attack(target_kw1="n_enemy_in_front", multiplier=2.0, repeat=1, func_after_dmg=extra_effect, 
                                            func_damage_step=damage_amplify, target_kw2="3", additional_attack_after_dmg=additional_attacks)
                 if self.is_alive():
-                    gold_card = StatsEffect("Gold Card", 10, True, {"atk": 1.3, "defense": 1.3, "critdmg": 0.3})
+                    gold_card = StatsEffect("Gold Card", 8, True, {"atk": 1.3, "defense": 1.3, "critdmg": 0.3})
                     gold_card.additional_name = "bt_gold_card"
                     # gold_card.apply_rule = "stack"
                     ally_to_gold_card = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
@@ -3575,18 +3576,20 @@ class Chei(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Chei"
-        self.skill1_description = "Attack 4 enemies with 280% atk. Apply Assist on yourself for 30 turns." \
-        " Assist: reflect 120% of received damage that exceeds 15% of maxhp to the attacker as status damage," \
-        " Damage taken cannot exceed 15% of maxhp. On applying the same effect, duration is refreshed."
-        self.skill2_description = "Attack 3 enemies with 280% atk. 60% chance to inflict Burn for 20 turns." \
+        self.skill1_description = "Attack 4 enemies with 300% atk. Apply Assist on yourself for 30 turns." \
+        " Assist: reflect 100% of received normal damage that exceeds 15% of maxhp to the attacker as status damage," \
+        " Damage taken cannot exceed 15% of maxhp. On applying the same effect, duration is refreshed." \
+        " Maximum reflect damage is 100% of your maxhp."
+        self.skill2_description = "Attack 3 enemies with 300% atk. 60% chance to inflict Burn for 20 turns." \
         " Burn: deals 50% atk status damage per turn. If Assist is still active, increase its duration by 3 turns."
         self.skill3_description = "At start of battle, apply Assist on yourself for 12 turns."
-        self.skill1_description_jp = "4体の敵に280%の攻撃を行い、30ターンの間、自身にアシストを付与する。" \
-                                    "アシスト:最大HPの15%を超えるダメージを受けた場合、その120%を状態異常ダメージとして攻撃者に反射する。" \
-                                    "被ダメージは最大HPの15%を超えない。同じ効果が適用された場合、持続時間が更新される。"
-        self.skill2_description_jp = "3体の敵に280%の攻撃を行い、60%の確率で20ターンの間燃焼を付与する。" \
-                                    "燃焼:毎ターン攻撃力の50%の状態異常ダメージを与える。アシストがまだアクティブな場合、その持続時間が3ターン延長される。"
-        self.skill3_description_jp = "戦闘開始時に、12ターンの間、自身にアシストを付与する。"
+        self.skill1_description_jp = "4体の敵に300%の攻撃を行い、30ターンの間、自身に援護を付与する。" \
+                                    "援護:最大HPの15%を超える通常ダメージを受けた場合、超えた部分の100%を状態異常ダメージとして攻撃者に反射する。" \
+                                    "被ダメージは最大HPの15%を超えない。同じ効果が適用された場合、持続時間が更新される。" \
+                                    "最大反射ダメージは自身の最大HPの100%。"
+        self.skill2_description_jp = "3体の敵に300%の攻撃を行い、60%の確率で20ターンの間燃焼を付与する。" \
+                                    "燃焼:毎ターン攻撃力の50%の状態異常ダメージを与える。援護がまだアクティブな場合、その持続時間が3ターン延長される。"
+        self.skill3_description_jp = "戦闘開始時に、12ターンの間、自身に援護を付与する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.skill3_used = False
@@ -3608,11 +3611,12 @@ class Chei(Character):
                 assist.duration = 30
             else:
                 assist = EffectShield2("Assist", 30, True, False, damage_reduction=1.0, shrink_rate=0.0, hp_threshold=0.15,
-                                       damage_reflect_function=lambda x: x * 1.2, 
-                                       damage_reflect_description="reflect 120% of received damage that exceeds 15% of maxhp to the attacker.")
+                                       damage_reflect_function=lambda x: x * 1.0, 
+                                       damage_reflect_description="reflect 100% of received damage that exceeds 15% of maxhp to the attacker.",
+                                       damage_reflect_description_jp="最大HPの15%を超えるダメージを受けた場合、超えた部分の100%を状態異常ダメージとして攻撃者に反射する。")
                 assist.additional_name = "Chei_Assist"
                 self.apply_effect(assist)
-        damage_dealt = self.attack(multiplier=2.8, repeat=1, target_kw1="n_random_enemy", target_kw2="4")
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_random_enemy", target_kw2="4")
         if self.is_alive():
             after_the_attack()
         return damage_dealt
@@ -3622,7 +3626,7 @@ class Chei(Character):
             dice = random.randint(1, 100)
             if dice <= 60:
                 target.apply_effect(ContinuousDamageEffect("Burn", 20, False, self.atk * 0.5, self))
-        damage_dealt = self.attack(multiplier=2.8, repeat=1, target_kw1="n_random_enemy", target_kw2="3", func_after_dmg=burn_effect)
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_random_enemy", target_kw2="3", func_after_dmg=burn_effect)
         if self.is_alive():
             assist = self.get_effect_that_named("Assist", "Chei_Assist")
             if assist:
@@ -3634,11 +3638,78 @@ class Chei(Character):
 
     def battle_entry_effects(self):
         e = EffectShield2("Assist", 12, True, False, damage_reduction=1.0, shrink_rate=0.0, hp_threshold=0.15,
-                                       damage_reflect_function=lambda x: x * 1.2, 
-                                       damage_reflect_description="reflect 120% of received damage that exceeds 15% of maxhp to the attacker.",
-                                       damage_reflect_description_jp="最大HPの15%を超えるダメージを受けた場合、その120%を状態異常ダメージとして攻撃者に反射する。")
+                                       damage_reflect_function=lambda x: x * 1.0, 
+                                       damage_reflect_description="reflect 100% of received damage that exceeds 15% of maxhp to the attacker.",
+                                       damage_reflect_description_jp="最大HPの15%を超えるダメージを受けた場合、超えた部分の100%を状態異常ダメージとして攻撃者に反射する。")
         e.additional_name = "Chei_Assist"
         self.apply_effect(e)
+
+
+class CheiHW(Character):
+    """
+    damage reflect attacker, good against enemies with negative effects
+    Halloween version
+    Build: spd
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "CheiHW"
+        self.skill1_description = "Attack enemy of lowest hp percentage with 220% atk 3 times, damage doubles if the enemy has a active negative effect." \
+        " After the attack, apply Reflect on yourself for 20 turns." \
+        " Reflect: reflect 30% of received normal damage."
+        self.skill2_description = "Attack enemy of lowest hp percentage with 400% atk, if the enemy has a active negative effect, Stun for 10 turns."
+        self.skill3_description = "Apply unremovable Surprise Trap on yourself, when defeated, recover 70% hp and apply Assist on yourself for 20 turns." \
+        " Apply absorption shield Mr. Naughty Ghost on yourself, shield absorbs 70% of maxhp damage, lasts for 20 turns." \
+        " Assist: reflect 120% of received normal damage that exceeds 15% of maxhp to the attacker as status damage, damage taken cannot exceed 15% of maxhp." \
+        " Maximum reflect damage is 200% of your maxhp."
+        self.skill1_description_jp = "HP割合が最も低い敵に攻撃力の220%で3回攻撃する。敵にアクティブなデバフがある場合、ダメージが2倍になる。攻撃後、自身に20ターンの間「キャンディ警告」を付与する。キャンディ警告:受けた通常ダメージの30%を反射する。"
+        self.skill2_description_jp = "HP割合が最も低い敵に攻撃力の400%で攻撃する。敵にアクティブなデバフがある場合、10ターンの間スタンさせる。"
+        self.skill3_description_jp = "自身に解除不能な「びっくりトラップ」を付与する。撃破された時、HPを70%回復し、20ターンの間「援護」を自身に付与する。自身に「いたずら幽霊さん」の吸収シールドを付与し、このシールドは最大HPの70%分のダメージを吸収し、20ターン持続する。援護:受けた通常ダメージが最大HPの15%を超える場合、そのダメージの120%を状態異常ダメージとして攻撃者に反射する。受けるダメージは最大HPの15%を超えない。最大反射ダメージは自身の最大HPの120%。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+
+
+    def skill1_logic(self):
+        def damage_amplify(self, target: Character, final_damage):
+            es = target.get_active_removable_effects(get_buffs=False, get_debuffs=True)
+            if len(es) > 0:
+                final_damage *= 2.0
+            return final_damage
+        damage_dealt = self.attack(target_kw1="n_lowest_hp_percentage_enemy", target_kw2="1", multiplier=2.2, repeat=3, func_damage_step=damage_amplify)
+        if self.is_alive():
+            e = DamageReflect("Candy Warning!", 20, True, False, reflect_percentage=0.3)
+            self.apply_effect(e)
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def stun_effect(self, target):
+            es = target.get_active_removable_effects(get_buffs=False, get_debuffs=True)
+            if len(es) > 0:
+                target.apply_effect(StunEffect("Stun", 10, False))
+        damage_dealt = self.attack(target_kw1="n_lowest_hp_percentage_enemy", target_kw2="1", multiplier=4.0, repeat=1, func_after_dmg=stun_effect)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def after_revive(self):
+        e = EffectShield2("Assist", 20, True, False, damage_reduction=1.0, shrink_rate=0.0, hp_threshold=0.15,
+                                       damage_reflect_function=lambda x: x * 1.2, 
+                                       damage_reflect_description="reflect 120% of received damage that exceeds 15% of maxhp to the attacker.",
+                                       damage_reflect_description_jp="最大HPの15%を超えるダメージを受けた場合、超えた部分の120%を状態異常ダメージとして攻撃者に反射する。",
+                                       max_reflect_hp_percentage=1.2)
+        e.additional_name = "Cheihw_Assist"
+        e.apply_rule = "stack"
+        self.apply_effect(e)
+        e2 = AbsorptionShield("Mr. Naughty Ghost", 20, True, self.maxhp * 0.7, False)
+        self.apply_effect(e2)
+
+    def battle_entry_effects(self):
+        r = RebornEffect("Surprise Trap", -1, True, effect_value=0.7, cc_immunity=False, buff_applier=self)
+        r.can_be_removed_by_skill = False
+        self.apply_effect(r)
 
 
 class Cocoa(Character):
@@ -3750,14 +3821,14 @@ class Beacon(Character):
         self.skill2_description = "Attack 4 enemies with 300% atk, for 20 turns, their critical defense is reduced by 50%."
         self.skill3_description = "If you are the only one alive, redistributing hp use 400% as base percentage when calculating average," \
         " before redistributing, revive as many allies as possible with 1 hp and apply Protection for all allies for 20 turns." \
-        " Protection: damage taken is reduced by 50%." \
+        " Protection: damage taken is reduced by 55%." \
         " All skill cooldown is reduced by 2 actions at the end of turn if you are the only one alive."
         self.skill1_description_jp = "全ての味方のHP割合を再分配し、HP割合が高い味方は状態異常ダメージを受け、HP割合が低い味方は同じ割合になるまでHPが治療する。" \
                                     "このスキルに効果がない場合、全ての味方に12ターンの間吸収シールドを付与する。" \
                                     "シールドは攻撃力の500%+防御力の500%までのダメージを吸収する。HP割合を比較する際、1%以内の誤差で同じとみなされる。"
         self.skill2_description_jp = "4体の敵に300%の攻撃を行い、20ターンの間クリティカル防御を50%減少させる。"
         self.skill3_description_jp = "自分だけが生き残っている場合、HP再分配時に基準割合として400%を使用して平均を計算し、再分配前に可能な限り多くの味方をHP1で復活させる。" \
-                                    "全ての味方に20ターンの間保護を付与する。保護:受けるダメージが50%軽減される。" \
+                                    "全ての味方に20ターンの間保護を付与する。保護:受けるダメージが55%軽減される。" \
                                     "自分だけが生き残っている場合、ターン終了時に全てのスキルクールダウンが2行動分減少する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
@@ -3792,7 +3863,7 @@ class Beacon(Character):
                     m.revive(1, 0, self)
             self.update_ally_and_enemy()
             for a in self.ally:
-                a.apply_effect(ReductionShield("Protection", 20, True, 0.5, False))
+                a.apply_effect(ReductionShield("Protection", 20, True, 0.55, False))
             avg_hp_percentage = 4.00 / len(self.ally)
             for a in self.ally:
                 target_hp = avg_hp_percentage * a.maxhp
@@ -4120,7 +4191,7 @@ class Mitsuki(Character):
         " When taking status damage, recover hp by 5% of maxhp."
         # Japanese: 蒼海 蒼海の眷属
         self.skill1_description_jp = "最も近い敵に最大HPの3%で12回攻撃する。各攻撃には8%の確率で8ターンの間、対象をスタンさせる。"
-        self.skill2_description_jp = "全ての味方のHPを自分の最大HPの1%分回復し、各味方からランダムなデバフを2つ解除する。"
+        self.skill2_description_jp = "全ての味方のHPを自分の最大HPの1%分治療し、各味方からランダムなデバフを2つ解除する。"
         self.skill3_description_jp = "戦闘開始時に全ての味方に解除不能な蒼海を付与する。蒼海:受ける状態異常ダメージが70%減少する。自身には解除不能な蒼海の眷属を付与する。状態異常ダメージを受けた時、最大HPの5%分のHPを回復する。"
 
         self.skill1_cooldown_max = 5

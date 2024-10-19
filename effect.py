@@ -604,10 +604,12 @@ class EffectShield2(Effect):
     For every turn passed, damage reduction effect is reduced by [shrink_rate]*100%.
     If [damage_reflect_function] is specified, reflect damage to the attacker.
     Damage coming from reflect can not be reflected again.
+    The max reflect damage cannot exceed character maxhp*[max_reflect_hp_percentage] 
     """
     def __init__(self, name, duration, is_buff, cc_immunity, damage_reduction=0.5, 
                  shrink_rate=0.02, hp_threshold=0.1, damage_reflect_function=None, 
-                 damage_reflect_description=None, damage_reflect_description_jp=None):
+                 damage_reflect_description=None, damage_reflect_description_jp=None,
+                 max_reflect_hp_percentage=1):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.cc_immunity = cc_immunity
@@ -618,14 +620,23 @@ class EffectShield2(Effect):
         self.damage_reflect_function = damage_reflect_function
         self.damage_reflect_description = damage_reflect_description
         self.damage_reflect_description_jp = damage_reflect_description_jp
+        self.max_reflect_hp_percentage = max_reflect_hp_percentage
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         damage_original = damage
-        if damage > character.maxhp * self.hp_threshold:
-            damage = character.maxhp * self.hp_threshold + (damage - character.maxhp * self.hp_threshold) * (1 - self.damage_reduction)
+        damage_threshold = character.maxhp * self.hp_threshold
+        if damage > damage_threshold:
+            damage = damage_threshold + (damage - damage_threshold) * (1 - self.damage_reduction)
+
+        # make no sense to reflect status damage.
+        if which_ds != "normal":
+            return damage
+
         delta = abs(damage_original - damage)
+
         if self.damage_reflect_function and delta > 0:
             damage_to_reflect = self.damage_reflect_function(delta)
+            damage_to_reflect = min(damage_to_reflect, character.maxhp * self.max_reflect_hp_percentage)
             # If this is true, we know it is coming from reflect damage, so no reflect is allowed.
             is_reflect_damage_condition = keywords.get('damage_is_reflect', False) and keywords["damage_is_reflect"]
             # not reflect damage:
@@ -655,6 +666,35 @@ class EffectShield2(Effect):
         if self.damage_reflect_description_jp:
             str += self.damage_reflect_description_jp
         return str
+
+
+class DamageReflect(Effect):
+    """
+    Reflect [reflect_percentage]*100% of the damage taken to the attacker.
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, reflect_percentage=0.5):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.cc_immunity = cc_immunity
+        self.reflect_percentage = reflect_percentage
+        self.sort_priority = 202
+
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        if which_ds != "normal":
+            return damage
+        damage_to_reflect = damage * self.reflect_percentage
+        if attacker is not None and damage_to_reflect > 0:
+            attacker.take_status_damage(damage_to_reflect, character, is_reflect=True)
+        return damage
+
+    def tooltip_description(self):
+        return f"Reflects {self.reflect_percentage*100:.1f}% of the damage taken back to the attacker."
+
+    def tooltip_description_jp(self):
+        return f"受けたダメージの{self.reflect_percentage*100:.1f}%を攻撃者に反射する。"
+
+
+
 
 
 #---------------------------------------------------------
@@ -1972,7 +2012,8 @@ class EquipmentSetEffect_Bamboo(Effect):
             effect_to_apply = StatsEffect("Bamboo", 7, True, self.stats_dict, is_set_effect=True)
             effect_to_apply.additional_name = "EquipmentSetEffect_Bamboo"
             character.apply_effect(effect_to_apply)
-            e = ContinuousHealEffect("Bamboo", 7, True, lambda x, y: x.maxhp * 0.16, self, "16% max hp")
+            e = ContinuousHealEffect("Bamboo", 7, True, lambda x, y: x.maxhp * 0.20, self, "20% maxhp",
+                                     value_function_description_jp="最大HPの20%")
             e.is_set_effect = True
             character.apply_effect(e)
 
