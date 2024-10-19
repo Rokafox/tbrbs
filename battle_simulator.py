@@ -453,7 +453,7 @@ def get_all_characters():
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
-                       "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW"]
+                       "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan"]
     character_names.sort()
     print(len(character_names))
 

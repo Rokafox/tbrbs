@@ -140,7 +140,7 @@ class Equip(Block):
                 )
             case "Rose":
                 return (
-                    "Heal efficiency is increased by 20%. Before heal, increase target's heal efficiency by 88% for 2 turns, increase your defense by 20% for 10 turns. "
+                    "Heal efficiency is increased by 20%. Before heal, increase target's heal efficiency by 100% for 2 turns, increase your defense by 30% for 10 turns. "
                     "Cannot be triggered by hp recover."
                 )
             case "OldRusty":
@@ -218,7 +218,7 @@ class Equip(Block):
                 )
             case "Rose":
                 return (
-                    "回復効率が20%増加する。治療の前に、対象の回復効率を2ターンの間88%増加させ、自分の防御力を10ターン20%増加する。"
+                    "回復効率が20%増加する。治療の前に、対象の回復効率を2ターンの間100%増加させ、自分の防御力を10ターン30%増加する。"
                     "HP回復効果は発動しない。"
                 )
             case "OldRusty":

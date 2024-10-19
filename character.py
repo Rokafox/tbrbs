@@ -570,7 +570,7 @@ class Character:
             for t in targets:
                 t.apply_effect(StatsEffect("Beloved Girl", 2, True, 
                 {"heal_efficiency": self.get_effect_that_named("Rose Set", None, "EquipmentSetEffect_Rose").he_bonus_before_heal}))
-            self.apply_effect(StatsEffect("Beloved Girl", 10, True, {"defense": 1.20}))
+            self.apply_effect(StatsEffect("Beloved Girl", 10, True, {"defense": 1.30}))
         for i in range(repeat):
             for t in targets:
                 healing, healer, overhealing = t.heal_hp(value, self)
@@ -1486,7 +1486,7 @@ class Character:
         elif set_name == "Bamboo":
             self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.90, "defense": 1.90, "spd": 1.90, "crit": 0.45, "critdmg": 0.45}))
         elif set_name == "Rose":
-            self.apply_effect(EquipmentSetEffect_Rose("Rose Set", -1, True, he_bonus_before_heal=0.88))
+            self.apply_effect(EquipmentSetEffect_Rose("Rose Set", -1, True, he_bonus_before_heal=1.00))
             belove_girl_self_effect = StatsEffect("Beloved Girl", -1, True, {"heal_efficiency": 0.20})
             belove_girl_self_effect.is_set_effect = True
             self.apply_effect(belove_girl_self_effect)
@@ -1743,8 +1743,8 @@ class Iris(Character):
         self.skill3_description = "At the start of the battle, applies a Cancellation Shield to the ally with the highest atk." \
                                   "Cancels one attack if the attack damage exceeds 10% of the ally's max HP. While the shield is active, the ally gains immunity to CC effects."
         self.skill1_description_jp = "全ての敵に攻撃力310%のダメージを与える。"
-        self.skill2_description_jp = "全ての敵に攻撃力305%のダメージを与え、燃焼効果を付与。燃焼効果は攻撃力の10%のステータスダメージを30ターン与える。"
-        self.skill3_description_jp = "戦闘開始時、攻撃力が最も高い味方にキャンセルシールドを付与。攻撃ダメージが味方の最大HPの10%を超える場合、1回の攻撃をキャンセル。シールドが付与されている間、CC効果に対して免疫を獲得。"
+        self.skill2_description_jp = "全ての敵に攻撃力305%のダメージを与え、燃焼効果を付与。燃焼効果は攻撃力の10%の状態異常ダメージを30ターン与える。"
+        self.skill3_description_jp = "戦闘開始時、攻撃力が最も高い味方にキャンセルシールドを付与。攻撃ダメージが味方の最大HPの10%を超える場合、1回の攻撃を無効化する。シールドが付与されている間、CC免疫を獲得。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -1824,8 +1824,8 @@ class Luna(Character):
         self.skill2_description = "Attack all enemies with 300% atk, apply Moonlight on self for next 10 turns, reduce damage taken by 90%."
         self.skill3_description = "Recover 8% hp of maxhp at start of action."
         self.skill1_description_jp = "全ての敵に攻撃力300%攻撃。与えたダメージの12%をHP回復。"
-        self.skill2_description_jp = "全ての敵に攻撃力300%攻撃。自身に10ターンの月光を付与し、受けるダメージを90%軽減。"
-        self.skill3_description_jp = "行動時、最大HPの8%回復。"
+        self.skill2_description_jp = "全ての敵に攻撃力300%攻撃。自身に10ターンの月光を付与し、受けるダメージを90%軽減する。"
+        self.skill3_description_jp = "行動時、HPが最大HPの8%分回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -1913,8 +1913,8 @@ class Ruby(Character):
         self.skill1_description = "350% atk on 3 closest enemies. 70% chance to inflict stun for 12 turns."
         self.skill2_description = "350% focus atk on 1 closest enemy for 3 times. Each attack has 50% chance to inflict stun for 12 turns."
         self.skill3_description = "Skill damage is increased by 30% on stunned targets."
-        self.skill1_description_jp = "最も近い敵3体に攻撃力350%攻撃。70%の確率で12ターンの間、スタン効果を付与。"
-        self.skill2_description_jp = "最も近い敵1体に攻撃力350%3回集中攻撃。各攻撃50%の確率で12ターンの間、スタン効果を付与。"
+        self.skill1_description_jp = "最も近い敵3体に攻撃力350%攻撃。70%の確率で12ターンの間スタンさせる。"
+        self.skill2_description_jp = "最も近い敵1体に攻撃力350%3回集中攻撃。各攻撃50%の確率で12ターンの間スタンさせる。"
         self.skill3_description_jp = "スタン状態の敵に対して、スキルダメージが30%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -1965,8 +1965,8 @@ class Olive(Character):
         self.skill2_description = "Heal 3 allies with lowest hp by 270% atk and increase their speed by 35% for 20 turns. "
         self.skill3_description = "Normal attack deals 120% more damage if target has less speed than self."
         self.skill1_description_jp = "最も高い攻撃力の敵に攻撃力540%攻撃。対象の攻撃力を20ターンの間、50%減少。"
-        self.skill2_description_jp = "HPが最も低い味方3体を攻撃力270%で回復し、20ターンの間、速度を35%増加。"
-        self.skill3_description_jp = "通常攻撃時、対象の速度が自分より低い場合、ダメージが120%増加。"
+        self.skill2_description_jp = "HPが最も低い味方3体を攻撃力270%で治療し、20ターンの間、速度を35%増加させる。"
+        self.skill3_description_jp = "通常攻撃時、対象の速度が自分より低い場合、ダメージが120%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
@@ -2010,10 +2010,10 @@ class Fenrir(Character):
         self.name = "Fenrir"
         self.skill1_description = "Focus attack 3 times on closest enemy, 220% atk each hit. Reduce skill cooldown for neighbor allies by 2 turns."
         self.skill2_description = "390% atk on a closest enemy. Remove 2 debuffs for neighbor allies."
-        self.skill3_description = "Fluffy protection is applied to neighbor allies at start of battle. When the protected ally below 40% hp is about to take normal damage, the ally recovers hp by 55% of your current defense."
+        self.skill3_description = "Fluffy protection is applied to neighbor allies at start of battle. When the fluffy protected ally below 40% hp is about to take normal damage, the ally recovers hp by 55% of your current defense."
         self.skill1_description_jp = "最も近い敵に攻撃力220%で3回集中攻撃。隣接する味方のスキルクールダウンを2ターン減少。"
         self.skill2_description_jp = "最も近い敵に攻撃力390%攻撃。隣接する味方のデバフを2つ解除。"
-        self.skill3_description_jp = "戦闘開始時、隣接する味方にもふもふ守護を付与。保護された味方が40%以下のHPで通常ダメージを受ける時、自身の防御力の55%分味方を回復する。"
+        self.skill3_description_jp = "戦闘開始時、隣接する味方にもふもふ守護を付与。もふもふ守護の味方が40%以下のHPで通常ダメージを受ける時、自身の防御力の55%分味方を回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -2062,10 +2062,10 @@ class Cerberus(Character):
 
         self.skill1_description = "5 hits on random enemies, 280% atk each hit. Decrease target's def by 12% for each hit. Effect last 40 turns."
         self.skill2_description = "Focus attack with 290% atk on 1 enemy with lowest hp for 3 times. If target hp is less then 16% during the attack, execute the target."
-        self.skill3_description = "On sucessfully executing a target, increase execution threshold by 4%, recover 30% of maxhp and increase atk and critdmg by 30%."
+        self.skill3_description = "On sucessfully executing a target, increase execution threshold by 4%, recover 30% of maxhp and permenently increase atk and critdmg by 30%."
         self.skill1_description_jp = "ランダムな敵に攻撃力280%5回攻撃。各攻撃で対象の防御力を12%減少。効果は40ターン持続。"
         self.skill2_description_jp = "最も低いHPの敵に攻撃力290%で3回集中攻撃。攻撃中に対象のHPが16%以下の場合、対象を処刑する。"
-        self.skill3_description_jp = "対象を処刑すると、処刑閾値を4%増加し、最大HPの30%回復、攻撃力とクリティカルダメージを30%増加。"
+        self.skill3_description_jp = "対象を処刑すると、処刑閾値を4%増加し、最大HPの30%回復、永久的攻撃力とクリティカルダメージを30%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -2118,7 +2118,7 @@ class Pepper(Character):
         self.skill3_description = "On a successful healing with skill 2, 80% chance to accidently revive a ally with 80% hp."
         self.skill1_description_jp = "最も近い敵に攻撃力800%攻撃。成功率70%。味方に攻撃力300%攻撃する確率20%。自身に攻撃力300%攻撃する確率10%。失敗した場合、クールダウンがリセットされる。対象が敵の場合、この攻撃は必ず命中する。"
         self.skill2_description_jp = "HP割合が最も低い味方1体を攻撃力800%で治療。成功率70%。効果なしの確率20%。味方に攻撃力200%攻撃する確率10%。失敗した場合、クールダウンがリセットされる。"
-        self.skill3_description_jp = "スキル2で成功した治療時、確率80%で味方1体を80%のHPで復活させる。"
+        self.skill3_description_jp = "スキル2で治療が成功した時、確率80%で味方1体を80%のHPで復活させる。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
 
@@ -2192,8 +2192,8 @@ class Cliffe(Character):
         self.skill2_description = "Attack closest enemy 4 times for 330% atk, each successful attack and successful additional attack has 40% chance to trigger an 270% atk additional attack."
         self.skill3_description = "Recover hp by 10% of maxhp multiplied by targets fallen by skill 2."
         self.skill1_description_jp = "最も近い敵3体に攻撃力280%攻撃。30ターンの間、受けるダメージを20%増加させる。"
-        self.skill2_description_jp = "最も近い敵に攻撃力330%4回攻撃。各攻撃と追加攻撃が成功する度、40%の確率で攻撃力270%の追加攻撃を発動。"
-        self.skill3_description_jp = "スキル2で倒した敵の数に最大HPの10%を掛けた値のHPを回復。"
+        self.skill2_description_jp = "最も近い敵に攻撃力330%4回攻撃。各攻撃と追加攻撃が命中する度、40%の確率で攻撃力270%の追加攻撃を発動する。"
+        self.skill3_description_jp = "スキル2で倒した敵の数に最大HPの10%を掛けた値のHPを回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -2244,9 +2244,9 @@ class Pheonix(Character):
         "Burn deals 20% atk damage per turn."
         self.skill3_description = "Revive with 80% hp the next turn after fallen. If revived by this effect, increase atk by 20% for 30 turns." \
         " This effect cannot be removed by skill."
-        self.skill1_description_jp = "全ての敵に190%の攻撃を行い、8ターンの間80%の確率で燃焼を付与する。燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
+        self.skill1_description_jp = "全ての敵に190%の攻撃を行い、80%の確率で30ターンの間燃焼を付与する。燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
         self.skill2_description_jp = "初回発動時: 隣接する全ての味方に再生を付与する。" \
-                                    "再生:倒された場合、HP40%で復活する。2回目以降の発動:ランダムな敵のペアに260%の攻撃を行い、8ターンの間80%の確率で燃焼を付与する。" \
+                                    "再生:倒された場合、HP40%で復活する。2回目以降の発動:ランダムな敵のペアに260%の攻撃を行い、80%の確率で30ターンの間燃焼を付与する。" \
                                     "燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
         self.skill3_description_jp = "倒れた次のターンにHP80%で復活する。この効果で復活した場合、攻撃力が30ターンの間20%増加する。" \
                                     "この効果はスキルで取り除くことができない。"
@@ -2363,7 +2363,7 @@ class Bell(Character):
         self.skill2_description = "Attack 1 closest enemy with 170% atk 6 times. This attack never misses. For each target fallen, trigger an additional attack. Maximum attacks: 8"
         self.skill3_description = "Once per battle, after taking damage, if hp is below 50%, apply absorption shield, absorb damage up to 400% of damage just taken. For 20 turns, damage taken cannot exceed 20% of maxhp."
         self.skill1_description_jp = "最も近い1体の敵に220%の攻撃を5回行う。"
-        self.skill2_description_jp = "最も近い1体の敵に170%の攻撃を6回行う。この攻撃は決して外れない。敵が倒れるたびに追加攻撃を発動する。最大攻撃回数: 8"
+        self.skill2_description_jp = "最も近い1体の敵に170%の攻撃を6回行う。この攻撃はMISSにならない。敵が倒れるたびに追加攻撃を発動する。最大攻撃回数:8"
         self.skill3_description_jp = "戦闘中1回のみ、ダメージを受けた後、HPが50%以下の場合、吸収シールドを適用し、受けたダメージの400%までを吸収する。20ターンの間、受けるダメージは最大HPの20%を超えない。"
         self.skill3_used = False
         self.skill1_cooldown_max = 5
@@ -4229,8 +4229,71 @@ class Mitsuki(Character):
         self.apply_effect(sea_family)
 
 
+class Wenyuan(Character):
+    """
+
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Wenyuan"
+        self.skill1_description = "Attack enemy of lowest hp percentage with 230% atk 3 times. If this skill takes down an enemy, heal yourself" \
+        " by 100% of damage dealt and apply Frost Lull to all allies for 24 turns. Frost Lull: damage taken is reduced by 20%. When the same effect is applied," \
+        " duration of the already applied effect is refreshed."
+        self.skill2_description = "Attack enemy of lowest hp percentage with 165% atk 6 times. If this skill takes down an enemy, attack" \
+        " all enemies with 320% atk, double the damage if target hp percentage is higher than 50%."
+        self.skill3_description = "After taking down an enemy with skill, remove 2 random debuffs for yourself. At start of battle, apply unremovable Frost Lull" \
+        " to yourself for 12 turns, damage taken is reduced by 70% and provide CC immunity."
+        # 霜凪
+        self.skill1_description_jp = "HP割合が最も低い敵に攻撃力の230%で3回攻撃する。このスキルで敵を倒した場合、与えたダメージの100%分、自身を治療し、全ての味方に24ターンの間「霜凪」を付与する。霜凪:受けるダメージが20%減少する。同じ効果が再度付与された場合、既に付与されている効果の持続時間が更新される。"
+        self.skill2_description_jp = "HP割合が最も低い敵に攻撃力の165%で6回攻撃する。このスキルで敵を倒した場合、全ての敵に攻撃力の320%で攻撃し、対象のHP割合が50%以上の場合、ダメージが2倍になる。"
+        self.skill3_description_jp = "スキルで敵を倒した後、自身からランダムなデバフを2つ解除する。戦闘開始時に自身に12ターンの間解除不能な「霜凪」を付与し、受けるダメージが70%減少し、CC免疫を得る。"
+
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
 
+    def skill1_logic(self):
+        t = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="enemy"))
+        damage_dealt = self.attack(multiplier=2.3, repeat=3, target_list=[t])
+        if t.is_dead() and self.is_alive():
+            # test_check = self.get_effect_that_named("Frost Lull", additional_name="Wenyuan_Frost_Lull")
+            # if test_check is not None:
+            #     print("Wenyuan has Frost Lull") # 1 in 100 chance this happens
+            self.update_ally_and_enemy()
+            self.heal(target_kw1="yourself", value=damage_dealt * 1.0)
+            for a in self.ally:
+                fl = ReductionShield("Frost Lull", 24, True, 0.20, False)
+                fl.additional_name = "Wenyuan_Frost_Lull"
+                fl.apply_rule = "stack"
+                a.apply_effect(ReductionShield("Frost Lull", 24, True, 0.20, False))
+            self.remove_random_amount_of_debuffs(2)
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        t = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="enemy"))
+        damage_dealt = self.attack(multiplier=1.65, repeat=6, target_list=[t])
+        if t.is_dead() and self.is_alive():
+            self.update_ally_and_enemy()
+            def damage_amplify(self, target, final_damage):
+                if target.hp / target.maxhp > 0.5:
+                    final_damage *= 2
+                return final_damage
+            damage_dealt += self.attack(multiplier=3.2, repeat=1, target_kw1="n_random_enemy", target_kw2="5", func_damage_step=damage_amplify)
+            self.remove_random_amount_of_debuffs(2)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        fl = ReductionShield("Frost Lull", 12, True, 0.70, True)
+        fl.additional_name = "Wenyuan_Frost_Lull"
+        fl.apply_rule = "stack"
+        fl.can_be_removed_by_skill = False
+        self.apply_effect(fl)
 
 
 
