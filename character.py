@@ -4288,7 +4288,7 @@ class Wenyuan(Character):
                 fl = ReductionShield("Frost Lull", 24, True, 0.20, False)
                 fl.additional_name = "Wenyuan_Frost_Lull"
                 fl.apply_rule = "stack"
-                a.apply_effect(ReductionShield("Frost Lull", 24, True, 0.20, False))
+                a.apply_effect(fl)
             self.remove_random_amount_of_debuffs(2)
         return damage_dealt
 
