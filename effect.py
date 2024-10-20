@@ -18,6 +18,7 @@ class Effect:
         self.sort_priority = 1000 # The lower the number, the higher the priority.
         # priority 100-199 is used by Protected Effect.
         # priority 200-299 is used by Shield related effects.
+        # priority 1800-1999 is reserved for special effects.
         # Equipments have priority 2000-2200.
         self.stacks = 1 
         self.apply_rule = "default" # "default", "stack"
@@ -579,7 +580,10 @@ class EffectShield1_healoncrit(Effect):
         # check if the damage is crit damage, access with keywords['attack_is_crit']
         crit_condition = keywords.get('attack_is_crit', False) and keywords["attack_is_crit"]
         if crit_condition and (not self.require_above_zero_dmg or damage > 0) and character.hp < character.maxhp * self.hp_threshold:
-            a,b,c = character.heal_hp(self.heal_function(self.effect_applier), self.effect_applier)
+            if character.is_alive():
+                a,b,c = character.heal_hp(self.heal_function(self.effect_applier), self.effect_applier)
+            else:
+                print(f"Waring: {character.name} is dead when applying heal on {self.name}.")
             if self.critdmg_reduction > 0:
                 damage = damage * (1 - self.critdmg_reduction)
         return damage
@@ -2129,6 +2133,40 @@ class RequinaGreatPoisonEffect(Effect):
     def tooltip_description_jp(self):
         return f"猛毒のスタック数:{self.stacks}。毎ターン最大HPの{(self.value_onestack * self.stacks * 100):.2f}%の状態異常ダメージを受ける。" \
             f"ステータスが{self.stacks}%減少する。"
+
+
+class CupidLeadArrowEffect(StatsEffect):
+    def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, 
+                 use_active_flag=True, stats_dict_function=None, is_set_effect=False, 
+                 can_be_removed_by_skill=True, main_stats_additive_dict=None,
+                 effect_applier=None):
+        super().__init__(name, duration, is_buff, stats_dict, condition, use_active_flag, stats_dict_function, is_set_effect, can_be_removed_by_skill, main_stats_additive_dict)
+        self.effect_applier = effect_applier
+        self.sort_priority = 1999
+        self.original_duration = duration
+
+    def apply_effect_on_remove(self, character):
+        if character.is_alive():
+            character.take_bypass_status_effect_damage(1, self.effect_applier)
+        return super().apply_effect_on_remove(character)
+
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        # leaves character with 1 hp
+        if attacker is not None and attacker.has_effect_that_named("Gold Arrow", additional_name="Cupid_Gold_Arrow") and attacker.name == "Cupid":
+            damage *= 2.0
+            if damage >= character.hp:
+                damage = character.hp - 1
+            # if attack_is_crit in keywords and its True, apply love fantasy effect.
+            if "attack_is_crit" in keywords and keywords["attack_is_crit"]:
+                love_fantasy = Effect("Love Fantasy", 4, False, False)
+                love_fantasy.additional_name = "Cupid_Love_Fantasy"
+                love_fantasy.apply_rule = "stack"
+                character.apply_effect(love_fantasy)
+                self.duration = love_fantasy.duration
+        return damage
+
+
+
 
 
 class PharaohPassiveEffect(Effect):

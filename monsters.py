@@ -3409,9 +3409,9 @@ class HauntedTree(Monster):
         self.skill2_description = "If no enemy is Rooted, this skill has no effect." \
         " Attack all Rooted enemies with 360% atk 3 times, each attack deals additional damage equal to 5% of self maxhp."
         self.skill3_description = "Damage taken is reduced by 70% from Rooted enemies. maxhp, def and critdef is increased by 30%."
-        self.skill1_description = "最も近い敵3体を18ターンの間ルートする。ルート:回避率が55%減少、防御力とクリティカル防御力が20%減少。同じ効果が再度適用されると効果時間が更新される。"
-        self.skill2_description = "ルートした敵がいない場合、このスキルは効果がない。ルートした敵全てに攻撃力360%で3回攻撃し、各攻撃は自分の最大HPの5%の分ダメージを追加。"
-        self.skill3_description = "ルートした敵から受けるダメージを70%減少。最大HP、防御力、クリティカル防御力を30%増加。"
+        self.skill1_description_jp = "最も近い敵3体を18ターンの間ルートする。ルート:回避率が55%減少、防御力とクリティカル防御力が20%減少。同じ効果が再度適用されると効果時間が更新される。"
+        self.skill2_description_jp = "ルートした敵がいない場合、このスキルは効果がない。ルートした敵全てに攻撃力360%で3回攻撃し、各攻撃は自分の最大HPの5%の分ダメージを追加。"
+        self.skill3_description_jp = "ルートした敵から受けるダメージを70%減少。最大HP、防御力、クリティカル防御力を30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False

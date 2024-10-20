@@ -454,7 +454,7 @@ def get_all_characters():
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
-                       "Zhen"]
+                       "Zhen", "Cupid"]
     character_names.sort()
     print(len(character_names))
 
@@ -2054,7 +2054,7 @@ if __name__ == "__main__":
         """
         global turn
         n = int(n)
-        results = {"party1": 0, "party2": 0, "No Result": 0}
+        results = {"party1": 0, "party2": 0, "No Result": 0, "error": 0}
         turn_results = []
         for i in range(n):
             turn = 1
@@ -2065,7 +2065,12 @@ if __name__ == "__main__":
                 c.battle_entry_effects()
             # for c in itertools.chain(party1, party2):
             #     print(c)
-            result = all_turns(party1, party2, for_simulation=True)
+            try:
+                result = all_turns(party1, party2, for_simulation=True)
+            except Exception as e:
+                results["error"] += 1
+                print(e)
+                continue
             turn_results.append(turn)
             if result == "party1":
                 results["party1"] += 1
@@ -2076,6 +2081,8 @@ if __name__ == "__main__":
         text_box.set_text("=====================================\n")
         total = sum(results.values())
         text_box.append_html_text(f"Simulated {n} games.\n")
+        if results["error"]:
+            text_box.append_html_text(f"Error occurred {results['error']} times.\n")
         text_box.append_html_text(f"Party 1: {party1[0].name} {party1[1].name} {party1[2].name} {party1[3].name} {party1[4].name}\n")
         text_box.append_html_text(f"Party 2: {party2[0].name} {party2[1].name} {party2[2].name} {party2[3].name} {party2[4].name}\n")
         text_box.append_html_text(f"Party 1 wins {results["party1"]} times ({results["party1"] / total:.2%}).\n")

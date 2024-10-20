@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, DamageReflect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -471,7 +471,8 @@ class Character:
             except IndexError as e:
                 # This should only happen in multistrike, where all targets is fallen and repeat is not exhausted
                 # Maybe there is a better solution, just leave it for now
-                if repeat > 1 and not self.enemy:
+                # if repeat > 1 and not self.enemy:
+                if not self.enemy:
                     break
                 else:
                     raise e
@@ -542,6 +543,7 @@ class Character:
                     if func_after_dmg is not None and self.is_alive():
                         func_after_dmg(self, target)
                     if additional_attack_after_dmg is not None:
+                        self.update_ally_and_enemy()
                         damage_dealt += additional_attack_after_dmg(self, target, is_crit=critical)
                 else:
                     if func_after_miss is not None:
@@ -564,8 +566,13 @@ class Character:
     def heal(self, target_kw1="Undefined_ally", target_kw2="Undefined", target_kw3="Undefined", target_kw4="Undefined", 
              value=0, repeat=1, func_after_each_heal=None, target_list=None, func_before_heal=None) -> int:
         # -> healing done
+        self.update_ally_and_enemy()
         healing_done = 0
-        targets = list(self.target_selection(target_kw1, target_kw2, target_kw3, target_kw4, target_list))
+        try:
+            targets = list(self.target_selection(target_kw1, target_kw2, target_kw3, target_kw4, target_list))
+        # need to handle empty
+        except IndexError:
+            return 0
         if func_before_heal is not None:
             func_before_heal(self, targets)
         if self.get_equipment_set() == "Rose":
@@ -926,8 +933,13 @@ class Character:
         elif self.is_confused():
             self.ally = list(set(self.ally + self.enemy))
             self.enemy = list(set(self.enemy + self.ally))
-            if len(self.ally) != len(self.enemy):
-                raise Exception
+            # if len(self.ally) != len(self.enemy):
+            #     raise Exception
+        elif self.has_effect_that_named("Love Fantasy", additional_name="Cupid_Love_Fantasy"):
+            # Allies with Lead Arrow is seen as enemy, only allies with Lead Arrow is seen as ally.
+            self.ally = [ally for ally in self.ally if ally.has_effect_that_named("Lead Arrow", additional_name="Cupid_Lead_Arrow")]
+            self.enemy = [ally for ally in self.ally if ally.has_effect_that_named("Lead Arrow", additional_name="Cupid_Lead_Arrow")]
+
         
     def has_ally(self, ally_name):
         return ally_name in [ally.name for ally in self.ally]
@@ -2095,7 +2107,7 @@ class Cerberus(Character):
         return damage_dealt
 
     def skill2_logic(self):
-        def effect(self, target):
+        def effect(self, target: Character):
             # does not make sense to execute self
             if target is self:
                 return
@@ -2722,7 +2734,7 @@ class Chiffon(Character):
         self.skill2_description = "Select random 5 targets, when target is an ally, heal 200% atk, when target is an enemy, attack with 300% atk and apply Sleep with a 80% chance."
         self.skill3_description = "When taking damage that would exceed 10% of maxhp, reduce damage above 10% of maxhp by 80%. For every turn passed, damage reduction effect is reduced by 2%."
         self.skill1_description_jp = "全ての味方の防御力を20%、攻撃力を10%増加させ、8ターンの間持続する。4ターンの間、味方に自身の攻撃力の150%までのダメージを吸収するシールドを付与する。"
-        self.skill2_description_jp = "ランダムに5体の対象を選択し、対象が味方の場合は200%の攻撃力で回復し、対象が敵の場合は300%の攻撃力で攻撃し、80%の確率で睡眠を付与する。"
+        self.skill2_description_jp = "ランダムに5体の対象を選択し、対象が味方の場合は200%の攻撃力で治療し、対象が敵の場合は300%の攻撃力で攻撃し、80%の確率で睡眠を付与する。"
         self.skill3_description_jp = "最大HPの10%を超えるダメージを受けた場合、最大HPの10%を超えるダメージを80%軽減する。ターンが経過するごとにダメージ軽減効果が2%ずつ減少する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -2797,8 +2809,9 @@ class Don(Character):
         for target in targets:
             target.remove_random_amount_of_buffs(1)
         damage_dealt = self.attack(target_list=targets, multiplier=2.80, repeat=1)
-        lowest_hp_ally = min(self.ally, key=lambda x: x.hp)
-        lowest_hp_ally.apply_effect(AbsorptionShield("Shield", 20, True, damage_dealt * 0.5, cc_immunity=False))
+        if self.is_alive():
+            lowest_hp_ally = min(self.ally, key=lambda x: x.hp)
+            lowest_hp_ally.apply_effect(AbsorptionShield("Shield", 20, True, damage_dealt * 0.5, cc_immunity=False))
         return damage_dealt
 
     def skill2_logic(self):
@@ -3909,12 +3922,12 @@ class Timber(Character):
         self.name = "Timber"
         self.skill1_description = "For 6 turns, increase accuracy by 40%, and attack 3 closest enemies with 270% atk." \
         " Enemy is poisoned for 20 turns, poison deals 0.8% of maxhp as status damage per turn."
-        self.skill2_description = "Attack 1 closest enemy with 250% atk 4 times. If the target has poison effect, deal 30% more damage." \
+        self.skill2_description = "Attack 1 closest enemy with 240% atk 4 times. If the target has poison or Great Poison effect, deal 40% more damage." \
         " Damage is increased by 2% of target maxhp."
         self.skill3_description = "Normal attack damage increased by 2% of target maxhp."
         self.skill1_description_jp = "6ターンの間命中率を40%増加し、最も近い3体の敵に270%の攻撃を行う。" \
                                     "敵は20ターンの間毒状態となり、毒は毎ターン最大HPの0.8%を状態異常ダメージとして与える。"
-        self.skill2_description_jp = "最も近い敵に250%の攻撃を4回行う。対象が毒状態であれば、ダメージが30%増加する。" \
+        self.skill2_description_jp = "最も近い敵に240%の攻撃を4回行う。対象が毒、猛毒状態であれば、ダメージが40%増加する。" \
                                     "ダメージは対象の最大HPの2%分増加する。"
         self.skill3_description_jp = "通常攻撃のダメージが対象の最大HPの2%分増加する。"
         self.skill1_cooldown_max = 5
@@ -3935,11 +3948,11 @@ class Timber(Character):
 
     def skill2_logic(self):
         def damage_amplify(self, target, final_damage):
-            if target.has_effect_that_named("Poison"):
-                final_damage *= 1.3
+            if target.has_effect_that_named("Poison") or target.has_effect_that_named("Great Poison"):
+                final_damage *= 1.4
             final_damage += target.maxhp * 0.02
             return final_damage
-        damage_dealt = self.attack(multiplier=2.5, repeat=4, target_kw1="enemy_in_front", func_damage_step=damage_amplify)
+        damage_dealt = self.attack(multiplier=2.4, repeat=4, target_kw1="enemy_in_front", func_damage_step=damage_amplify)
         return damage_dealt
 
 
@@ -4194,14 +4207,14 @@ class Mitsuki(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Mitsuki"
         self.skill1_description = "Attack closest enemy with 3% of maxhp 12 times. Each attack has a 8% chance to Stun the target for 8 turns."
-        self.skill2_description = "All allies are healed by 1% of your maxhp, remove 2 random debuffs for each ally."
+        self.skill2_description = "All allies are healed by 3% of your maxhp, remove 2 random debuffs for each ally."
         self.skill3_description = "At start of battle, apply unremovable Azure Sea for all allies." \
         " Azure Sea: Status damage taken is reduced by 70%. Apply unremovable Sea Family for yourself," \
-        " When taking status damage, recover hp by 5% of maxhp."
+        " When taking status damage, recover hp by 3% of maxhp."
         # Japanese: 蒼海 蒼海の眷属
         self.skill1_description_jp = "最も近い敵に最大HPの3%で12回攻撃する。各攻撃には8%の確率で8ターンの間、対象をスタンさせる。"
-        self.skill2_description_jp = "全ての味方のHPを自分の最大HPの1%分治療し、各味方からランダムなデバフを2つ解除する。"
-        self.skill3_description_jp = "戦闘開始時に全ての味方に解除不能な蒼海を付与する。蒼海:受ける状態異常ダメージが70%減少する。自身には解除不能な蒼海の眷属を付与する。状態異常ダメージを受けた時、最大HPの5%分のHPを回復する。"
+        self.skill2_description_jp = "全ての味方のHPを自分の最大HPの3%分治療し、各味方からランダムなデバフを2つ解除する。"
+        self.skill3_description_jp = "戦闘開始時に全ての味方に解除不能な蒼海を付与する。蒼海:受ける状態異常ダメージが70%減少する。自身には解除不能な蒼海の眷属を付与する。状態異常ダメージを受けた時、最大HPの3%分のHPを回復する。"
 
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
@@ -4219,7 +4232,7 @@ class Mitsuki(Character):
 
     def skill2_logic(self):
         for a in self.ally:
-            self.heal(target_list=[a], value=self.maxhp * 0.01)
+            self.heal(target_list=[a], value=self.maxhp * 0.03)
             a.remove_random_amount_of_debuffs(2)
 
     def skill3(self):
@@ -4231,7 +4244,7 @@ class Mitsuki(Character):
         for a in self.ally:
             a.apply_effect(azure_sea)
         def heal_func(character: Character):
-            return character.maxhp * 0.05
+            return character.maxhp * 0.03
         sea_family = EffectShield1("Sea Family", -1, True, 1, heal_function=heal_func, cc_immunity=False, effect_applier=self,
                                     cover_status_damage=True, cover_normal_damage=False)
         sea_family.can_be_removed_by_skill = False
@@ -4374,7 +4387,70 @@ class Zhen(Character):
             e.apply_effect(shadow_of_great_bird)
 
 
+class Cupid(Character):
+    """
+    Very special attacker
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Cupid"
+        self.skill1_description = "Apply Lead Arrow on 3 enemies of highest atk for 20 turns, apply Gold Arrow on yourself for 20 turns." \
+        " Lead Arrow: Critical defense is decreased by 100%, when this effect is removed, take 1 bypass status damage." \
+        " Gold Arrow: Critical damage is increased by 100%. When Lead Arrow or Gold Arrow is applied on the same target, duration is refreshed."
+        self.skill2_description = "Attack all enemies with 222% atk who have Lead Arrow." \
+        " When attacking enemy while you have Gold Arrow and target has Lead Arrow, damage increased by 100%," \
+        " but leaves 1 hp for the target if this attack is lethal. On a critical hit, applys Love Fantasy on target for 4 turns and set Lead Arrow duration to its duration." \
+        " Love Fantasy: Allies with Lead Arrow is seen as enemy, only allies with Lead Arrow is seen as ally." \
+        " When the same effect is applied, duration of the already applied effect is refreshed." \
+        " If no enemy has Lead Arrow, heal hp by 222% of atk."
+        self.skill3_description = "Normal attack does nothing. Apply For Love 2 times on yourself, when defeated, revive with 50% hp."
+        # 鉛矢 金矢 恋愛妄想 愛のために
+        self.skill1_description_jp = "攻撃力が最も高い3人の敵に20ターンの間「鉛矢」を付与し、自身に20ターンの間「金矢」を付与する。鉛矢:クリティカル防御が100%減少し、この効果が解除されると状態異常無視ダメージを1受ける。金矢:クリティカルダメージが100%増加する。鉛矢または金矢が同じ対象に再度適用された場合、持続時間が更新される。"
+        self.skill2_description_jp = "鉛矢を持つ全ての敵に攻撃力の222%で攻撃する。自分が金矢を持ち、対象が鉛矢を持っている場合、ダメージが100%増加するが、この攻撃で致命的ダメージを与えた場合、対象のHPは1残る。クリティカルの場合、対象に4ターンの間「恋愛妄想」を付与し、鉛矢の持続時間を恋愛妄想の持続時間に設定する。恋愛妄想:鉛矢を持つ味方は敵として認識され、鉛矢を持つ者だけが味方として認識される。同じ効果が再度適用された場合、既存の効果の持続時間が更新される。敵に鉛矢を持つ者がいない場合、攻撃力の222%分HPを回復する。"
+        self.skill3_description_jp = "通常攻撃は何もしない。自身に「愛のために」を2回付与し、撃破された時、HP50%で復活する。"
+        self.skill1_cooldown_max = 2
+        self.skill2_cooldown_max = 0
 
+
+    def skill1_logic(self):
+        ts = self.target_selection(keyword="n_highest_attr", keyword2="3", keyword3="atk", keyword4="enemy")
+        for t in list(ts):
+            la = CupidLeadArrowEffect("Lead Arrow", 20, False, {"critdef": -1.0})
+            la.additional_name = "Cupid_Lead_Arrow"
+            la.apply_rule = "stack"
+            t.apply_effect(la)
+        ga = StatsEffect("Gold Arrow", 20, True, {"critdmg": 1.0})
+        ga.additional_name = "Cupid_Gold_Arrow"
+        ga.apply_rule = "stack"
+        self.apply_effect(ga)
+        return 0
+
+    def skill2_logic(self):
+        # The effects are mostly implemented in CupidLeadArrowEffect so it is simple here
+        target_list = list(self.target_selection(keyword="enemy_that_must_have_effect", keyword2="Lead Arrow"))
+        if not target_list:
+            self.heal(target_kw1="yourself", value=self.atk * 2.2)
+            return 0
+        else:
+            damage_dealt = self.attack(multiplier=2.22, target_list=target_list)
+        if target_list:
+            for t in target_list:
+                t.update_ally_and_enemy()
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        return 0
+
+    def battle_entry_effects(self):
+        for_love = RebornEffect("For Love", -1, True, effect_value=0.5, cc_immunity=False, buff_applier=self, effect_value_constant=0)
+        for_love.additional_name = "Cupid_For_Love"
+        for_love.can_be_removed_by_skill = False
+        for i in range(2):
+            self.apply_effect(for_love)
 
 
 
