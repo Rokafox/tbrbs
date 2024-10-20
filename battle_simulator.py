@@ -453,7 +453,8 @@ def get_all_characters():
     character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
-                       "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan"]
+                       "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
+                       "Zhen"]
     character_names.sort()
     print(len(character_names))
 
@@ -1920,8 +1921,9 @@ if __name__ == "__main__":
             draw_chart()
 
         if not is_someone_alive(party1) or not is_someone_alive(party2) or turn > 300:
-
-            if not is_someone_alive(party1):
+            if not is_someone_alive(party1) and not is_someone_alive(party2):
+                global_vars.turn_info_string += "Both parties are defeated.\n"
+            elif not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
                     global_vars.turn_info_string += "Defeated.\n"
                 else:
@@ -2035,7 +2037,6 @@ if __name__ == "__main__":
             if turn >= 300:
                 return None
             elif not is_someone_alive(party1) and not is_someone_alive(party2):
-                print("Both parties are defeated.")
                 return None
             elif not is_someone_alive(party1):
                 return "party2"

@@ -483,6 +483,8 @@ class Character:
                     continue
                 if self.is_dead():
                     break
+                if not self.can_take_action():
+                    break
                 global_vars.turn_info_string += f"{self.name} is targeting {target.name}.\n"
                 if not force_dmg and func_for_multiplier is not None:
                     multiplier = func_for_multiplier(self, target, self.number_of_attacks, i) # multiplier is overwritten.
@@ -899,13 +901,20 @@ class Character:
             lowest_hp_ally.take_damage(damage_overkill, attacker=attacker)
 
 
-    def can_take_action(self):
+    def can_take_action(self) -> Tuple[bool, str]:
+        """
+        returns a tuple of (can_act, reason)
+        """
+        if self.is_dead():
+            return False, "Dead"
         if self.is_stunned():
             return False, "Stunned"
         if self.is_sleeping():
             return False, "Sleeping"
         if self.is_frozed():
             return False, "Frozen"
+        if self.is_petrfied():
+            return False, "Petrified"
         return True, "None"
     
     def update_ally_and_enemy(self):
@@ -1643,10 +1652,10 @@ class Poppy(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Poppy"
         self.skill1_description = "8 hits on random enemies, 240% atk each hit."
-        self.skill2_description = "590% atk on enemy with highest speed. Target speed is decreased by 30% for 20 turns."
+        self.skill2_description = "590% atk on enemy with highest speed. Apply Purchased! on target for 20 turns. Purchased!: speed is decreased by 30%."
         self.skill3_description = "On taking normal damage, 60% chance to inflict Burn to attacker for 20 turns. Burn deals 20% atk status damage."
         self.skill1_description_jp = "ランダムな敵に攻撃力240%8回攻撃。"
-        self.skill2_description_jp = "速度一番高いの敵に攻撃力590%攻撃。20ターンの間、対象の速度を30%減少。"
+        self.skill2_description_jp = "速度一番高いの敵に攻撃力590%攻撃。20ターンの間、「注文!」を付与しする。「注文!」:速度を30%減少する。"
         self.skill3_description_jp = "通常ダメージを受けた時、攻撃者に20ターンの間、攻撃力20%の燃焼効果を付与する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -1686,10 +1695,10 @@ class Cate(Character):
         self.name = "Cate"
         self.skill1_description = "4 hits on random enemies, 245% atk each hit, each hit has a 50% chance to stun for 10 turns."
         self.skill2_description = "Attack all enemies for 220% atk, damage increases by 60% if you have higher atk than target."
-        self.skill3_description = "Increases atk and critdmg by 20%. When hp is below 40%, reduce damage taken by 40%."
+        self.skill3_description = "Apply Cat Ritual for yourself. Cat Ritual: Increases atk and critdmg by 20%. When hp is below 40%, reduce damage taken by 40%."
         self.skill1_description_jp = "ランダムな敵に攻撃力245%4回攻撃。各攻撃50%の確率で10ターンスタン効果を付与。"
         self.skill2_description_jp = "全ての敵に攻撃力220%攻撃。自分の攻撃力が対象より高い場合、ダメージが60%増加。"
-        self.skill3_description_jp = "攻撃力とクリティカルダメージを20%増加。HPが40%以下の時、受けるダメージを40%軽減。"
+        self.skill3_description_jp = "「猫儀式」を付与する。「猫儀式」:攻撃力とクリティカルダメージを20%増加。HPが40%以下の時、受けるダメージを40%軽減。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -1719,13 +1728,13 @@ class Cate(Character):
         pass
 
     def battle_entry_effects(self):
-        effect = ReductionShield("Passive Effect", -1, True, 0.4, cc_immunity=False, 
+        effect = ReductionShield("Cat Ritual", -1, True, 0.4, cc_immunity=False, 
                                  requirement=lambda a, b: a.hp <= a.maxhp * 0.4,
                                  requirement_description="hp below 40%.",
                                  requirement_description_jp="HPが40%以下。")
         effect.can_be_removed_by_skill = False
         self.apply_effect(effect)
-        effect2 = StatsEffect("Passive Effect", -1, True, {"atk": 1.2, "critdmg": 0.2})
+        effect2 = StatsEffect("Cat Ritual", -1, True, {"atk": 1.2, "critdmg": 0.2})
         effect2.can_be_removed_by_skill = False
         self.apply_effect(effect2)
 
@@ -1869,10 +1878,10 @@ class Clover(Character):
         self.name = "Clover"
         self.skill1_description = "Target 1 ally with lowest hp and 1 closest enemy, deal 460% atk damage to enemy and heal ally for 100% of damage dealt."
         self.skill2_description = "Target 1 ally with lowest hp, heal for 350% atk and grant Absorption Shield, absorb damage up to 350% atk."
-        self.skill3_description = "Every time an ally is healed, heal for 60% of that amount."
-        self.skill1_description_jp = "HPが最も低い味方1体と最も近い敵1体を対象に、敵に攻撃力460%のダメージを与え、味方をダメージの100%治療。"
-        self.skill2_description_jp = "HPが最も低い味方1体を対象に、攻撃力350%で治療し、攻撃力350%吸収シールドを付与。"
-        self.skill3_description_jp = "味方が治療される度、その量の60%で自分を治療。"
+        self.skill3_description = "Every time an ally is healed by yourself, heal for 60% of that amount."
+        self.skill1_description_jp = "HPが最も低い味方1体と最も近い敵1体を対象に、敵に攻撃力460%のダメージを与え、味方を与えたダメージの100%で治療する。"
+        self.skill2_description_jp = "HPが最も低い味方1体を対象に、攻撃力350%で治療し、攻撃力350%吸収シールドを付与する。"
+        self.skill3_description_jp = "自分が味方が治療する度、その量の60%で自分を治療する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 2
 
@@ -2464,20 +2473,20 @@ class Fox(Character):
         self.name = "Fox"
         self.skill1_description = "4 hits on random enemies, 220% atk each. Each attack has a 70% chance to increase the target's damage taken by 10% for 30 turns."
         self.skill2_description = "Using the angelic power gained through the contract, perform magic attack 4 times at" \
-        " 160% atk against random enemies. If the number of stacks of 'Memory' is above 15 before the attack," \
+        " 160% atk against random enemies. If the number of stacks of 'Memory' is above 20 before the attack," \
         " 'Memory' is removed and Soul Sacrifice is activated instead of Angel Ray. Soul Sacrifice: Attack with" \
         " 180% atk 4 times on random enemies. After that, the skill cooldown count of 2 neighbor allies is reduced by 2 and their atk is increased by 3.6% of your maximum HP, for 30 turns."
         self.skill3_description = "At the end of each turn, if an ally is affected by a debuff effect, granted 1 stack of Memory," \
-        " then the number of stacks of Memory increases by the total number of debuff effects you and your allies are affected by (up to a maximum of 15 stacks)." \
-        " When Memory is at 15 stacks, apply a Absorption Shield on self that absorb damage up to 30% of maxhp. If shield is active, increase shield value by 1% of maxhp."
+        " then the number of stacks of Memory increases by the total number of debuff effects you and your allies are affected by (up to a maximum of 20 stacks)." \
+        " When Memory is at 20 stacks, apply a Absorption Shield on self that absorb damage up to 30% of maxhp. If shield is active, increase shield value by 1% of maxhp."
         self.skill1_description_jp = "ランダムな敵に220%の攻撃を4回行う。各攻撃には、70%確率で対象が30ターンの間受けるダメージが10%増加する。"
-        self.skill2_description_jp = "契約によって得た天使の力を使用して、ランダムな敵に160%の攻撃を4回行う。攻撃前に「メモリー」のスタック数が15以上の場合、" \
-                                    "「メモリー」は消費され、「エンジェルレイ」の代わりに「ソウルサクリファイス」が発動する。" \
+        self.skill2_description_jp = "契約によって得た天使の力を使用して、ランダムな敵に160%の攻撃を4回行う。攻撃前に「記憶」のスタック数が20以上の場合、" \
+                                    "「記憶」は消費され、「エンジェルレイ」の代わりに「ソウルサクリファイス」が発動する。" \
                                     "ソウルサクリファイス:ランダムな敵に180%の攻撃を4回行う。その後、隣接する味方2体のスキルクールダウンカウントが2減少し、" \
                                     "攻撃力が自分の最大HPの3.6%増加する。この効果は30ターン続く。"
-        self.skill3_description_jp = "各ターン終了時、味方がデバフ効果を受けている場合、1スタックのメモリーを付与され、" \
-                                    "自身および味方が受けているデバフ効果の合計数に応じてメモリースタックが増加する（最大15スタックまで）。" \
-                                    "メモリーが15スタックに達すると、自身に最大HPの30%を吸収するシールドを適用する。シールドがある場合、" \
+        self.skill3_description_jp = "各ターン終了時、味方がデバフ効果を受けている場合、1スタックの「記憶」を付与され、" \
+                                    "自身および味方が受けているデバフ効果の合計数に応じて「記憶」スタックが増加する（最大20スタックまで）。" \
+                                    "「記憶」が20スタックに達すると、自身に最大HPの30%を吸収するシールドを適用する。シールドがある場合、" \
                                     "シールド値が最大HPの1%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -2498,7 +2507,7 @@ class Fox(Character):
     def skill2_logic(self):
         memory = None
         memory = self.get_effect_that_named("Memory", "MessengerRoseiri_Memory")
-        if memory and memory.stacks >= 15:
+        if memory and memory.stacks >= 20:
             self.remove_effect(memory)
             damage_dealt = self.attack(multiplier=1.8, repeat=4)
             neighbors = self.get_neighbor_allies_not_including_self()
@@ -2522,8 +2531,8 @@ class Fox(Character):
         for ally in self.ally:
             stacks_to_gain += len(ally.debuffs)
         memory = self.get_effect_that_named("Memory", "MessengerRoseiri_Memory")
-        if memory and memory.stacks >= 15:
-            memory.stacks = 15
+        if memory and memory.stacks >= 20:
+            memory.stacks = 20
             if not self.has_effect_that_named("Shield", "MessengerRoseiri_Shield"):
                 shield = AbsorptionShield("Shield", -1, True, self.maxhp * 0.30, cc_immunity=False)
                 shield.additional_name = "MessengerRoseiri_Shield"
@@ -2534,7 +2543,7 @@ class Fox(Character):
         if stacks_to_gain > 0:
             if memory:
                 memory.stacks += stacks_to_gain
-                memory.stacks = min(memory.stacks, 15)
+                memory.stacks = min(memory.stacks, 20)
             else:
                 new_memory = Effect("Memory", -1, True, False, can_be_removed_by_skill=False, show_stacks=True)
                 new_memory.stacks += stacks_to_gain
@@ -2664,10 +2673,10 @@ class Seth(Character):
         self.name = "Seth"
         self.skill1_description = "Attack closest enemy 4 times with 270% atk. For each attack, a critical strike will trigger an additional attack. Maximum additional attacks: 4"
         self.skill2_description = "Attack all enemies with 250% atk."
-        self.skill3_description = "Every turn, increase crit rate and crit dmg by 1%."
-        self.skill1_description_jp = "最も近い敵に280%の攻撃を3回行う。各攻撃に対してクリティカルが発生すると追加攻撃が発動する。最大追加攻撃回数: 3"
+        self.skill3_description = "Apply Sky Gunner on yourself. Sky Gunner: Every turn, increase crit rate and crit dmg by 1%."
+        self.skill1_description_jp = "最も近い敵に280%の攻撃を4回行う。各攻撃に対してクリティカルが発生すると追加攻撃が発動する。最大追加攻撃回数: 4"
         self.skill2_description_jp = "全ての敵に250%の攻撃を行う。"
-        self.skill3_description_jp = "毎ターン、クリティカル率とクリティカルダメージを1%増加する。"
+        self.skill3_description_jp = "「スカイガンナー」を付与する。「スカイガンナー」:毎ターン、クリティカル率とクリティカルダメージを1%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -2695,7 +2704,7 @@ class Seth(Character):
         pass
 
     def battle_entry_effects(self):
-        passive = StatsEffect("Passive Effect", -1, True, {"crit": 0.01, "critdmg": 0.01}, 
+        passive = StatsEffect("Sky Gunner", -1, True, {"crit": 0.01, "critdmg": 0.01}, 
                               condition=lambda character:character.is_alive(), use_active_flag=False)
         passive.can_be_removed_by_skill = False
         self.apply_effect(passive)
@@ -3731,7 +3740,7 @@ class Cocoa(Character):
         self.skill2_description_jp = "最も攻撃力が高い味方を選択し、その味方のスキルクールダウンを2減少させ、2ターンの間速度を200%増加させる。" \
                                     "同じ効果が適用された場合、持続時間が更新される。" \
                                     "選択された味方が自分である場合、攻撃力の300%でHPが回復する。"
-        self.skill3_description_jp = "5ターンの間攻撃されていない場合、眠りに落ちる。この効果は回避率を減少させない。" \
+        self.skill3_description_jp = "5ターンの間攻撃されていない場合、睡眠を付与する。この効果は回避率を減少させない。" \
                                     "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、20ターンの間、" \
                                     "自身に幻夢を付与し、攻撃力と防御力が30%増加する。"
         self.skill1_cooldown_max = 4
@@ -3818,17 +3827,17 @@ class Beacon(Character):
         self.skill1_description = "Redistribute hp percentage for all allies, allies with higher hp percentage takes status damage," \
         " allies with lower hp percentage heals hp until equal percentage. If this skill has no effect, apply AbsorptionShield on all allies for 12 turns." \
         " Shield absorbs 500% atk + 500% def damage. When comparing the HP percentages, they can be considered the same with a margin of error of 1% or less."
-        self.skill2_description = "Attack 4 enemies with 300% atk, for 20 turns, their critical defense is reduced by 50%."
+        self.skill2_description = "Attack 4 enemies with 300% atk, apply Crescent Moon Mark for 20 turns.Crescent Moon Mark: critical defense is reduced by 50%."
         self.skill3_description = "If you are the only one alive, redistributing hp use 400% as base percentage when calculating average," \
-        " before redistributing, revive as many allies as possible with 1 hp and apply Protection for all allies for 20 turns." \
-        " Protection: damage taken is reduced by 55%." \
+        " before redistributing, revive as many allies as possible with 1 hp and apply New Moon for all allies for 24 turns." \
+        " New Moon: damage taken is reduced by 60%." \
         " All skill cooldown is reduced by 2 actions at the end of turn if you are the only one alive."
         self.skill1_description_jp = "全ての味方のHP割合を再分配し、HP割合が高い味方は状態異常ダメージを受け、HP割合が低い味方は同じ割合になるまでHPが治療する。" \
                                     "このスキルに効果がない場合、全ての味方に12ターンの間吸収シールドを付与する。" \
                                     "シールドは攻撃力の500%+防御力の500%までのダメージを吸収する。HP割合を比較する際、1%以内の誤差で同じとみなされる。"
-        self.skill2_description_jp = "4体の敵に300%の攻撃を行い、20ターンの間クリティカル防御を50%減少させる。"
+        self.skill2_description_jp = "4体の敵に300%の攻撃を行い、20ターンの間「三日月の痕」を付与する。「三日月の痕」:クリティカル防御を50%減少させる。"
         self.skill3_description_jp = "自分だけが生き残っている場合、HP再分配時に基準割合として400%を使用して平均を計算し、再分配前に可能な限り多くの味方をHP1で復活させる。" \
-                                    "全ての味方に20ターンの間保護を付与する。保護:受けるダメージが55%軽減される。" \
+                                    "全ての味方に24ターンの間「芒月新生」を付与する。「芒月新生」:受けるダメージが60%軽減される。" \
                                     "自分だけが生き残っている場合、ターン終了時に全てのスキルクールダウンが2行動分減少する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
@@ -3863,7 +3872,7 @@ class Beacon(Character):
                     m.revive(1, 0, self)
             self.update_ally_and_enemy()
             for a in self.ally:
-                a.apply_effect(ReductionShield("Protection", 20, True, 0.55, False))
+                a.apply_effect(ReductionShield("New Moon", 24, True, 0.60, False))
             avg_hp_percentage = 4.00 / len(self.ally)
             for a in self.ally:
                 target_hp = avg_hp_percentage * a.maxhp
@@ -3874,7 +3883,7 @@ class Beacon(Character):
 
     def skill2_logic(self):
         def crit_def_debuff(self, target):
-            target.apply_effect(StatsEffect("Critdef Down", 20, False, {"critdef": -0.5}))
+            target.apply_effect(StatsEffect("Crescent Moon Mark", 20, False, {"critdef": -0.5}))
         damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_random_enemy", target_kw2="4", func_after_dmg=crit_def_debuff)
         return damage_dealt
 
@@ -4294,6 +4303,87 @@ class Wenyuan(Character):
         fl.apply_rule = "stack"
         fl.can_be_removed_by_skill = False
         self.apply_effect(fl)
+
+
+class Zhen(Character):
+    """
+    Stun support
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Zhen"
+        self.skill1_description = "Attack enemy of highest atk with 240% atk 3 times, each attack has a 40% chance to Stun the target for 12 turns."
+        self.skill2_description = "Attack enemy of highest atk with 280% atk, heal all allies by 50% of damage dealt." \
+        " If target hp percentage is lower than 20%, 80% chance to Stun the target for 12 turns."
+        self.skill3_description = "Apply Dragon Cushion on yourself. When taking normal damage from the enemy who has a stunned ally, damage taken is reduced by 50%." \
+        " At start of battle, apply unremovable Shadow of Great Bird on all enemies, when taking damage while being stunned," \
+        " all damage taken is increased by 50%."
+        self.skill1_description_jp = "攻撃力が最も高い敵に攻撃力の240%で3回攻撃する。各攻撃には40%の確率で対象を12ターンの間スタンさせる。"
+        self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の280%で攻撃し、与えたダメージの50%分、全ての味方を回復する。対象のHP割合が20%以下の場合、80%の確率で対象を12ターンの間スタンさせる。"
+        self.skill3_description_jp = "自身に「龍クッション」を付与する。スタンしている味方がいる敵から通常ダメージを受けた時、そのダメージが50%減少する。戦闘開始時に全ての敵に解除不能な「鴻影」を付与する。スタン状態でダメージを受けた時、受ける全てのダメージが50%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+
+    def skill1_logic(self):
+        def stun_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 40:
+                target.apply_effect(StunEffect("Stun", 12, False, False))
+        damage_dealt = self.attack(multiplier=2.4, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
+                                    func_after_dmg=stun_effect)
+        return damage_dealt
+
+
+
+    def skill2_logic(self):
+        def stun_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 80 and target.hp / target.maxhp < 0.2:
+                target.apply_effect(StunEffect("Stun", 12, False, False))
+        damage_dealt = self.attack(multiplier=2.8, repeat=1, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
+                                   func_after_dmg=stun_effect)
+        if self.is_alive():
+            self.heal(target_kw1="n_random_ally", target_kw2="5", value=damage_dealt * 0.5)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+
+    def battle_entry_effects(self):
+        def requirement_func(charac, attacker):
+            for a in attacker.ally:
+                if a.is_alive() and a.is_stunned():
+                    return True
+            return False
+        wavering_glow = ReductionShield("Dragon Cushion", -1, True, 0.5, False, cover_status_damage=False, cover_normal_damage=True,
+                                        requirement=requirement_func,
+                                        requirement_description="Taking damage from the enemy who has a stunned ally.",
+                                        requirement_description_jp="スタンしている味方がいる敵からダメージを受けた時。")
+        wavering_glow.can_be_removed_by_skill = False
+        self.apply_effect(wavering_glow)
+        shadow_of_great_bird = ReductionShield("Shadow of Great Bird", -1, False, 0.5, False, cover_status_damage=True, cover_normal_damage=True,
+                                               requirement=lambda x, y: x.is_stunned(),
+                                               requirement_description="Taking damage while being stunned.",
+                                                requirement_description_jp="スタン状態でダメージを受けた時。")
+        shadow_of_great_bird.can_be_removed_by_skill = False
+        for e in self.enemy:
+            e.apply_effect(shadow_of_great_bird)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
