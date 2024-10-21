@@ -489,7 +489,7 @@ if __name__ == "__main__":
     light_blue = pygame.Color("#e6f3ff")
     light_pink = pygame.Color("#fae5fa")
 
-    display_surface = pygame.display.set_mode((1600, 900), flags=pygame.SCALED)
+    display_surface = pygame.display.set_mode((1600, 900), flags=pygame.SCALED | pygame.RESIZABLE)
     ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
     ui_manager_overlay = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
     # debug_ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
@@ -2063,6 +2063,7 @@ if __name__ == "__main__":
             reset_ally_enemy_attr(party1, party2)
             for c in itertools.chain(party1, party2):
                 c.battle_entry_effects()
+                c.battle_entry_effects_eqset()
             # for c in itertools.chain(party1, party2):
             #     print(c)
             try:
@@ -2453,8 +2454,8 @@ if __name__ == "__main__":
             match global_vars.theme:
                 case "Yellow Theme":
                     color_unfilled_bar = (255, 238, 186)
-                    color_filled_bar = (255, 193, 7)
-                    shield_bar_color = (252, 248, 15)
+                    shield_bar_color = (255, 234, 7)
+                    color_filled_bar = (252, 248, 15)
                 case "Purple Theme":
                     color_unfilled_bar = (248, 231, 255)
                     color_filled_bar = (236, 192, 255)
@@ -3072,12 +3073,18 @@ if __name__ == "__main__":
     shop_item_purchase_buttone = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((748, 450), (100, 35)),
                                                                     text='Purchase',
                                                                     manager=ui_manager)
-    shop_select_a_shop = pygame_gui.elements.UIDropDownMenu(["Banana Armory", "Silver Wolf Company", "Big Food Market"],
-                                                            "Banana Armory",
+    shop_select_a_shop = pygame_gui.elements.UIDropDownMenu(["Silver Wolf Company", "Big Food Market"],
+                                                            "Silver Wolf Company",
                                                             pygame.Rect((300, 500), (212, 35)),
                                                             ui_manager)
-    if start_with_max_level and global_vars.allow_cheat:
-        shop_select_a_shop.add_options(["CHEAT"])
+    # if start_with_max_level and global_vars.allow_cheat:
+    #     shop_select_a_shop.add_options(["CHEAT"])
+
+    extra_shop_list = [item for item in Equip("boo", "Weapon", "Common").eq_set_list if item not in ["None", "Void"]]
+    # Add "Forge" to each string in the list
+    extra_shop_list = [f"{item} Forge" for item in extra_shop_list]
+    shop_select_a_shop.add_options(extra_shop_list)
+
 
     shop_shop_introduction_sign = pygame_gui.elements.UIImage(pygame.Rect((815, 500), (35, 35)),
                                         pygame.Surface((35, 35)),
@@ -3108,16 +3115,23 @@ if __name__ == "__main__":
         shop_name = shop_select_a_shop.selected_option[0]
         # then we create a shop of Shop.[shop_name]
         match shop_name:
-            case "Banana Armory":
-                shop_instance = shop.Armory_Banana("Banana Armory", None)
             case "Silver Wolf Company":
                 shop_instance = shop.Gulid_SliverWolf("Silver Wolf Company", None)
             case "Big Food Market":
                 shop_instance = shop.Big_Food_Market("Big Food Market", None)
-            case "CHEAT":
-                shop_instance = shop.Dev_Cheat("CHEAT", None)
+            # case "CHEAT":
+            #     shop_instance = shop.Dev_Cheat("CHEAT", None)
             case _:
-                raise Exception(f"Unknown shop name: {shop_name}")
+                if "Forge" in shop_name:
+                    # class Armory_Brand_Specific(Shop):
+                    #   def __init__(self, name, description, brand_name):
+                    # dynamic creation of class
+                    brand_name = shop_name.split(" ")[0]
+                    # use eval to create a class
+                    shop_instance = eval(f"shop.Armory_Brand_Specific")(shop_name, None, brand_name)
+                else:
+                    raise Exception(f"Unknown shop name: {shop_name}")
+
         shop_instance.get_items_from_manufacturers()
         shop_instance.decide_price()
         shop_instance.decide_discount()

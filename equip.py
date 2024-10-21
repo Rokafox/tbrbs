@@ -16,7 +16,7 @@ class Equip(Block):
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
-                            "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar"]
+                            "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -162,12 +162,17 @@ class Equip(Block):
                 )
             case "Cloud":
                 return (
-                    "increase speed by 5% and grant hide for 40 turns at the start of battle. You cannot be targeted unless for skills that targets 5 enemies." \
-                    " Hide effect is removed when all allies are hidden. When this hide effect is removed, for 10 turns, speed is increased by 100%."
+                    "increase speed by 5%, decrease atk by 10% and grant hide for 50 turns at the start of battle. You cannot be targeted unless for skills that targets 5 enemies." \
+                    " Hide effect is removed when all allies are hidden. When this hide effect is removed, apply Full Cloud, for 10 turns, speed is increased by 100%."
                 )
             case "Purplestar":
                 return (
                     "After using skill 2, 85% chance to reset cooldown of that skill."
+                )
+            case "1987":
+                return (
+                    "Select the highest one from 3 of your main stats: atk, def, spd. 19.87% of the selected stat is added to the ally" \
+                    " who has the lowest value of the selected stat."
                 )
             case _:
                 return ""
@@ -240,12 +245,16 @@ class Equip(Block):
                 )
             case "Cloud":
                 return (
-                    "バトル開始時に速度が5%増加し、40ターンの間雲隠状態を付与される。雲隠状態中は、5体の敵を対象とするスキル以外のターゲットにはされません。"
-                    "雲隠状態が解除されると、10ターンの間速度が100%増加する。"
+                    "バトル開始時に速度が5%増加し攻撃力が10%減少する。50ターンの間雲隠状態を付与される。雲隠状態中は、5体の敵を対象とするスキル以外のターゲットにはされません。"
+                    "雲隠状態が解除されると、雲満を付与し、10ターンの間速度が100%増加する。"
                 )
             case "Purplestar":
                 return (
                     "スキル2を使用した後、85%の確率でそのスキルのクールダウンをリセットする。"
+                )
+            case "1987":
+                return (
+                    "攻撃力、防御力、速度の3つのステータスの中から最も高いものを選択し、選択したステータスの19.87%分が、選択したステータスの値が最も低い味方に付加される。"
                 )
             case _:
                 return ""
@@ -340,22 +349,41 @@ class Equip(Block):
 
     def generate(self):
         level = self.level
+        # self.maxhp_percent = 0.00
+        # self.atk_percent = 0.00
+        # self.def_percent = 0.00
+        # self.spd = 0.00
+        # self.eva = 0.00
+        # self.acc = 0.00
+        # self.crit = 0.00
+        # self.critdmg = 0.00
+        # self.critdef = 0.00
+        # self.penetration = 0.00
+        # self.heal_efficiency = 0.00
+        substats = ["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc", "crit", "critdmg", "critdef", "penetration", "heal_efficiency"]
+        lines_already_have = []
+        lines_already_generated = 0
+        for ss in substats:
+            if eval(f"self.{ss}") > 0:
+                lines_already_generated += 1
+                lines_already_have.append(ss)
+
         extra_lines_to_generate = self.fake_dice() - 1
         
         if self.type == self.type_list[2]:
-            self.maxhp_flat = max(normal_distribution(1, 4000, 1000, 1000), 1)
+            self.maxhp_flat += max(normal_distribution(1, 4000, 1000, 1000), 1)
             self.maxhp_flat /= 40
             self.maxhp_flat *= level
         elif self.type == self.type_list[0]:
-            self.atk_flat = max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
+            self.atk_flat += max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
             self.atk_flat /= 40
             self.atk_flat *= level
         elif self.type == self.type_list[1]:
-            self.def_flat = max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
+            self.def_flat += max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
             self.def_flat /= 40
             self.def_flat *= level
         elif self.type == self.type_list[3]:
-            self.spd_flat = max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
+            self.spd_flat += max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
             self.spd_flat /= 40
             self.spd_flat *= level
         else:
@@ -363,8 +391,12 @@ class Equip(Block):
         
         if extra_lines_to_generate > 0:
             for i in range(extra_lines_to_generate):
-                attr = random.choice(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
-                                      "crit", "critdmg", "critdef", "penetration", "heal_efficiency"])
+                if len(lines_already_have) < 6:
+                    attr = random.choice(substats)
+                    if attr not in lines_already_have:
+                        lines_already_have.append(attr)
+                else:
+                    attr = random.choice(lines_already_have)
                 if attr == "penetration":
                     value = normal_distribution(1, 4000, 400, 600) * 0.0001
                 elif attr == "def_percent":

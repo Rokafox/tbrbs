@@ -143,6 +143,7 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
     reset_ally_enemy_attr(party1, party2)
     for c in itertools.chain(party1, party2):
         c.battle_entry_effects()
+        c.battle_entry_effects_eqset()
     while turn < 300 and is_someone_alive(party1) and is_someone_alive(party2):
         printer.fine_print("=====================================")
         printer.fine_print(f"Turn {turn}")

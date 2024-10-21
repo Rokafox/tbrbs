@@ -1557,15 +1557,22 @@ class Character:
         elif set_name == "Newspaper":
             self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
         elif set_name == "Cloud":
-            cloud_hide_effect_spd_boost = StatsEffect("More Cloudy", 10, True, {"spd": 2.00})
-            cloud_hide_effect = HideEffect("Hide", 40, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
+            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00})
+            cloud_hide_effect = HideEffect("Hide", 50, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
             cloud_hide_effect.is_set_effect = True
             cloud_hide_effect.sort_priority = 2000
-            cloud_speed_effect = StatsEffect("Cloudy", -1, True, {"spd": 1.05})
+            cloud_speed_effect = StatsEffect("Cloudy", -1, True, {"spd": 1.05, "atk": 0.90})
             cloud_speed_effect.is_set_effect = True
             cloud_speed_effect.sort_priority = 2000
             self.apply_effect(cloud_hide_effect)
             self.apply_effect(cloud_speed_effect)
+        # 1987: Select the highest one from 3 of your main stats: atk, def, spd. 15% of the selected stat is added to the ally
+        # who has the lowest value of the selected stat.
+        elif set_name == "1987":
+            onenineeightseven_effect = Effect("1987 Set", -1, True)
+            onenineeightseven_effect.is_set_effect = True
+            onenineeightseven_effect.sort_priority = 2000
+            self.apply_effect(onenineeightseven_effect)
         else:
             raise Exception("Effect not implemented.")
         
@@ -1621,6 +1628,32 @@ class Character:
         if not self.battle_entry:
             self.battle_entry_effects()
             self.battle_entry = True
+            self.battle_entry_effects_eqset()
+
+    def battle_entry_effects_eqset(self):
+        """
+        This is called after battle_entry_effects, eq set like 1987 needs to trigger here
+        """
+        if self.get_equipment_set() == "1987":
+            the_stat_dict = {"atk": self.atk, "defense": self.defense, "spd": self.spd}
+            # select the highest stat
+            selected_stat = max(the_stat_dict, key=the_stat_dict.get)
+            if selected_stat == "atk":
+                ally_to_buff: Character = min(self.ally, key=lambda x: x.atk)
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"atk": self.atk * 0.1987})
+                e.can_be_removed_by_skill = False
+                ally_to_buff.apply_effect(e)
+            elif selected_stat == "defense":
+                ally_to_buff: Character = min(self.ally, key=lambda x: x.defense)
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"defense": self.defense * 0.1987})
+                e.can_be_removed_by_skill = False
+                ally_to_buff.apply_effect(e)
+            elif selected_stat == "spd":
+                ally_to_buff: Character = min(self.ally, key=lambda x: x.spd)
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"spd": self.spd * 0.1987})
+                e.can_be_removed_by_skill = False
+                ally_to_buff.apply_effect(e)
+
 
     def record_battle_turns(self, increment=1):
         self.battle_turns += increment

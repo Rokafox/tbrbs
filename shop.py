@@ -75,35 +75,29 @@ class Shop:
             self.inventory[k] = (s, d, int(s * (1 - d)))
 
 
-class Armory_Banana(Shop):
-    def __init__(self, name, description):
-        super().__init__(name, description)
-        self.equippricedecide_random_low = 440
-        self.equippricedecide_random_high = 460
-        self.equipdiscountdecide_chance = 0.1
-        if not self.description:
-            self.description = "バナナ兵器工場は、究極の武器と防具を提供するショップです。" \
-                "しかし、他の店とは一線を画し、すべてのアイテムは高額な価格で販売されています。なぜかと言えば、" \
-                "特別な品々だからです。" \
-                "品質、そして驚愕の価格――バナナ兵器工場は、あなたの財力を試す究極の場所です。"
 
+class Armory_Brand_Specific(Shop):
+    def __init__(self, name, description, brand_name):
+        super().__init__(name, description)
+        self.equippricedecide_random_low = 600
+        self.equippricedecide_random_high = 700
+        self.equipdiscountdecide_chance = 0.25
+        self.brand_name = brand_name
+        if not self.description:
+            self.description = brand_name + "のブランド専門店。"
 
 
     def get_items_from_manufacturers(self):
-        # get all classes from consumable whose .type is 'Eqpackage'
         package_of_items = []
-        
+        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=-1, locked_eq_set=self.brand_name))
 
-        package_of_items.extend(equip.generate_equips_list(3, eq_level=1, locked_rarity="Legendary", min_market_value=200))
-        package_of_items.extend(equip.generate_equips_list(4, eq_level=1, locked_rarity="Unique", min_market_value=180))
-        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, locked_rarity="Epic", min_market_value=160))
-
-        # Choose 5 random items from the package_of_items
         if len(package_of_items) < 5:
             raise ValueError(f"Not enough items in the package_of_items, only {len(package_of_items)} items is available.")
         if len(package_of_items) >= 5:
             for item in random.sample(package_of_items, 5):
                 self.inventory[item] = (0, 0.0, 0)
+
+
 
 
 class Gulid_SliverWolf(Shop):
@@ -170,27 +164,6 @@ class Big_Food_Market(Shop):
             for item in random.sample(package_of_items, 5):
                 self.inventory[item] = (0, 0.0, 0)
 
-
-
-class Dev_Cheat(Shop):
-    def __init__(self, name, description):
-        super().__init__(name, description)
-        self.equippricedecide_random_low = 100
-        self.equippricedecide_random_high = 200
-        self.equipdiscountdecide_chance = 0.9
-        if not self.description:
-            self.description = "これは開発者向けの不正ショップ。"
-
-
-    def get_items_from_manufacturers(self):
-        package_of_items = []
-        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=300, locked_eq_set="NUSA"))
-
-        if len(package_of_items) < 5:
-            raise ValueError(f"Not enough items in the package_of_items, only {len(package_of_items)} items is available.")
-        if len(package_of_items) >= 5:
-            for item in random.sample(package_of_items, 5):
-                self.inventory[item] = (0, 0.0, 0)
 
 
 
