@@ -2248,7 +2248,7 @@ class EastBoilingWaterEffect(ContinuousDamageEffect):
 
     def apply_effect_on_remove(self, character):
         self.damage_dealt = self.value * self.how_many_times_this_effect_is_triggered_lifetime
-        character.take_status_damage(self.damage_dealt, self.imposter)
+        character.take_status_damage(self.damage_dealt * 0.8, self.imposter)
         return super().apply_effect_on_remove(character)
 
 

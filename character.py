@@ -4488,15 +4488,15 @@ class East(Character):
         " For 20 turns, increase their defense and critdef by 10%." \
         " Select all enemies who have absorption shield, inflict Boiling Water for 20 turns, Boiling Water deals 50% of atk status damage per turn," \
         " this effect is removed when the absorption shield no longer exists. When this effect is removed, deal status damage to the target," \
-        " damage equals to total damage dealt to the absorption shield."
+        " damage equals to 80% of total damage dealt to the absorption shield."
         self.skill2_description = "Attack enemy of highest hp with 600% atk, if target has absorption shield, attack multiplier becomes" \
         " 900% and apply Poison for 20 turns, Poison deals 3% of current hp status damage per turn."
         self.skill3_description = "Apply No Matter Day or Month on yourself. When taking damage, if the target has both of the following effects, reduce damage taken by 100%:"
         " (Poison or Great Poison) and (Burn or Boiling Water)."
         # 煮え滾れ熱湯 日も月も構わず
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = ""
+        self.skill1_description_jp = "HP割合が最も低い3人の味方を選び、20ターンの間、攻撃力の300%分を吸収するシールドを付与し、全ての燃焼効果を解除する。20ターンの間、防御力とクリティカル防御を10%増加させる。吸収シールドを持つ全ての敵を選び、20ターンの間「煮え滾れ熱湯」を付与する。煮え滾れ熱湯は、毎ターン攻撃力の50%分の状態異常ダメージを与え、この効果は吸収シールドが消えると解除される。この効果が解除された時、対象に吸収シールドに与えた総ダメージの80%分の状態異常ダメージを与える。"
+        self.skill2_description_jp = "HPが最も高い敵に攻撃力の600%で攻撃する。対象が吸収シールドを持っている場合、攻撃倍率は900%になり、20ターンの間「毒」を付与する。毒は、毎ターン現在のHPの3%分の状態異常ダメージを与える。"
+        self.skill3_description_jp = "自身に「日も月も構わず」を付与する。ダメージを受けた際、対象が以下の両方の効果を持っている場合、受けるダメージを100%減少させる:(毒または猛毒) と (燃焼または煮え滾れ熱湯)。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
