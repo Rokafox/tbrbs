@@ -305,12 +305,13 @@ class ReductionShield(Effect):
 
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        prev_damage = damage
         if self.requirement is not None:
             if not attacker:
-                global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, attacker not found.\n"
+                global_vars.turn_info_string += f"{self.name} could not be triggered on {character.name}, attacker not found.\n"
                 return damage
             elif not self.requirement(character, attacker):
-                global_vars.turn_info_string += f"The effect of {self.name} could not be triggered on {character.name}, requirement not met.\n"
+                global_vars.turn_info_string += f"{self.name} could not be triggered on {character.name}, requirement not met.\n"
                 return damage
         if self.is_buff:
             if self.cover_normal_damage and which_ds == "normal":
@@ -324,6 +325,12 @@ class ReductionShield(Effect):
                 damage = damage * (1 + self.effect_value)
         if self.damage_function:
             damage = self.damage_function(character, attacker, damage)
+        delta = abs(damage - prev_damage)
+        if delta != 0:
+            if self.is_buff:
+                global_vars.turn_info_string += f"Damage is reduced by {delta:.1f} by {self.name}.\n"
+            else:
+                global_vars.turn_info_string += f"Damage is increased by {delta:.1f} by {self.name}.\n"
         return damage
     
     def tooltip_description(self):
@@ -632,11 +639,14 @@ class EffectShield2(Effect):
         if damage > damage_threshold:
             damage = damage_threshold + (damage - damage_threshold) * (1 - self.damage_reduction)
 
+        delta = abs(damage_original - damage)
+
+        if delta != 0:
+            global_vars.turn_info_string += f"{self.name} reduced {delta:.1f} damage for {character.name}.\n"
+
         # make no sense to reflect status damage.
         if which_ds != "normal":
             return damage
-
-        delta = abs(damage_original - damage)
 
         if self.damage_reflect_function and delta > 0:
             damage_to_reflect = self.damage_reflect_function(delta)
@@ -698,7 +708,64 @@ class DamageReflect(Effect):
         return f"受けたダメージの{self.reflect_percentage*100:.1f}%を攻撃者に反射する。"
 
 
+class ResolveEffect(Effect):
+    """
+    When taking damage, if damage exceed current hp, it is reduced to current hp - [hp_to_leave].
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, hp_to_leave=1, 
+                    cover_status_damage=False, cover_normal_damage=True, same_turn_usage="unlimited"):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.cc_immunity = cc_immunity
+        self.sort_priority = 203
+        self.hp_to_leave = hp_to_leave
+        self.cover_status_damage = cover_status_damage
+        self.cover_normal_damage = cover_normal_damage
+        self.same_turn_usage = same_turn_usage
+        self.how_many_times_triggered_this_turn = 1
+        self.character_current_turn = 0
 
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        if damage > character.hp and self.same_turn_usage == "unlimited":
+            if self.cover_normal_damage and which_ds == "normal":
+                return character.hp - self.hp_to_leave
+            elif self.cover_status_damage and which_ds == "status":
+                return character.hp - self.hp_to_leave
+        elif damage > character.hp and type(self.same_turn_usage) == int:
+            if self.character_current_turn != character.battle_turns:
+                self.character_current_turn = character.battle_turns
+                self.how_many_times_triggered_this_turn = 1
+            else:
+                self.how_many_times_triggered_this_turn += 1
+            if self.how_many_times_triggered_this_turn <= self.same_turn_usage:
+                if self.cover_normal_damage and which_ds == "normal":
+                    return character.hp - self.hp_to_leave
+                elif self.cover_status_damage and which_ds == "status":
+                    return character.hp - self.hp_to_leave
+
+    def tooltip_description(self):
+        s = f"When taking damage that exceeds current HP, the damage is reduced so that HP becomes {self.hp_to_leave}."
+        if self.cover_normal_damage and self.cover_status_damage:
+            s += " Applies to all damage."
+        elif self.cover_normal_damage:
+            s += " Applies to normal damage."
+        elif self.cover_status_damage:
+            s += " Applies to status damage."
+        if type(self.same_turn_usage) == int:
+            s += f" Can be triggered {self.same_turn_usage} times per turn."
+        return s
+    
+    def tooltip_description_jp(self):
+        s = f"受けたダメージが現在のHPを上回る場合、ダメージがHPを{self.hp_to_leave}に残るように軽減される。"
+        if self.cover_normal_damage and self.cover_status_damage:
+            s += "全てのダメージに適用。"
+        elif self.cover_normal_damage:
+            s += "通常ダメージに適用。"
+        elif self.cover_status_damage:
+            s += "状態異常ダメージに適用。"
+        if type(self.same_turn_usage) == int:
+            s += f"1ターンに{self.same_turn_usage}回まで発動可能。"
+        return s
 
 
 #---------------------------------------------------------
@@ -1322,6 +1389,7 @@ class ContinuousDamageEffect(Effect):
         self.imposter = imposter # The character that applies this effect
         self.remove_by_heal = remove_by_heal
         self.damage_type = damage_type
+        self.how_many_times_this_effect_is_triggered_lifetime = 0
     
     def apply_effect_on_trigger(self, character):
         match self.damage_type:
@@ -1333,6 +1401,7 @@ class ContinuousDamageEffect(Effect):
                 character.take_damage(self.value, self.imposter)
             case _:
                 raise Exception(f"Invalid damage type: {self.damage_type} in ContinuousDamageEffect.")
+        self.how_many_times_this_effect_is_triggered_lifetime += 1
     
     def apply_effect_after_heal_step(self, character, heal_value):
         if self.remove_by_heal:
@@ -2166,7 +2235,21 @@ class CupidLeadArrowEffect(StatsEffect):
         return damage
 
 
+class EastBoilingWaterEffect(ContinuousDamageEffect):
+    #  this effect is removed when the absorption shield no longer exists. When this effect is removed, deal status damage to the target,
+    def __init__(self, name, duration, is_buff, value, imposter, remove_by_heal=False, damage_type="status"):
+        super().__init__(name, duration, is_buff, value, imposter, remove_by_heal, damage_type)
+        self.damage_dealt = 0
 
+    def apply_effect_on_trigger(self, character):
+        if not character.has_effect_that_named(None, None, "AbsorptionShield"):
+            character.remove_effect(self)
+        return super().apply_effect_on_trigger(character)
+
+    def apply_effect_on_remove(self, character):
+        self.damage_dealt = self.value * self.how_many_times_this_effect_is_triggered_lifetime
+        character.take_status_damage(self.damage_dealt, self.imposter)
+        return super().apply_effect_on_remove(character)
 
 
 class PharaohPassiveEffect(Effect):

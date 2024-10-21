@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -311,6 +311,15 @@ class Character:
             case ("enemy_that_must_have_effect", effect_name, _, _):
                 yield from filter(lambda x: x.has_effect_that_named(effect_name), ts_available_enemy)
 
+            case ("enemy_that_must_have_effect_full", effect_name, additional_name, class_name):
+                if additional_name == "None":
+                    additional_name = None
+                if effect_name == "None":
+                    effect_name = None
+                if class_name == "None":
+                    class_name = None
+                yield from filter(lambda x: x.has_effect_that_named(effect_name, additional_name, class_name), ts_available_enemy)
+
             case ("n_enemy_with_effect", n, effect_name, _):
                 n = int(n)
                 targets_with_effects = mit.take(n, filter(lambda x: x.has_effect_that_named(effect_name), ts_available_enemy))
@@ -444,6 +453,7 @@ class Character:
             ignore_protected_effect: bool = False,
             damage_type: str = "normal",
             damage_is_based_on: str | None = None, 
+            can_be_lethal: bool = True,
             func_for_multiplier: Callable[[character, character, int, int], float] | None = None) -> int:
         """
         -> damage_dealt
@@ -1229,6 +1239,9 @@ class Character:
         return effect in self.buffs + self.debuffs
 
     def has_effect_that_named(self, effect_name: str = None, additional_name: str = None, class_name: str = None) -> bool:
+        """
+        Given the effect name, additional_name attribute, and class name, check if the character has the effect.
+        """
         for effect in self.buffs + self.debuffs:
             if effect_name and effect.name != effect_name:
                 continue
@@ -1331,15 +1344,25 @@ class Character:
         if not purge:
             effect.apply_effect_on_remove(self)
 
-    def try_remove_effect_with_name(self, effect_name: str, strict=False) -> bool:
-        # used for add_cheat_effect() in bs
-        for effect in self.buffs + self.debuffs:
-            if effect.name == effect_name:
+    def try_remove_effect_with_name(self, effect_name: str, strict=False, remove_all_found_effects=False) -> bool:
+        """
+        Try to remove the effect(s) found with the given effect name.
+        Return True if at least one effect is found and removed, False otherwise.
+        """
+        effects_to_remove = [effect for effect in self.buffs + self.debuffs if effect.name == effect_name]
+        
+        if not effects_to_remove:
+            if strict:
+                raise Exception("Effect with name not found.")
+            return False
+        
+        if remove_all_found_effects:
+            for effect in effects_to_remove:
                 self.remove_effect(effect)
-                return True
-        if strict:
-            raise Exception("Effect with name not found.")
-        return False
+        else:
+            self.remove_effect(effects_to_remove[0])
+        
+        return True
 
     # Get shield value, all shield effect must have shield_value attribute.
     def get_shield_value(self) -> int:
@@ -3843,14 +3866,14 @@ class Beacon(Character):
         self.skill2_description = "Attack 4 enemies with 300% atk, apply Crescent Moon Mark for 20 turns.Crescent Moon Mark: critical defense is reduced by 50%."
         self.skill3_description = "If you are the only one alive, redistributing hp use 400% as base percentage when calculating average," \
         " before redistributing, revive as many allies as possible with 1 hp and apply New Moon for all allies for 24 turns." \
-        " New Moon: damage taken is reduced by 60%." \
+        " New Moon: damage taken is reduced by 65%." \
         " All skill cooldown is reduced by 2 actions at the end of turn if you are the only one alive."
         self.skill1_description_jp = "全ての味方のHP割合を再分配し、HP割合が高い味方は状態異常ダメージを受け、HP割合が低い味方は同じ割合になるまでHPが治療する。" \
                                     "このスキルに効果がない場合、全ての味方に12ターンの間吸収シールドを付与する。" \
                                     "シールドは攻撃力の500%+防御力の500%までのダメージを吸収する。HP割合を比較する際、1%以内の誤差で同じとみなされる。"
         self.skill2_description_jp = "4体の敵に300%の攻撃を行い、20ターンの間「三日月の痕」を付与する。「三日月の痕」:クリティカル防御を50%減少させる。"
         self.skill3_description_jp = "自分だけが生き残っている場合、HP再分配時に基準割合として400%を使用して平均を計算し、再分配前に可能な限り多くの味方をHP1で復活させる。" \
-                                    "全ての味方に24ターンの間「芒月新生」を付与する。「芒月新生」:受けるダメージが60%軽減される。" \
+                                    "全ての味方に24ターンの間「芒月新生」を付与する。「芒月新生」:受けるダメージが65%軽減される。" \
                                     "自分だけが生き残っている場合、ターン終了時に全てのスキルクールダウンが2行動分減少する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
@@ -3885,7 +3908,7 @@ class Beacon(Character):
                     m.revive(1, 0, self)
             self.update_ally_and_enemy()
             for a in self.ally:
-                a.apply_effect(ReductionShield("New Moon", 24, True, 0.60, False))
+                a.apply_effect(ReductionShield("New Moon", 24, True, 0.65, False))
             avg_hp_percentage = 4.00 / len(self.ally)
             for a in self.ally:
                 target_hp = avg_hp_percentage * a.maxhp
@@ -4407,7 +4430,7 @@ class Cupid(Character):
         self.skill3_description = "Normal attack does nothing. Apply For Love 2 times on yourself, when defeated, revive with 50% hp."
         # 鉛矢 金矢 恋愛妄想 愛のために
         self.skill1_description_jp = "攻撃力が最も高い3人の敵に20ターンの間「鉛矢」を付与し、自身に20ターンの間「金矢」を付与する。鉛矢:クリティカル防御が100%減少し、この効果が解除されると状態異常無視ダメージを1受ける。金矢:クリティカルダメージが100%増加する。鉛矢または金矢が同じ対象に再度適用された場合、持続時間が更新される。"
-        self.skill2_description_jp = "鉛矢を持つ全ての敵に攻撃力の222%で攻撃する。自分が金矢を持ち、対象が鉛矢を持っている場合、ダメージが100%増加するが、この攻撃で致命的ダメージを与えた場合、対象のHPは1残る。クリティカルの場合、対象に4ターンの間「恋愛妄想」を付与し、鉛矢の持続時間を恋愛妄想の持続時間に設定する。恋愛妄想:鉛矢を持つ味方は敵として認識され、鉛矢を持つ者だけが味方として認識される。同じ効果が再度適用された場合、既存の効果の持続時間が更新される。敵に鉛矢を持つ者がいない場合、攻撃力の222%分HPを回復する。"
+        self.skill2_description_jp = "鉛矢を持つ全ての敵に攻撃力の222%で攻撃する。自分が金矢を持ち、対象が鉛矢を持っている場合、ダメージが100%増加するが、この攻撃で致命的ダメージを与えた場合、対象のHPは1残る。クリティカルの場合、対象に4ターンの間「恋愛妄想」を付与し、鉛矢の持続時間を恋愛妄想の持続時間に設定する。恋愛妄想:鉛矢を持つ味方は敵として認識され、鉛矢を持つ者だけが味方として認識される。同じ効果が再度適用された場合、既存の効果の持続時間が更新される。敵に鉛矢を持つ者がいない場合、攻撃力の222%分HPを治療する。"
         self.skill3_description_jp = "通常攻撃は何もしない。自身に「愛のために」を2回付与し、撃破された時、HP50%で復活する。"
         self.skill1_cooldown_max = 2
         self.skill2_cooldown_max = 0
@@ -4452,6 +4475,79 @@ class Cupid(Character):
         for i in range(2):
             self.apply_effect(for_love)
 
+
+class East(Character):
+    """
+    Shield melt, High single damage, shield
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "East"
+        self.skill1_description = "Select 3 allies of lowest hp percentage, apply absorption shield that absorbs 300% of atk for 20 turns and remove all Burn effects." \
+        " For 20 turns, increase their defense and critdef by 10%." \
+        " Select all enemies who have absorption shield, inflict Boiling Water for 20 turns, Boiling Water deals 50% of atk status damage per turn," \
+        " this effect is removed when the absorption shield no longer exists. When this effect is removed, deal status damage to the target," \
+        " damage equals to total damage dealt to the absorption shield."
+        self.skill2_description = "Attack enemy of highest hp with 600% atk, if target has absorption shield, attack multiplier becomes" \
+        " 900% and apply Poison for 20 turns, Poison deals 3% of current hp status damage per turn."
+        self.skill3_description = "Apply No Matter Day or Month on yourself. When taking damage, if the target has both of the following effects, reduce damage taken by 100%:"
+        " (Poison or Great Poison) and (Burn or Boiling Water)."
+        # 煮え滾れ熱湯 日も月も構わず
+        self.skill1_description_jp = ""
+        self.skill2_description_jp = ""
+        self.skill3_description_jp = ""
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+
+    def skill1_logic(self):
+        ts = self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="3")
+        lts: list[Character] = list(ts)
+        for a in lts:
+            a.apply_effect(AbsorptionShield("Absorption Shield", 20, True, 3.0 * self.atk, False))
+            a.apply_effect(StatsEffect("Defense Up", 20, True, {"defense": 1.1, "critdef": 1.1}))
+            a.try_remove_effect_with_name("Burn", remove_all_found_effects=True)
+        enemy_selection = self.target_selection(keyword="enemy_that_must_have_effect_full", keyword2="None", keyword3="None", keyword4="AbsorptionShield")
+        # create a list
+        try:
+            enemy_list: list[Character] = list(enemy_selection)
+        except IndexError: # No enemy has Absorption Shield
+            return 0
+        for e in enemy_list:
+            e.apply_effect(EastBoilingWaterEffect("Boiling Water", 20, False, self.atk * 0.5, self))
+        return 0
+
+    def skill2_logic(self):
+        def poison_effect(self, target: Character):
+            if target.has_effect_that_named(class_name="AbsorptionShield"):
+                target.apply_effect(ContinuousDamageEffect_Poison("Poison", 20, False, 0.03, imposter=self, base="hp"))
+        def multiplier_func(self, target, _, __):
+            if target.has_effect_that_named(class_name="AbsorptionShield"):
+                return 9.0
+            return 6.0
+        damage_dealt = self.attack(multiplier=6.0, target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy",
+                                   func_after_dmg=poison_effect, func_for_multiplier=multiplier_func)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        def requirement_func(charac, attacker: Character):
+            poison = attacker.has_effect_that_named("Poison") or attacker.has_effect_that_named("Great Poison")
+            burn = attacker.has_effect_that_named("Burn") or attacker.has_effect_that_named("Boiling Water")
+            if poison and burn:
+                return True
+            return False
+        nmdm = ReductionShield("No Matter Day or Month", -1, True, 1.0, False, cover_status_damage=True, cover_normal_damage=True,
+                               requirement=requirement_func,
+                               requirement_description="Attacker is both poisoned and burning.",
+                               requirement_description_jp="攻撃側は毒と火傷を負っている。")
+        nmdm.can_be_removed_by_skill = False
+        self.apply_effect(nmdm)
+        
 
 
 
