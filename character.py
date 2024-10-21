@@ -1058,6 +1058,8 @@ class Character:
         if self.hp + healing > self.maxhp:
             overhealing = self.hp + healing - self.maxhp
             healing = self.maxhp - self.hp
+        for e in self.buffs.copy() + self.debuffs.copy():
+            healing = e.apply_effect_during_heal_step(self, healing, healer, overhealing)
         if healing < 0:
             global_vars.turn_info_string += f"{self.name} failed to receive any healing.\n"
             healing = 0
@@ -4262,15 +4264,15 @@ class Mitsuki(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Mitsuki"
-        self.skill1_description = "Attack closest enemy with 3% of maxhp 12 times. Each attack has a 8% chance to Stun the target for 8 turns."
-        self.skill2_description = "All allies are healed by 3% of your maxhp, remove 2 random debuffs for each ally."
+        self.skill1_description = "Attack closest enemy with 3% of current hp 12 times. Each attack has a 8% chance to Stun the target for 8 turns."
+        self.skill2_description = "All allies are healed by 3% of your current hp, remove 2 random debuffs for each ally."
         self.skill3_description = "At start of battle, apply unremovable Azure Sea for all allies." \
         " Azure Sea: Status damage taken is reduced by 70%. Apply unremovable Sea Family for yourself," \
-        " When taking status damage, recover hp by 3% of maxhp."
+        " When taking status damage, recover hp by 3% of current hp."
         # Japanese: 蒼海 蒼海の眷属
-        self.skill1_description_jp = "最も近い敵に最大HPの3%で12回攻撃する。各攻撃には8%の確率で8ターンの間、対象をスタンさせる。"
-        self.skill2_description_jp = "全ての味方のHPを自分の最大HPの3%分治療し、各味方からランダムなデバフを2つ解除する。"
-        self.skill3_description_jp = "戦闘開始時に全ての味方に解除不能な蒼海を付与する。蒼海:受ける状態異常ダメージが70%減少する。自身には解除不能な蒼海の眷属を付与する。状態異常ダメージを受けた時、最大HPの3%分のHPを回復する。"
+        self.skill1_description_jp = "最も近い敵に現在HPの3%で12回攻撃する。各攻撃には8%の確率で8ターンの間、対象をスタンさせる。"
+        self.skill2_description_jp = "全ての味方のHPを自分の現在HPの3%分治療し、各味方からランダムなデバフを2つ解除する。"
+        self.skill3_description_jp = "戦闘開始時に全ての味方に解除不能な蒼海を付与する。蒼海:受ける状態異常ダメージが70%減少する。自身には解除不能な蒼海の眷属を付与する。状態異常ダメージを受けた時、現在HPの3%分のHPを回復する。"
 
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
@@ -4282,13 +4284,13 @@ class Mitsuki(Character):
             if dice <= 8:
                 target.apply_effect(StunEffect("Stun", 8, False, False))
         damage_dealt = self.attack(multiplier=0.03, repeat=12, target_kw1="enemy_in_front", func_after_dmg=stun_effect,
-                                   damage_is_based_on="maxhp")
+                                   damage_is_based_on="hp")
         return damage_dealt
 
 
     def skill2_logic(self):
         for a in self.ally:
-            self.heal(target_list=[a], value=self.maxhp * 0.03)
+            self.heal(target_list=[a], value=self.hp * 0.03)
             a.remove_random_amount_of_debuffs(2)
 
     def skill3(self):
@@ -4300,7 +4302,7 @@ class Mitsuki(Character):
         for a in self.ally:
             a.apply_effect(azure_sea)
         def heal_func(character: Character):
-            return character.maxhp * 0.03
+            return character.hp * 0.03
         sea_family = EffectShield1("Sea Family", -1, True, 1, heal_function=heal_func, cc_immunity=False, effect_applier=self,
                                     cover_status_damage=True, cover_normal_damage=False)
         sea_family.can_be_removed_by_skill = False

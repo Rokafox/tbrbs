@@ -1467,6 +1467,48 @@ class Warrior(Monster):
         self.hp = self.maxhp
 
 
+class Kerberos(Monster):
+    """
+    Countered not having low hp percentage or many reborn effects
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Kerberos"
+        self.skill1_description = "Attack 3 closest enemies with 240% atk 6 times."
+        self.skill2_description = "Attack enemy with lowest hp percentage with 240% atk 9 times."
+        self.skill3_description = "During skill attack, if enemy hp is falls below 30%, execute the target, dealing target hp * 100% bypass status damage."
+        # 処刑
+        self.skill1_description_jp = "最も近い3人の敵に攻撃力の240%で6回攻撃する。"
+        self.skill2_description_jp = "HP割合が最も低い敵に攻撃力の240%で9回攻撃する。"
+        self.skill3_description_jp = "スキル攻撃中、敵のHPが30%以下になった場合、対象を処刑し、対象のHPの100%分の状態異常無視ダメージを与える。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def execute(self, target: character.Character):
+            if target.is_alive() and target.hp < target.maxhp * 0.3 and self.is_alive():
+                target.take_bypass_status_effect_damage(target.hp, self)
+        damage_dealt = self.attack(multiplier=2.4, repeat=6, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=execute)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def execute(self, target: character.Character):
+            if target.is_alive() and target.hp < target.maxhp * 0.3 and self.is_alive():
+                target.take_bypass_status_effect_damage(target.hp, self)
+        damage_dealt = self.attack(multiplier=2.4, repeat=9, target_kw1="n_lowest_hp_percentage_enemy", target_kw2="1", func_after_dmg=execute)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+
+
+
+
 # ====================================
 # End of Ignore Protected Effect
 # ====================================
@@ -4710,6 +4752,68 @@ class Chimera(Monster):
                 target.apply_effect(ContinuousDamageEffect('Bleed', duration=20, is_buff=False, value=0.4 * self.atk, imposter=self))
         damage_dealt = self.attack(func_after_dmg=heal_down, func_damage_step=damage_amplify)
         return damage_dealt
+
+
+class Darklord(Monster):
+    """
+    Countered by debuff removal
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Darklord"
+        self.skill1_description = "For 1 turn, increase accuracy by 30%, attack all enemies with 400% atk and inflict Decay for 20 turns." \
+        " Decay: all hp recovery effect becomes bypass status effect damage. When the same effect is applied, the duration is refreshed. Apply Regen" \
+        " for all allies for 20 turns, each turn recover 5% of maxhp."
+        self.skill2_description = "For 1 turn, increase accuracy by 30%, attack all enemies with 400% atk," \
+        " if there is only 1 enemy, attack with 2000% atk. Apply Def Up 2 times for all allies for 20 turns, increase defense by 30%."
+        self.skill3_description = "Increase atk, def, and maxhp by 20%. After using skill 2, if there is a dead ally, revive it with 100% hp" \
+        " and apply Decay and Poison for 20 turns. Poison: deals 10% of maxhp status damage each turn."
+        self.skill1_description_jp = ""
+        self.skill2_description_jp = ""
+        self.skill3_description_jp = ""
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        self.apply_effect(StatsEffect('Accuracy Up', 1, True, {'acc' : 0.3}))
+        def decay_effect(self, target):
+            d = DecayEffect('Decay', 20, False, effect_applier=self)
+            target.apply_effect(d)
+        damage_dealt = self.attack(multiplier=4.0, repeat=1, func_after_dmg=decay_effect, target_kw1="n_enemy_in_front", target_kw2="5")
+        if self.is_alive():
+            for ally in self.ally:
+                ally.apply_effect(ContinuousHealEffect('Regen', 20, True, lambda x, y: x.maxhp * 0.05, self, "5% of maxhp",
+                                                        value_function_description_jp="最大HPの5%"))
+        return damage_dealt
+
+    def skill2_logic(self):
+        self.apply_effect(StatsEffect('Accuracy Up', 1, True, {'acc' : 0.3}))
+        if len(self.enemy) == 1:
+            damage_dealt = self.attack(multiplier=20.0, repeat=1)
+        else:
+            damage_dealt = self.attack(multiplier=4.0, repeat=1, target_kw1="n_random_enemy", target_kw2="5")
+        if self.is_alive():
+            for ally in self.ally:
+                ally.apply_effect(StatsEffect('Defense Up', 20, True, {'defense' : 1.3}))
+            dead_ally: list[character.Character] = list(self.target_selection(keyword="n_dead_allies", keyword2="1"))
+            if dead_ally:
+                dead_ally[0].revive(hp_to_revive=0, hp_percentage_to_revive=1.0, healer=self)
+                dead_ally[0].apply_effect(ContinuousDamageEffect_Poison('Poison', 20, False, ratio=0.10, imposter=self, base="maxhp"))
+                dead_ally[0].apply_effect(DecayEffect('Decay', 20, False, effect_applier=self))
+            
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+
+
+
 
 
 

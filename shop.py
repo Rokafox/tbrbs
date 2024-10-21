@@ -89,7 +89,7 @@ class Armory_Brand_Specific(Shop):
 
     def get_items_from_manufacturers(self):
         package_of_items = []
-        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=-1, locked_eq_set=self.brand_name))
+        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=20, locked_eq_set=self.brand_name))
 
         if len(package_of_items) < 5:
             raise ValueError(f"Not enough items in the package_of_items, only {len(package_of_items)} items is available.")
