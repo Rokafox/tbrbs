@@ -9,5 +9,6 @@ language = "English"
 cheap_inventory_show_current_option = "Equip"
 # shop
 player_is_in_shop = False
+current_shop_instance = None
 # others
 allow_cheat = False

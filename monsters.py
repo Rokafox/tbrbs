@@ -4762,15 +4762,15 @@ class Darklord(Monster):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Darklord"
         self.skill1_description = "For 1 turn, increase accuracy by 30%, attack all enemies with 400% atk and inflict Decay for 20 turns." \
-        " Decay: all hp recovery effect becomes bypass status effect damage. When the same effect is applied, the duration is refreshed. Apply Regen" \
+        " Decay: all hp recovery effect becomes 0, take status damage equal to the recovery amount in the next turn. When the same effect is applied, the duration is refreshed. Apply Regen" \
         " for all allies for 20 turns, each turn recover 5% of maxhp."
         self.skill2_description = "For 1 turn, increase accuracy by 30%, attack all enemies with 400% atk," \
         " if there is only 1 enemy, attack with 2000% atk. Apply Def Up 2 times for all allies for 20 turns, increase defense by 30%."
-        self.skill3_description = "Increase atk, def, and maxhp by 20%. After using skill 2, if there is a dead ally, revive it with 100% hp" \
+        self.skill3_description = "After using skill 2, if there is a dead ally, revive it with 100% hp" \
         " and apply Decay and Poison for 20 turns. Poison: deals 10% of maxhp status damage each turn."
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = ""
+        self.skill1_description_jp = "1ターンの間、命中率を30%増加させ、全ての敵に攻撃力の400%で攻撃し、20ターンの間「腐敗」を付与する。腐敗:すべてのHP回復効果が無効化され、次のターンに回復量と同じ状態異常ダメージを受ける。同じ効果が再度付与された場合、持続時間が更新される。全ての味方に20ターンの間「リジェネ」を付与し、各ターンに最大HPの5%を回復する。"
+        self.skill2_description_jp = "1ターンの間、命中率を30%増加させ、全ての敵に攻撃力の400%で攻撃する。敵が1体だけの場合、攻撃力の2000%で攻撃する。全ての味方に20ターンの間「防御力アップ」を2回付与し、防御力を30%増加させる。"
+        self.skill3_description_jp = "スキル2を使用した後、味方が死亡している場合、その味方をHP100%で復活させ、20ターンの間「腐敗」と「毒」を付与する。毒:毎ターン最大HPの10%分の状態異常ダメージを与える。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True

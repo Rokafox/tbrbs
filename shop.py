@@ -6,9 +6,11 @@ import equip
 
 
 
-
 class Shop:
     def __init__(self, name, description, currency="Cash"):
+        """
+        currency must mach the class name of any Block item.
+        """
         self.name = name
         self.description = description
         # self.inventory: item class: (sell_price, discount, final_price)
@@ -35,7 +37,7 @@ class Shop:
                 # The food is normally sold at market value, with rarely any discount.
                 self.inventory[k] = (k.market_value * k.current_stack, d, f)
             else:
-                raise ValueError(f"Item {k} cannot be sold because the price cannot be decided.")
+                self.inventory[k] = (k.market_value * k.current_stack, d, f)
 
     def decide_discount(self):
         for k, (s, d, f) in self.inventory.copy().items():
@@ -84,12 +86,12 @@ class Armory_Brand_Specific(Shop):
         self.equipdiscountdecide_chance = 0.25
         self.brand_name = brand_name
         if not self.description:
-            self.description = brand_name + "のブランド専門店。"
+            self.description = f"{brand_name}のブランド専門店。適正な価格で一品物の装備を提供し、その品質と信頼性は常に保証されています。"
 
 
     def get_items_from_manufacturers(self):
         package_of_items = []
-        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=20, locked_eq_set=self.brand_name))
+        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=-1, locked_eq_set=self.brand_name))
 
         if len(package_of_items) < 5:
             raise ValueError(f"Not enough items in the package_of_items, only {len(package_of_items)} items is available.")
@@ -98,13 +100,46 @@ class Armory_Brand_Specific(Shop):
                 self.inventory[item] = (0, 0.0, 0)
 
 
+class Armory_Brand_Specific_Reforged(Shop):
+    def __init__(self, name, description, brand_name):
+        super().__init__(name, description)
+        self.currency = "SliverIngot"
+        self.equippricedecide_random_low = 1
+        self.equippricedecide_random_high = 1
+        self.equipdiscountdecide_chance = 0
+        self.brand_name = brand_name
+        if not self.description:
+            self.description = f"{brand_name}のリフォージ専門店。装備の質は稀に伝説的なものにまで高められることがありますが、その代償は途方もない価格となることが知られています。"
+
+
+    def get_items_from_manufacturers(self):
+        package_of_items = []
+        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=100, locked_eq_set=self.brand_name))
+
+        if len(package_of_items) < 5:
+            raise ValueError(f"Not enough items in the package_of_items, only {len(package_of_items)} items is available.")
+        if len(package_of_items) >= 5:
+            for item in random.sample(package_of_items, 5):
+                self.inventory[item] = (0, 0.0, 0)
+
+    def decide_price(self):
+        for k, (s, d, f) in self.inventory.copy().items():
+            price = k.market_value // 50
+            self.inventory[k] = (price, d, f)
+
+    def decide_discount(self):
+        for k, (s, d, f) in self.inventory.copy().items():
+            self.inventory[k] = (s, 0, f)
+
+
+
 
 
 class Gulid_SliverWolf(Shop):
     def __init__(self, name, description):
         super().__init__(name, description)
         if not self.description:
-            self.description = "冒険者ギルド「銀狼の誓約」は、古代遺跡で冒険を繰り広げ、名声を築いてきました。メンバーは直感の戦術で知られており、レイド実績を持っています。" \
+            self.description = "冒険者ギルド「銀狼の誓約」は、古代遺跡で冒険を繰り広げ、名声を築いてきました。メンバーはHP極振りの戦術で知られており、レイドでの実績を持っています。" \
             "メンバーたちは冒険で回収した宝箱を厳選し、品質を保証した上で販売しています。" 
 
     def get_items_from_manufacturers(self):
@@ -125,6 +160,47 @@ class Gulid_SliverWolf(Shop):
         if len(package_of_items) >= 5:
             for item in random.sample(package_of_items, 5):
                 self.inventory[item] = (0, 0.0, 0)
+
+
+class RoyalMint(Shop):
+    def __init__(self, name, description):
+        super().__init__(name, description)
+        if not self.description:
+            self.description = "ロイヤルミントは貴金属を中心に取り扱う商店です。" 
+
+    def get_items_from_manufacturers(self):
+        # get all classes from consumable whose .type is 'Eqpackage'
+        package_of_items = []
+        import item
+        
+        # Stupid code
+        package_of_items.append(item.SliverIngot(random.randint(1, 100))) # UnboundLocalError: cannot access local variable 'item' where it is not associated with a value
+        package_of_items.append(item.SliverIngot(random.randint(1, 100)))
+        package_of_items.append(item.SliverIngot(random.randint(1, 100)))
+        package_of_items.append(item.GoldIngot(random.randint(1, 20)))
+        package_of_items.append(item.DiamondIngot(random.randint(1, 2)))
+
+
+        # Choose 5 random items from the package_of_items
+        if len(package_of_items) < 5:
+            raise ValueError(f"Not enough items in the package_of_items, only {len(package_of_items)} items is available.")
+        if len(package_of_items) >= 5:
+            for item in random.sample(package_of_items, 5):
+                self.inventory[item] = (0, 0.0, 0)
+
+    def decide_discount(self):
+        # 1% chance to have a 5% discount, 0.1% chance to have a 10% discount, 0.01% chance to have a 20% discount
+        for k, (s, d, f) in self.inventory.copy().items():
+            discount = 0
+            if random.random() < 0.01:
+                discount = 0.05
+            elif random.random() < 0.001:
+                discount = 0.1
+            elif random.random() < 0.0001:
+                discount = 0.2
+            self.inventory[k] = (s, discount, f)
+
+
 
 
 class Big_Food_Market(Shop):

@@ -16,7 +16,7 @@ class Equip(Block):
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
-                            "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987"]
+                            "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987", "7891"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -171,8 +171,13 @@ class Equip(Block):
                 )
             case "1987":
                 return (
-                    "Select the highest one from 3 of your main stats: atk, def, spd. 19.87% of the selected stat is added to the ally" \
+                    "Select the highest one from 3 of your main stats: atk, def, spd. 19.87% + 1.987% of the selected stat is added to the ally" \
                     " who has the lowest value of the selected stat."
+                )
+            case "7891":
+                return (
+                    "Select the lowest one from 3 of your main stats: atk, def, spd. 78.91% * 78.91% of the selected stat is added to the ally" \
+                    " who has the highest value of the selected stat."
                 )
             case _:
                 return ""
@@ -254,7 +259,11 @@ class Equip(Block):
                 )
             case "1987":
                 return (
-                    "攻撃力、防御力、速度の3つのステータスの中から最も高いものを選択し、選択したステータスの19.87%分が、選択したステータスの値が最も低い味方に付加される。"
+                    "攻撃力、防御力、速度の3つのステータスの中から最も高いものを選択し、選択したステータスの19.87%+1.987%分が、選択したステータスの値が最も低い味方に付加される。"
+                )
+            case "7891":
+                return (
+                    "攻撃力、防御力、速度の3つのステータスの中から最も低いものを選択し、選択したステータスの78.91%*7.891%分が、選択したステータスの値が最も高い味方に付加される。"
                 )
             case _:
                 return ""

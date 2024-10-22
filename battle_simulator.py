@@ -432,12 +432,12 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             pass
 
     def get_currency(self, currency: str):
-        if currency == "Cash" or "cash":
+        if currency.lower() == "cash":
             return self.get_cash()
         else:
             c = 0
             for item in self.inventory:
-                if item.__class__.__name__ == currency or item.__class__.__name__.lower() == currency:
+                if item.__class__.__name__.lower() == currency or item.__class__.__name__ == currency:
                     c += item.current_stack
             return c
 
@@ -487,7 +487,7 @@ if __name__ == "__main__":
     light_red = pygame.Color("#fbe4e4")
     light_green = pygame.Color("#e5fae5")
     light_blue = pygame.Color("#e6f3ff")
-    light_pink = pygame.Color("#fae5fa")
+    light_pink = pygame.Color("#fae5f0")
 
     display_surface = pygame.display.set_mode((1600, 900), flags=pygame.SCALED | pygame.RESIZABLE)
     ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
@@ -1277,13 +1277,21 @@ if __name__ == "__main__":
     #         case _:
     #             raise ValueError(f"Invalid item: {item}")
 
-    def buy_one_item(player: Nine, item: Block, item_price: int) -> None:
-        if player.get_cash() < item_price:
-            print(f"Not enough cash to buy {item.name}.")
-            return
-        player.add_to_inventory(item, False)
-        player.lose_cash(item_price, True)
-        text_box.set_text(f"Bought {item.name} for {item_price} cash.\n")
+    def buy_one_item(player: Nine, item: Block, item_price: int, currency: str) -> None:
+        if currency == "Cash":
+            if player.get_cash() < item_price:
+                print(f"Not enough cash to buy {item.name}.")
+                return
+            player.add_to_inventory(item, False)
+            player.lose_cash(item_price, True)
+            text_box.set_text(f"Bought {item.name} for {item_price} cash.\n")
+        else:
+            if player.get_currency(currency) < item_price:
+                print(f"Not enough {currency} to buy {item.name}.")
+                return
+            player.add_to_inventory(item, False)
+            player.remove_from_inventory(item_type=type(eval(f"{currency}(1)")), amount_to_remove=item_price, rebuild_inventory_slots=True)
+            text_box.set_text(f"Bought {item.name} for {item_price} {currency}.\n")
         save_player(player)
         return
 
@@ -1583,7 +1591,7 @@ if __name__ == "__main__":
         redraw_ui(party1, party2)
         player.build_inventory_slots()
         if global_vars.player_is_in_shop:
-            redraw_ui_shop_edition()
+            redraw_ui_shop_edition(reload_shop=False)
 
 
     language_selection_menu = pygame_gui.elements.UIDropDownMenu(["English", "日本語"],
@@ -1596,7 +1604,7 @@ if __name__ == "__main__":
         redraw_ui(party1, party2)
         player.build_inventory_slots()
         if global_vars.player_is_in_shop:
-            redraw_ui_shop_edition() 
+            redraw_ui_shop_edition(reload_shop=False) 
         # print(f"Language changed to {global_vars.language}.")
 
 
@@ -3073,7 +3081,7 @@ if __name__ == "__main__":
     shop_item_purchase_buttone = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((748, 450), (100, 35)),
                                                                     text='Purchase',
                                                                     manager=ui_manager)
-    shop_select_a_shop = pygame_gui.elements.UIDropDownMenu(["Silver Wolf Company", "Big Food Market"],
+    shop_select_a_shop = pygame_gui.elements.UIDropDownMenu(["Silver Wolf Company", "Big Food Market", "RoyalMint"],
                                                             "Silver Wolf Company",
                                                             pygame.Rect((300, 500), (212, 35)),
                                                             ui_manager)
@@ -3082,7 +3090,10 @@ if __name__ == "__main__":
 
     extra_shop_list = [item for item in Equip("boo", "Weapon", "Common").eq_set_list if item not in ["None", "Void"]]
     # Add "Forge" to each string in the list
-    extra_shop_list = [f"{item} Forge" for item in extra_shop_list]
+    extra_shop_list_a = [f"{item} Forge" for item in extra_shop_list]
+    extra_shop_list_b = [f"{item} Reforged" for item in extra_shop_list]
+    extra_shop_list = extra_shop_list_a + extra_shop_list_b
+    extra_shop_list.sort()
     shop_select_a_shop.add_options(extra_shop_list)
 
 
@@ -3110,35 +3121,45 @@ if __name__ == "__main__":
     for m in all_shop_ui_modules:
         m.hide()
 
-    def redraw_ui_shop_edition():
-        # we first need to get what shop it is
-        shop_name = shop_select_a_shop.selected_option[0]
-        # then we create a shop of Shop.[shop_name]
-        match shop_name:
-            case "Silver Wolf Company":
-                shop_instance = shop.Gulid_SliverWolf("Silver Wolf Company", None)
-            case "Big Food Market":
-                shop_instance = shop.Big_Food_Market("Big Food Market", None)
-            # case "CHEAT":
-            #     shop_instance = shop.Dev_Cheat("CHEAT", None)
-            case _:
-                if "Forge" in shop_name:
-                    # class Armory_Brand_Specific(Shop):
-                    #   def __init__(self, name, description, brand_name):
-                    # dynamic creation of class
-                    brand_name = shop_name.split(" ")[0]
-                    # use eval to create a class
-                    shop_instance = eval(f"shop.Armory_Brand_Specific")(shop_name, None, brand_name)
-                else:
-                    raise Exception(f"Unknown shop name: {shop_name}")
+    def redraw_ui_shop_edition(reload_shop: bool = True) -> shop.Shop:
 
-        shop_instance.get_items_from_manufacturers()
-        shop_instance.decide_price()
-        shop_instance.decide_discount()
-        shop_instance.calculate_final_price()
+        if reload_shop:
+            # we first need to get what shop it is
+            shop_name = shop_select_a_shop.selected_option[0]
+            # then we create a shop of Shop.[shop_name]
+            match shop_name:
+                case "Silver Wolf Company":
+                    shop_instance = shop.Gulid_SliverWolf("Silver Wolf Company", None)
+                case "Big Food Market":
+                    shop_instance = shop.Big_Food_Market("Big Food Market", None)
+                case "RoyalMint":
+                    shop_instance = shop.RoyalMint("RoyalMint", None)
+                # case "CHEAT":
+                #     shop_instance = shop.Dev_Cheat("CHEAT", None)
+                case _:
+                    if "Forge" in shop_name:
+                        # class Armory_Brand_Specific(Shop):
+                        #   def __init__(self, name, description, brand_name):
+                        # dynamic creation of class
+                        brand_name = shop_name.split(" ")[0]
+                        # use eval to create a class
+                        shop_instance = eval(f"shop.Armory_Brand_Specific")(shop_name, None, brand_name)
+                    elif "Reforged" in shop_name:
+                        brand_name = shop_name.split(" ")[0]
+                        shop_instance = eval(f"shop.Armory_Brand_Specific_Reforged")(shop_name, None, brand_name)
+                    else:
+                        raise Exception(f"Unknown shop name: {shop_name}")
 
-        shop_image_slot_currency_icon.set_image(images_item[shop_instance.currency.lower()])
-        shop_player_owned_currency_icon.set_image(images_item[shop_instance.currency.lower()])
+            shop_instance.get_items_from_manufacturers()
+            shop_instance.decide_price()
+            shop_instance.decide_discount()
+            shop_instance.calculate_final_price()
+        
+        else:
+            shop_instance = global_vars.current_shop_instance
+
+        shop_image_slot_currency_icon.set_image(images_item[eval(f"{shop_instance.currency}(1)").image])
+        shop_player_owned_currency_icon.set_image(images_item[eval(f"{shop_instance.currency}(1)").image])
         # shop_player_owned_currency.set_text(str(player.get_cash()))
         set_currency_on_icon_and_label(player, shop_instance.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
 
@@ -3193,6 +3214,7 @@ if __name__ == "__main__":
             else:
                 discount_label.set_text(f"(-{(d * 100):.1f}%)")
 
+        global_vars.current_shop_instance = shop_instance
         return shop_instance
 
 
@@ -3201,11 +3223,12 @@ if __name__ == "__main__":
         item = list(shop.inventory.keys())[item_id]
         copyed_item = copy.copy(item)
         # print(f"item: {item}, price: {item_price}")
-        buy_one_item(player, copyed_item, item_price)
+        buy_one_item(player, copyed_item, item_price, shop.currency)
         set_currency_on_icon_and_label(player, shop.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
 
     def set_currency_on_icon_and_label(player: Nine, currency: str, label: pygame_gui.elements.UILabel, icon: pygame_gui.elements.UIImage):
-        icon.set_image(images_item[currency.lower()])
+        icon.set_image(images_item[eval(f"{currency}(1)").image])
+        # print(f"Currency: {currency}")
         label.set_text(str(player.get_currency(currency)))
 
     # Event loop
@@ -3509,7 +3532,10 @@ if __name__ == "__main__":
                         text_box.hide()
                         for m in all_shop_ui_modules:
                             m.show()
-                        the_shop = redraw_ui_shop_edition()
+                        if global_vars.current_shop_instance:
+                            the_shop = redraw_ui_shop_edition(reload_shop=False)
+                        else:
+                            the_shop = redraw_ui_shop_edition()
                     global_vars.player_is_in_shop = True
                 if event.ui_element == box_submenu_exit_shop_button:
                     text_box.show()
@@ -3536,8 +3562,6 @@ if __name__ == "__main__":
                 if event.ui_element == cheap_inventory_sort_by_selection_menu:
                     cheap_inventory_sort()
                 if event.ui_element == shop_select_a_shop:
-                    # working correctly
-                    print(f"Selected shop: {shop_select_a_shop.selected_option[0]}")
                     the_shop = redraw_ui_shop_edition()
                 if event.ui_element == theme_selection_menu:
                     change_theme()

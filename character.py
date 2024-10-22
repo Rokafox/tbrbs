@@ -1575,6 +1575,11 @@ class Character:
             onenineeightseven_effect.is_set_effect = True
             onenineeightseven_effect.sort_priority = 2000
             self.apply_effect(onenineeightseven_effect)
+        elif set_name == "7891":
+            seveneightnineone_effect = Effect("7891 Set", -1, True)
+            seveneightnineone_effect.is_set_effect = True
+            seveneightnineone_effect.sort_priority = 2000
+            self.apply_effect(seveneightnineone_effect)
         else:
             raise Exception("Effect not implemented.")
         
@@ -1642,19 +1647,40 @@ class Character:
             selected_stat = max(the_stat_dict, key=the_stat_dict.get)
             if selected_stat == "atk":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.atk)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"atk": self.atk * 0.1987})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"atk": self.atk * (0.1987 + 0.01987)})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "defense":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.defense)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"defense": self.defense * 0.1987})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"defense": self.defense * (0.1987 + 0.01987)})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "spd":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.spd)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"spd": self.spd * 0.1987})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"spd": self.spd * (0.1987 + 0.01987)})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
+        elif self.get_equipment_set() == "7891":
+            # "Select the lowest one from 3 of your main stats: atk, def, spd. 78.91% of the selected stat is added to the ally who has the highest value of the selected stat."
+            the_stat_dict = {"atk": self.atk, "defense": self.defense, "spd": self.spd}
+            # select the lowest stat
+            selected_stat = min(the_stat_dict, key=the_stat_dict.get)
+            if selected_stat == "atk":
+                ally_to_buff: Character = max(self.ally, key=lambda x: x.atk)
+                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"atk": self.atk * (0.7891 ** 2)})
+                e.can_be_removed_by_skill = False
+                ally_to_buff.apply_effect(e)
+            elif selected_stat == "defense":
+                ally_to_buff: Character = max(self.ally, key=lambda x: x.defense)
+                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"defense": self.defense * (0.7891 ** 2)})
+                e.can_be_removed_by_skill = False
+                ally_to_buff.apply_effect(e)
+            elif selected_stat == "spd":
+                ally_to_buff: Character = max(self.ally, key=lambda x: x.spd)
+                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"spd": self.spd * (0.7891 ** 2)})
+                e.can_be_removed_by_skill = False
+                ally_to_buff.apply_effect(e)
+
 
 
     def record_battle_turns(self, increment=1):

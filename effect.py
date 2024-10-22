@@ -773,23 +773,29 @@ class ResolveEffect(Effect):
 
 class DecayEffect(Effect):
     """
-    when healing hp, take damage instead.
+    when healing hp, take damage in the next turn instead.
     """
     def __init__(self, name, duration, is_buff, effect_applier):
         super().__init__(name, duration, is_buff)
         self.effect_applier = effect_applier
         self.apply_rule = "stack" # Make no sense to have 2 decay effect on the same character.
+        self.healing_accumulated = 0
+
+    def apply_effect_on_trigger(self, character):
+        damage_value = self.healing_accumulated
+        global_vars.turn_info_string += f"Decay strikes! {character.name} suffers {damage_value} damage.\n"
+        character.take_status_damage(damage_value, self.effect_applier)
+        self.healing_accumulated = 0
 
     def apply_effect_during_heal_step(self, character, heal_value, healer, overheal_value):
-        global_vars.turn_info_string += f"Decay strikes! Instead of healing, {character.name} suffers {heal_value} damage.\n"
-        character.take_bypass_status_effect_damage(heal_value, self.effect_applier)
+        self.healing_accumulated += heal_value
         return 0
         
     def tooltip_description(self):
-        return "When being healed, take the healing amount as bypass status damage instead."
+        return "When being healed, take the healing amount as status damage in the next turn."
     
     def tooltip_description_jp(self):
-        return "回復を受けると、回復を無効し、回復分の状態異常無視ダメージを受ける。"
+        return "回復を受けると、回復を無効し、次のターンに回復量の状態異常ダメージを受ける。"
 
 
 
@@ -1738,7 +1744,7 @@ class SinEffect(StatsEffect):
             for ally in character.ally:
                 if ally.is_dead():
                     continue
-                ally.take_status_damage(self.value, character)
+                ally.take_status_damage(self.value, self.applier)
             global_vars.turn_info_string += f"{character.name} has been defeated!\n"
             character.remove_effect(self)
         return super().apply_effect_at_end_of_turn(character)
