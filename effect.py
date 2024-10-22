@@ -811,7 +811,8 @@ class CancellationShield(Effect):
 
     """
     def __init__(self, name, duration, is_buff, threshold, cc_immunity, uses=1, cancel_excessive_instead=False, 
-                 cancel_below_instead=False, remove_this_effect_when_use_is_zero=True):
+                 cancel_below_instead=False, remove_this_effect_when_use_is_zero=True,
+                 cover_status_damage=True, cover_normal_damage=True):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.threshold = threshold
@@ -821,26 +822,52 @@ class CancellationShield(Effect):
         self.cancel_excessive_instead = cancel_excessive_instead
         self.cancel_below_instead = cancel_below_instead
         self.remove_this_effect_when_use_is_zero = remove_this_effect_when_use_is_zero
+        self.cover_status_damage = cover_status_damage
+        self.cover_normal_damage = cover_normal_damage
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if not self.remove_this_effect_when_use_is_zero and self.uses == 0:
             return damage
         if damage > character.maxhp * self.threshold:
-            self.uses -= 1
-            if self.uses == 0 and self.remove_this_effect_when_use_is_zero:
-                character.remove_effect(self)
-            elif self.uses < 0:
-                # raise Exception(f"Logic Error: {self.name} uses is negative. Character: {character.name}, attacker: {attacker.name}")
-                # This may happen on recursion. Take a close look at Character.take_damage() method, 
-                # effects are copied but during apply_effect_during_damage_step process damage may trigger.
-                character.remove_effect(self)
-            global_vars.turn_info_string += f"{character.name} shielded the attack!\n"
+            used = False
+
             if self.cancel_excessive_instead:
-                damage = min(damage, character.maxhp * self.threshold)
+                if self.cover_normal_damage and which_ds == "normal":
+                    damage = character.maxhp * self.threshold
+                    used = True
+                elif self.cover_status_damage and which_ds == "status":
+                    damage = character.maxhp * self.threshold
+                    used = True
+                
             if self.cancel_below_instead:
-                damage = max(0, damage - character.maxhp * self.threshold)
+                if self.cover_normal_damage and which_ds == "normal":
+                    damage = damage - character.maxhp * self.threshold
+                    used = True
+                elif self.cover_status_damage and which_ds == "status":
+                    damage = damage - character.maxhp * self.threshold
+                    used = True
+
             if not self.cancel_below_instead and not self.cancel_excessive_instead:
-                damage = 0
+                if self.cover_normal_damage and which_ds == "normal":
+                    damage = 0
+                    used = True
+
+                elif self.cover_status_damage and which_ds == "status":
+                    damage = 0
+                    used = True
+
+            if used:
+                global_vars.turn_info_string += f"{character.name} shielded the attack!\n"
+                self.uses -= 1
+                if self.uses == 0 and self.remove_this_effect_when_use_is_zero:
+                    character.remove_effect(self)
+                elif self.uses < 0:
+                    # raise Exception(f"Logic Error: {self.name} uses is negative. Character: {character.name}, attacker: {attacker.name}")
+                    # This may happen on recursion. Take a close look at Character.take_damage() method, 
+                    # effects are copied but during apply_effect_during_damage_step process damage may trigger.
+                    character.remove_effect(self)
+
+
             return damage
         else:
             return damage
@@ -851,6 +878,12 @@ class CancellationShield(Effect):
             string += " Cancel the excessive damage."
         if self.cancel_below_instead:
             string += " Cancel the damage below."
+        if self.cover_normal_damage and self.cover_status_damage:
+            string += " Applies to all damage."
+        elif self.cover_normal_damage:
+            string += " Applies to normal damage."
+        elif self.cover_status_damage:
+            string += " Applies to status damage."
         return string
 
     def tooltip_description_jp(self):
@@ -859,6 +892,12 @@ class CancellationShield(Effect):
             string += "超過ダメージを無効化る。"
         if self.cancel_below_instead:
             string += "未満ダメージを無効化する。"
+        if self.cover_normal_damage and self.cover_status_damage:
+            string += "全てのダメージに適用。"
+        elif self.cover_normal_damage:
+            string += "通常ダメージに適用。"
+        elif self.cover_status_damage:
+            string += "状態異常ダメージに適用。"
         return string
 
 

@@ -1559,7 +1559,7 @@ class Character:
         elif set_name == "Newspaper":
             self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
         elif set_name == "Cloud":
-            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00})
+            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": 0.70})
             cloud_hide_effect = HideEffect("Hide", 50, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
             cloud_hide_effect.is_set_effect = True
             cloud_hide_effect.sort_priority = 2000
@@ -1661,23 +1661,23 @@ class Character:
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
         elif self.get_equipment_set() == "7891":
-            # "Select the lowest one from 3 of your main stats: atk, def, spd. 78.91% of the selected stat is added to the ally who has the highest value of the selected stat."
+            # "Select the lowest one from 3 of your main stats: atk, def, spd. 55.55% of the selected stat is added to the ally who has the highest value of the selected stat."
             the_stat_dict = {"atk": self.atk, "defense": self.defense, "spd": self.spd}
             # select the lowest stat
             selected_stat = min(the_stat_dict, key=the_stat_dict.get)
             if selected_stat == "atk":
                 ally_to_buff: Character = max(self.ally, key=lambda x: x.atk)
-                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"atk": self.atk * (0.7891 ** 2)})
+                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"atk": self.atk * 0.5555})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "defense":
                 ally_to_buff: Character = max(self.ally, key=lambda x: x.defense)
-                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"defense": self.defense * (0.7891 ** 2)})
+                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"defense": self.defense * 0.5555})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "spd":
                 ally_to_buff: Character = max(self.ally, key=lambda x: x.spd)
-                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"spd": self.spd * (0.7891 ** 2)})
+                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"spd": self.spd * 0.5555})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
 
@@ -2832,7 +2832,7 @@ class Chiffon(Character):
     def skill1_logic(self):
         for ally in self.ally:
             ally.apply_effect(StatsEffect("Woof! Woof! Woof!", 30, True, {"defense": 1.2, "atk": 1.1}))
-            ally.apply_effect(AbsorptionShield("Woof! Woof! Woof!", 20, True, self.atk * 1.5, cc_immunity=False))
+            ally.apply_effect(AbsorptionShield("Wuf! Wuf! Wuf!", 20, True, self.atk * 1.5, cc_immunity=False))
         return 0
 
     def skill2_logic(self):
@@ -2856,7 +2856,7 @@ class Chiffon(Character):
         pass
 
     def battle_entry_effects(self):
-        effect_shield = EffectShield2("Passive Effect", -1, True, False, damage_reduction=0.8)
+        effect_shield = EffectShield2("Endurance", -1, True, False, damage_reduction=0.8)
         effect_shield.can_be_removed_by_skill = False
         self.apply_effect(effect_shield)
 
@@ -3177,17 +3177,17 @@ class Requina(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Requina"
-        self.skill1_description = "Attack 3 closest enemies with 180% atk, 50% chance to apply 6 stacks of Great Poison. 50% chance to apply 4 stacks." \
+        self.skill1_description = "Attack 3 closest enemies with 170% atk, 50% chance to apply 6 stacks of Great Poison. 50% chance to apply 4 stacks." \
         " Each stack of Great Poison reduces atk, defense, heal efficiency by 1%, Each turn, deals 0.3% maxhp status damage. " \
         " Maximum stacks: 70." \
         " Effect last 20 turns. Same effect applied refreshes the duration."
-        self.skill2_description = "Attack 2 closest enemies with 220% atk, if target has Great Poison, apply 6 stacks of Great Poison."
+        self.skill2_description = "Attack 2 closest enemies with 210% atk, if target has Great Poison, apply 6 stacks of Great Poison."
         self.skill3_description = "Normal attack has 95% chance to apply 1 stack of Great Poison."
-        self.skill1_description_jp = "最も近い3体の敵に180%の攻撃を行い、50%の確率で猛毒を6スタック付与し、50%の確率で4スタック付与する。" \
+        self.skill1_description_jp = "最も近い3体の敵に170%の攻撃を行い、50%の確率で猛毒を6スタック付与し、50%の確率で4スタック付与する。" \
                                     "猛毒の各スタックは、攻撃力、防御力、回復効率を1%減少させ、毎ターン最大HPの0.3%の状態異常ダメージを与える。" \
                                     "最大スタック数:70。" \
                                     "効果は20ターン持続し、同じ効果が適用された場合、持続時間が更新される。"
-        self.skill2_description_jp = "最も近い2体の敵に220%の攻撃を行い、対象が猛毒の影響を受けている場合、猛毒を6スタック付与する。"
+        self.skill2_description_jp = "最も近い2体の敵に210%の攻撃を行い、対象が猛毒の影響を受けている場合、猛毒を6スタック付与する。"
         self.skill3_description_jp = "通常攻撃に95%の確率で猛毒を1スタック付与する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 5
@@ -3205,7 +3205,7 @@ class Requina(Character):
                 target.apply_effect(RequinaGreatPoisonEffect("Great Poison", 20, False, 0.003, {"atk": 1.00, "defense": 1.00, "heal_efficiency": 0.00}, self, 6))
             else:
                 target.apply_effect(RequinaGreatPoisonEffect("Great Poison", 20, False, 0.003, {"atk": 1.00, "defense": 1.00, "heal_efficiency": 0.00}, self, 4))
-        damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=1.8, repeat=1, func_after_dmg=effect)
+        damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=1.7, repeat=1, func_after_dmg=effect)
         return damage_dealt
 
     def skill2_logic(self):
@@ -3213,7 +3213,7 @@ class Requina(Character):
             if target.has_effect_that_named("Great Poison"):
                 target.apply_effect(RequinaGreatPoisonEffect("Great Poison", 20, False, 0.003, {"atk": 1.00, "defense": 1.00, "heal_efficiency": 0.00}, self, 6))
             return final_damage
-        damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="2", multiplier=2.2, repeat=1, func_damage_step=damage_step_effect)
+        damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="2", multiplier=2.1, repeat=1, func_damage_step=damage_step_effect)
         return damage_dealt
         
     def skill3(self):
@@ -4005,12 +4005,12 @@ class Timber(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Timber"
         self.skill1_description = "For 6 turns, increase accuracy by 40%, and attack 3 closest enemies with 270% atk." \
-        " Enemy is poisoned for 20 turns, poison deals 0.8% of maxhp as status damage per turn."
+        " Enemy is poisoned for 20 turns, poison deals 1.0% of maxhp as status damage per turn."
         self.skill2_description = "Attack 1 closest enemy with 240% atk 4 times. If the target has poison or Great Poison effect, deal 40% more damage." \
         " Damage is increased by 2% of target maxhp."
         self.skill3_description = "Normal attack damage increased by 2% of target maxhp."
         self.skill1_description_jp = "6ターンの間命中率を40%増加し、最も近い3体の敵に270%の攻撃を行う。" \
-                                    "敵は20ターンの間毒状態となり、毒は毎ターン最大HPの0.8%を状態異常ダメージとして与える。"
+                                    "敵は20ターンの間毒状態となり、毒は毎ターン最大HPの1.0%を状態異常ダメージとして与える。"
         self.skill2_description_jp = "最も近い敵に240%の攻撃を4回行う。対象が毒、猛毒状態であれば、ダメージが40%増加する。" \
                                     "ダメージは対象の最大HPの2%分増加する。"
         self.skill3_description_jp = "通常攻撃のダメージが対象の最大HPの2%分増加する。"
@@ -4026,7 +4026,7 @@ class Timber(Character):
     def skill1_logic(self):
         self.apply_effect(StatsEffect("Accuracy Up", 6, True, {"acc": 0.4}))
         def poison_effect(self, target):
-            target.apply_effect(ContinuousDamageEffect_Poison("Poison", 20, False, ratio=0.008, imposter=self, base="maxhp"))
+            target.apply_effect(ContinuousDamageEffect_Poison("Poison", 20, False, ratio=0.01, imposter=self, base="maxhp"))
         damage_dealt = self.attack(multiplier=2.7, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=poison_effect)
         return damage_dealt
 
@@ -4610,6 +4610,70 @@ class East(Character):
         self.apply_effect(nmdm)
         
 
+class Lenpo(Character):
+    """
+    Burst damage, counter single damage
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Lenpo"
+        self.skill1_description = "Attack enemy of highest hp with 600% atk, if this attack does not take down the enemy, attack" \
+        " enemy of highest hp again with 400% atk."
+        self.skill2_description = "Attack enemy of highest hp with 800% atk, if this attack does not take down the enemy, apply Regeneration on the target" \
+        " for 24 turns, the full duration total healing amount is equal to 100% of the actual damage dealt."
+        self.skill3_description = "At start of battle, apply Self Defense on yourself, Self Defense cancel normal damage 12 times, every time skill is used," \
+        " Self Defense recharges to provide 3 more cancellations."
+        self.skill1_description_jp = "HPが最も高い敵に攻撃力の600%で攻撃し、この攻撃で敵を倒せなかった場合、再度HPが最も高い敵に攻撃力の400%で攻撃する。"
+        self.skill2_description_jp = "HPが最も高い敵に攻撃力の800%で攻撃し、この攻撃で敵を倒せなかった場合、対象に24ターンの間「再生」を付与する。持続時間中の総回復量は、与えたダメージの100%に相当する。"
+        self.skill3_description_jp = "戦闘開始時に、自身に「自己防衛」を付与する。自己防衛は通常ダメージを12回無効化し、スキルを使用するたびに3回分の無効化がリチャージされる。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+
+    def skill1_logic(self):
+        t = self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="hp", keyword4="enemy")
+        t = mit.one(t)
+        damage_dealt = self.attack(multiplier=6.0, target_list=[t])
+        if self.is_alive() and t.is_alive():
+            self.update_ally_and_enemy()
+            t = self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="hp", keyword4="enemy")
+            t = mit.one(t)
+            damage_dealt += self.attack(multiplier=4.0, target_list=[t])
+        if self.is_alive():
+            sd = self.get_effect_that_named("Self Defense", "Lenpo_Self_Defense")
+            sd.uses += 3
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        t = self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="hp", keyword4="enemy")
+        t = mit.one(t)
+        t_hp_prev = t.hp
+        damage_dealt = self.attack(multiplier=8.0, target_list=[t])
+        t_hp_after = t.hp
+        if t.is_alive():
+            def heal_func(char, effect_applier):
+                return ((abs(t_hp_after - t_hp_prev)) * 1.00) / 24
+            t.apply_effect(ContinuousHealEffect("Regeneration", 24, True, value_function=heal_func, buff_applier=self,
+                                                value_function_description=f"{((abs(t_hp_after - t_hp_prev)) * 1.00) / 24}",
+                                                value_function_description_jp=f"{((abs(t_hp_after - t_hp_prev)) * 1.00) / 24}"))
+        if self.is_alive():
+            sd = self.get_effect_that_named("Self Defense", "Lenpo_Self_Defense")
+            sd.uses += 3
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self_defense = CancellationShield("Self Defense", -1, True, threshold=0, cc_immunity=False, uses=12,
+                                          remove_this_effect_when_use_is_zero=False,
+                                          cover_normal_damage=True, cover_status_damage=False)
+        self_defense.additional_name = "Lenpo_Self_Defense"
+        self_defense.can_be_removed_by_skill = False
+        self.apply_effect(self_defense)
 
 
 
