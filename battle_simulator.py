@@ -454,7 +454,7 @@ def get_all_characters():
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
-                       "Zhen", "Cupid", "East", "Lenpo", "George"]
+                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles"]
     character_names.sort()
     print(len(character_names))
 
@@ -3247,7 +3247,7 @@ if __name__ == "__main__":
             print("Player data not found, creating a new one...")
             if start_with_max_level:
                 player = Nine(5000000000)
-                player.cleared_stages = 2199 # 2199
+                player.cleared_stages = 2000
                 package_of_equips = [EquipPackage(100), EquipPackage2(100), EquipPackage3(100), EquipPackage4(100), 
                                     EquipPackage5(100), EquipPackage6(100), FoodPackage(100), FoodPackage2(100), FoodPackage3(100)]
                 player.add_package_of_items_to_inventory(package_of_equips)

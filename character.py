@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -470,6 +470,8 @@ class Character:
             damage_is_based_on = self.hp
         elif damage_is_based_on == "defense":
             damage_is_based_on = self.defense
+        elif damage_is_based_on == "spd":
+            damage_is_based_on = self.spd
         else:
             raise Exception("Invalid damage_is_based_on.")
 
@@ -3872,7 +3874,7 @@ class Cocoa(Character):
         self.skill3_description = "If haven't taken damage for 5 turns, fall asleep. This effect does not reduce evasion." \
         " While asleep, recover 8% hp each turn. When this effect is removed, for 20 turns," \
         " apply Sweet Dreams on yourself, atk and defense is increased by 30%."
-        self.skill1_description_jp = "最も近い敵に380%の攻撃を3回集中して行う。幻夢効果がある場合、ダメージが2倍になる。"
+        self.skill1_description_jp = "最も近い敵に380%の集中攻撃を3回行う。幻夢効果がある場合、ダメージが2倍になる。"
         self.skill2_description_jp = "最も攻撃力が高い味方を選択し、その味方のスキルクールダウンを2減少させ、2ターンの間速度を200%増加させる。" \
                                     "同じ効果が適用された場合、持続時間が更新される。" \
                                     "選択された味方が自分である場合、攻撃力の300%でHPが回復する。"
@@ -4767,6 +4769,92 @@ class George(Character):
         dm.can_be_removed_by_skill = False
         self.apply_effect(dm)
 
+
+class Heracles(Character):
+    """
+    Benefit from having high main stats
+    Safe attacker
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Heracles"
+        self.skill1_description = "Attack 3 closest enemies 4 times with 150% atk, defense, spd and maxhp / 20." \
+        " Multiplier increases by 30% for each lost ally."
+        self.skill2_description = "Remove 3 debuffs on yourself, apply Regeneration and Protection on yourself for 20 turns," \
+        " Regeneration: Recover hp by level * 5 each turn. Protection: When taking normal damage and damage exceed 10% of max hp," \
+        " The part of damage that exceed 10% of max hp is reduced by 40%. Both effect refreshs duration when applied again."
+        self.skill3_description = "Apply Divine Power and on yourself. Divine Power: Before taking damage, if damage exceed 10% of max hp," \
+        " recover 8% of max hp. At start of battle, select your lowest main stats, 25% of the selected stats is added" \
+        " to all other main stats. Main stats include atk, def, spd and maxhp. Maxhp is devided by 20 during calculation."
+        # 授かれし神力
+        self.skill1_description_jp = "最も近い3人の敵に、攻撃力、防御力、速度、最大HPの1/20に基づいて150%の攻撃を4回行う。倒れた味方1人ごとに、倍率が30%増加する。"
+        self.skill2_description_jp = "自身のデバフを3つ解除し、20ターンの間、自身に「再生」と「保護」を付与する。再生：各ターン、レベル×5のHPを回復する。保護：通常ダメージを受けた時、そのダメージが最大HPの10%を超える場合、超過分のダメージが40%減少する。両方の効果は再度適用された際に持続時間が更新される。"
+        self.skill3_description_jp = "自身に「授かれし神力」を付与する。授かれし神力：ダメージを受ける前に、ダメージが最大HPの10%を超える場合、最大HPの8%を回復する。戦闘開始時に、最も低い主要ステータスを選択し、その25%が他の全ての主要ステータスに加算される。主要ステータスには攻撃力、防御力、速度、最大HPが含まれる。最大HPは計算時に1/20に分割される。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+
+    def skill1_logic(self):
+        a1, a2, a3, a4 = 0, 0, 0, 0
+        mp_base = 1.5
+        mp = mp_base + (0.3 * (len(self.party) - len(self.ally)))
+        mp = max(mp, 1.0)
+        a1 = self.attack(multiplier=1.5, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3")
+        if self.is_alive():
+            a2 = self.attack(multiplier=1.5, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", damage_is_based_on="defense")
+        if self.is_alive():
+            a3 = self.attack(multiplier=1.5, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", damage_is_based_on="spd")
+        if self.is_alive():
+            a4 = self.attack(multiplier=1.5 / 20, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", damage_is_based_on="maxhp")
+        return a1 + a2 + a3 + a4
+
+
+    def skill2_logic(self):
+        self.remove_random_amount_of_debuffs(3)
+        if self.is_alive():
+            def heal_func(char, effect_applier):
+                return char.lvl * 5
+            regen = ContinuousHealEffect("Regeneration", 20, True, value_function=heal_func, buff_applier=self,
+                                         value_function_description="level * 5", value_function_description_jp="レベル×5")
+            regen.additional_name = "Heracles_Regeneration"
+            regen.apply_rule = "stack"
+            self.apply_effect(regen)
+            protection = EffectShield2("Protection", 20, True, cc_immunity=False, damage_reduction=0.4, shrink_rate=0,
+                                       hp_threshold=0.1)
+            protection.additional_name = "Heracles_Protection"
+            protection.apply_rule = "stack"
+            self.apply_effect(protection)
+
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        dp1 = EffectShield2_HealonDamage("Divine Power", -1, True, False, 0.1, self, heal_with_self_maxhp_percentage=0.08)
+        dp1.can_be_removed_by_skill = False
+        self.apply_effect(dp1)
+
+        the_stat_dict = {"atk": self.atk, "defense": self.defense, "spd": self.spd, "maxhp": int(self.maxhp / 20)}
+        selected_stat = min(the_stat_dict, key=the_stat_dict.get)
+        v = 0
+        m = 0.25
+        dp2 = None
+        if selected_stat == "atk":
+            v = self.atk * m
+            dp2 = StatsEffect("Divine Power", -1, True, main_stats_additive_dict={"atk": v, "defense": v, "spd": v, "maxhp": int(v*20)})
+        elif selected_stat == "defense":
+            v = self.defense * m
+            dp2 = StatsEffect("Divine Power", -1, True, main_stats_additive_dict={"atk": v, "defense": v, "spd": v, "maxhp": int(v*20)})
+        elif selected_stat == "spd":
+            v = self.spd * m
+            dp2 = StatsEffect("Divine Power", -1, True, main_stats_additive_dict={"atk": v, "defense": v, "spd": v, "maxhp": int(v*20)})
+        elif selected_stat == "maxhp":
+            v = self.maxhp * m
+            dp2 = StatsEffect("Divine Power", -1, True, main_stats_additive_dict={"atk": v/20, "defense": v/20, "spd": v/20, "maxhp": int(v)})
+        dp2.can_be_removed_by_skill = False
+        self.apply_effect(dp2)
 
 
 

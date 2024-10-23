@@ -685,6 +685,36 @@ class EffectShield2(Effect):
         return str
 
 
+class EffectShield2_HealonDamage(Effect):
+    """
+    A variant of EffectShield2 that heals the character if damage exceeds a certain threshold.
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, hp_threshold, effect_applier, heal_with_self_maxhp_percentage=0):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.cc_immunity = cc_immunity
+        self.hp_threshold = hp_threshold
+        self.effect_applier = effect_applier
+        self.heal_with_self_maxhp_percentage = heal_with_self_maxhp_percentage
+
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        damage_threshold = character.maxhp * self.hp_threshold
+        if damage > damage_threshold:
+            heal_amount = 0
+            if self.heal_with_self_maxhp_percentage > 0:
+                heal_amount += character.maxhp * self.heal_with_self_maxhp_percentage
+            character.heal_hp(heal_amount, self.effect_applier)
+        return damage
+
+    def tooltip_description(self):
+        return f"Heals for {self.heal_with_self_maxhp_percentage*100:.1f}% of max HP if damage exceeds {self.hp_threshold*100:.1f}% of max HP."
+    
+    def tooltip_description_jp(self):
+        return f"ダメージが最大HPの{self.hp_threshold*100:.1f}%を超えると、最大HPの{self.heal_with_self_maxhp_percentage*100:.1f}%回復する。"
+
+
+
+
 class DamageReflect(Effect):
     """
     Reflect [reflect_percentage]*100% of the damage taken to the attacker.
