@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -599,7 +599,11 @@ class Character:
         return healing_done
 
     # Action logic
-    def action(self) -> None:
+    def action(self, skill_priority: int = 1) -> None:
+        if self.get_equipment_set() == "Freight":
+            skill_priority = 2
+            freight_effect = self.get_effect_that_named("Freight Set", None, "EquipmentSetEffect_Freight")
+            freight_effect.apply_effect_custom(self)
         # Action is not allowed if the character is dead
         if self.is_dead():
             raise Exception("Dead character cannot act.")
@@ -611,12 +615,20 @@ class Character:
         can_act, reason = self.can_take_action()
         if can_act:
             self.update_cooldown()
-            if self.skill1_cooldown == 0 and not self.is_silenced() and self.skill1_can_be_used:
-                self.skill1()
-            elif self.skill2_cooldown == 0 and not self.is_silenced() and self.skill2_can_be_used:
-                self.skill2()
-            else:
-                self.normal_attack()
+            if skill_priority == 1:
+                if self.skill1_cooldown == 0 and not self.is_silenced() and self.skill1_can_be_used:
+                    self.skill1()
+                elif self.skill2_cooldown == 0 and not self.is_silenced() and self.skill2_can_be_used:
+                    self.skill2()
+                else:
+                    self.normal_attack()
+            elif skill_priority == 2:
+                if self.skill2_cooldown == 0 and not self.is_silenced() and self.skill2_can_be_used:
+                    self.skill2()
+                elif self.skill1_cooldown == 0 and not self.is_silenced() and self.skill1_can_be_used:
+                    self.skill1()
+                else:
+                    self.normal_attack()
         else:
             global_vars.turn_info_string += f"{self.name} cannot act due to {reason}.\n"
 
@@ -630,7 +642,10 @@ class Character:
 
     # Print the character's stats
     def __str__(self):
-        return "{:<20s} MaxHP: {:>5d} HP: {:>5d} ATK: {:>7.2f} DEF: {:>7.2f} Speed: {:>7.2f}".format(self.name, self.maxhp, self.hp, self.atk, self.defense, self.spd)
+        base_stats = "{:<20s} MaxHP: {:>5d} HP: {:>5d} ATK: {:>7.2f} DEF: {:>7.2f} Speed: {:>7.2f}".format(self.name, self.maxhp, self.hp, self.atk, self.defense, self.spd)
+        effects_buffs = [str(effect) for effect in self.buffs]
+        effects_debuffs = [str(effect) for effect in self.debuffs]
+        return base_stats + f" Buffs: {effects_buffs} Debuffs: {effects_debuffs}"
 
     def tooltip_string(self):
         level = self.lvl if self.lvl < self.lvl_max else "MAX"
@@ -1580,6 +1595,8 @@ class Character:
             seveneightnineone_effect.is_set_effect = True
             seveneightnineone_effect.sort_priority = 2000
             self.apply_effect(seveneightnineone_effect)
+        elif set_name == "Freight":
+            self.apply_effect(EquipmentSetEffect_Freight("Freight Set", -1, True))
         else:
             raise Exception("Effect not implemented.")
         

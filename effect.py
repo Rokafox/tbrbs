@@ -2227,6 +2227,19 @@ class EquipmentSetEffect_Newspaper(Effect):
         self.is_set_effect = True
         self.sort_priority = 2000
 
+# ---------------------------------------------------------
+# Freight
+# See character.py for implementation.
+class EquipmentSetEffect_Freight(Effect):
+    def __init__(self, name, duration, is_buff):
+        super().__init__(name, duration, is_buff)
+        self.is_set_effect = True
+        self.sort_priority = 2000
+
+    def apply_effect_custom(self, character):
+        character.heal_hp(character.spd * 0.30, character)
+
+
 #---------------------------------------------------------
 # End of Equipment set effects
 #---------------------------------------------------------

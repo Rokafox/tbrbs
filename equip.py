@@ -16,7 +16,7 @@ class Equip(Block):
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
-                            "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987", "7891"]
+                            "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987", "7891", "Freight"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -180,6 +180,10 @@ class Equip(Block):
                     "Select the lowest one from 3 of your main stats: atk, def, spd. 55.55% of the selected stat is added to the ally" \
                     " who has the highest value of the selected stat."
                 )
+            case "Freight":
+                return (
+                    "Prioritize skill 2 over skill 1 if both are available. Before an action, heal hp by 30% of speed."
+                )
             case _:
                 return ""
 
@@ -265,6 +269,10 @@ class Equip(Block):
             case "7891":
                 return (
                     "攻撃力、防御力、速度の3つのステータスの中から最も低いものを選択し、選択したステータスの55.55%分が、選択したステータスの値が最も高い味方に付加される。"
+                )
+            case "Freight":
+                return (
+                    "スキル1よりもスキル2を優先で使用する。行動前にHPを速度の30%分回復する。"
                 )
             case _:
                 return ""
