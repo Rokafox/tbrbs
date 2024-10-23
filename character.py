@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -99,6 +99,7 @@ class Character:
         self.number_of_attacks = 0 # counts how many attacks the character has made
         self.battle_turns = 0 # counts how many turns the character has been in battle
         self.number_of_take_downs: int = 0 # counts how many enemies the character has taken down
+        self.have_taken_action: bool = False # whether the character has taken action in the battle
 
         self.clear_others()
 
@@ -618,17 +619,29 @@ class Character:
             if skill_priority == 1:
                 if self.skill1_cooldown == 0 and not self.is_silenced() and self.skill1_can_be_used:
                     self.skill1()
+                    if not self.have_taken_action:
+                        self.have_taken_action = True
                 elif self.skill2_cooldown == 0 and not self.is_silenced() and self.skill2_can_be_used:
                     self.skill2()
+                    if not self.have_taken_action:
+                        self.have_taken_action = True
                 else:
                     self.normal_attack()
+                    if not self.have_taken_action:
+                        self.have_taken_action = True
             elif skill_priority == 2:
                 if self.skill2_cooldown == 0 and not self.is_silenced() and self.skill2_can_be_used:
                     self.skill2()
+                    if not self.have_taken_action:
+                        self.have_taken_action = True
                 elif self.skill1_cooldown == 0 and not self.is_silenced() and self.skill1_can_be_used:
                     self.skill1()
+                    if not self.have_taken_action:
+                        self.have_taken_action = True
                 else:
                     self.normal_attack()
+                    if not self.have_taken_action:
+                        self.have_taken_action = True
         else:
             global_vars.turn_info_string += f"{self.name} cannot act due to {reason}.\n"
 
@@ -964,6 +977,15 @@ class Character:
             # Allies with Lead Arrow is seen as enemy, only allies with Lead Arrow is seen as ally.
             self.ally = [ally for ally in self.ally if ally.has_effect_that_named("Lead Arrow", additional_name="Cupid_Lead_Arrow")]
             self.enemy = [ally for ally in self.ally if ally.has_effect_that_named("Lead Arrow", additional_name="Cupid_Lead_Arrow")]
+        elif self.get_effect_that_named(None, None, "TauntEffect") is not None:
+            taunt_effect = self.get_effect_that_named(None, None, "TauntEffect")
+            selection = [enemy for enemy in self.enemy if enemy in  [taunt_effect.marked_character]]
+            # get rid of character in selection who have Hide effect
+            selection = [enemy for enemy in selection if not enemy.is_hidden()]
+            if selection is []:
+                self.remove_effect(taunt_effect)
+            else:
+                self.enemy = selection
 
         
     def has_ally(self, ally_name):
@@ -2360,15 +2382,15 @@ class Pheonix(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Pheonix"
-        self.skill1_description = "Attack all enemies with 160% atk, 80% chance to inflict burn for 30 turns. Burn deals 20% atk damage per turn."
+        self.skill1_description = "Attack all enemies with 160% atk, 80% chance to inflict burn for 25 turns. Burn deals 20% atk damage per turn."
         self.skill2_description = "First time cast: apply Reborn to all neighbor allies. " \
-        "Reborn: when defeated, revive with 40% hp. Second and further cast: attack random enemy pair with 260% atk, 80% chance to inflict burn for 30 turns. " \
+        "Reborn: when defeated, revive with 40% hp. Second and further cast: attack random enemy pair with 260% atk, 80% chance to inflict burn for 25 turns. " \
         "Burn deals 20% atk damage per turn."
         self.skill3_description = "Revive with 80% hp the next turn after fallen. If revived by this effect, increase atk by 20% for 30 turns." \
         " This effect cannot be removed by skill."
-        self.skill1_description_jp = "全ての敵に190%の攻撃を行い、80%の確率で30ターンの間燃焼を付与する。燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
+        self.skill1_description_jp = "全ての敵に190%の攻撃を行い、80%の確率で25ターンの間燃焼を付与する。燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
         self.skill2_description_jp = "初回発動時: 隣接する全ての味方に再生を付与する。" \
-                                    "再生:倒された場合、HP40%で復活する。2回目以降の発動:ランダムな敵のペアに260%の攻撃を行い、80%の確率で30ターンの間燃焼を付与する。" \
+                                    "再生:倒された場合、HP40%で復活する。2回目以降の発動:ランダムな敵のペアに260%の攻撃を行い、80%の確率で25ターンの間燃焼を付与する。" \
                                     "燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
         self.skill3_description_jp = "倒れた次のターンにHP80%で復活する。この効果で復活した場合、攻撃力が30ターンの間20%増加する。" \
                                     "この効果はスキルで取り除くことができない。"
@@ -2388,7 +2410,7 @@ class Pheonix(Character):
     def skill1_logic(self):
         def burn_effect(self, target):
             if random.randint(1, 100) <= 80:
-                target.apply_effect(ContinuousDamageEffect("Burn", 30, False, self.atk * 0.20, self))
+                target.apply_effect(ContinuousDamageEffect("Burn", 25, False, self.atk * 0.20, self))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=1.6, repeat=1, func_after_dmg=burn_effect)         
         return damage_dealt
 
@@ -2404,7 +2426,7 @@ class Pheonix(Character):
         else:
             def burn_effect(self, target):
                 if random.randint(1, 100) <= 80:
-                    target.apply_effect(ContinuousDamageEffect("Burn", 30, False, self.atk * 0.20, self))
+                    target.apply_effect(ContinuousDamageEffect("Burn", 25, False, self.atk * 0.20, self))
             damage_dealt = self.attack(target_kw1="random_enemy_pair", multiplier=2.6, repeat=1, func_after_dmg=burn_effect)         
             return damage_dealt   
 
@@ -4248,10 +4270,10 @@ class Moe(Character):
         " otherwise attack with 200% atk. Attack 4 times, each attack removes 1 active buff from the target." \
         " After the attack, apply Paradox on target for 24 turns, reduce crit damage by 60%."
         self.skill2_description = "Attack all enemies with 200% atk, if enemy has active buffs, attack with 400% atk."
-        self.skill3_description = "When taking critical damage, recover hp by 300% atk, reduced that damage by 40%."
+        self.skill3_description = "When taking critical damage, recover hp by 300% atk, reduced that damage by 45%."
         self.skill1_description_jp = "クリティカル率が最も高い敵を対象にする。対象にアクティブなバフがある場合、攻撃力の400%で攻撃し、ない場合は攻撃力の200%で攻撃する。4回攻撃し、各攻撃で1つのアクティブなバフを解除する。攻撃後、対象に24ターンの間「矛盾」を付与し、クリティカルダメージを60%減少させる。"
         self.skill2_description_jp = "全ての敵に攻撃力の200%で攻撃し、敵にアクティブなバフがある場合は攻撃力の400%で攻撃する。"
-        self.skill3_description_jp = "クリティカルダメージを受けた際、攻撃力の300%分HPを回復し、そのダメージを40%軽減する。"
+        self.skill3_description_jp = "クリティカルダメージを受けた際、攻撃力の300%分HPを回復し、そのダメージを45%軽減する。"
 
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -4294,7 +4316,7 @@ class Moe(Character):
         def heal_func(character: Character):
             return character.atk * 3.0
         sf = EffectShield1_healoncrit("Sweets Fluffy", -1, True, 1, effect_applier=self, cc_immunity=False,
-                                      heal_function=heal_func, critdmg_reduction=0.4)
+                                      heal_function=heal_func, critdmg_reduction=0.45)
         sf.can_be_removed_by_skill = False
         self.apply_effect(sf)
 
@@ -4693,6 +4715,57 @@ class Lenpo(Character):
         self.apply_effect(self_defense)
 
 
+class George(Character):
+    """
+
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "George"
+        self.skill1_description = "Attack 3 closest enemies with 260% atk and apply Close River for 20 turns. Close River: When targeting an enemy," \
+        " only the character in the middle of enemy party can be targeted. Effect is removed when the enemy in middle is defeated." \
+        " or you are defeated, or the enemy in the middle cannot be targeted."
+        self.skill2_description = "Attack random enemies 7 times with 200% atk each, for each lost ally of the target, damage is increased by 30%."
+        self.skill3_description = "Apply Distant Mountain on yourself. Distant Mountain: Before taken action in battle, reduce damage taken by 50%."
+        # 遠山 近水
+        self.skill1_description_jp = "最も近い3人の敵に攻撃力の260%で攻撃し、20ターンの間「近水」を付与する。近水：敵をターゲットにする際、敵パーティの中央のキャラクターのみを対象にできる。この効果は、中央の敵が倒された時、または自分が倒された時、もしくは中央の敵がターゲットにできない状態になった時に解除される。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力の200%で7回攻撃する。対象が失った味方1人につき、ダメージが30%増加する。"
+        self.skill3_description_jp = "自身に「遠山」を付与する。遠山：戦闘中、行動する前に受けるダメージが50%減少する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+
+    def skill1_logic(self):
+        character_marked = mit.one(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
+        def apply_taunt_effect(self: Character, target: Character):
+            target.apply_effect(TauntEffect("Close River", 20, False, False, marked_character=character_marked))
+        damage_dealt = self.attack(multiplier=2.6, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=apply_taunt_effect)
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def damage_amplify(self: Character, target, final_damage):
+            self.update_ally_and_enemy()
+            diff = len(self.enemyparty) - len(self.enemy)
+            if diff > 0:
+                final_damage *= 1 + (0.3 * diff)
+            return final_damage
+        damage_dealt = self.attack(multiplier=2.0, repeat=7, func_damage_step=damage_amplify)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        requirement_func = lambda charac, attacker: not charac.have_taken_action
+        dm = ReductionShield("Distant Mountain", -1, True, 0.5, False, cover_status_damage=True, cover_normal_damage=True,
+                             requirement=requirement_func,
+                             requirement_description="Before taken action in battle.",
+                             requirement_description_jp="戦闘中に行動をした前。")
+        dm.can_be_removed_by_skill = False
+        self.apply_effect(dm)
 
 
 

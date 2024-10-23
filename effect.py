@@ -1820,6 +1820,32 @@ class NotTakingDamageEffect(Effect):
         return f"{self.require_turns_without_damage}ターン攻撃を受けていないと{self.effect_to_apply.name}効果が付与される。"
 
 
+class TauntEffect(Effect):
+    """
+    The character with this effect can only target [marked_character].
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, marked_character):
+        super().__init__(name, duration, is_buff)
+        self.cc_immunity = cc_immunity
+        self.marked_character = marked_character
+        self.apply_rule = "stack" # Make no sense to have multiple taunt effects.
+
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            character.remove_effect(self)
+            return
+        if self.marked_character.is_dead():
+            character.remove_effect(self)
+            return
+
+    def tooltip_description(self):
+        return f"When targeting enemies, only {self.marked_character.name} can be targeted."
+    
+    def tooltip_description_jp(self):
+        return f"敵を対象とするとき、{self.marked_character.name}のみを対象とする。"
+
+
+
 
 # =========================================================
 # End of Special effects
@@ -2237,7 +2263,7 @@ class EquipmentSetEffect_Freight(Effect):
         self.sort_priority = 2000
 
     def apply_effect_custom(self, character):
-        character.heal_hp(character.spd * 0.30, character)
+        character.heal_hp(character.spd * 0.50, character)
 
 
 #---------------------------------------------------------

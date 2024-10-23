@@ -182,7 +182,7 @@ class Equip(Block):
                 )
             case "Freight":
                 return (
-                    "Prioritize skill 2 over skill 1 if both are available. Before an action, heal hp by 30% of speed."
+                    "Prioritize skill 2 over skill 1 if both are available. Before an action, heal hp by 50% of speed."
                 )
             case _:
                 return ""
@@ -272,7 +272,7 @@ class Equip(Block):
                 )
             case "Freight":
                 return (
-                    "スキル1よりもスキル2を優先で使用する。行動前にHPを速度の30%分回復する。"
+                    "スキル1よりもスキル2を優先して使用する。行動前にHPを速度の50%分回復する。"
                 )
             case _:
                 return ""
