@@ -1326,6 +1326,31 @@ class Character:
         return None
 
 
+    def get_all_effect_that_named(self, effect_name: str = None, additional_name: str = None, class_name: str = None) -> list:
+        """
+        Return a list of all effects found that matches the given effect name.
+        """
+        effects = []
+        for effect in self.buffs + self.debuffs:
+            if effect_name and effect.name != effect_name:
+                continue
+
+            match (additional_name, class_name):
+                case (None, None):
+                    effects.append(effect)
+                case (_, None):
+                    if hasattr(effect, "additional_name") and effect.additional_name == additional_name:
+                        effects.append(effect)
+                case (None, _):
+                    if type(effect).__name__ == class_name:
+                        effects.append(effect)
+                case (_, _):
+                    if hasattr(effect, "additional_name") and effect.additional_name == additional_name and \
+                    type(effect).__name__ == class_name:
+                        effects.append(effect)
+        return effects
+
+
     def is_immune_to_cc(self):
         for effect in self.buffs:
             if effect.cc_immunity:
@@ -4855,6 +4880,77 @@ class Heracles(Character):
             dp2 = StatsEffect("Divine Power", -1, True, main_stats_additive_dict={"atk": v/20, "defense": v/20, "spd": v/20, "maxhp": int(v)})
         dp2.can_be_removed_by_skill = False
         self.apply_effect(dp2)
+
+
+class Sunny(Character):
+    """
+    Burn support
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Sunny"
+        self.skill1_description = "Attack random enemy 4 times with 180% atk, inflict Burn for 20 turns," \
+        " Burn deals 30% of atk status damage each turn."
+        self.skill2_description = "Attack enemy of lowest hp with 400% atk, inflict another Burn effect for 20 turns if target" \
+        " already has Burn effect and inflict Weaken for 20 turns, Weaken reduce atk and def by 30%. If target has more than" \
+        " 3 Burn effects, stats reduction is increased to 60%."
+        self.skill3_description = "After using a skill, apply Summer Breeze on 3 allies of lowest hp for 10 turns." \
+        " Summer Breeze: Recover hp by 20% of your atk each turn, defense and critdef increased by 20%."
+        # 薫風
+        self.skill1_description_jp = ""
+        self.skill2_description_jp = ""
+        self.skill3_description_jp = ""
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+
+    def skill1_logic(self):
+        def burn_effect(self, target: Character):
+            target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.3 * self.atk, self))
+        damage_dealt = self.attack(multiplier=1.8, repeat=4, func_after_dmg=burn_effect)
+        if self.is_alive():
+            def heal_func(char, buff_applier):
+                return buff_applier.atk * 0.2
+            summer_breeze = ContinuousHealEffect("Summer Breeze", 10, True, value_function=heal_func, buff_applier=self,
+                                                value_function_description="20% of Sunny atk", value_function_description_jp="20%Sunnyの攻撃力")
+            summer_breeze_part2 = StatsEffect("Summer Breeze", 10, True, {"defense": 1.2, "critdef": 1.2})
+            self.update_ally_and_enemy()
+            ally_selection = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
+            for a in ally_selection:
+                a.apply_effect(summer_breeze)
+                a.apply_effect(summer_breeze_part2)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def negative_effect(self, target: Character):
+            burns = target.get_all_effect_that_named("Burn")
+            how_many = len(burns)
+            if how_many > 3:
+                target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.3 * self.atk, self))
+                weak = StatsEffect("Weaken", 20, False, {"atk": 0.4, "defense": 0.4})
+                target.apply_effect(weak)
+            elif how_many > 0:
+                target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.3 * self.atk, self))
+                weak = StatsEffect("Weaken", 20, False, {"atk": 0.7, "defense": 0.7})
+                target.apply_effect(weak)
+        damage_dealt = self.attack(multiplier=4.0, repeat=1, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy",
+                                      func_after_dmg=negative_effect)
+        if self.is_alive():
+            def heal_func(char, buff_applier):
+                return buff_applier.atk * 0.2
+            summer_breeze = ContinuousHealEffect("Summer Breeze", 10, True, value_function=heal_func, buff_applier=self,
+                                                value_function_description="20% of Sunny atk", value_function_description_jp="20%Sunnyの攻撃力")
+            summer_breeze_part2 = StatsEffect("Summer Breeze", 10, True, {"defense": 1.2, "critdef": 1.2})
+            ally_selection = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
+            for a in ally_selection:
+                a.apply_effect(summer_breeze)
+                a.apply_effect(summer_breeze_part2)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
 
 
 

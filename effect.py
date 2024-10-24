@@ -2371,6 +2371,7 @@ class CupidLeadArrowEffect(StatsEffect):
                 love_fantasy = Effect("Love Fantasy", 4, False, False)
                 love_fantasy.additional_name = "Cupid_Love_Fantasy"
                 love_fantasy.apply_rule = "stack"
+                love_fantasy.is_cc_effect = True
                 character.apply_effect(love_fantasy)
                 self.duration = love_fantasy.duration
         return damage
