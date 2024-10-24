@@ -454,7 +454,7 @@ def get_all_characters():
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
-                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki"]
+                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester"]
     character_names.sort()
     print(len(character_names))
 
@@ -1280,14 +1280,14 @@ if __name__ == "__main__":
     def buy_one_item(player: Nine, item: Block, item_price: int, currency: str) -> None:
         if currency == "Cash":
             if player.get_cash() < item_price:
-                print(f"Not enough cash to buy {item.name}.")
+                text_box.set_text(f"Not enough cash to buy {item.name}.")
                 return
             player.add_to_inventory(item, False)
             player.lose_cash(item_price, True)
             text_box.set_text(f"Bought {item.name} for {item_price} cash.\n")
         else:
             if player.get_currency(currency) < item_price:
-                print(f"Not enough {currency} to buy {item.name}.")
+                text_box.set_text(f"Not enough {currency} to buy {item.name}.")
                 return
             player.add_to_inventory(item, False)
             player.remove_from_inventory(item_type=type(eval(f"{currency}(1)")), amount_to_remove=item_price, rebuild_inventory_slots=True)

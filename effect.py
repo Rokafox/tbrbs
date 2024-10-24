@@ -21,7 +21,7 @@ class Effect:
         # priority 1800-1999 is reserved for special effects.
         # Equipments have priority 2000-2200.
         self.stacks = 1 
-        self.apply_rule = "default" # "default", "stack"
+        self.apply_rule = "default" # "default", "stack", "replace"
         self.is_cc_effect = False
         self.tooltip_str = tooltip_str
         self.tooltip_str_jp = tooltip_str_jp
@@ -62,6 +62,9 @@ class Effect:
     def apply_effect_when_adding_stacks(self, character, stats_income):
         pass
 
+    def apply_effect_when_replacing_old_same_effect(self, old_effect):
+        pass
+
     def apply_effect_on_expire(self, character):
         pass
     
@@ -94,8 +97,12 @@ class Effect:
     def apply_effect_during_heal_step(self, character, heal_value, healer, overheal_value):
         return heal_value
 
-    def apply_effect_after_heal_step(self, character, heal_value):
+    def apply_effect_after_heal_step(self, character, heal_value, overheal_value):
         pass
+
+    def apply_effect_when_missing_attack(self, character, target):
+        pass
+
 
 
     def __str__(self):
@@ -1338,6 +1345,28 @@ class StatsEffect(Effect):
             # condition is None, will not do anything.
             return
 
+    def apply_effect_when_replacing_old_same_effect(self, old_effect: Effect):
+        if self.apply_rule != "replace":
+            raise Exception(f"This rule is not supported: {self.apply_rule}")
+        # for main_stats_additive_dict, we simply add the old dict to the new dict.
+
+        if self.main_stats_additive_dict and old_effect.main_stats_additive_dict:
+            result_dict = old_effect.main_stats_additive_dict.copy()
+            for key, value in self.main_stats_additive_dict.items():
+                if key in result_dict:
+                    result_dict[key] += value
+                else:
+                    result_dict[key] = value
+            self.main_stats_additive_dict = result_dict
+        else:
+            print(old_effect)
+            print(self)
+            print(self.main_stats_additive_dict)
+            print(old_effect.main_stats_additive_dict)
+            print(old_effect.stats_dict)
+            raise Exception("Only main_stats_additive_dict is supported for now.")
+
+
     def tooltip_description(self):
         string = ""
         if self.condition is not None:
@@ -1505,7 +1534,7 @@ class ContinuousDamageEffect(Effect):
                 raise Exception(f"Invalid damage type: {self.damage_type} in ContinuousDamageEffect.")
         self.how_many_times_this_effect_is_triggered_lifetime += 1
     
-    def apply_effect_after_heal_step(self, character, heal_value):
+    def apply_effect_after_heal_step(self, character, heal_value, overheal_value):
         if self.remove_by_heal:
             global_vars.turn_info_string += f"{character.name}'s {self.name} is removed by heal.\n"
             character.remove_effect(self)
@@ -1580,7 +1609,7 @@ class ContinuousDamageEffect_Poison(Effect):
             case _:
                 raise Exception("Invalid base.")
     
-    def apply_effect_after_heal_step(self, character, heal_value):
+    def apply_effect_after_heal_step(self, character, heal_value, overheal_value):
         if self.remove_by_heal:
             global_vars.turn_info_string += f"{character.name}'s {self.name} is removed by heal.\n"
             character.remove_effect(self)
@@ -2395,6 +2424,56 @@ class EastBoilingWaterEffect(ContinuousDamageEffect):
         self.damage_dealt = self.value * self.how_many_times_this_effect_is_triggered_lifetime
         character.take_status_damage(self.damage_dealt * 0.8, self.imposter)
         return super().apply_effect_on_remove(character)
+
+
+class LesterBookofMemoryEffect(StatsEffect):
+    def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True, stats_dict_function=None, is_set_effect=False, can_be_removed_by_skill=True, main_stats_additive_dict=None,
+                 buff_applier=None):
+        super().__init__(name, duration, is_buff, stats_dict, condition, use_active_flag, stats_dict_function, is_set_effect, can_be_removed_by_skill, main_stats_additive_dict)
+        self.buff_applier = buff_applier
+        if self.buff_applier is None:
+            raise RuntimeError("buff_applier cannot be None.")
+        
+
+    def apply_effect_when_missing_attack(self, character, target):
+        old_stats_dict = self.stats_dict.copy()  # Create a copy of the original stats_dict
+        new_stats_dict = self.stats_dict.copy()  # Create a copy for the new stats_dict
+        for key, value in self.stats_dict.items():
+            new_stats_dict[key] = value + 0.1
+        character.update_stats(old_stats_dict, reversed=True)
+        self.stats_dict = new_stats_dict
+        character.update_stats(self.stats_dict, reversed=False)
+        global_vars.turn_info_string += f"Book of Memory effect is triggered! {character.name}'s stats are increased by 10%.\n"
+        if character.is_alive():
+            character.heal_hp(character.maxhp * 0.10, self.buff_applier)
+
+
+
+class LesterExcitingTimeEffect(Effect):
+    """ 
+    Exciting Time: Every time when a hp recovery is received, atk is increased by the amount of overheal,
+    Atk bonus effect lasts for 10 turns.
+    """
+    def __init__(self, name, duration, is_buff, buff_applier):
+        super().__init__(name, duration, is_buff)
+        self.buff_applier = buff_applier
+
+    def apply_effect_after_heal_step(self, character, heal_value, overheal_value):
+        if overheal_value > 0:
+            bonus = int(overheal_value * 0.15)
+            bonus = max(bonus, 1)
+            # bonus = min(bonus, 5 * self.buff_applier.lvl)
+            atkup = StatsEffect("Atk Up", 10, True, main_stats_additive_dict={"atk": bonus})
+            atkup.apply_rule = "replace"
+            atkup.additional_name = "Lester_Exciting_Time_Atk_Bonus"
+            character.apply_effect(atkup)
+
+    def tooltip_description(self):
+        return f"Every time when overheal is received, atk is increased by 20% of the amount of overheal."
+    
+    def tooltip_description_jp(self):
+        return f"過剰回復を受けるたび、攻撃力が過剰回復量の20%増加する。"
+
 
 
 class PharaohPassiveEffect(Effect):

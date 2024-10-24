@@ -1430,11 +1430,11 @@ class Warrior(Monster):
         self.original_name = "Warrior"
         self.skill1_description = "Attack enemy of highest atk 4 times with 250% atk. Ignore protected effects."
         self.skill2_description = "Attack enemy of highest atk with 500% atk, inflict Weaken and Bleed for 25 turns." \
-        " Weaken: reduce atk by 30%. Bleed: take 30% of applier atk as status damage each turn."
+        " Weaken: reduce atk by 70%. Bleed: take 30% of applier atk as status damage each turn."
         self.skill3_description = "Increase maxhp by 80%, defense by 20%. After taking damage, apply Guard on self for 1 turn, reducing damage taken by 70%."
         self.skill1_description_jp = "最も高い攻撃力の敵に攻撃力250%のダメージを4回与える。守護者からの守護効果を無視。"
-        self.skill2_description_jp = "最も高い攻撃力の敵に攻撃力500%のダメージを与える。25ターンの間脆弱と出血を付与。" \
-        "脆弱:攻撃力を30%減少。出血:攻撃力の30%を状態ダメージとして毎ターン受ける。"
+        self.skill2_description_jp = "最も高い攻撃力の敵に攻撃力500%のダメージを与える。25ターンの間衰弱と出血を付与。" \
+        "衰弱:攻撃力を70%減少。出血:攻撃力の30%を状態ダメージとして毎ターン受ける。"
         self.skill3_description_jp = "最大HP80%、防御力20%増加。ダメージを受けた後、自身に1ターンの間ガードを付与。受けるダメージを70%減少。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4

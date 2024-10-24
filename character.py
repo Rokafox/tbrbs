@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -335,6 +335,18 @@ class Character:
                     targets_with_effects += random.sample(self.ally, n - len(targets_with_effects))
                 yield from targets_with_effects
 
+            case ("ally_that_must_have_effect", effect_name, _, _):
+                yield from filter(lambda x: x.has_effect_that_named(effect_name), self.ally)
+
+            case ("ally_that_must_have_effect_full", effect_name, additional_name, class_name):
+                if additional_name == "None":
+                    additional_name = None
+                if effect_name == "None":
+                    effect_name = None
+                if class_name == "None":
+                    class_name = None
+                yield from filter(lambda x: x.has_effect_that_named(effect_name, additional_name, class_name), self.ally)
+
             case ("n_enemy_with_most_buffs", n, _, _):
                 n = int(n)
                 yield from sorted(ts_available_enemy, key=lambda x: len([e for e in x.buffs if not e.is_set_effect and not e.duration == -1]), reverse=True)[:n]
@@ -562,6 +574,8 @@ class Character:
                     if func_after_miss is not None:
                         func_after_miss(self, target)
                     global_vars.turn_info_string += f"Missed! {self.name} attacked {target.name} but missed.\n"
+                    for eff in self.buffs.copy() + self.debuffs.copy():
+                        eff.apply_effect_when_missing_attack(self, target)
 
         return damage_dealt
 
@@ -1110,7 +1124,7 @@ class Character:
             healer_for_recording = "Equipment"
         self.healing_received_this_turn.append((healing, healer_for_recording))
         for e in self.buffs.copy() + self.debuffs.copy():
-            e.apply_effect_after_heal_step(self, healing)
+            e.apply_effect_after_heal_step(self, healing, overhealing)
         return healing, healer, overhealing
 
     def pay_hp(self, value):
@@ -1378,12 +1392,30 @@ class Character:
                     # if they both have attr additional_name, they must match
                     if hasattr(e, "additional_name") and hasattr(effect, "additional_name") and e.additional_name != effect.additional_name:
                         continue
+                    # if only one of them have additional_name, they must not match
+                    if (hasattr(e, "additional_name") and not hasattr(effect, "additional_name")) or \
+                        (hasattr(effect, "additional_name") and not hasattr(e, "additional_name")):
+                        continue
                     
                     if e.duration < effect.duration and e.duration > 0:
                         e.duration = effect.duration
                     e.apply_effect_when_adding_stacks(self, effect.stacks)
                     global_vars.turn_info_string += f"{effect.name} duration on {self.name} has been refreshed.\n"
                     return
+        elif effect.apply_rule == "replace" and self.is_alive():
+            for e in self.debuffs.copy() + self.buffs.copy():
+                if e.name == effect.name:
+                    # if they both have attr additional_name, they must match
+                    if hasattr(e, "additional_name") and hasattr(effect, "additional_name") and e.additional_name != effect.additional_name:
+                        continue
+                    # if only one of them have additional_name, they must not match
+                    if (hasattr(e, "additional_name") and not hasattr(effect, "additional_name")) or \
+                        (hasattr(effect, "additional_name") and not hasattr(e, "additional_name")):
+                        continue
+                    self.remove_effect(e)
+                    effect.apply_effect_when_replacing_old_same_effect(e)
+                    global_vars.turn_info_string += f"{e.name} on {self.name} has been replaced by {effect.name}.\n"
+                    break
         if self.is_alive() and effect.is_buff:
             self.buffs.append(effect)
             self.buffs.sort(key=lambda x: x.sort_priority)
@@ -4282,6 +4314,72 @@ class Kyle(Character):
     # def battle_entry_effects(self):
     #     for a in self.ally:
     #         a.apply_effect(EffectShield2("Mountain Drawing", 12, True, False, damage_reduction=0.5, shrink_rate=0.0, hp_threshold=0.1))
+
+
+class Lester(Character):
+    """
+    Support neighbor ally, accuracy buff, hp recovery, overheal to attack bonus
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Lester"
+        self.skill1_description = "Apply Exciting Time for the ally with Bookmarks of Memories for 20 turns." \
+        " Exciting Time: Every time when a hp recovery is received, atk is increased by 15% of the amount of overheal," \
+        " Atk bonus effect lasts for 10 turns. If the same effect is applied, atk bonus is accumulated to the new effect."
+        self.skill2_description = "Remove a maximum of 4 active debuffs from the ally with Bookmarks of Memories and" \
+        " heal 10% of maxhp to the ally. For each debuff removed, heal amount is increased by 10% of maxhp."
+        self.skill3_description = "Select 1 neighbor ally of highest atk, apply Bookmarks of Memories to that ally." \
+        " Bookmarks of Memories: Everytime when missing an attack, accuracy is increased by 10% and recover 10% of maxhp." \
+        " When using skills, if the ally with Bookmarks of Memories is defeated, the skill becomes normal attack."
+        # 思い出のしおり ドキドキタイム
+        self.skill1_description_jp = "「思い出のしおり」を持つ味方に20ターンの間「ドキドキタイム」を付与する。ドキドキタイム：HP回復を受けるたびに、超過回復分の15%攻撃力が増加する。この攻撃力のボーナス効果は10ターン持続する。同じ効果が再度適用された場合、攻撃力のボーナスは新しい効果に累積される。"
+        self.skill2_description_jp = "「思い出のしおり」を持つ味方から最大4つのアクティブなデバフを解除し、その味方の最大HPの10%を治療する。解除されたデバフ1つにつき、回復量が最大HPの10%増加する。"
+        self.skill3_description_jp = "攻撃力が最も高い隣接する味方1体を選び、その味方に「思い出のしおり」を付与する。思い出のしおり：攻撃が外れるたびに命中率が10%増加し、最大HPの10%を回復する。スキルを使用する際、「思い出のしおり」を持つ味方が倒されている場合、そのスキルは通常攻撃に変わる。"
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 3
+
+
+    def skill1_logic(self):
+        t = list(self.target_selection(keyword="ally_that_must_have_effect_full", keyword2="Bookmarks of Memories", keyword3="Lester_Bookmarks_of_Memories",
+                                          keyword4="LesterBookofMemoryEffect"))
+        if not t:
+            return self.attack()
+        a = t[0]
+        if a.is_alive():
+            et = LesterExcitingTimeEffect("Exciting Time", 20, True, buff_applier=self)
+            et.additional_name = "Lester_Exciting_Time"
+            et.apply_rule = "stack"
+            a.apply_effect(et)
+        return 0
+
+    def skill2_logic(self):
+        t = list(self.target_selection(keyword="ally_that_must_have_effect_full", keyword2="Bookmarks of Memories", keyword3="Lester_Bookmarks_of_Memories",
+                                          keyword4="LesterBookofMemoryEffect"))
+        if not t:
+            return self.attack()
+        a: Character = t[0]
+        if a.is_alive():
+            debuffs = a.remove_random_amount_of_debuffs(4, allow_infinite_duration=False)
+        if a.is_alive():
+            amount = len(debuffs) * a.maxhp * 0.1 + a.maxhp * 0.1
+            self.heal(target_list=[a], value=amount)
+        return 0
+
+    def skill3(self):
+        pass
+
+
+    def battle_entry_effects(self):
+        bom = LesterBookofMemoryEffect("Bookmarks of Memories", -1, True, {"acc": 0.00}, buff_applier=self)
+        bom.can_be_removed_by_skill = False
+        bom.additional_name = "Lester_Bookmarks_of_Memories"
+        neighbors = self.get_neighbor_allies_not_including_self()
+        selected = max(neighbors, key=lambda x: x.atk)
+        selected.apply_effect(bom)
+
+
+
 
 
 class Moe(Character):
