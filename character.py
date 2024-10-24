@@ -1623,7 +1623,7 @@ class Character:
         elif set_name == "Newspaper":
             self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
         elif set_name == "Cloud":
-            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": 0.70})
+            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": 0.50})
             cloud_hide_effect = HideEffect("Hide", 50, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
             cloud_hide_effect.is_set_effect = True
             cloud_hide_effect.sort_priority = 2000
@@ -4890,31 +4890,31 @@ class Sunny(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Sunny"
-        self.skill1_description = "Attack random enemy 4 times with 180% atk, inflict Burn for 20 turns," \
-        " Burn deals 30% of atk status damage each turn."
-        self.skill2_description = "Attack enemy of lowest hp with 400% atk, inflict another Burn effect for 20 turns if target" \
+        self.skill1_description = "Attack random enemy 4 times with 160% atk, inflict Burn for 20 turns," \
+        " Burn deals 25% of atk status damage each turn."
+        self.skill2_description = "Attack enemy of lowest hp with 300% atk, inflict another Burn effect for 20 turns if target" \
         " already has Burn effect and inflict Weaken for 20 turns, Weaken reduce atk and def by 30%. If target has more than" \
         " 3 Burn effects, stats reduction is increased to 60%."
         self.skill3_description = "After using a skill, apply Summer Breeze on 3 allies of lowest hp for 10 turns." \
-        " Summer Breeze: Recover hp by 20% of your atk each turn, defense and critdef increased by 20%."
+        " Summer Breeze: Recover hp by 20% of your atk each turn, defense and critdef increased by 15%."
         # 薫風
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = ""
+        self.skill1_description_jp = "ランダムな敵に攻撃力の160%で4回攻撃し、20ターンの間「燃焼」を付与する。燃焼は毎ターン攻撃力の30%分の状態異常ダメージを与える。"
+        self.skill2_description_jp = "HPが最も低い敵に攻撃力の300%で攻撃し、対象に既に「燃焼」効果がある場合、さらに20ターンの間「燃焼」を付与し、20ターンの間「弱化」を付与する。弱化は攻撃力と防御力を30%減少させる。対象に3つ以上の火傷効果がある場合、ステータス減少は60%になる。"
+        self.skill3_description_jp = "スキル使用後、HPが最も低い3人の味方に10ターンの間「薫風」を付与する。薫風：毎ターン攻撃力の20%分のHPを回復し、防御力とクリティカル防御が15%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
 
     def skill1_logic(self):
         def burn_effect(self, target: Character):
-            target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.3 * self.atk, self))
-        damage_dealt = self.attack(multiplier=1.8, repeat=4, func_after_dmg=burn_effect)
+            target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.25 * self.atk, self))
+        damage_dealt = self.attack(multiplier=1.6, repeat=4, func_after_dmg=burn_effect)
         if self.is_alive():
             def heal_func(char, buff_applier):
                 return buff_applier.atk * 0.2
             summer_breeze = ContinuousHealEffect("Summer Breeze", 10, True, value_function=heal_func, buff_applier=self,
                                                 value_function_description="20% of Sunny atk", value_function_description_jp="20%Sunnyの攻撃力")
-            summer_breeze_part2 = StatsEffect("Summer Breeze", 10, True, {"defense": 1.2, "critdef": 1.2})
+            summer_breeze_part2 = StatsEffect("Summer Breeze", 10, True, {"defense": 1.15, "critdef": 1.15})
             self.update_ally_and_enemy()
             ally_selection = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
             for a in ally_selection:
@@ -4927,21 +4927,21 @@ class Sunny(Character):
             burns = target.get_all_effect_that_named("Burn")
             how_many = len(burns)
             if how_many > 3:
-                target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.3 * self.atk, self))
+                target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.25 * self.atk, self))
                 weak = StatsEffect("Weaken", 20, False, {"atk": 0.4, "defense": 0.4})
                 target.apply_effect(weak)
             elif how_many > 0:
-                target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.3 * self.atk, self))
+                target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.25 * self.atk, self))
                 weak = StatsEffect("Weaken", 20, False, {"atk": 0.7, "defense": 0.7})
                 target.apply_effect(weak)
-        damage_dealt = self.attack(multiplier=4.0, repeat=1, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy",
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy",
                                       func_after_dmg=negative_effect)
         if self.is_alive():
             def heal_func(char, buff_applier):
                 return buff_applier.atk * 0.2
             summer_breeze = ContinuousHealEffect("Summer Breeze", 10, True, value_function=heal_func, buff_applier=self,
                                                 value_function_description="20% of Sunny atk", value_function_description_jp="20%Sunnyの攻撃力")
-            summer_breeze_part2 = StatsEffect("Summer Breeze", 10, True, {"defense": 1.2, "critdef": 1.2})
+            summer_breeze_part2 = StatsEffect("Summer Breeze", 10, True, {"defense": 1.15, "critdef": 1.15})
             ally_selection = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
             for a in ally_selection:
                 a.apply_effect(summer_breeze)
@@ -4953,8 +4953,52 @@ class Sunny(Character):
         pass
 
 
+class Sasaki(Character):
+    # TODO: Add a support for this character
+    """
+    Hp recovery based on damage dealt.
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Sasaki"
+        self.skill1_description = "Attack 1 closest enemy with 600% atk and recover hp by 100% of damage dealt."
+        self.skill2_description = "Attack enemy of lowest defense with 260% atk 3 times, recover hp by 100% of damage dealt. Remove 1 active buff on the target." \
+        " for each attack."
+        self.skill3_description = "Normal attack recover hp by 100% of damage dealt."
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の600%で攻撃し、与えたダメージの100%分HPを回復する。"
+        self.skill2_description_jp = "防御力が最も低い敵に攻撃力の260%で3回攻撃し、与えたダメージの100%分HPを回復する。各攻撃ごとに、対象のアクティブなバフを1つ解除する。"
+        self.skill3_description_jp = "通常攻撃で与えたダメージの100%分HPを回復する。"
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 3
 
 
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=6.0, repeat=1, target_kw1="n_enemy_in_front", target_kw2="1")
+        if self.is_alive():
+            self.heal(target_kw1="yourself", value=damage_dealt)
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def remove_buff(self, target: Character):
+            target.remove_random_amount_of_buffs(1, allow_infinite_duration=False)
+        damage_dealt = self.attack(multiplier=2.60, repeat=3, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="defense", target_kw4="enemy",
+                                      func_after_dmg=remove_buff)   
+        if self.is_alive():
+            self.heal(target_kw1="yourself", value=damage_dealt)
+        return damage_dealt
+
+
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        d = self.attack()
+        if self.is_alive():
+            self.heal(target_kw1="yourself", value=d)
+        return d
 
 
 

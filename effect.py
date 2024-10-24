@@ -2294,6 +2294,9 @@ class EquipmentSetEffect_Freight(Effect):
 
     def apply_effect_custom(self, character):
         character.heal_hp(character.spd * 0.50, character)
+        # for x turns, increase spd by 30%.
+        spd_buff = StatsEffect("Freight", 3, True, {"spd": 1.30}, is_set_effect=True)
+        character.apply_effect(spd_buff)
 
 
 #---------------------------------------------------------

@@ -454,7 +454,7 @@ def get_all_characters():
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
-                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles"]
+                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki"]
     character_names.sort()
     print(len(character_names))
 
