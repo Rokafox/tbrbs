@@ -948,14 +948,15 @@ class Character:
                 return True
         return False
 
-    def trigger_hidden_effect_on_allies(self, attacker: 'Character'=None, damage_overkill: int | float=-1):
+    def trigger_hidden_effect_on_allies(self, attacker: 'Character'=None, damage_overkill: int | float=-1, damage_is_taken_by_protector: bool=False):
         self.update_ally_and_enemy()
         for a in self.party:
             if a.is_hidden():
                 a.get_effect_that_named("Hide", class_name="HideEffect").apply_effect_on_trigger(a)
         if not self.ally or not self.enemy:
             return
-        if attacker is not None and attacker.has_effect_that_named("Dragon Drawing", additional_name="Kyle_Dragon_Drawing") and damage_overkill > 0:
+        if attacker is not None and attacker.has_effect_that_named("Dragon Drawing", additional_name="Kyle_Dragon_Drawing") and damage_overkill > 0 \
+            and not damage_is_taken_by_protector:
             # Select a ally with the lowest hp percentage
             lowest_hp_ally = min(self.ally, key=lambda x: x.hp/x.maxhp)
             global_vars.turn_info_string += f"Dragon Drawing effect triggered by {attacker.name}.\n"
@@ -1210,7 +1211,7 @@ class Character:
         if self.is_dead():
             self.defeated_by_taken_damage(damage, attacker)
         if self.is_dead():
-            self.trigger_hidden_effect_on_allies(attacker=attacker, damage_overkill=damage_overkill)
+            self.trigger_hidden_effect_on_allies(attacker=attacker, damage_overkill=damage_overkill, damage_is_taken_by_protector=disable_protected_effect)
             if attacker is not None:
                 attacker.number_of_take_downs += 1
         return None
@@ -1655,7 +1656,7 @@ class Character:
         elif set_name == "Newspaper":
             self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
         elif set_name == "Cloud":
-            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": 0.50})
+            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": 0.40})
             cloud_hide_effect = HideEffect("Hide", 50, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
             cloud_hide_effect.is_set_effect = True
             cloud_hide_effect.sort_priority = 2000
@@ -2113,11 +2114,11 @@ class Ruby(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Ruby"
-        self.skill1_description = "350% atk on 3 closest enemies. 70% chance to inflict stun for 12 turns."
-        self.skill2_description = "350% focus atk on 1 closest enemy for 3 times. Each attack has 50% chance to inflict stun for 12 turns."
+        self.skill1_description = "350% atk on 3 closest enemies. 70% chance to inflict stun for 10 turns."
+        self.skill2_description = "350% focus atk on 1 closest enemy for 3 times. Each attack has 50% chance to inflict stun for 10 turns."
         self.skill3_description = "Skill damage is increased by 30% on stunned targets."
-        self.skill1_description_jp = "最も近い敵3体に攻撃力350%攻撃。70%の確率で12ターンの間スタンさせる。"
-        self.skill2_description_jp = "最も近い敵1体に攻撃力350%3回集中攻撃。各攻撃50%の確率で12ターンの間スタンさせる。"
+        self.skill1_description_jp = "最も近い敵3体に攻撃力350%攻撃。70%の確率で10ターンの間スタンさせる。"
+        self.skill2_description_jp = "最も近い敵1体に攻撃力350%3回集中攻撃。各攻撃50%の確率で10ターンの間スタンさせる。"
         self.skill3_description_jp = "スタン状態の敵に対して、スキルダメージが30%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -2132,7 +2133,7 @@ class Ruby(Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 70:
-                target.apply_effect(StunEffect('Stun', duration=12, is_buff=False))
+                target.apply_effect(StunEffect('Stun', duration=10, is_buff=False))
         def stun_amplify(self, target, final_damage):
             if target.has_effect_that_named("Stun"):
                 final_damage *= 1.3
@@ -2144,7 +2145,7 @@ class Ruby(Character):
         def stun_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 50:
-                target.apply_effect(StunEffect('Stun', duration=12, is_buff=False))
+                target.apply_effect(StunEffect('Stun', duration=10, is_buff=False))
         def stun_amplify(self, target, final_damage):
             if target.has_effect_that_named("Stun"):
                 final_damage *= 1.3
@@ -2563,11 +2564,11 @@ class Bell(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Bell"
         self.skill1_description = "Attack 1 closest enemy with 220% atk 5 times."
-        self.skill2_description = "Attack 1 closest enemy with 170% atk 6 times. This attack never misses. For each target fallen, trigger an additional attack. Maximum attacks: 8"
+        self.skill2_description = "Attack 1 closest enemy with 180% atk 6 times. This attack never misses. For each target fallen, trigger an additional attack. Maximum attacks: 8"
         self.skill3_description = "Once per battle, after taking damage, if hp is below 50%, apply absorption shield, absorb damage up to 400% of damage just taken. For 20 turns, damage taken cannot exceed 20% of maxhp."
         self.skill1_description_jp = "最も近い1体の敵に220%の攻撃を5回行う。"
-        self.skill2_description_jp = "最も近い1体の敵に170%の攻撃を6回行う。この攻撃はMISSにならない。敵が倒れるたびに追加攻撃を発動する。最大攻撃回数:8"
-        self.skill3_description_jp = "戦闘中1回のみ、ダメージを受けた後、HPが50%以下の場合、吸収シールドを適用し、受けたダメージの400%までを吸収する。20ターンの間、受けるダメージは最大HPの20%を超えない。"
+        self.skill2_description_jp = "最も近い1体の敵に180%の攻撃を6回行う。この攻撃はMISSにならない。敵が倒れるたびに追加攻撃を発動する。最大攻撃回数:8"
+        self.skill3_description_jp = "戦闘中1回のみ、ダメージを受けた後、HPが50%以下の場合、吸収シールドを適用し、受けたダメージの440%までを吸収する。20ターンの間、受けるダメージは最大HPの20%を超えない。"
         self.skill3_used = False
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -2595,7 +2596,7 @@ class Bell(Character):
                 return self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="hp",target_kw4="enemy", multiplier=1.7, repeat=1, additional_attack_after_dmg=additional_attacks, always_hit=True)
             else:
                 return 0
-        damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=1.7, repeat=6, additional_attack_after_dmg=additional_attacks, always_hit=True)
+        damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=1.8, repeat=6, additional_attack_after_dmg=additional_attacks, always_hit=True)
         return damage_dealt
 
     def skill3(self):
@@ -2607,7 +2608,7 @@ class Bell(Character):
         else:
             if self.hp < self.maxhp * 0.5:
                 self.apply_effect(CancellationShield("Cancellation Shield", 20, True, 0.2, False, cancel_excessive_instead=True, uses=100))
-                self.apply_effect(AbsorptionShield("Absorption Shield", -1, True, damage * 4.0, cc_immunity=False))
+                self.apply_effect(AbsorptionShield("Absorption Shield", -1, True, damage * 4.4, cc_immunity=False))
                 self.skill3_used = True
             return damage
 
