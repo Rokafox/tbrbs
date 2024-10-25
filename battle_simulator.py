@@ -454,7 +454,7 @@ def get_all_characters():
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
-                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester"]
+                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed"]
     character_names.sort()
     print(len(character_names))
 
@@ -938,9 +938,13 @@ if __name__ == "__main__":
             for m in adventure_mode_stages[adventure_mode_current_stage]:
                 m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Epic", 
                                                             eq_level=int(adventure_mode_current_stage)))
-        elif 2000 <= adventure_mode_current_stage:
+        elif 2000 <= adventure_mode_current_stage < 2500:
             for m in adventure_mode_stages[adventure_mode_current_stage]:
                 m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Unique", 
+                                                            eq_level=int(adventure_mode_current_stage)))
+        elif 2500 <= adventure_mode_current_stage:
+            for m in adventure_mode_stages[adventure_mode_current_stage]:
+                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Legendary", 
                                                             eq_level=int(adventure_mode_current_stage)))
 
     def adventure_mode_stage_increase():

@@ -231,8 +231,8 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
 
 def calculate_winrate_for_character(sample, character_list, fineprint_mode="default"):
     start_time = time.time()  
-    win_counts = {c.name: 0 for c in character_list}
-    total_games = {c.name: 0 for c in character_list}
+    # win_counts = {c.name: 0 for c in character_list}
+    # total_games = {c.name: 0 for c in character_list}
     turns_total = 0
     character_and_eqset_wins = []
     character_and_eqset_losses = []
@@ -246,17 +246,16 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
             print("Too many errors, stopping the simulation.")
             break
 
-        for character in character_list:
+        # Sample 10 unique elements from character_list
+        sampled_characters = random.sample(character_list, 10)
+        party1 = sampled_characters[:5]
+        party2 = sampled_characters[5:]
+
+        for character in itertools.chain(party1, party2):
+            # total_games[character.name] += 1
             character.fineprint_mode = fineprint_mode
             character.equip_item_from_list(generate_equips_list(4, random_full_eqset=True))
             character.reset_stats()
-
-        random.shuffle(character_list)
-        party1 = character_list[:5]
-        party2 = character_list[5:10]
-
-        for character in itertools.chain(party1, party2):
-            total_games[character.name] += 1
 
         try:
             winner_party, turns, loser_party = simulate_battle_between_party(party1, party2, printer)
@@ -284,7 +283,7 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
         turns_total += turns
         if winner_party is not None:
             for character in winner_party:
-                win_counts[character.name] += 1
+                # win_counts[character.name] += 1
                 character_and_eqset_wins.append((character.name, character.eq_set))
         if loser_party is not None:
             for character in loser_party:
@@ -319,7 +318,7 @@ if __name__ == "__main__":
         sample = int(sys.argv[1])
     else:
         sample = 6000
-    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
+    a, b = calculate_winrate_for_character(sample, get_all_characters(2), "suppress")
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze

@@ -1674,8 +1674,8 @@ class Fairy(Monster):
         self.skill3_description = "When taking damage from anyone who is confused," \
         " recover hp by 300% atk, increase atk by 30% and reduce damage taken multiplier by 40% for 8 turns." \
         " When the same effect is applied again, the duration is refreshed."
-        self.skill1_description_jp = "ランダムな敵4体に攻撃力300%のダメージを与え、8ターンの間混乱を付与。"
-        self.skill2_description_jp = "1体の敵に攻撃力400%のダメージを3回与え、それぞれの攻撃に33%の確率で8ターンの間混乱を付与。"
+        self.skill1_description_jp = "ランダムなターゲット4体に攻撃力300%のダメージを与え、8ターンの間混乱を付与する。"
+        self.skill2_description_jp = "1体の敵に攻撃力400%のダメージを3回与え、それぞれの攻撃に33%の確率で8ターンの間混乱を付与する。"
         self.skill3_description_jp = "混乱している相手からダメージを受けた時、攻撃力300%分のHPを回復し、攻撃力を30%増加し、8ターンの間受けるダメージを40%減少。" \
         "同じ効果が再度付与された場合、効果時間が更新される。"
         self.skill1_cooldown_max = 4
@@ -1714,6 +1714,16 @@ class Fairy(Monster):
                 self.apply_effect(play)
             else:
                 play.duration = 8
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1844,10 +1854,11 @@ class Minotaur(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Minotaur"
-        self.skill1_description = "Focus attack enemy with lowest hp with 300% atk 2 times."
+        self.skill1_description = "Focus attack enemy with lowest hp with 300% atk 2 times. After attack, apply Def Up for 20 turns." \
+        " Def Up: increase defense by 20%."
         self.skill2_description = "Focus attack enemy with lowest hp with 200% atk 2 times. Damage increased by 10% of target lost hp."
         self.skill3_description = "Skill damage increased by 50% if target has less than 50% hp."
-        self.skill1_description_jp = "最も低いHPの敵に攻撃力300%のダメージを2回与える。"
+        self.skill1_description_jp = "最も低いHPの敵に攻撃力300%のダメージを2回与える。攻撃後、20ターンの間防御力を20%増加。"
         self.skill2_description_jp = "最も低いHPの敵に攻撃力200%のダメージを2回与える。ダメージが対象の失ったHPの10%増加。"
         self.skill3_description_jp = "対象のHPが50%未満の場合、スキルダメージが50%増加。"
         self.skill1_cooldown_max = 4
@@ -1863,6 +1874,8 @@ class Minotaur(Monster):
                 final_damage *= 1.5
             return final_damage
         damage_dealt = self.attack(multiplier=3.0, repeat_seq=2, func_damage_step=damage_increase, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
+        if self.is_alive():
+            self.apply_effect(StatsEffect('Def Up', 20, True, {'defense' : 1.2}))
         return damage_dealt
 
     def skill2_logic(self):
@@ -1973,24 +1986,29 @@ class Biobird(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Biobird"
-        self.skill1_description = "Attack closest enemy with 400% atk 2 times, 35% chance to inflict Def Down for 24 turns, def is decreased by 10%."
+        self.skill1_description = "Attack closest enemy with 400% atk 2 times, 35% chance to inflict Def Down for 24 turns, def is decreased by 10%." \
+        " 25% chance to remove a active buff from target."
         self.skill2_description = "Attack closest enemy with 400% atk 2 times. If hp is below 20%, for 20 turns," \
         " Increase maxhp by 40% and recover 4% of maxhp each turn."
         self.skill3_description = "Skill damage increased by 100% if hp is below 20%."
-        self.skill1_description_jp = "最も近い敵に攻撃力400%のダメージを2回与え、35%の確率で24ターンの間防御力を10%減少。"
+        self.skill1_description_jp = "最も近い敵に攻撃力400%のダメージを2回与え、35%の確率で24ターンの間防御力を10%減少。" \
+        "25%の確率で対象のアクティブバフを1つ解除する。"
         self.skill2_description_jp = "最も近い敵に攻撃力400%のダメージを2回与える。攻撃後、自分のHPが20%未満の場合、20ターンの間最大HPを40%増加し、毎ターン最大HPの4%を回復。"
         self.skill3_description_jp = "HPが20%未満の場合、スキルダメージが100%増加。"
         self.skill1_cooldown_max = 5
-        self.skill2_cooldown_max = 5
+        self.skill2_cooldown_max = 4
         self.is_boss = False
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        def def_down(self, target):
+        def def_down(self, target: character.Character):
             if random.random() < 0.35:
                 target.apply_effect(StatsEffect('Def Down', 24, False, {'defense' : 0.9}))
+            if random.random() < 0.25:
+                target.remove_random_amount_of_buffs(1)
+
         def low_hp(self, target, final_damage):
             if self.hp < self.maxhp * 0.2:
                 global_vars.turn_info_string += f"{self.name} deals additional 100% damage to {target.name}.\n"
@@ -2233,11 +2251,11 @@ class Merman(Monster):
         self.original_name = "Merman"
         self.skill1_description = "Target 1 enemy with the lowest speed, attack 3 times with 250% atk."
         self.skill2_description = "Target 1 enemy of lowest speed, if it is the same enemy as in skill 1, attack 3 times with 250% atk and Stun the target for 8 turns. This skill has no effect otherwise."
-        self.skill3_description = "Normal attack attacks 2 times."
+        self.skill3_description = "Normal attack attacks 2 times, each attack has a 40% chance to remove 1 active buff from the target."
         self.skill1_description_jp = "最も低い速度の敵を対象に、攻撃力250%のダメージを3回与える。"
         self.skill2_description_jp = "最も低い速度の敵を対象に、スキル1と同じ敵の場合、攻撃力250%のダメージを3回与え、対象を8ターンの間スタンさせる。" \
         "それ以外の場合、このスキルは効果がない。"
-        self.skill3_description_jp = "通常攻撃は2回攻撃する。"
+        self.skill3_description_jp = "通常攻撃は2回攻撃する。各攻撃に40%確率で対象からアクティブなバフを1つ解除する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -2271,7 +2289,10 @@ class Merman(Monster):
         pass
 
     def normal_attack(self):
-        self.attack(repeat=2)
+        def remove_buff(self, target: character.Character):
+            if random.random() < 0.4:
+                target.remove_random_amount_of_buffs(1, False)
+        self.attack(repeat=2, func_after_dmg=remove_buff)
 
 
 class Wyvern(Monster):
@@ -3013,6 +3034,54 @@ class Mandrake(Monster):
         self.hp = self.maxhp
 
 
+class Thiefb(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Thiefb"
+        self.skill1_description = "Attack closest enemy 8 times with 160% atk, after all attack, apply Def Up on 3 allies with lowest defense,"
+        " increase their defense by 20% for 24 turns."
+        self.skill2_description = "Attack closest enemy 8 times with 150% atk, after all attack, target all allies who has lower defense than yourself," \
+        " Apply Def Up on them, increase their defense by 20% for 24 turns."
+        self.skill3_description = "Increase defense by 30%."
+        self.skill1_description_jp = "最も近い敵に攻撃力の160%で8回攻撃し、攻撃後、防御力が最も低い3人の味方に「防御アップ」を付与し、24ターンの間、防御力を20%増加させる。"
+        self.skill2_description_jp = "最も近い敵に攻撃力の150%で8回攻撃し、攻撃後、自分より防御力が低い全ての味方を対象に「防御アップ」を付与し、24ターンの間、防御力を20%増加させる。"
+        self.skill3_description_jp = "防御力を30%増加させる。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=1.6, repeat=8, target_kw1="enemy_in_front")
+        if self.is_alive():
+            self.update_ally_and_enemy()
+            allies = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="defense", keyword4="ally"))
+            for ally in allies:
+                ally.apply_effect(StatsEffect('Defense Up', 24, True, {'defense' : 1.2}))
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=1.5, repeat=8, target_kw1="enemy_in_front")
+        if self.is_alive():
+            self.update_ally_and_enemy()
+            allies = [x for x in self.ally if x.defense <= self.defense]
+            for ally in allies:
+                ally.apply_effect(StatsEffect('Defense Up', 24, True, {'defense' : 1.2}))
+        return damage_dealt
+
+    
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Thiefb Passive', -1, True, {'defense' : 1.3}, can_be_removed_by_skill=False))
+
+
+
+
 # ====================================
 # End of Defence & Mitigation
 # ====================================
@@ -3603,6 +3672,7 @@ class Swordman(Monster):
     def battle_entry_effects(self):
         self.apply_effect(StatsEffect('Swordman Passive', -1, True, {'atk' : 1.1, 'spd' : 1.1}, can_be_removed_by_skill=False))
 
+
 # ====================================
 # End of Evasion related
 # ====================================
@@ -3911,10 +3981,10 @@ class SecurityRobot(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "SecurityRobot"
-        self.skill1_description = "All enemies that without active buffs have their defense reduced by 8% for 24 turns, critical defense reduced by 16% for 24 turns."
+        self.skill1_description = "All enemies that without active buffs have their defense reduced by 12% for 24 turns, critical defense reduced by 24% for 24 turns."
         self.skill2_description = "Attack closest enemy for 300% atk 3 times, if target has no active buff, strike a critical hit."
         self.skill3_description = "Maxhp increased by 30%."
-        self.skill1_description_jp = "アクティブバフを持っていない全ての敵の防御力を8%減少させ、クリティカル防御力を16%減少させる。効果は24ターン持続する。"
+        self.skill1_description_jp = "アクティブバフを持っていない全ての敵の防御力を12%減少させ、クリティカル防御力を24%減少させる。効果は24ターン持続する。"
         self.skill2_description_jp = "最も近い敵に攻撃力300%で3回攻撃。対象がアクティブバフを持っていない場合、必ずクリティカルヒット。"
         self.skill3_description_jp = "最大HPを30%増加。"
         self.skill1_cooldown_max = 4
@@ -3927,8 +3997,8 @@ class SecurityRobot(Monster):
 
     def skill1_logic(self):
         for e in self.enemy:
-            if len([e for e in e.buffs if not e.is_set_effect and not e.duration == -1]) == 0:
-                e.apply_effect(StatsEffect('Analyzed', 8, False, {'defense' : 0.92, 'critdef' : -0.16}))
+            if len(e.get_active_removable_effects(get_buffs=True, get_debuffs=False)) == 0:
+                e.apply_effect(StatsEffect('Analyzed', 8, False, {'defense' : 0.88, 'critdef' : -0.24}))
         return 0
 
     def skill2_logic(self):
@@ -3945,6 +4015,56 @@ class SecurityRobot(Monster):
     def battle_entry_effects(self):
         self.apply_effect(StatsEffect('SecurityRobot Passive', -1, True, {'maxhp' : 1.3}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
+
+
+class Thiefc(Monster):
+    """
+    Can confuse the target if no active buffs
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Thiefc"
+        self.skill1_description = "Attack 1 closest enemy with 160% atk 8 times, if target has no active buff, confuse the target for 12 turns."
+        self.skill2_description = "Attack 1 closest enemy with 160% atk 9 times, each attack has a 9% chance to remove 1 active buff from target." 
+        self.skill3_description = "At start of battle, apply Almost All Stats Up for 3 allies of highest atk for 30 turns," \
+        " Almost All Stats Up increases all main stats except speed by 5%."
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の160%で8回攻撃し、対象にアクティブなバフがない場合、12ターンの間「混乱」を付与する。"
+        self.skill2_description_jp = "最も近い敵1体に攻撃力の150%で9回攻撃し、各攻撃には9%の確率で対象のアクティブなバフを1つ解除する。"
+        self.skill3_description_jp = "戦闘開始時、攻撃力が最も高い味方3人に30ターンの間「ほぼ全ステータスアップ」を付与する。ほぼ全ステータスアップは、速度を除く全ての主要ステータスを5%増加させる。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+
+    def skill1_logic(self):
+        def confuse_target(self, target):
+            if len(target.get_active_removable_effects(get_buffs=True, get_debuffs=False)) == 0:
+                target.apply_effect(ConfuseEffect('Confuse', 12, False))
+        damage_dealt = self.attack(multiplier=1.6, repeat=8, func_after_dmg=confuse_target, target_kw1="enemy_in_front")
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def remove_buff(self, target: character.Character):
+            if random.randint(1, 100) <= 9:
+                target.remove_random_amount_of_buffs(1, False)
+        damage_dealt = self.attack(multiplier=1.6, repeat=9, func_after_dmg=remove_buff, target_kw1="enemy_in_front")
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        # "n_highest_attr", n, attr, party
+        allies = list(self.target_selection(keyword="n_highest_attr", keyword2=3, keyword3="atk", keyword4="ally"))
+        for ally in allies:
+            ally.apply_effect(StatsEffect('AA Stats Up', 30, True, {'atk' : 1.05, 'defense' : 1.05, 'maxhp': 1.05}))
+
+
+
 
 
 # ====================================
@@ -3992,11 +4112,11 @@ class Cockatrice(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Cockatrice"
-        self.skill1_description = "Attack 3 closest enemies, with 270% atk, their defense is reduced by 20% for 8 turns."
-        self.skill2_description = "Focus attack on closest enemy 3 times with 270% atk, each attack reduces target critdmg by 30% for 8 turns."
+        self.skill1_description = "Attack 3 closest enemies, with 270% atk, their defense is reduced by 20% for 16 turns."
+        self.skill2_description = "Focus attack on closest enemy 3 times with 270% atk, each attack reduces target critdmg by 30% for 16 turns."
         self.skill3_description = "For 8 turns, if not getting hit, increase crit def by 77% and def by 77% for 8 turns at the end of turn. Same effect cannot be applied twice."
-        self.skill1_description_jp = "最も近い敵3体に攻撃力270%で攻撃し、8ターンの間防御力を20%減少。"
-        self.skill2_description_jp = "最も近い敵に攻撃力270%で3回攻撃し、各攻撃でクリティカルダメージを30%減少。"
+        self.skill1_description_jp = "最も近い敵3体に攻撃力270%で攻撃し、16ターンの間防御力を20%減少させる。"
+        self.skill2_description_jp = "最も近い敵に攻撃力270%で3回攻撃し、各攻撃で16ターンの間クリティカルダメージを30%減少させる。"
         self.skill3_description_jp = "8ターンの間攻撃を受けていない場合、ターンの終わりにクリティカル防御力と防御力を77%増加。同じ効果は2回同時に適用されない。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -4007,13 +4127,13 @@ class Cockatrice(Monster):
 
     def skill1_logic(self):
         def defence_break(self, target):
-            target.apply_effect(StatsEffect('Defence Down', 8, False, {'defense' : 0.8}))
+            target.apply_effect(StatsEffect('Defence Down', 16, False, {'defense' : 0.8}))
         damage_dealt = self.attack(multiplier=2.7, repeat=1, target_kw1="n_enemy_in_front", target_kw2=3, func_after_dmg=defence_break)
         return damage_dealt
 
     def skill2_logic(self):
         def critdmg_reduction(self, target):
-            target.apply_effect(StatsEffect('Critdmg Down', 8, False, {'critdmg' : -0.3}))
+            target.apply_effect(StatsEffect('Critdmg Down', 16, False, {'critdmg' : -0.3}))
         damage_dealt = self.attack(multiplier=2.7, repeat_seq=3, target_kw1="enemy_in_front", func_after_dmg=critdmg_reduction)
         return damage_dealt
         
@@ -4652,12 +4772,13 @@ class Darkpriest(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Darkpriest"
-        self.skill1_description = "Attack all enemies with 300% atk, reduce their heal efficiency by 60% for 12 turns."
+        self.skill1_description = "Attack all enemies with 300% atk, reduce their heal efficiency by 60% for 12 turns." \
+        " Before attacking, increase defense by 30% for 12 turns."
         self.skill2_description = "Attack closest enemy with 600% atk, reduce heal efficiency by 90% for 12 turns." \
-        " Before attacking, increase accuracy by 30% for 6 turns."
+        " Before attacking, increase accuracy by 30% for 12 turns."
         self.skill3_description = "Heal efficiency is reduced by 90%. When you are defeated, all allies except you take 300% atk status damage."
-        self.skill1_description_jp = "全ての敵に攻撃力300%で攻撃し、12ターンの間回復効率を60%減少させる。"
-        self.skill2_description_jp = "最も近い敵に攻撃力600%で攻撃し、12ターンの間回復効率を90%減少させる。攻撃前、6ターンの間命中率を30%増加。"
+        self.skill1_description_jp = "全ての敵に攻撃力300%で攻撃し、12ターンの間回復効率を60%減少させる。攻撃前、12ターンの間防御力を30%増加。"
+        self.skill2_description_jp = "最も近い敵に攻撃力600%で攻撃し、12ターンの間回復効率を90%減少させる。攻撃前、12ターンの間命中率を30%増加。"
         self.skill3_description_jp = "回復効率が90%減少。撃破された場合、自分以外の全ての味方に攻撃力300%の状態異常ダメージを与える。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -4667,6 +4788,7 @@ class Darkpriest(Monster):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
+        self.apply_effect(StatsEffect('Def Up', 12, True, {'defense' : 1.3}))
         def heal_down(self, target):
             target.apply_effect(StatsEffect('Heal Down', 12, False, {'heal_efficiency' : -0.6}))
         damage_dealt = self.attack(multiplier=3.0, repeat=1, func_after_dmg=heal_down, target_kw1="n_random_enemy", target_kw2="5")
@@ -4674,7 +4796,7 @@ class Darkpriest(Monster):
 
 
     def skill2_logic(self):
-        self.apply_effect(StatsEffect('Accuracy Up', 6, True, {'acc' : 0.3}))
+        self.apply_effect(StatsEffect('Accuracy Up', 12, True, {'acc' : 0.3}))
         def heal_down(self, target):
             target.apply_effect(StatsEffect('Heal Down', 12, False, {'heal_efficiency' : -0.9}))
         damage_dealt = self.attack(multiplier=6.0, repeat=1, func_after_dmg=heal_down, target_kw1="enemy_in_front")

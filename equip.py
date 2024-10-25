@@ -453,7 +453,7 @@ class Equip(Block):
             extra_lines_to_generate = 0
         
         if self.type == self.type_list[2]:
-            self.maxhp_flat = max(normal_distribution(1, 4000, 1000, 1000), 1)
+            self.maxhp_flat = max(normal_distribution(1, 4000, 1200, 1000), 1)
             self.maxhp_flat /= 40
             self.maxhp_flat *= level
         elif self.type == self.type_list[0]:

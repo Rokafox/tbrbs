@@ -5101,7 +5101,7 @@ class Sasaki(Character):
 
 class Zed(Character):
     """
-    Def
+    Target high defense, burst buff
     Build: 
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -5109,13 +5109,13 @@ class Zed(Character):
         self.name = "Zed"
         self.skill1_description = "For 1 turn, increase penetration by 30%, attack enemy of highest defense with 250% atk 3 times." \
         " Each attack inflict Defense Break and Burn for 20 turns, Defense Break reduce defense by 15%, Burn deals 10% of atk status damage each turn."
-        self.skill2_description = "For 1 turn, increase atk by 30%, attack enemy of highest defense with 170% atk 6 times." \
+        self.skill2_description = "For 1 turn, increase atk by 30%, attack enemy of highest defense with 180% atk 6 times." \
         " If this attack does not take down the enemy, attack again, dealing fixed damage equal to 100% of target defense."
         self.skill3_description = "When attacking enemy and the enemy have their defense more than 200% of your attack," \
         " for 1 turn, increase atk by 30% and penetration by 30%."
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = ""
+        self.skill1_description_jp = "1ターンの間、貫通力を30%増加させ、防御力が最も高い敵に攻撃力の250%で3回攻撃する。各攻撃で20ターンの間「防御ダウン」と「燃焼」を付与する。防御ダウンは防御力を15%減少させ、燃焼は毎ターン攻撃力の10%分の状態異常ダメージを与える。"
+        self.skill2_description_jp = "1ターンの間、攻撃力を30%増加させ、防御力が最も高い敵に攻撃力の180%で6回攻撃する。この攻撃で敵を倒せなかった場合、追加で対象の防御力の100%に相当する固定ダメージを与える。"
+        self.skill3_description_jp = "敵を攻撃する際、敵の防御力が自分の攻撃力の200%以上の場合、1ターンの間、攻撃力を30%と貫通力を30%増加させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
@@ -5123,8 +5123,8 @@ class Zed(Character):
     def skill1_logic(self):
         t = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="defense", keyword4="enemy"))
         if t.defense > self.atk * 2:
-            self.apply_effect(StatsEffect("Zed_Skill3", 1, True, {"atk": 1.3, "penetration": 0.3}))
-        self.apply_effect(StatsEffect("Zed_Skill1", 1, True, {"penetration": 0.3}))
+            self.apply_effect(StatsEffect("Escape", 1, True, {"atk": 1.3, "penetration": 0.3}))
+        self.apply_effect(StatsEffect("Advisory", 1, True, {"penetration": 0.3}))
         def apply_effect(self, target: Character):
             target.apply_effect(StatsEffect("Defense Break", 20, False, {"defense": 0.85}))
             target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.10 * self.atk, self))
@@ -5135,9 +5135,9 @@ class Zed(Character):
     def skill2_logic(self):
         t = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="defense", keyword4="enemy"))
         if t.defense > self.atk * 2:
-            self.apply_effect(StatsEffect("Zed_Skill3", 1, True, {"atk": 1.3, "penetration": 0.3}))
-        self.apply_effect(StatsEffect("Zed_Skill2", 1, True, {"atk": 1.3}))
-        damage_dealt = self.attack(multiplier=1.7, repeat=6, target_list=[t])
+            self.apply_effect(StatsEffect("Escape", 1, True, {"atk": 1.3, "penetration": 0.3}))
+        self.apply_effect(StatsEffect("Advisory", 1, True, {"atk": 1.3}))
+        damage_dealt = self.attack(multiplier=1.8, repeat=6, target_list=[t])
         if t.is_alive() and self.is_alive():
             damage_dealt += self.attack(multiplier=1.0, repeat=1, target_list=[t], force_dmg=t.defense)
         return damage_dealt
