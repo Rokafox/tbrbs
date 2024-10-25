@@ -5064,9 +5064,9 @@ class Sasaki(Character):
         self.skill2_description = "Attack enemy of lowest defense with 260% atk 3 times, recover hp by 100% of damage dealt. Remove 1 active buff on the target." \
         " for each attack."
         self.skill3_description = "Normal attack recover hp by 100% of damage dealt."
-        self.skill1_description_jp = "最も近い敵1体に攻撃力の600%で攻撃し、与えたダメージの100%分HPを回復する。"
-        self.skill2_description_jp = "防御力が最も低い敵に攻撃力の260%で3回攻撃し、与えたダメージの100%分HPを回復する。各攻撃ごとに、対象のアクティブなバフを1つ解除する。"
-        self.skill3_description_jp = "通常攻撃で与えたダメージの100%分HPを回復する。"
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の600%で攻撃し、与えたダメージの100%分HPを治療する。"
+        self.skill2_description_jp = "防御力が最も低い敵に攻撃力の260%で3回攻撃し、与えたダメージの100%分HPを治療する。各攻撃ごとに、対象のアクティブなバフを1つ解除する。"
+        self.skill3_description_jp = "通常攻撃で与えたダメージの100%分HPを治療する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
 
@@ -5098,6 +5098,53 @@ class Sasaki(Character):
             self.heal(target_kw1="yourself", value=d)
         return d
 
+
+class Zed(Character):
+    """
+    Def
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Zed"
+        self.skill1_description = "For 1 turn, increase penetration by 30%, attack enemy of highest defense with 250% atk 3 times." \
+        " Each attack inflict Defense Break and Burn for 20 turns, Defense Break reduce defense by 15%, Burn deals 10% of atk status damage each turn."
+        self.skill2_description = "For 1 turn, increase atk by 30%, attack enemy of highest defense with 170% atk 6 times." \
+        " If this attack does not take down the enemy, attack again, dealing fixed damage equal to 100% of target defense."
+        self.skill3_description = "When attacking enemy and the enemy have their defense more than 200% of your attack," \
+        " for 1 turn, increase atk by 30% and penetration by 30%."
+        self.skill1_description_jp = ""
+        self.skill2_description_jp = ""
+        self.skill3_description_jp = ""
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+
+    def skill1_logic(self):
+        t = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="defense", keyword4="enemy"))
+        if t.defense > self.atk * 2:
+            self.apply_effect(StatsEffect("Zed_Skill3", 1, True, {"atk": 1.3, "penetration": 0.3}))
+        self.apply_effect(StatsEffect("Zed_Skill1", 1, True, {"penetration": 0.3}))
+        def apply_effect(self, target: Character):
+            target.apply_effect(StatsEffect("Defense Break", 20, False, {"defense": 0.85}))
+            target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.10 * self.atk, self))
+        damage_dealt = self.attack(multiplier=2.5, repeat=3, target_list=[t], func_after_dmg=apply_effect)
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        t = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="defense", keyword4="enemy"))
+        if t.defense > self.atk * 2:
+            self.apply_effect(StatsEffect("Zed_Skill3", 1, True, {"atk": 1.3, "penetration": 0.3}))
+        self.apply_effect(StatsEffect("Zed_Skill2", 1, True, {"atk": 1.3}))
+        damage_dealt = self.attack(multiplier=1.7, repeat=6, target_list=[t])
+        if t.is_alive() and self.is_alive():
+            damage_dealt += self.attack(multiplier=1.0, repeat=1, target_list=[t], force_dmg=t.defense)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
 
 
 
