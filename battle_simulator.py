@@ -454,7 +454,7 @@ def get_all_characters():
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
-                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed"]
+                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu"]
     character_names.sort()
     print(len(character_names))
 
@@ -2238,7 +2238,7 @@ if __name__ == "__main__":
     def restart_battle():
         global turn, auto_battle_active
         global_vars.turn_info_string = ""
-        for character in all_characters + all_monsters:
+        for character in party1 + party2:
             character.reset_stats()
         reset_ally_enemy_attr(party1, party2)
         global_vars.turn_info_string += "Battle entry effects:\n"

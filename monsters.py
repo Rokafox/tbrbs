@@ -1625,13 +1625,13 @@ class Assassin(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Assassin"
-        self.skill1_description = "Increase atk and spd by 33% for 20 turns, recover hp by 444% atk."
+        self.skill1_description = "Increase atk and spd by 33% for 24 turns, recover hp by 444% atk."
         self.skill2_description = "Attack closest enemy with 177% atk 8 times, each attack inflict confuse for 12 turns with a 20% chance." \
         " If target is confused, damage is increased by 100%." # with a 83.22% chance to confuse the target.
         self.skill3_description = "Normal attack target closest enemy and attack 2 times, 20% chance to confuse the target for 6 turns."
-        self.skill1_description_jp = "攻撃力と速度を20ターンの間33%増加させ、攻撃力444%分のHPを回復。"
+        self.skill1_description_jp = "攻撃力と速度を24ターンの間33%増加させ、攻撃力444%分のHPを回復。"
         self.skill2_description_jp = "最も近い敵に攻撃力177%のダメージを8回与え、それぞれの攻撃に20%の確率で12ターンの間混乱を付与。" \
-        "対象が混乱している場合、ダメージが100%増加。"
+        "対象が混乱している場合、ダメージが100%増加。" 
         self.skill3_description_jp = "通常攻撃は最も近い敵に2回攻撃。20%の確率で6ターンの間混乱を付与。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
@@ -1641,7 +1641,7 @@ class Assassin(Monster):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
-        self.apply_effect(StatsEffect('Fast', 20, True, {'atk' : 1.33, 'spd' : 1.33}))
+        self.apply_effect(StatsEffect('Fast', 24, True, {'atk' : 1.33, 'spd' : 1.33}))
         self.heal_hp(4.44 * self.atk, self)
 
     def skill2_logic(self):
@@ -2382,10 +2382,11 @@ class Windspirit(Monster):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Windspirit"
         self.skill1_description = "For 24 turns, all allies gain speed equal to 10% of your speed."
-        self.skill2_description = "Attack all enemies with 200% atk, damage increased by 100% if target has lower spd than you."
+        self.skill2_description = "Attack all enemies with 200% atk, damage increased by 100% if target has lower spd than you. 50%" \
+        " chance to inflict Spd Down for 20 turns, spd is decreased by 5%."
         self.skill3_description = "Increase spd by 20%, crit rate by 20%."
         self.skill1_description_jp = "24ターンの間、味方全員の速度を自分の速度の10%分増加。"
-        self.skill2_description_jp = "全ての敵に攻撃力200%で攻撃し、対象の速度が自分より低い場合、ダメージが100%増加。"
+        self.skill2_description_jp = "全ての敵に攻撃力200%で攻撃し、対象の速度が自分より低い場合、ダメージが100%増加。50%の確率で20ターンの間速度を5%減少させる。"
         self.skill3_description_jp = "速度を20%増加。クリティカル率を20%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -2404,7 +2405,11 @@ class Windspirit(Monster):
             if target.spd < self.spd:
                 final_damage *= 2.0
             return final_damage
-        damage_dealt = self.attack(multiplier=2.0, repeat=1, func_damage_step=spd_penalty, target_kw1="n_random_enemy", target_kw2="5")
+        def spd_down(self, target):
+            if random.random() < 0.5:
+                target.apply_effect(StatsEffect('Against Wind', 20, False, {'spd' : 0.95}))
+        damage_dealt = self.attack(multiplier=2.0, repeat=1, func_damage_step=spd_penalty, target_kw1="n_random_enemy", target_kw2="5", 
+                                   func_after_dmg=spd_down)
         return damage_dealt
 
     def skill3(self):
@@ -2595,10 +2600,11 @@ class Bat(Monster):
         self.original_name = "Bat"
         self.skill1_description = "Increase crit rate by 10% and crit damage by 60% for 20 turns."
         self.skill2_description = "Attack random ememy with 300% atk 3 times, 90% chance to poison the target for 3 turns," \
-        " poison deals 2% of losthp as status damage per turn."
+        " poison deals 2% of losthp as status damage per turn. Each attack has a 40% chance to remove 1 active buff from the target."
         self.skill3_description = "Normal attack deals 50% more damage."
         self.skill1_description_jp = "20ターンの間クリティカル率が10%、クリティカルダメージ60%増加。"
-        self.skill2_description_jp = "ランダムな敵に攻撃力300%で3回攻撃し、90%の確率で対象に3ターンの間毒を付与。毒は失ったHPの2%を状態ダメージとして毎ターン受ける。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力300%で3回攻撃し、90%の確率で対象に3ターンの間毒を付与。毒は失ったHPの2%を状態ダメージとして毎ターン受ける。" \
+        "各攻撃に40%の確率で対象からアクティブなバフを1つ解除する。"
         self.skill3_description_jp = "通常攻撃ダメージは50%増加する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
@@ -2615,6 +2621,8 @@ class Bat(Monster):
         def poison_effect(self, target):
             if random.random() < 0.9:
                 target.apply_effect(ContinuousDamageEffect_Poison('Poison', duration=3, is_buff=False, ratio=0.02, imposter=self, base="losthp"))
+            if random.random() < 0.4:
+                target.remove_random_amount_of_buffs(1, False)
         damage_dealt = self.attack(multiplier=3.0, repeat=3, func_after_dmg=poison_effect)
         return damage_dealt
 
@@ -5196,10 +5204,10 @@ class YataGarasu(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "YataGarasu"
-        self.skill1_description = "Ally in the middle gains 100% speed for 4 turns."
+        self.skill1_description = "Ally in the middle gains 100% speed for 4 turns. For 20 turns, increase crit defense by 30% for that ally."
         self.skill2_description = "Apply Shield to 3 allies in the middle for 20 turns. Shield: the part of damage that exceeds 10% of maxhp is reduced by 50%."
         self.skill3_description = "Speed is increased by 10%. Normal attack inflict Burn for 20 turns. Burn: deals 35% atk status damage per turn."
-        self.skill1_description_jp = "中央の味方に、4ターンの間速度を100%増加。"
+        self.skill1_description_jp = "中央の味方に、4ターンの間速度を100%増加。20ターンの間その味方のクリティカル防御力を30%増加。"
         self.skill2_description_jp = "中央の味方3体に、20ターンの間シールドを付与。シールド:ダメージが最大HPの10%を超える部分を50%減少。"
         self.skill3_description_jp = "速度が10%増加。通常攻撃で20ターンの間燃焼を付与。燃焼:毎ターン攻撃力の35%の状態異常ダメージを与える。"
         self.skill1_cooldown_max = 5
@@ -5212,6 +5220,7 @@ class YataGarasu(Monster):
     def skill1_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
         t.apply_effect(StatsEffect('Speed Buff', 4, True, {'spd' : 2.0}))
+        t.apply_effect(StatsEffect('Crit Defense Buff', 20, True, {'critdef' : 0.3}))
         return 0
 
     def skill2_logic(self):

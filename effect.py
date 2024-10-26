@@ -103,6 +103,8 @@ class Effect:
     def apply_effect_when_missing_attack(self, character, target):
         pass
 
+    def apply_effect_before_action(self, character):
+        pass
 
 
     def __str__(self):
@@ -2324,7 +2326,7 @@ class EquipmentSetEffect_Freight(Effect):
     def apply_effect_custom(self, character):
         character.heal_hp(character.spd * 0.50, character)
         # for x turns, increase spd by 30%.
-        spd_buff = StatsEffect("Freight", 3, True, {"spd": 1.30}, is_set_effect=True)
+        spd_buff = StatsEffect("Freight", 4, True, {"spd": 1.30}, is_set_effect=True)
         character.apply_effect(spd_buff)
 
 
@@ -2473,6 +2475,48 @@ class LesterExcitingTimeEffect(Effect):
     
     def tooltip_description_jp(self):
         return f"過剰回復を受けるたび、攻撃力が過剰回復量の20%増加する。"
+
+
+class LuFlappingSoundEffect(Effect):
+    """ 
+    Attack start of battle, apply unremovable Flapping Sound on the closest enemy,
+    when the affected enemy takes action and a skill can be used, for 1 turn, silence the enemy and pay hp equal to n * level.
+    Paying hp treats as taking status damage. If you are defeated, the effect on the enemy is removed.
+    """
+    def __init__(self, name, duration, is_buff, buff_applier, hp_cost):
+        super().__init__(name, duration, is_buff)
+        self.buff_applier = buff_applier
+        self.hp_cost = hp_cost
+
+    def apply_effect_on_trigger(self, character):
+        if self.buff_applier.is_dead():
+            character.remove_effect(self)
+
+    def apply_effect_before_action(self, character):
+        if character.is_dead():
+            return
+        if self.buff_applier.is_dead():
+            character.remove_effect(self)
+            return
+        r, reason = character.can_take_action()
+        r2 = character.can_use_a_skill()
+        if r and r2:
+            global_vars.turn_info_string += f"{character.name} is affected by Flapping Sound!\n"
+            character.apply_effect(SilenceEffect("Silence", 1, False))
+            self.buff_applier.take_status_damage(self.hp_cost, self.buff_applier)
+            if self.buff_applier.is_dead():
+                character.update_ally_and_enemy()
+                character.remove_effect(self)
+        else:
+            return
+
+    def tooltip_description(self):
+        return "Be careful when taking action."
+    
+    def tooltip_description_jp(self):
+        return "行動を取る際に注意が必要。"
+       
+
 
 
 

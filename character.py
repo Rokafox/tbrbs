@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -621,6 +621,10 @@ class Character:
             skill_priority = 2
             freight_effect = self.get_effect_that_named("Freight Set", None, "EquipmentSetEffect_Freight")
             freight_effect.apply_effect_custom(self)
+
+        for eff in self.buffs.copy() + self.debuffs.copy():
+            eff.apply_effect_before_action(self)
+
         # Action is not allowed if the character is dead
         if self.is_dead():
             raise Exception("Dead character cannot act.")
@@ -979,6 +983,11 @@ class Character:
             return False, "Petrified"
         return True, "None"
     
+    def can_use_a_skill(self) -> bool:
+        condition_a = self.skill1_cooldown == 0 and self.skill1_can_be_used
+        condition_b = self.skill2_cooldown == 0 and self.skill2_can_be_used
+        return condition_a or condition_b
+
     def update_ally_and_enemy(self):
         self.ally = [ally for ally in self.party if not ally.is_dead()]
         self.enemy = [enemy for enemy in self.enemyparty if not enemy.is_dead()]
@@ -1656,7 +1665,7 @@ class Character:
         elif set_name == "Newspaper":
             self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
         elif set_name == "Cloud":
-            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": 0.40})
+            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": 0.30})
             cloud_hide_effect = HideEffect("Hide", 50, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
             cloud_hide_effect.is_set_effect = True
             cloud_hide_effect.sort_priority = 2000
@@ -1746,17 +1755,17 @@ class Character:
             selected_stat = max(the_stat_dict, key=the_stat_dict.get)
             if selected_stat == "atk":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.atk)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"atk": self.atk * (0.1987 + 0.01987)})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"atk": self.atk * (0.24)})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "defense":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.defense)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"defense": self.defense * (0.1987 + 0.01987)})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"defense": self.defense * (0.24)})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "spd":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.spd)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"spd": self.spd * (0.1987 + 0.01987)})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"spd": self.spd * (0.24)})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
         elif self.get_equipment_set() == "7891":
@@ -4325,7 +4334,7 @@ class Lester(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Lester"
-        self.skill1_description = "Apply Exciting Time for the ally with Bookmarks of Memories for 20 turns." \
+        self.skill1_description = "Apply Exciting Time for the ally with Bookmarks of Memories for 22 turns." \
         " Exciting Time: Every time when a hp recovery is received, atk is increased by 15% of the amount of overheal," \
         " Atk bonus effect lasts for 10 turns. If the same effect is applied, atk bonus is accumulated to the new effect."
         self.skill2_description = "Remove a maximum of 4 active debuffs from the ally with Bookmarks of Memories and" \
@@ -4334,7 +4343,7 @@ class Lester(Character):
         " Bookmarks of Memories: Everytime when missing an attack, accuracy is increased by 10% and recover 10% of maxhp." \
         " When using skills, if the ally with Bookmarks of Memories is defeated, the skill becomes normal attack."
         # 思い出のしおり ドキドキタイム
-        self.skill1_description_jp = "「思い出のしおり」を持つ味方に20ターンの間「ドキドキタイム」を付与する。ドキドキタイム：HP回復を受けるたびに、超過回復分の15%攻撃力が増加する。この攻撃力のボーナス効果は10ターン持続する。同じ効果が再度適用された場合、攻撃力のボーナスは新しい効果に累積される。"
+        self.skill1_description_jp = "「思い出のしおり」を持つ味方に22ターンの間「ドキドキタイム」を付与する。ドキドキタイム：HP回復を受けるたびに、超過回復分の15%攻撃力が増加する。この攻撃力のボーナス効果は10ターン持続する。同じ効果が再度適用された場合、攻撃力のボーナスは新しい効果に累積される。"
         self.skill2_description_jp = "「思い出のしおり」を持つ味方から最大4つのアクティブなデバフを解除し、その味方の最大HPの10%を治療する。解除されたデバフ1つにつき、回復量が最大HPの10%増加する。"
         self.skill3_description_jp = "攻撃力が最も高い隣接する味方1体を選び、その味方に「思い出のしおり」を付与する。思い出のしおり：攻撃が外れるたびに命中率が10%増加し、最大HPの10%を回復する。スキルを使用する際、「思い出のしおり」を持つ味方が倒されている場合、そのスキルは通常攻撃に変わる。"
         self.skill1_cooldown_max = 3
@@ -4348,7 +4357,7 @@ class Lester(Character):
             return self.attack()
         a = t[0]
         if a.is_alive():
-            et = LesterExcitingTimeEffect("Exciting Time", 20, True, buff_applier=self)
+            et = LesterExcitingTimeEffect("Exciting Time", 22, True, buff_applier=self)
             et.additional_name = "Lester_Exciting_Time"
             et.apply_rule = "stack"
             a.apply_effect(et)
@@ -4647,16 +4656,16 @@ class Cupid(Character):
         self.skill1_description = "Apply Lead Arrow on 3 enemies of highest atk for 20 turns, apply Gold Arrow on yourself for 20 turns." \
         " Lead Arrow: Critical defense is decreased by 100%, when this effect is removed, take 1 bypass status damage." \
         " Gold Arrow: Critical damage is increased by 100%. When Lead Arrow or Gold Arrow is applied on the same target, duration is refreshed."
-        self.skill2_description = "Attack all enemies with 222% atk who have Lead Arrow." \
+        self.skill2_description = "Attack all enemies with 200% atk who have Lead Arrow." \
         " When attacking enemy while you have Gold Arrow and target has Lead Arrow, damage increased by 100%," \
         " but leaves 1 hp for the target if this attack is lethal. On a critical hit, applys Love Fantasy on target for 4 turns and set Lead Arrow duration to its duration." \
         " Love Fantasy: Allies with Lead Arrow is seen as enemy, only allies with Lead Arrow is seen as ally." \
         " When the same effect is applied, duration of the already applied effect is refreshed." \
-        " If no enemy has Lead Arrow, heal hp by 222% of atk."
+        " If no enemy has Lead Arrow, heal hp by 200% of atk."
         self.skill3_description = "Normal attack does nothing. Apply For Love 2 times on yourself, when defeated, revive with 50% hp."
         # 鉛矢 金矢 恋愛妄想 愛のために
         self.skill1_description_jp = "攻撃力が最も高い3人の敵に20ターンの間「鉛矢」を付与し、自身に20ターンの間「金矢」を付与する。鉛矢:クリティカル防御が100%減少し、この効果が解除されると状態異常無視ダメージを1受ける。金矢:クリティカルダメージが100%増加する。鉛矢または金矢が同じ対象に再度適用された場合、持続時間が更新される。"
-        self.skill2_description_jp = "鉛矢を持つ全ての敵に攻撃力の222%で攻撃する。自分が金矢を持ち、対象が鉛矢を持っている場合、ダメージが100%増加するが、この攻撃で致命的ダメージを与えた場合、対象のHPは1残る。クリティカルの場合、対象に4ターンの間「恋愛妄想」を付与し、鉛矢の持続時間を恋愛妄想の持続時間に設定する。恋愛妄想:鉛矢を持つ味方は敵として認識され、鉛矢を持つ者だけが味方として認識される。同じ効果が再度適用された場合、既存の効果の持続時間が更新される。敵に鉛矢を持つ者がいない場合、攻撃力の222%分HPを治療する。"
+        self.skill2_description_jp = "鉛矢を持つ全ての敵に攻撃力の200%で攻撃する。自分が金矢を持ち、対象が鉛矢を持っている場合、ダメージが100%増加するが、この攻撃で致命的ダメージを与えた場合、対象のHPは1残る。クリティカルの場合、対象に4ターンの間「恋愛妄想」を付与し、鉛矢の持続時間を恋愛妄想の持続時間に設定する。恋愛妄想:鉛矢を持つ味方は敵として認識され、鉛矢を持つ者だけが味方として認識される。同じ効果が再度適用された場合、既存の効果の持続時間が更新される。敵に鉛矢を持つ者がいない場合、攻撃力の200%分HPを治療する。"
         self.skill3_description_jp = "通常攻撃は何もしない。自身に「愛のために」を2回付与し、撃破された時、HP50%で復活する。"
         self.skill1_cooldown_max = 2
         self.skill2_cooldown_max = 0
@@ -4679,10 +4688,10 @@ class Cupid(Character):
         # The effects are mostly implemented in CupidLeadArrowEffect so it is simple here
         target_list = list(self.target_selection(keyword="enemy_that_must_have_effect", keyword2="Lead Arrow"))
         if not target_list:
-            self.heal(target_kw1="yourself", value=self.atk * 2.2)
+            self.heal(target_kw1="yourself", value=self.atk * 2.0)
             return 0
         else:
-            damage_dealt = self.attack(multiplier=2.22, target_list=target_list)
+            damage_dealt = self.attack(multiplier=2.0, target_list=target_list)
         if target_list:
             for t in target_list:
                 t.update_ally_and_enemy()
@@ -5053,7 +5062,7 @@ class Sunny(Character):
 
 
 class Sasaki(Character):
-    # TODO: Add a support for this character
+    # NOTE: Lester is a support for this character
     """
     Hp recovery based on damage dealt.
     Build: 
@@ -5148,10 +5157,61 @@ class Zed(Character):
         pass
 
 
+class Lu(Character):
+    """
+    Negate skill
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Lu"
+        self.skill1_description = "Heal one ally of highest atk with 120% of your highest main stats except maxhp," \
+        " remove 2 debuffs and apply Regeneration for 10 turns on that ally. Regeneration: Recover hp by 60% of your highest main stats except maxhp each turn." 
+        self.skill2_description = "Apply Big Bear on all allies for 20 turns, Big Bear absorbs damage equal to 120% of your" \
+        " highest main stats except maxhp. When applied on yourself, the absorption value is increased by 50%."
+        self.skill3_description = "Attack start of battle, apply unremovable Flapping Sound on the closest enemy," \
+        " when the affected enemy takes action and a skill can be used, for 1 turn, silence the enemy by paying hp equal to 100 * level." \
+        " Paying hp treats as taking status damage. If you are defeated, the effect on the enemy is removed." 
+        # 羽ばたく音
+        self.skill1_description_jp = "攻撃力が最も高い味方1人のHPを、自身の最大HPを除く主要ステータスのうち最も高い値の120%分回復し、デバフを2つ解除して、その味方に10ターンの間「再生」を付与する。再生：毎ターン、自身の最大HPを除く最も高い主要ステータスの60%分のHPを回復する。"
+        self.skill2_description_jp = "全ての味方に20ターンの間「ビッグベア」を付与する。ビッグベアは、自身の最大HPを除く最も高い主要ステータスの120%分のダメージを吸収する。自分に付与した場合、吸収量が50%増加する。"
+        self.skill3_description_jp = "戦闘開始時、最も近い敵に解除不能な「羽ばたく音」を付与する。この効果を受けた敵が行動を起こし、スキルが使用可能な場合、その敵を1ターンの間「沈黙」させ、自分が100×レベル分のHPを支払われる。HPの支払いは状態異常ダメージとして扱われる。自分が倒された場合、敵にかかっている効果は解除される。"
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 3
 
 
+    def skill1_logic(self):
+        ally = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
+        heal_value = max(self.atk, self.defense, self.spd)
+        self.heal(value=heal_value * 1.20, target_list=[ally])
+        if ally.is_alive():
+            ally.remove_random_amount_of_debuffs(2)
+            def heal_func(char, buff_applier):
+                heal_value = max(buff_applier.atk, buff_applier.defense, buff_applier.spd)
+                return heal_value * 0.6
+            regen = ContinuousHealEffect("Regeneration", 10, True, value_function=heal_func, buff_applier=self,
+                                        value_function_description="50% of Lu's highest main stats except maxhp",
+                                        value_function_description_jp="Luの最高主要ステータスの50%")
+            ally.apply_effect(regen)
+        return 0
 
 
+    def skill2_logic(self):
+        for a in self.ally:
+            big_bear_value = max(self.atk, self.defense, self.spd) * 1.20
+            if a is self:
+                big_bear_value *= 1.50
+            big_bear = AbsorptionShield("Big Bear", 20, True, big_bear_value, False)
+            a.apply_effect(big_bear)
+
+
+    def skill3(self):
+        pass
+
+
+    def battle_entry_effects(self):
+        t = mit.one(self.target_selection(keyword="n_enemy_in_front", keyword2="1"))
+        t.apply_effect(LuFlappingSoundEffect("Flapping Sound", -1, False, self, hp_cost=100 * self.lvl))
 
 
 

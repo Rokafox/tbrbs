@@ -164,7 +164,7 @@ class Equip(Block):
                 return (
                     "increase speed by 5%, decrease atk by 10% and grant hide for 50 turns at the start of battle. You cannot be targeted unless for skills that targets 5 enemies." \
                     " Hide effect is removed when all allies are hidden. When this hide effect is removed, apply Full Cloud, for 10 turns, speed is increased by 100%," \
-                    " final damage taken is reduced by 60%." 
+                    " final damage taken is reduced by 70%." 
                 )
             case "Purplestar":
                 return (
@@ -172,7 +172,7 @@ class Equip(Block):
                 )
             case "1987":
                 return (
-                    "Select the highest one from 3 of your main stats: atk, def, spd. 19.87% + 1.987% of the selected stat is added to the ally" \
+                    "Select the highest one from 3 of your main stats: atk, def, spd. 24% of the selected stat is added to the ally" \
                     " who has the lowest value of the selected stat."
                 )
             case "7891":
@@ -182,7 +182,7 @@ class Equip(Block):
                 )
             case "Freight":
                 return (
-                    "Prioritize skill 2 over skill 1 if both are available. Before an action, heal hp by 50% of speed. For 3 turns, speed is increased by 30%."
+                    "Prioritize skill 2 over skill 1 if both are available. Before an action, heal hp by 50% of speed. For 4 turns, speed is increased by 30%."
                 )
             case _:
                 return ""
@@ -256,7 +256,7 @@ class Equip(Block):
             case "Cloud":
                 return (
                     "バトル開始時に速度が5%増加し攻撃力が10%減少する。50ターンの間雲隠状態を付与される。雲隠状態中は、5体の敵を対象とするスキル以外のターゲットにはされません。"
-                    "雲隠状態が解除されると、雲満を付与し、10ターンの間速度が100%増加し、最終ダメージ倍率60%減少する。"
+                    "雲隠状態が解除されると、雲満を付与し、10ターンの間速度が100%増加し、最終ダメージ倍率70%減少する。"
                 )
             case "Purplestar":
                 return (
@@ -264,7 +264,7 @@ class Equip(Block):
                 )
             case "1987":
                 return (
-                    "攻撃力、防御力、速度の3つのステータスの中から最も高いものを選択し、選択したステータスの19.87%+1.987%分が、選択したステータスの値が最も低い味方に付加される。"
+                    "攻撃力、防御力、速度の3つのステータスの中から最も高いものを選択し、選択したステータスの24%分が、選択したステータスの値が最も低い味方に付加される。"
                 )
             case "7891":
                 return (
@@ -272,7 +272,7 @@ class Equip(Block):
                 )
             case "Freight":
                 return (
-                    "スキル1よりもスキル2を優先して使用する。行動前にHPを速度の50%分回復する。3ターンの間、速度が30%増加する。"
+                    "スキル1よりもスキル2を優先して使用する。行動前にHPを速度の50%分回復する。4ターンの間、速度が30%増加する。"
                 )
             case _:
                 return ""
