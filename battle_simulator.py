@@ -139,13 +139,12 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         }
 
     def build_inventory_slots(self):
-        # TODO: We have commented out the selected_item feature. TEST IT.
         self.selected_item = {}
         page = self.current_page
-        try: # I do not think it is the best way to do this.
-            only_include = global_vars.cheap_inventory_show_current_option
-        except NameError:
-            only_include = "Equip"
+        # try:
+        only_include = global_vars.cheap_inventory_show_current_option
+        # except NameError:
+        #     only_include = "Equip"
         match only_include:
             case "Equip":
                 filtered_inventory = [x for x in self.inventory if isinstance(x, Equip)]
@@ -157,6 +156,20 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                 filtered_inventory = [x for x in self.inventory if isinstance(x, Item)]
             case _:
                 filtered_inventory = self.inventory
+
+        filter_inventory_suboption = cheap_inventory_filter_selection_menu.selected_option[0]
+        # in filter_inventory_suboption, "s:" means set name, ie. "s: Arasaka" only gives items in Arasaka set
+        # only Equip() has eq_set attribute
+        # c: means Characters, only show items that has attr owner = filter_inventory_suboption.split(":")[1].strip()
+        if filter_inventory_suboption.startswith("s:"):
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
+        elif filter_inventory_suboption.startswith("c:"):
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == filter_inventory_suboption.split(":")[1].strip()]
+        elif filter_inventory_suboption == "No Owner":
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
+        else:
+            pass 
+
         chunked_inventory = list(mit.chunked(filtered_inventory, 24)) # The value must equal to n argument of create_inventory_image_slots()
         max_pages = max(0, len(chunked_inventory) - 1)
         self.max_pages = max_pages
@@ -456,18 +469,20 @@ def get_all_characters():
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu"]
     character_names.sort()
-    print(len(character_names))
-
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
     else:
         all_characters = [eval(f"{name}('{name}', 1)") for name in character_names]
-    return all_characters
+    print(f"Loaded {len(all_characters)} characters.")
+    return all_characters, character_names
 
-all_characters = get_all_characters()
+all_characters, all_characters_names = get_all_characters()
+all_characters: list[Character]
+all_characters_names: list[str]
 all_monsters = [cls(name, 1) for name, cls in monsters.__dict__.items() 
                 if inspect.isclass(cls) and issubclass(cls, Character) and cls != Character and cls != monsters.Monster]
-
+all_monsters: list[Character]
+print(f"Loaded {len(all_monsters)} monsters.")
 
 
 
@@ -1315,6 +1330,8 @@ if __name__ == "__main__":
     # =====================================
 
     eq_rarity_list, eq_types_list, eq_set_list = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
+    eq_set_list_without_none_and_void = [x for x in eq_set_list if x != "None" and x != "Void"]
+    eq_set_list_without_none_and_void.sort()
 
     eq_selection_menu = pygame_gui.elements.UIDropDownMenu(eq_types_list,
                                                             eq_types_list[0],
@@ -1635,14 +1652,19 @@ if __name__ == "__main__":
 
     cheap_inventory_sort_by_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
                                                             "Rarity",
-                                                            pygame.Rect((1300, 60), (230, 35)),
+                                                            pygame.Rect((1300, 60), (114, 35)),
                                                             ui_manager)
 
-    # cheap_inventory_sort_by_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1300, 60), (230, 35)),
-    #                                     text='Sort',
-    #                                     manager=ui_manager,
-    #                                     tool_tip_text = "Sort inventory by selected option")
-    # cheap_inventory_sort_by_button.set_tooltip("Sort inventory by selected option.", delay=0.1, wrap_width=300)
+    cheap_inventory_filter_selection_menu = pygame_gui.elements.UIDropDownMenu(["All", "No Owner"],
+                                                            "All",
+                                                            pygame.Rect((1416, 60), (114, 35)),
+                                                            ui_manager)
+
+    # craft a new list of s: + set name
+    cheap_inventory_filter_selection_menu.add_options([f"s: {x}" for x in eq_set_list_without_none_and_void])
+    # character names start with c:
+    cheap_inventory_filter_selection_menu.add_options([f"c: {x}" for x in all_characters_names])
+
 
     def cheap_inventory_sort():
         match cheap_inventory_sort_by_selection_menu.selected_option[0]:
@@ -3092,7 +3114,7 @@ if __name__ == "__main__":
     # if start_with_max_level and global_vars.allow_cheat:
     #     shop_select_a_shop.add_options(["CHEAT"])
 
-    extra_shop_list = [item for item in Equip("boo", "Weapon", "Common").eq_set_list if item not in ["None", "Void"]]
+    extra_shop_list = eq_set_list_without_none_and_void
     # Add "Forge" to each string in the list
     extra_shop_list_a = [f"{item} Forge" for item in extra_shop_list]
     extra_shop_list_b = [f"{item} Reforged" for item in extra_shop_list]
@@ -3576,6 +3598,9 @@ if __name__ == "__main__":
                     the_shop = redraw_ui_shop_edition()
                 if event.ui_element == theme_selection_menu:
                     change_theme()
+                if event.ui_element == cheap_inventory_filter_selection_menu:
+                    player.current_page = 0
+                    player.build_inventory_slots()
                 if event.ui_element == cheap_inventory_what_to_show_selection_menu:
                     match cheap_inventory_what_to_show_selection_menu.selected_option[0]:
                         case "Equip":

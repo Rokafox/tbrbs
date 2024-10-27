@@ -17,7 +17,7 @@ import global_vars
 class Character:
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         if equip is None:
-            equip = {} # {str Equip.type: Equip}
+            equip: dict[str, Equip] = {} # {str Equip.type: Equip}
         if equip is not None and not isinstance(equip, dict):
             raise Exception("Equip must be a dict.")
         self.name = name
@@ -100,6 +100,10 @@ class Character:
         self.battle_turns = 0 # counts how many turns the character has been in battle
         self.number_of_take_downs: int = 0 # counts how many enemies the character has taken down
         self.have_taken_action: bool = False # whether the character has taken action in the battle
+
+        if self.equip:
+            for item in self.equip.values():
+                item.owner = self.name
 
         self.clear_others()
 
@@ -915,7 +919,7 @@ class Character:
             else:
                 return {}
         unequipped_items = self.equip.copy()
-        self.equip = {}
+        self.equip.clear()
         self.reset_stats_and_reapply_effects(False)
         return unequipped_items
 

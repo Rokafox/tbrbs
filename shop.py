@@ -159,8 +159,6 @@ class Armory_Brand_Specific_Premium(Shop):
         for k, (s, d, f) in self.inventory.copy().items():
             price = k.market_value // 50
             price *= k.market_value // 100
-            if k.market_value > 500:
-                price *= 2
             self.inventory[k] = (price, d, f)
 
     def decide_discount(self):

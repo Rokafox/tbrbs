@@ -21,7 +21,9 @@ class Equip(Block):
         self.level_max = 1000
         self.type = type
         self.rarity = rarity
-        self.check_eq_set(eq_set)
+        self.eq_set = eq_set
+        if self.eq_set not in self.eq_set_list:
+            raise Exception("Invalid eq_set")
         self.maxhp_percent = 0.00
         self.atk_percent = 0.00
         self.def_percent = 0.00
@@ -57,6 +59,8 @@ class Equip(Block):
         self.four_set_effect_description = self.assign_four_set_effect_description()
         self.four_set_effect_description_jp = self.assign_four_set_effect_description_jp()
 
+        self.owner: str | None = None
+
     def to_dict(self):
         return {
             "object": str(self.__class__),
@@ -90,7 +94,8 @@ class Equip(Block):
             "maxhp_extra": self.maxhp_extra,
             "atk_extra": self.atk_extra,
             "def_extra": self.def_extra,
-            "spd_extra": self.spd_extra
+            "spd_extra": self.spd_extra,
+            "owner": self.owner
         }
     
     def assign_four_set_effect_description(self):
@@ -294,12 +299,6 @@ class Equip(Block):
             return "void"
         else:
             return self.eq_set + "_" + self.type
-
-    def check_eq_set(self, name):
-        if name in self.eq_set_list:
-            self.eq_set = name
-        else:
-            raise Exception("Invalid equipment set")
 
     def enhance_by_rarity(self):
         values = [1.00, 1.10, 1.25, 1.45, 1.70, 2.00]
@@ -643,6 +642,7 @@ class Equip(Block):
                 color = "#21d6ff"
         star_color = "#3746A7" # blue
         market_color = "#202d82" # blue
+        owner_color = "#0e492a"
         star_color_purple = "#9B30FF" # purple
         star_color_red = "#FF0000" # red
         star_color_gold = "#FFD700" # gold
@@ -709,6 +709,8 @@ class Equip(Block):
             stats += "Heal Efficiency: " + "{:.2f}%".format(self.heal_efficiency*100) + "</font>\n"
         if self.eq_set == "Void":
             return stats
+        if self.owner:
+            stats += f"<font color={owner_color}>Owner: {self.owner}</font>\n"
         if self.stars_rating < self.stars_rating_max:
             stats += f"<font color=#AF6E4D>Stars Enhancement Cost: {self.star_enhence_cost} </font>\n"
         else:
@@ -750,6 +752,7 @@ class Equip(Block):
         
         star_color = "#3746A7"  # 青
         market_color = "#202d82"  # 青
+        owner_color = "#0e492a"
         star_color_purple = "#9B30FF"  # 紫
         star_color_red = "#FF0000"  # 赤
         star_color_gold = "#FFD700"  # 金色
@@ -773,7 +776,7 @@ class Equip(Block):
             stats += "<font color=" + star_color_red + ">" + '★'*min(int(self.stars_rating-10), 5) + "</font>"
         stats += "\n" if self.stars_rating > 0 else ""
         stats += "<font color=" + color + ">"
-        
+
         def star_font_color() -> str:
             if self.stars_rating <= 5:
                 return star_color
@@ -821,6 +824,8 @@ class Equip(Block):
         
         if self.eq_set == "Void":
             return stats
+        if self.owner:
+            stats += f"<font color={owner_color}>所有: {self.owner}</font>\n"
         if self.stars_rating < self.stars_rating_max:
             stats += f"<font color=#AF6E4D>スター強化コスト: {self.star_enhence_cost} </font>\n"
         else:
