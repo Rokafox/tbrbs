@@ -1755,17 +1755,17 @@ class Character:
             selected_stat = max(the_stat_dict, key=the_stat_dict.get)
             if selected_stat == "atk":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.atk)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"atk": self.atk * (0.24)})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"atk": self.atk * (0.2555)})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "defense":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.defense)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"defense": self.defense * (0.24)})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"defense": self.defense * (0.2555)})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "spd":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.spd)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"spd": self.spd * (0.24)})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"spd": self.spd * (0.2555)})
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
         elif self.get_equipment_set() == "7891":

@@ -3096,7 +3096,11 @@ if __name__ == "__main__":
     # Add "Forge" to each string in the list
     extra_shop_list_a = [f"{item} Forge" for item in extra_shop_list]
     extra_shop_list_b = [f"{item} Reforged" for item in extra_shop_list]
+    extra_shop_list_c = None
+    # extra_shop_list_c = [f"{item} Premium" for item in extra_shop_list]
     extra_shop_list = extra_shop_list_a + extra_shop_list_b
+    if extra_shop_list_c:
+        extra_shop_list += extra_shop_list_c
     extra_shop_list.sort()
     shop_select_a_shop.add_options(extra_shop_list)
 
@@ -3151,6 +3155,9 @@ if __name__ == "__main__":
                     elif "Reforged" in shop_name:
                         brand_name = shop_name.split(" ")[0]
                         shop_instance = eval(f"shop.Armory_Brand_Specific_Reforged")(shop_name, None, brand_name)
+                    elif "Premium" in shop_name:
+                        brand_name = shop_name.split(" ")[0]
+                        shop_instance = eval(f"shop.Armory_Brand_Specific_Premium")(shop_name, None, brand_name)
                     else:
                         raise Exception(f"Unknown shop name: {shop_name}")
 

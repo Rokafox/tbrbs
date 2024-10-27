@@ -172,7 +172,7 @@ class Equip(Block):
                 )
             case "1987":
                 return (
-                    "Select the highest one from 3 of your main stats: atk, def, spd. 24% of the selected stat is added to the ally" \
+                    "Select the highest one from 3 of your main stats: atk, def, spd. 25.55% of the selected stat is added to the ally" \
                     " who has the lowest value of the selected stat."
                 )
             case "7891":
@@ -264,7 +264,7 @@ class Equip(Block):
                 )
             case "1987":
                 return (
-                    "攻撃力、防御力、速度の3つのステータスの中から最も高いものを選択し、選択したステータスの24%分が、選択したステータスの値が最も低い味方に付加される。"
+                    "攻撃力、防御力、速度の3つのステータスの中から最も高いものを選択し、選択したステータスの25.55%分が、選択したステータスの値が最も低い味方に付加される。"
                 )
             case "7891":
                 return (
@@ -389,21 +389,38 @@ class Equip(Block):
         extra_lines_to_generate = self.fake_dice() - 1
         
         if self.type == self.type_list[2]:
-            self.maxhp_flat += max(normal_distribution(1, 4000, 1000, 1000), 1)
-            self.maxhp_flat /= 40
-            self.maxhp_flat *= level
+            if self.maxhp_flat == 0:
+                v = max(normal_distribution(1, 4000, 1000, 1000), 1)
+            else:
+                # should generate a higher value
+                v = max(normal_distribution(500, 4000, 1500, 1000), 1)
+            v /= 40
+            v *= level
+            self.maxhp_flat += v
         elif self.type == self.type_list[0]:
-            self.atk_flat += max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
-            self.atk_flat /= 40
-            self.atk_flat *= level
+            if self.atk_flat == 0:
+                v = max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
+            else:
+                v = max(normal_distribution(500, 4000, 1500, 1000) * 0.05, 1)
+            v /= 40
+            v *= level
+            self.atk_flat += v
         elif self.type == self.type_list[1]:
-            self.def_flat += max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
-            self.def_flat /= 40
-            self.def_flat *= level
+            if self.def_flat == 0:
+                v = max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
+            else:
+                v = max(normal_distribution(500, 4000, 1500, 1000) * 0.05, 1)
+            v /= 40
+            v *= level
+            self.def_flat += v
         elif self.type == self.type_list[3]:
-            self.spd_flat += max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
-            self.spd_flat /= 40
-            self.spd_flat *= level
+            if self.spd_flat == 0:
+                v = max(normal_distribution(1, 4000, 1000, 1000) * 0.05, 1)
+            else:
+                v = max(normal_distribution(500, 4000, 1500, 1000) * 0.05, 1)
+            v /= 40
+            v *= level
+            self.spd_flat += v
         else:
             raise Exception("Invalid type")
         

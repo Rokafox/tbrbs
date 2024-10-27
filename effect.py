@@ -1056,6 +1056,11 @@ class FrozenEffect(Effect):
         return "Cannot take action and evasion is reduced by 100%, normal damage taken is reduced by 80%." \
         " Status damage taken is increased by 100%. Each turn, take status damage equal to 1% of max hp."
 
+    def tooltip_description_jp(self):
+        return "行動不可、回避率が100%減少。受ける通常ダメージを80%減少、状態異常ダメージを100%増加。" \
+        "各ターン、最大HPの1%に相当する状態異常ダメージを受ける。"
+
+
 
 class PetrifyEffect(Effect):
     def __init__(self, name, duration, is_buff, imposter, delay_trigger=0):
@@ -1067,10 +1072,17 @@ class PetrifyEffect(Effect):
         self.delay_trigger = delay_trigger
         self.apply_rule = "stack"
         self.is_cc_effect = True
+        self.turns_passed = 0
     
     def apply_effect_on_apply(self, character):
         stats_dict = {"eva": -1.00}
         character.update_stats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
+
+    def apply_effect_on_trigger(self, character):
+        self.turns_passed += 1
+        if self.turns_passed > 30 and not self.duration == -1:
+            self.duration = -1
+            self.can_be_removed_by_skill = False
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         match which_ds:
@@ -1087,7 +1099,13 @@ class PetrifyEffect(Effect):
     
     def tooltip_description(self):
         return "Cannot take action and evasion is reduced by 100%." \
-        " Immune to status damage, normal damage taken is increased by 100%."
+        " Immune to status damage, normal damage taken is increased by 100%." \
+        " After 30 turns, this effect can no longer be removed and last indefinitely."
+    
+    def tooltip_description_jp(self):
+        return "行動不可、回避率が100%減少。" \
+        "受ける状態異常ダメージを無効化、通常ダメージが200%増加。" \
+        "30ターン後、この効果は解除できなくなり、持続時間が無限になる。"
 
 
 class SilenceEffect(Effect):

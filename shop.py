@@ -133,6 +133,42 @@ class Armory_Brand_Specific_Reforged(Shop):
 
 
 
+class Armory_Brand_Specific_Premium(Shop):
+    def __init__(self, name, description, brand_name):
+        super().__init__(name, description)
+        self.currency = "SliverIngot"
+        self.equippricedecide_random_low = 1
+        self.equippricedecide_random_high = 1
+        self.equipdiscountdecide_chance = 0
+        self.brand_name = brand_name
+        if not self.description:
+            self.description = f"{brand_name}の最高峰専門店。唯一無二の装備を求める者にとって、ここは宝の山です。伝説級の質を誇る装備が取り揃えられ、その価値と価格は他に類を見ません。"
+
+
+    def get_items_from_manufacturers(self):
+        package_of_items = []
+        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=200, locked_eq_set=self.brand_name))
+
+        if len(package_of_items) < 5:
+            raise ValueError(f"Not enough items in the package_of_items, only {len(package_of_items)} items is available.")
+        if len(package_of_items) >= 5:
+            for item in random.sample(package_of_items, 5):
+                self.inventory[item] = (0, 0.0, 0)
+
+    def decide_price(self):
+        for k, (s, d, f) in self.inventory.copy().items():
+            price = k.market_value // 50
+            price *= k.market_value // 100
+            if k.market_value > 500:
+                price *= 2
+            self.inventory[k] = (price, d, f)
+
+    def decide_discount(self):
+        for k, (s, d, f) in self.inventory.copy().items():
+            self.inventory[k] = (s, 0, f)
+
+
+
 
 
 class Gulid_SliverWolf(Shop):
