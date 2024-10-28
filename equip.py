@@ -549,7 +549,7 @@ class Equip(Block):
         if current_level == self.level_max:
             return 0
         base_cost = 0.01  
-        return int(base_cost * (current_level ** 1.985))  # Approximatly 2500000 from 1 to 1000
+        return int(base_cost * (current_level ** 1.985))  # 3015329 from 1 to 1000
     
     def level_up_cost_multilevel(self, levels: int) -> int:
         # calculate the cost of leveling up multiple levels from current level

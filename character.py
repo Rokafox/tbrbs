@@ -4353,12 +4353,12 @@ class Lester(Character):
         self.skill2_description = "Remove a maximum of 4 active debuffs from the ally with Bookmarks of Memories and" \
         " heal 10% of maxhp to the ally. For each debuff removed, heal amount is increased by 10% of maxhp."
         self.skill3_description = "Select 1 neighbor ally of highest atk, apply Bookmarks of Memories to that ally." \
-        " Bookmarks of Memories: Everytime when missing an attack, accuracy is increased by 10% and recover 10% of maxhp." \
+        " Bookmarks of Memories: Everytime when missing an attack, atk and accuracy is increased by 10% and recover 10% of maxhp." \
         " When using skills, if the ally with Bookmarks of Memories is defeated, the skill becomes normal attack."
         # 思い出のしおり ドキドキタイム
         self.skill1_description_jp = "「思い出のしおり」を持つ味方に22ターンの間「ドキドキタイム」を付与する。ドキドキタイム：HP回復を受けるたびに、超過回復分の15%攻撃力が増加する。この攻撃力のボーナス効果は10ターン持続する。同じ効果が再度適用された場合、攻撃力のボーナスは新しい効果に累積される。"
         self.skill2_description_jp = "「思い出のしおり」を持つ味方から最大4つのアクティブなデバフを解除し、その味方の最大HPの10%を治療する。解除されたデバフ1つにつき、回復量が最大HPの10%増加する。"
-        self.skill3_description_jp = "攻撃力が最も高い隣接する味方1体を選び、その味方に「思い出のしおり」を付与する。思い出のしおり：攻撃が外れるたびに命中率が10%増加し、最大HPの10%を回復する。スキルを使用する際、「思い出のしおり」を持つ味方が倒されている場合、そのスキルは通常攻撃に変わる。"
+        self.skill3_description_jp = "攻撃力が最も高い隣接する味方1体を選び、その味方に「思い出のしおり」を付与する。思い出のしおり：攻撃が外れるたびに攻撃力と命中率が10%増加し、最大HPの10%を回復する。スキルを使用する際、「思い出のしおり」を持つ味方が倒されている場合、そのスキルは通常攻撃に変わる。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
 
@@ -4394,7 +4394,7 @@ class Lester(Character):
 
 
     def battle_entry_effects(self):
-        bom = LesterBookofMemoryEffect("Bookmarks of Memories", -1, True, {"acc": 0.00}, buff_applier=self)
+        bom = LesterBookofMemoryEffect("Bookmarks of Memories", -1, True, {'atk': 1.00, "acc": 0.00}, buff_applier=self)
         bom.can_be_removed_by_skill = False
         bom.additional_name = "Lester_Bookmarks_of_Memories"
         neighbors = self.get_neighbor_allies_not_including_self()
@@ -5178,16 +5178,16 @@ class Lu(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Lu"
-        self.skill1_description = "Heal one ally of highest atk with 120% of your highest main stats except maxhp," \
-        " remove 2 debuffs and apply Regeneration for 10 turns on that ally. Regeneration: Recover hp by 60% of your highest main stats except maxhp each turn." 
-        self.skill2_description = "Apply Big Bear on all allies for 20 turns, Big Bear absorbs damage equal to 120% of your" \
-        " highest main stats except maxhp. When applied on yourself, the absorption value is increased by 50%."
+        self.skill1_description = "Heal one ally of highest atk with 400% of your highest main stats except maxhp," \
+        " remove 2 debuffs and apply Regeneration for 10 turns on that ally. Regeneration: Recover hp by 70% of your highest main stats except maxhp each turn." 
+        self.skill2_description = "Apply Big Bear on all allies for 20 turns, Big Bear absorbs damage equal to 400% of your" \
+        " highest main stats except maxhp. When applied on yourself, the absorption value is increased by 100%."
         self.skill3_description = "Attack start of battle, apply unremovable Flapping Sound on the closest enemy," \
         " when the affected enemy takes action and a skill can be used, for 1 turn, silence the enemy by paying hp equal to 100 * level." \
         " Paying hp treats as taking status damage. If you are defeated, the effect on the enemy is removed." 
         # 羽ばたく音
-        self.skill1_description_jp = "攻撃力が最も高い味方1人のHPを、自身の最大HPを除く主要ステータスのうち最も高い値の120%分回復し、デバフを2つ解除して、その味方に10ターンの間「再生」を付与する。再生：毎ターン、自身の最大HPを除く最も高い主要ステータスの60%分のHPを回復する。"
-        self.skill2_description_jp = "全ての味方に20ターンの間「ビッグベア」を付与する。ビッグベアは、自身の最大HPを除く最も高い主要ステータスの120%分のダメージを吸収する。自分に付与した場合、吸収量が50%増加する。"
+        self.skill1_description_jp = "攻撃力が最も高い味方1人のHPを、自身の最大HPを除く主要ステータスのうち最も高い値の400%分治療し、デバフを2つ解除して、その味方に10ターンの間「再生」を付与する。再生：毎ターン、自身の最大HPを除く最も高い主要ステータスの70%分のHPを回復する。"
+        self.skill2_description_jp = "全ての味方に20ターンの間「ビッグベア」を付与する。ビッグベアは、自身の最大HPを除く最も高い主要ステータスの400%分のダメージを吸収する。自分に付与した場合、吸収量が100%増加する。"
         self.skill3_description_jp = "戦闘開始時、最も近い敵に解除不能な「羽ばたく音」を付与する。この効果を受けた敵が行動を起こし、スキルが使用可能な場合、その敵を1ターンの間「沈黙」させ、自分が100×レベル分のHPを支払われる。HPの支払いは状態異常ダメージとして扱われる。自分が倒された場合、敵にかかっている効果は解除される。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
@@ -5196,12 +5196,12 @@ class Lu(Character):
     def skill1_logic(self):
         ally = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
         heal_value = max(self.atk, self.defense, self.spd)
-        self.heal(value=heal_value * 1.20, target_list=[ally])
+        self.heal(value=heal_value * 4.00, target_list=[ally])
         if ally.is_alive():
             ally.remove_random_amount_of_debuffs(2)
             def heal_func(char, buff_applier):
                 heal_value = max(buff_applier.atk, buff_applier.defense, buff_applier.spd)
-                return heal_value * 0.6
+                return heal_value * 0.70
             regen = ContinuousHealEffect("Regeneration", 10, True, value_function=heal_func, buff_applier=self,
                                         value_function_description="50% of Lu's highest main stats except maxhp",
                                         value_function_description_jp="Luの最高主要ステータスの50%")
@@ -5211,9 +5211,9 @@ class Lu(Character):
 
     def skill2_logic(self):
         for a in self.ally:
-            big_bear_value = max(self.atk, self.defense, self.spd) * 1.20
+            big_bear_value = max(self.atk, self.defense, self.spd) * 4.00
             if a is self:
-                big_bear_value *= 1.50
+                big_bear_value *= 2.00
             big_bear = AbsorptionShield("Big Bear", 20, True, big_bear_value, False)
             a.apply_effect(big_bear)
 

@@ -16,9 +16,12 @@ text_box = None
 start_with_max_level = True
 
 
-# A hack to disable DPI scaling on Windows
+# A hack to disable DPI scaling on Windows systems
 import ctypes
-ctypes.windll.user32.SetProcessDPIAware()
+try:
+    ctypes.windll.user32.SetProcessDPIAware()
+except AttributeError:
+    pass
 
 
 # NOTE:
@@ -172,6 +175,8 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == filter_inventory_suboption.split(":")[1].strip()]
         elif filter_inventory_suboption == "No Owner":
             filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
+        elif filter_inventory_suboption == "Has Owner":
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
         else:
             pass 
 
@@ -1697,7 +1702,7 @@ if __name__ == "__main__":
                                                             pygame.Rect((1300, 60), (114, 35)),
                                                             ui_manager)
 
-    cheap_inventory_filter_selection_menu = pygame_gui.elements.UIDropDownMenu(["All", "No Owner"],
+    cheap_inventory_filter_selection_menu = pygame_gui.elements.UIDropDownMenu(["All", "No Owner", "Has Owner"],
                                                             "All",
                                                             pygame.Rect((1416, 60), (114, 35)),
                                                             ui_manager)
