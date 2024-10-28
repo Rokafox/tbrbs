@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -529,6 +529,10 @@ class Character:
                     if critical:
                         final_damage = damage * (self.critdmg - target.critdef)
                         global_vars.turn_info_string += f"Critical!\n"
+                        if self.get_equipment_set() == "Runic" and self.crit > 1.0:
+                            crit_over = self.crit - 1.0
+                            global_vars.turn_info_string += f"Damage increased by {crit_over * 100:.2f}% due to Runic Set effect.\n"
+                            final_damage *= 1 + crit_over
                         if func_after_crit is not None: # Warning: this function may be called multiple times
                             final_damage, always_crit = func_after_crit(self, target, final_damage, always_crit)
                     else:
@@ -918,7 +922,7 @@ class Character:
                 raise ValueError("No equipment equipped")
             else:
                 return {}
-        unequipped_items = self.equip.copy()
+        unequipped_items = list(self.equip.values())
         self.equip.clear()
         self.reset_stats_and_reapply_effects(False)
         return unequipped_items
@@ -1692,6 +1696,11 @@ class Character:
             self.apply_effect(seveneightnineone_effect)
         elif set_name == "Freight":
             self.apply_effect(EquipmentSetEffect_Freight("Freight Set", -1, True))
+        elif set_name == "Runic":
+            # Critical rate is increased by 100%, critical damage is decreased by 50%. 
+            # When dealing damage, any critical rate over 100% is converted to critical damage
+            self.apply_effect(EquipmentSetEffect_Runic("Runic Set", -1, True))
+            self.apply_effect(StatsEffect("Runic Set", -1, True, {"crit": 1.00, "critdmg": -0.50}, is_set_effect=True))
         else:
             raise Exception("Effect not implemented.")
         

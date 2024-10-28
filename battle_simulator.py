@@ -16,6 +16,11 @@ text_box = None
 start_with_max_level = True
 
 
+# A hack to disable DPI scaling on Windows
+import ctypes
+ctypes.windll.user32.SetProcessDPIAware()
+
+
 # NOTE:
 """
 1. We cannot have character with the same name.
@@ -512,6 +517,12 @@ if __name__ == "__main__":
     # ui_manager.rebuild_all_from_changed_theme_data()
 
     pygame.display.set_caption("Battle Simulator")
+    # if there is icon, use it
+    try:
+        icon = pygame.image.load("icon.png")
+        pygame.display.set_icon(icon)
+    except Exception as e:
+        print(f"Error loading icon: {e}")
 
     if not os.path.exists("./.tmp"):
         os.mkdir("./.tmp")
@@ -837,11 +848,17 @@ if __name__ == "__main__":
                                                             ui_manager)
 
     current_display_chart = "Damage Dealt Chart"
-    button_left_change_chart = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
-                                        text='Switch Chart',
-                                        manager=ui_manager,
-                                        tool_tip_text = "")
-    button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
+
+    # button_left_change_chart = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
+    #                                     text='Switch Chart',
+    #                                     manager=ui_manager,
+    #                                     tool_tip_text = "")
+    # button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
+
+    button_left_change_chart_selection = pygame_gui.elements.UIDropDownMenu(["Damage Dealt", "Damage Received", "Healing"],
+                                                            "Damage Dealt",
+                                                            pygame.Rect((100, 480), (156, 50)),
+                                                            ui_manager)
 
     button_quit_game = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 540), (156, 50)),
                                         text='Quit',
@@ -1338,11 +1355,18 @@ if __name__ == "__main__":
                                                             pygame.Rect((900, 520), (156, 35)),
                                                             ui_manager)
 
-    character_eq_unequip_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 560), (156, 35)),
+    character_eq_unequip_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 560), (106, 35)),
                                         text='Unequip',
                                         manager=ui_manager,
                                         tool_tip_text = "Unequip selected item from selected character")
     character_eq_unequip_button.set_tooltip("Remove equipment from the selected character.", delay=0.1, wrap_width=300)
+
+    character_eq_unequip_all_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1011, 560), (45, 35)),
+                                        text='All',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Unequip all items from selected character")
+    character_eq_unequip_all_button.set_tooltip("Remove all equipment from the selected character.", delay=0.1, wrap_width=300)
+
 
     def unequip_item():
         text_box.set_text("==============================\n")
@@ -1364,6 +1388,24 @@ if __name__ == "__main__":
                 text_box.append_html_text(f"Can only unequip items from alive characters.\n")
                 return
 
+    def unequip_all_items():
+        text_box.set_text("==============================\n")
+        if not is_in_manipulatable_game_states():
+            text_box.append_html_text("Cannot unequip items when not in first turn or after the battle is concluded.\n")
+            return
+        for character in all_characters:
+            if character.name == character_selection_menu.selected_option[0].split()[-1] and character.is_alive():
+                unequipped_items = character.unequip_all(False)
+                if unequipped_items:
+                    text_box.append_html_text(f"Unequipped all equipment from {character.name}.\n")
+                    player.add_package_of_items_to_inventory(unequipped_items)
+                else:
+                    text_box.append_html_text(f"{character.name} does not have any equipment equipped.\n")
+                redraw_ui(party1, party2)
+                return
+            elif character.name == character_selection_menu.selected_option[0].split()[-1] and not character.is_alive():
+                text_box.append_html_text(f"Can only unequip items from alive characters.\n")
+                return
 
     eq_stars_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 420), (156, 35)),
                                         text='Star Enhancement',
@@ -3431,22 +3473,22 @@ if __name__ == "__main__":
 
 
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
-                if event.ui_element == button_left_change_chart:
-                    if current_display_chart == "Damage Dealt Chart":
-                        current_display_chart = "Damage Taken Chart"
-                        create_plot_damage_r_chart()
-                        draw_chart()
-                        button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
-                    elif current_display_chart == "Damage Taken Chart":
-                        current_display_chart = "Healing Chart"
-                        create_plot_healing_chart()
-                        draw_chart()
-                        button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
-                    elif current_display_chart == "Healing Chart":
-                        current_display_chart = "Damage Dealt Chart"
-                        create_plot_damage_d_chart()
-                        draw_chart()
-                        button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
+                # if event.ui_element == button_left_change_chart:
+                #     if current_display_chart == "Damage Dealt Chart":
+                #         current_display_chart = "Damage Taken Chart"
+                #         create_plot_damage_r_chart()
+                #         draw_chart()
+                #         button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
+                #     elif current_display_chart == "Damage Taken Chart":
+                #         current_display_chart = "Healing Chart"
+                #         create_plot_healing_chart()
+                #         draw_chart()
+                #         button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
+                #     elif current_display_chart == "Healing Chart":
+                #         current_display_chart = "Damage Dealt Chart"
+                #         create_plot_damage_d_chart()
+                #         draw_chart()
+                #         button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
                 if event.ui_element == button1: # Shuffle party
                     text_box.set_text("==============================\n")
                     if current_game_mode == "Training Mode":
@@ -3545,6 +3587,8 @@ if __name__ == "__main__":
                     item_sell_half(all=True)
                 if event.ui_element == character_eq_unequip_button:
                     unequip_item()
+                if event.ui_element == character_eq_unequip_all_button:
+                    unequip_all_items()
                 if event.ui_element == box_submenu_previous_stage_button:
                     adventure_mode_stage_decrease()
                     box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
@@ -3601,6 +3645,23 @@ if __name__ == "__main__":
                 if event.ui_element == cheap_inventory_filter_selection_menu:
                     player.current_page = 0
                     player.build_inventory_slots()
+                if event.ui_element == button_left_change_chart_selection:
+                    match button_left_change_chart_selection.selected_option[0]:
+                        # ["Damage Dealt", "Damage Received", "Healing"]
+                        case "Damage Dealt":
+                            current_display_chart = "Damage Dealt Chart"
+                            create_plot_damage_d_chart()
+                            draw_chart()
+                        case "Damage Received":
+                            current_display_chart = "Damage Taken Chart"
+                            create_plot_damage_r_chart()
+                            draw_chart()
+                        case "Healing":
+                            current_display_chart = "Healing Chart"
+                            create_plot_healing_chart()
+                            draw_chart()
+                        case _:
+                            raise Exception("Unknown option selected in button_left_change_chart_selection")
                 if event.ui_element == cheap_inventory_what_to_show_selection_menu:
                     match cheap_inventory_what_to_show_selection_menu.selected_option[0]:
                         case "Equip":

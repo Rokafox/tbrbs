@@ -16,7 +16,8 @@ class Equip(Block):
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
-                            "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987", "7891", "Freight"]
+                            "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987", "7891", "Freight",
+                            "Runic"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -189,6 +190,13 @@ class Equip(Block):
                 return (
                     "Prioritize skill 2 over skill 1 if both are available. Before an action, heal hp by 50% of speed. For 4 turns, speed is increased by 30%."
                 )
+            case "Runic":
+                # Set skill design: The reason why we have this is simply because some characters are too good
+                # when having 100% crit rate, calculating their true strength should be easier with this.
+                return (
+                    "Critical rate is increased by 100%, critical damage is decreased by 50%." \
+                    " When dealing critical damage and critical rate is over 100%, damage is increased by the excess critical rate."
+                )
             case _:
                 return ""
 
@@ -278,6 +286,11 @@ class Equip(Block):
             case "Freight":
                 return (
                     "スキル1よりもスキル2を優先して使用する。行動前にHPを速度の50%分回復する。4ターンの間、速度が30%増加する。"
+                )
+            case "Runic":
+                return (
+                    "クリティカル率が100%増加し、クリティカルダメージが50%減少する。" \
+                    "クリティカル率100%以上でクリティカルダメージを与えた場合、クリティカル率超過分ダメージが増加する。"
                 )
             case _:
                 return ""

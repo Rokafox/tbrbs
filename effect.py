@@ -2348,6 +2348,16 @@ class EquipmentSetEffect_Freight(Effect):
         character.apply_effect(spd_buff)
 
 
+# ---------------------------------------------------------
+# Runic
+# See character.py for implementation.
+class EquipmentSetEffect_Runic(Effect):
+    def __init__(self, name, duration, is_buff):
+        super().__init__(name, duration, is_buff)
+        self.is_set_effect = True
+        self.sort_priority = 2000
+
+
 #---------------------------------------------------------
 # End of Equipment set effects
 #---------------------------------------------------------
