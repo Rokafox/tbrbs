@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -286,6 +286,12 @@ class Character:
                 if n > len(self.ally):
                     n = len(self.ally)
                 yield from random.sample(self.ally, n)
+
+            case ("all_enemy", _, _, _):
+                yield from ts_available_enemy
+
+            case ("all_ally", _, _, _):
+                yield from self.ally
 
             case ("n_random_target", n, _, _):
                 n = int(n)
@@ -5228,8 +5234,54 @@ class Lu(Character):
 
 
 
+class Ulric(Character):
+    """
+    Cloud eq set support 
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Ulric"
+        self.skill1_description = "Attack 3 closest enemies with 300% atk, 60% chance to apply Bind for 20 turns." \
+        " Bind: all main stats except maxhp are reduced by 15%. Heal all allies by 30% of damage dealt."
+        self.skill2_description = "Select 2 allies of highest atk, apply Full Cloud for the allies for 2 turns." \
+        " Full Cloud: Speed is increased by 20%, final damage taken is reduced by 15%."
+        self.skill3_description = "At start of battle, apply unremovable In Cloud for all allies. In Cloud: Speed is increased by 5%, final damage taken is reduced by 3%." \
+        " At end of turn, if Full Cloud effect is applied while you have this effect, Full Cloud duration is" \
+        " increased by 10 turns, and can no longer be removed by skill." 
+        self.skill1_description_jp = "最も近い3人の敵に攻撃力の300%で攻撃し、60%確率で20ターンの間「束縛」を付与する。束縛：最大HPを除く全ての主要ステータスが15%減少する。与えたダメージの30%分、全ての味方を治療する。"
+        self.skill2_description_jp = "攻撃力が最も高い味方2人を選択し、2ターンの間「雲満」を付与する。雲満：速度が20%増加し、最終ダメージ倍率が15%減少する。"
+        self.skill3_description_jp = "戦闘開始時、全ての味方に解除不能な「雲中」を付与する。雲中：速度が5%増加し、最終ダメージ倍率が3%減少する。ターン終了時、自分にこの効果がある状態で「雲満」効果が適用されている場合、雲満の持続時間が10ターン延長され、スキルで解除できなくなる。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
 
+    def skill1_logic(self):
+        def bind_effect(self, target: Character):
+            if random.random() < 0.60:
+                target.apply_effect(StatsEffect("Bind", 20, False, {"atk": 0.85, "defense": 0.85, "spd": 0.85}))
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=bind_effect)
+        self.update_ally_and_enemy()
+        if self.is_alive():
+            self.heal(value=damage_dealt * 0.30, target_kw1="all_ally")
+        return damage_dealt
+
+    def skill2_logic(self):
+        ally = list(self.target_selection(keyword="n_highest_attr", keyword2="2", keyword3="atk", keyword4="ally"))
+        for a in ally:
+            a.apply_effect(StatsEffect("Full Cloud", 2, True, {"spd": 1.20, "final_damage_taken_multipler": -0.15}))
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        # other effects in description is implemented in the effect class
+        in_cloud = UlricInCloudEffect("In Cloud", -1, True, {"spd": 1.05, "final_damage_taken_multipler": -0.03})
+        in_cloud.can_be_removed_by_skill = False
+        in_cloud.additional_name = "Ulric_In_Cloud"
+        for a in self.ally:
+            a.apply_effect(in_cloud)
 
 
 

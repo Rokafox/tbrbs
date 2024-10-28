@@ -2545,6 +2545,28 @@ class LuFlappingSoundEffect(Effect):
         return "行動を取る際に注意が必要。"
        
 
+class UlricInCloudEffect(StatsEffect):
+    # When Full Cloud effect is applied when you have In Cloud, its duration is increased by 10 turns, and can no longer be removed by skill.
+    def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True, 
+                 stats_dict_function=None, is_set_effect=False, can_be_removed_by_skill=True, 
+                 main_stats_additive_dict=None):
+        super().__init__(name, duration, is_buff, stats_dict, condition, use_active_flag, stats_dict_function, 
+                         is_set_effect, can_be_removed_by_skill, main_stats_additive_dict)
+        self.check_full_cloud = True
+
+
+    def apply_effect_at_end_of_turn(self, character):
+        if self.check_full_cloud:
+            full_cloud = character.get_effect_that_named("Full Cloud")
+            if full_cloud is not None:
+                full_cloud.duration += 10
+                full_cloud.can_be_removed_by_skill = False
+                global_vars.turn_info_string += f"Full Cloud is extended by 10 turns and can no longer be removed by skill.\n"
+                # print("Full Cloud is extended by 10 turns and can no longer be removed by skill.")
+                self.check_full_cloud = False
+
+
+
 
 
 

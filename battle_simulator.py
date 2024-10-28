@@ -477,7 +477,8 @@ def get_all_characters():
                        "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
-                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu"]
+                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
+                       "Ulric"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -1354,6 +1355,7 @@ if __name__ == "__main__":
     eq_rarity_list, eq_types_list, eq_set_list = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
     eq_set_list_without_none_and_void = [x for x in eq_set_list if x != "None" and x != "Void"]
     eq_set_list_without_none_and_void.sort()
+    print(f"Loaded {len(eq_set_list_without_none_and_void)} equipment sets.")
 
     eq_selection_menu = pygame_gui.elements.UIDropDownMenu(eq_types_list,
                                                             eq_types_list[0],
