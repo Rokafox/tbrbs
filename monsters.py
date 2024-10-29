@@ -3117,18 +3117,18 @@ class Thiefb(Monster):
         self.apply_effect(StatsEffect('Thiefb Passive', -1, True, {'defense' : 1.3}, can_be_removed_by_skill=False))
 
 
-class SubjectA(Monster):
+class Dragon(Monster):
     # high def, protect allies, attack with def.
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
-        self.original_name = "SubjectA"
+        self.original_name = "Dragon"
         self.skill1_description = "Attack closest enemy 4 times with 300% def and recover hp by 50% of damage dealt."
         self.skill2_description = "Heal all allies by 300% of def and apply Def Up on them, increase their defense by 50% of your defense for 24 turns."
         self.skill3_description = "Defense is increased by 100%. Protect all allies, the allies damage taken is reduced by 50%, 50% of damage taken is" \
         " redirected to you."
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = ""
+        self.skill1_description_jp = "最も近い敵に防御力の300%で4回攻撃し、与えたダメージの50%分HPを回復する。"
+        self.skill2_description_jp = "全ての味方のHPを防御力の300%分回復し、「防御アップ」を付与して、24ターンの間、自分の防御力の50%分防御力を増加させる。"
+        self.skill3_description_jp = "防御力が100%増加する。全ての味方を保護し、味方が受けるダメージを50%減少させ、そのうち50%のダメージを自分が引き受ける。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -3136,7 +3136,8 @@ class SubjectA(Monster):
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat=4, target_kw1="enemy_in_front", damage_is_based_on="def")
-        self.heal_hp(damage_dealt * 0.5, self)
+        if self.is_alive(): 
+            self.heal_hp(damage_dealt * 0.5, self)
         return damage_dealt
 
     def skill2_logic(self):

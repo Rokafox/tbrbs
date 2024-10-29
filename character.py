@@ -2048,7 +2048,6 @@ class Freya(Character):
         pass
 
 
-
 class FreyaSK(Character): 
     """
     Sweets Kingdom version of Freya
@@ -2105,6 +2104,34 @@ class FreyaSK(Character):
                                          requirement_description_jp="沈黙状態の敵から通常ダメージを受けた時。")
         doughnut_guard.can_be_removed_by_skill = False
         self.apply_effect(doughnut_guard)
+
+
+class FreyaBP(Character): 
+    """
+    Bath Play version of Freya
+    Silence
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "FreyaBP"
+        self.skill1_description = ""
+        self.skill2_description = ""
+        self.skill3_description = ""
+        self.skill1_description_jp = ""
+        self.skill2_description_jp = ""
+        self.skill3_description_jp = ""
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 3
+
+    def skill1_logic(self):
+        pass
+
+    def skill2_logic(self):
+        pass
+
+    def skill3(self):
+        pass
 
 
 class Luna(Character):
@@ -4100,7 +4127,9 @@ class Cocoa(Character):
             return "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、12ターんの間、攻撃力と防御力が30%増加する。"
         effect.tooltip_description = new_tooltip_description
         effect.tooltip_description_jp = new_tooltip_description_jp
-        self.apply_effect(NotTakingDamageEffect("Shopping date", -1, True, 5, effect))
+        shda = NotTakingDamageEffect("Shopping Date", -1, True, 5, effect)
+        shda.can_be_removed_by_skill = False
+        self.apply_effect(shda)
 
 
 class Beacon(Character):
@@ -4469,9 +4498,6 @@ class Lester(Character):
         neighbors = self.get_neighbor_allies_not_including_self()
         selected = max(neighbors, key=lambda x: x.atk)
         selected.apply_effect(bom)
-
-
-
 
 
 class Moe(Character):
@@ -5359,7 +5385,6 @@ class Lu(Character):
     def battle_entry_effects(self):
         t = mit.one(self.target_selection(keyword="n_enemy_in_front", keyword2="1"))
         t.apply_effect(LuFlappingSoundEffect("Flapping Sound", -1, False, self, hp_cost=100 * self.lvl))
-
 
 
 class Ulric(Character):
