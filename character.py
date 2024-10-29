@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -1707,6 +1707,10 @@ class Character:
             # When dealing damage, any critical rate over 100% is converted to critical damage
             self.apply_effect(EquipmentSetEffect_Runic("Runic Set", -1, True))
             self.apply_effect(StatsEffect("Runic Set", -1, True, {"crit": 1.00, "critdmg": -0.50}, is_set_effect=True))
+        elif set_name == "Grassland":
+            # If you haven't taken action yet in current battle, speed is increased by 100%, final damage taken is decreased by 30%
+            # EquipmentSetEffect_Grassland is a subclass of StatsEffect, removes it self when the character takes action.
+            self.apply_effect(EquipmentSetEffect_Grassland("Grassland Set", -1, True, {"spd": 2.00, "final_damage_taken_multipler": -0.30}))
         else:
             raise Exception("Effect not implemented.")
         
@@ -2042,6 +2046,65 @@ class Freya(Character):
 
     def skill3(self):
         pass
+
+
+
+class FreyaSK(Character): 
+    """
+    Sweets Kingdom version of Freya
+    Silence
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "FreyaSK"
+        self.skill1_description = "Attack 1 closest enemy with 500% atk, silence the target for 12 turns. If target already has Silence," \
+        " refresh the duration of Silence and" \
+        " apply Dilemma on target for 20 turns. Dilemma: critical rate is reduced by 40%."
+        self.skill2_description = "Attack 1 closest enemy with 500% atk and silence the target for 12 turns. If target already has Silence," \
+        " refresh the duration of Silence and apply Bind on target for 20 turns. Bind: All main stats except maxhp are reduced by 15%."
+        self.skill3_description = "Apply Doughnut Guard on yourself. When taking normal damage from an Silenced enemy, damage is reduced by 70%." \
+        " If you take down an enemy with a skill, apply Cancellation Shield on yourself, shield will cancel up to 5 normal damage and provide CC immunity."
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の500%で攻撃し、12ターンの間「沈黙」を付与する。対象が既に沈黙状態の場合、沈黙の持続時間を更新し、20ターンの間「難局」を付与する。難局：クリティカル率が40%減少する。"
+        self.skill2_description_jp = "最も近い敵1体に攻撃力の500%で攻撃し、12ターンの間「沈黙」を付与する。対象が既に沈黙状態の場合、沈黙の持続時間を更新し、20ターンの間「束縛」を付与する。束縛：最大HPを除く全ての主要ステータスが15%減少する。"
+        self.skill3_description_jp = "自身に「ドーナツガード」を付与する。沈黙状態の敵から通常ダメージを受けた場合、そのダメージが70%減少する。スキルで敵を倒した場合、自身に「キャンセレーションシールド」を付与し、このシールドは通常ダメージを最大5回無効化し、CC免疫を付与する。"
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 3
+
+    def skill1_logic(self):
+        def effect(self, target: Character):
+            silenced = target.has_effect_that_named("Silence")
+            target.apply_effect(SilenceEffect("Silence", 12, False))
+            if silenced:
+                target.apply_effect(StatsEffect("Dilemma", 20, False, {"crit": -0.4}))
+            if target.is_dead():
+                self.apply_effect(CancellationShield("Cancellation Shield", -1, True, 0, cc_immunity=True, uses=5, cover_status_damage=False))
+        damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=5.0, repeat=1, func_after_dmg=effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def effect(self, target: Character):
+            silenced = target.has_effect_that_named("Silence")
+            target.apply_effect(SilenceEffect("Silence", 12, False))
+            if silenced:
+                target.apply_effect(StatsEffect("Bind", 20, False, {"atk": 0.85, "defense": 0.85, "spd": 0.85}))
+            if target.is_dead():
+                self.apply_effect(CancellationShield("Cancellation Shield", -1, True, 0, cc_immunity=True, uses=5, cover_status_damage=False))
+        damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=5.0, repeat=1, func_after_dmg=effect)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        def requirement_func(charac: Character, attacker: Character):
+            return attacker.has_effect_that_named("Silence")
+        doughnut_guard = ReductionShield("Doughnut Guard", -1, True, 0.7, False, cover_normal_damage=True, cover_status_damage=False,
+                                         requirement=requirement_func,
+                                         requirement_description="When taking normal damage from an Silenced enemy.",
+                                         requirement_description_jp="沈黙状態の敵から通常ダメージを受けた時。")
+        doughnut_guard.can_be_removed_by_skill = False
+        self.apply_effect(doughnut_guard)
 
 
 class Luna(Character):
@@ -5185,14 +5248,14 @@ class Lu(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Lu"
         self.skill1_description = "Heal one ally of highest atk with 400% of your highest main stats except maxhp," \
-        " remove 2 debuffs and apply Regeneration for 10 turns on that ally. Regeneration: Recover hp by 70% of your highest main stats except maxhp each turn." 
+        " remove 2 debuffs and apply Regeneration for 10 turns on that ally. Regeneration: Recover hp by 100% of your highest main stats except maxhp each turn." 
         self.skill2_description = "Apply Big Bear on all allies for 20 turns, Big Bear absorbs damage equal to 400% of your" \
         " highest main stats except maxhp. When applied on yourself, the absorption value is increased by 100%."
         self.skill3_description = "Attack start of battle, apply unremovable Flapping Sound on the closest enemy," \
         " when the affected enemy takes action and a skill can be used, for 1 turn, silence the enemy by paying hp equal to 100 * level." \
         " Paying hp treats as taking status damage. If you are defeated, the effect on the enemy is removed." 
         # 羽ばたく音
-        self.skill1_description_jp = "攻撃力が最も高い味方1人のHPを、自身の最大HPを除く主要ステータスのうち最も高い値の400%分治療し、デバフを2つ解除して、その味方に10ターンの間「再生」を付与する。再生：毎ターン、自身の最大HPを除く最も高い主要ステータスの70%分のHPを回復する。"
+        self.skill1_description_jp = "攻撃力が最も高い味方1人のHPを、自身の最大HPを除く主要ステータスのうち最も高い値の400%分治療し、デバフを2つ解除して、その味方に10ターンの間「再生」を付与する。再生：毎ターン、自身の最大HPを除く最も高い主要ステータスの100%分のHPを回復する。"
         self.skill2_description_jp = "全ての味方に20ターンの間「ビッグベア」を付与する。ビッグベアは、自身の最大HPを除く最も高い主要ステータスの400%分のダメージを吸収する。自分に付与した場合、吸収量が100%増加する。"
         self.skill3_description_jp = "戦闘開始時、最も近い敵に解除不能な「羽ばたく音」を付与する。この効果を受けた敵が行動を起こし、スキルが使用可能な場合、その敵を1ターンの間「沈黙」させ、自分が100×レベル分のHPを支払われる。HPの支払いは状態異常ダメージとして扱われる。自分が倒された場合、敵にかかっている効果は解除される。"
         self.skill1_cooldown_max = 3
@@ -5207,7 +5270,7 @@ class Lu(Character):
             ally.remove_random_amount_of_debuffs(2)
             def heal_func(char, buff_applier):
                 heal_value = max(buff_applier.atk, buff_applier.defense, buff_applier.spd)
-                return heal_value * 0.70
+                return heal_value * 1.00
             regen = ContinuousHealEffect("Regeneration", 10, True, value_function=heal_func, buff_applier=self,
                                         value_function_description="50% of Lu's highest main stats except maxhp",
                                         value_function_description_jp="Luの最高主要ステータスの50%")
@@ -5242,15 +5305,15 @@ class Ulric(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Ulric"
-        self.skill1_description = "Attack 3 closest enemies with 300% atk, 60% chance to apply Bind for 20 turns." \
+        self.skill1_description = "Attack 3 closest enemies with 300% atk, 50% chance to apply Bind for 20 turns." \
         " Bind: all main stats except maxhp are reduced by 15%. Heal all allies by 30% of damage dealt."
         self.skill2_description = "Select 2 allies of highest atk, apply Full Cloud for the allies for 2 turns." \
-        " Full Cloud: Speed is increased by 20%, final damage taken is reduced by 15%."
+        " Full Cloud: Speed is increased by 12%, final damage taken is reduced by 7%."
         self.skill3_description = "At start of battle, apply unremovable In Cloud for all allies. In Cloud: Speed is increased by 5%, final damage taken is reduced by 3%." \
         " At end of turn, if Full Cloud effect is applied while you have this effect, Full Cloud duration is" \
         " increased by 10 turns, and can no longer be removed by skill." 
-        self.skill1_description_jp = "最も近い3人の敵に攻撃力の300%で攻撃し、60%確率で20ターンの間「束縛」を付与する。束縛：最大HPを除く全ての主要ステータスが15%減少する。与えたダメージの30%分、全ての味方を治療する。"
-        self.skill2_description_jp = "攻撃力が最も高い味方2人を選択し、2ターンの間「雲満」を付与する。雲満：速度が20%増加し、最終ダメージ倍率が15%減少する。"
+        self.skill1_description_jp = "最も近い3人の敵に攻撃力の300%で攻撃し、50%確率で20ターンの間「束縛」を付与する。束縛：最大HPを除く全ての主要ステータスが15%減少する。与えたダメージの30%分、全ての味方を治療する。"
+        self.skill2_description_jp = "攻撃力が最も高い味方2人を選択し、2ターンの間「雲満」を付与する。雲満：速度が12%増加し、最終ダメージ倍率が7%減少する。"
         self.skill3_description_jp = "戦闘開始時、全ての味方に解除不能な「雲中」を付与する。雲中：速度が5%増加し、最終ダメージ倍率が3%減少する。ターン終了時、自分にこの効果がある状態で「雲満」効果が適用されている場合、雲満の持続時間が10ターン延長され、スキルで解除できなくなる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -5258,7 +5321,7 @@ class Ulric(Character):
 
     def skill1_logic(self):
         def bind_effect(self, target: Character):
-            if random.random() < 0.60:
+            if random.random() < 0.50:
                 target.apply_effect(StatsEffect("Bind", 20, False, {"atk": 0.85, "defense": 0.85, "spd": 0.85}))
         damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=bind_effect)
         self.update_ally_and_enemy()
@@ -5269,7 +5332,7 @@ class Ulric(Character):
     def skill2_logic(self):
         ally = list(self.target_selection(keyword="n_highest_attr", keyword2="2", keyword3="atk", keyword4="ally"))
         for a in ally:
-            a.apply_effect(StatsEffect("Full Cloud", 2, True, {"spd": 1.20, "final_damage_taken_multipler": -0.15}))
+            a.apply_effect(StatsEffect("Full Cloud", 2, True, {"spd": 1.12, "final_damage_taken_multipler": -0.07}))
         return 0
 
     def skill3(self):

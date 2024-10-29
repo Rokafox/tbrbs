@@ -2358,6 +2358,30 @@ class EquipmentSetEffect_Runic(Effect):
         self.sort_priority = 2000
 
 
+# ---------------------------------------------------------
+# Grassland
+# When you havent taken an action in battle yet, speed is increased by 100%.
+class EquipmentSetEffect_Grassland(StatsEffect):
+    def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True, 
+                 stats_dict_function=None, is_set_effect=False, can_be_removed_by_skill=True, 
+                 main_stats_additive_dict=None):
+        super().__init__(name, duration, is_buff, stats_dict, condition, use_active_flag, stats_dict_function, 
+                         is_set_effect, can_be_removed_by_skill, main_stats_additive_dict)
+        self.is_set_effect = True
+        self.sort_priority = 2000
+
+    def apply_effect_at_end_of_turn(self, character):
+        if character.have_taken_action:
+            character.remove_effect(self)
+
+    def tooltip_description(self):
+        return super().tooltip_description() + " After taking action, this effect is removed."
+    
+    def tooltip_description_jp(self):
+        return super().tooltip_description_jp() + "行動を取った後、この効果が解除される。"
+
+
+
 #---------------------------------------------------------
 # End of Equipment set effects
 #---------------------------------------------------------

@@ -1749,8 +1749,6 @@ class MagicPot(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, target_kw1="n_random_enemy",target_kw2="5", repeat=1)
@@ -1789,8 +1787,6 @@ class Werewolfb(Monster):
         self.skill2_cooldown_max = 3
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def sleep_effect(self, target):
@@ -1829,8 +1825,47 @@ class Werewolfb(Monster):
 # ====================================
 
 
+class Icelady(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Icelady"
+        self.skill1_description = "Attack 3 closest enemies with 300% atk 2 times, if you have higher atk than target," \
+        " freeze the target for 10 turns."
+        self.skill2_description = "Apply Regeneration and Crit Def Up for all allies for 20 turns." \
+        " Regeneration: recover 8% of maxhp each turn. Crit Def Up: critdef increased by 60%."
+        self.skill3_description = "If you have higher atk than target, normal attack freeze the target for 10 turns."
+        self.skill1_description_jp = "最も近い3人の敵に攻撃力の300%で2回攻撃し、自分の攻撃力が対象より高い場合、対象を10ターンの間「凍結」させる。"
+        self.skill2_description_jp = "全ての味方に20ターンの間「再生」と「クリティカル防御アップ」を付与する。再生：毎ターン最大HPの8%を回復する。クリティカル防御アップ：クリティカル防御が60%増加する。"
+        self.skill3_description_jp = "自分の攻撃力が対象より高い場合、通常攻撃で対象を10ターンの間「凍結」させる。"
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
 
+    def skill1_logic(self):
+        def freeze_effect(self, target):
+            if self.atk > target.atk:
+                target.apply_effect(FrozenEffect('Freeze', duration=10, is_buff=False, imposter=self))
+        damage_dealt = self.attack(multiplier=3.0, repeat=2, func_after_dmg=freeze_effect, target_kw1="n_enemy_in_front",target_kw2="3")
+        return damage_dealt
 
+    def skill2_logic(self):
+        for a in self.ally:
+            def value_func(char, buff_applier):
+                return 0.08 * char.maxhp
+            a.apply_effect(ContinuousHealEffect('Regeneration', 20, True, value_function=value_func,
+                                                value_function_description="8% of maxhp",
+                                                value_function_description_jp="最大HPの8%"))
+            a.apply_effect(StatsEffect('Crit Def Up', 20, True, {'critdef' : 0.6}))
+        return 0
+        
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def freeze_effect(self, target):
+            if self.atk > target.atk:
+                target.apply_effect(FrozenEffect('Freeze', duration=10, is_buff=False, imposter=self))
+        self.attack(func_after_dmg=freeze_effect)
 
 
 
@@ -3831,9 +3866,7 @@ class Orklord(Monster):
             for debuff in target.debuffs:
                 if debuff.duration > 0:
                     debuff.duration += 16
-                    damage_dealt += self.attack(multiplier=4.4, repeat=debuff.duration, target_list=[target])
-                if not target.is_alive():
-                    break
+            damage_dealt += self.attack(multiplier=4.4, repeat=len(target.debuffs), target_list=[target])    
         return damage_dealt
 
     def skill2_logic(self):

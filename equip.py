@@ -17,7 +17,7 @@ class Equip(Block):
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
                             "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987", "7891", "Freight",
-                            "Runic"]
+                            "Runic", "Grassland"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -197,6 +197,11 @@ class Equip(Block):
                     "Critical rate is increased by 100%, critical damage is decreased by 50%." \
                     " When dealing critical damage and critical rate is over 100%, damage is increased by the excess critical rate."
                 )
+            case "Grassland":
+                return (
+                    "If you haven't taken action yet in current battle, speed is increased by 100%, final damage taken is reduced by 30%." \
+                    " This effect is removed after taken action."
+                )
             case _:
                 return ""
 
@@ -291,6 +296,11 @@ class Equip(Block):
                 return (
                     "クリティカル率が100%増加し、クリティカルダメージが50%減少する。" \
                     "クリティカル率100%以上でクリティカルダメージを与えた場合、クリティカル率超過分ダメージが増加する。"
+                )
+            case "Grassland":
+                return (
+                    "現在のバトルでまだ行動していない場合、速度が100%増加し、最終ダメージ倍率が30%減少する。" \
+                    "この効果は行動を取った後に解除される。"
                 )
             case _:
                 return ""
