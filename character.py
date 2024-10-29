@@ -490,9 +490,9 @@ class Character:
             damage_is_based_on = self.maxhp
         elif damage_is_based_on == "hp":
             damage_is_based_on = self.hp
-        elif damage_is_based_on == "defense":
+        elif damage_is_based_on == "defense" or damage_is_based_on == "def":
             damage_is_based_on = self.defense
-        elif damage_is_based_on == "spd":
+        elif damage_is_based_on == "spd" or damage_is_based_on == "speed":
             damage_is_based_on = self.spd
         else:
             raise Exception("Invalid damage_is_based_on.")
@@ -5237,6 +5237,71 @@ class Zed(Character):
 
     def skill3(self):
         pass
+
+
+class ZedAN(Character):
+    """
+    午後 Version of Zed
+    Target high defense, burst buff
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "ZedAN"
+        self.skill1_description = "For 1 turn, atk is increased by 30%, attack enemy of highest defense with 300% atk 3 times." \
+        " If your atk is higher than target defense, damage is increased by 100%, if your atk is 2 times higher than target defense," \
+        " damage is increased by 200%."
+        self.skill2_description = "For 1 turn, penetration is increased by 30%, attack enemy of highest defense with 200% atk 6 times." \
+        " If this attack takes down the enemy, apply Flowers of the Four Seasons on you and 2 neighbor allies for 20 turns," \
+        " Flowers of the Four Seasons: Recover hp by 100% of your atk each turn, increase atk, crit, critdmg and penetration by 20%."
+        self.skill3_description = "When attacking an enemy of higher defense than your atk with normal attack," \
+        " apply Afternoon Sunshine on yourself for 20 turns. Afternoon Sunshine: Penetration is increased by 5%." \
+        " Normal attack prioritize enemy of highest defense."
+        self.skill1_description_jp = "1ターンの間、攻撃力が30%増加し、防御力が最も高い敵に攻撃力の300%で3回攻撃する。自分の攻撃力が対象の防御力より高い場合、ダメージが100%増加し、攻撃力が対象の防御力の2倍以上の場合、ダメージが200%増加する。"
+        self.skill2_description_jp = "1ターンの間、貫通力が30%増加し、防御力が最も高い敵に攻撃力の200%で6回攻撃する。この攻撃で敵を倒した場合、自身と隣接する2人の味方に20ターンの間「四季の花」を付与する。四季の花：毎ターン、自分の攻撃力の100%分のHPを回復し、攻撃力、クリティカル率、クリティカルダメージ、貫通力が20%増加する。"
+        self.skill3_description_jp = "通常攻撃で自分の攻撃力を上回る防御力を持つ敵を攻撃した場合、自身に20ターンの間「午後の日差し」を付与する。午後の日差し：貫通力が5%増加する。通常攻撃は防御力が最も高い敵を優先する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+
+    def skill1_logic(self):
+        self.apply_effect(StatsEffect("Advisory", 1, True, {"atk": 1.3}))
+        def dmg_amplify(self, target, final_damage):
+            if self.atk > target.defense:
+                final_damage *= 2.0
+            elif self.atk > target.defense * 2:
+                final_damage *= 3.0
+            return final_damage
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="defense", target_kw4="enemy",
+                                   func_damage_step=dmg_amplify)
+        return damage_dealt
+
+
+    def skill2_logic(self):
+        def after_damage(self: Character, target: Character):
+            if target.is_dead():
+                def heal_func(char, effect_applier):
+                    return effect_applier.atk
+                neighbors = self.get_neighbor_allies_including_self()
+                for n in neighbors:
+                    flowers_part1 = ContinuousHealEffect("Flowers of the Four Seasons", 20, True, value_function=heal_func, buff_applier=self,
+                                                value_function_description="100% of ZedAN atk", value_function_description_jp="ZedANの攻撃力の100%")
+                    flowers_part2 = StatsEffect("Flowers of the Four Seasons", 20, True, {"atk": 1.2, "crit": 0.2, "critdmg": 0.2, "penetration": 0.2})
+                    n.apply_effect(flowers_part1)
+                    n.apply_effect(flowers_part2)
+        damage_dealt = self.attack(multiplier=2.0, repeat=6, target_kw1="n_highest_attr", target_kw2="1", target_kw3="defense", target_kw4="enemy",
+                                   func_after_dmg=after_damage)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def after_dmg(self, target):
+            if target.defense > self.atk:
+                self.apply_effect(StatsEffect("Afternoon Sunshine", 20, True, {"penetration": 0.05}))
+        damage_dealt = self.attack(target_kw1="n_highest_attr", target_kw2="1", target_kw3="defense", target_kw4="enemy", func_after_dmg=after_dmg)
+        return damage_dealt
 
 
 class Lu(Character):

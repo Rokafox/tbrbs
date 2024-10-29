@@ -46,8 +46,7 @@ class Panda(Monster):
         self.is_boss = False
         self.monster_role = "Heavy Attack"
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=8.0, repeat=1, target_kw1="enemy_in_front")
@@ -84,8 +83,7 @@ class Mimic(Monster):
         self.is_boss = False
         self.monster_role = "Heavy Attack"
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def stun_effect(self, target):
@@ -122,8 +120,7 @@ class MoHawk(Monster):
         self.is_boss = False
         self.monster_role = "Heavy Attack"
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def bleed_effect(self, target):
@@ -159,8 +156,7 @@ class Earth(Monster):
         self.is_boss = False
         self.monster_role = "Heavy Attack"
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def stun_effect(self, target):
@@ -202,8 +198,7 @@ class Golem(Monster):
         self.is_boss = True
         self.monster_role = "Heavy Attack"
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=5.0, repeat=1, target_kw1="n_random_enemy", target_kw2="5")
@@ -240,8 +235,7 @@ class Yeti(Monster):
         self.is_boss = True
         self.monster_role = "Heavy Attack"
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def recoverhp(self, target):
@@ -285,8 +279,7 @@ class Giant(Monster):
         self.is_boss = True
         self.monster_role = "Heavy Attack"
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def amplify(self, target, final_damage):
@@ -330,8 +323,7 @@ class Mummy(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=3.0, repeat=1)
@@ -374,8 +366,7 @@ class Pharaoh(Monster):
         self.skill2_cooldown_max = 3
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def curse_amplify(self, target, final_damage):
@@ -430,8 +421,7 @@ class PoisonSlime(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def poison_effect(self, target):
@@ -473,8 +463,7 @@ class MadScientist(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def plague_effect(self, target):
@@ -524,8 +513,7 @@ class Ghost(Monster):
         self.is_boss = False
         self.fear_effect_dict = {"acc": -0.20, "atk": 0.8}
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 30, 0], fillvalue=0))
@@ -572,8 +560,7 @@ class Death(Monster):
         self.is_boss = True
         self.fear_effect_dict = {"acc": -0.40, "atk": 0.6, "spd": 0.6}
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 30, 0], fillvalue=0))
@@ -620,8 +607,7 @@ class Gargoyle(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.1, repeat=3, target_kw1="enemy_in_front")
@@ -661,8 +647,7 @@ class MachineGolem(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         for e in self.enemy:
@@ -706,8 +691,7 @@ class Dullahan(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def wound(self, target):
@@ -749,8 +733,7 @@ class Salamander(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def burn_effect(self, target):
@@ -794,8 +777,7 @@ class Witch(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def burn(self, target):
@@ -854,8 +836,7 @@ class WaterSpirit(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         targets = self.target_selection("n_enemy_in_front", "3")
@@ -917,8 +898,7 @@ class Sylphid(Monster):
         self.skill2_cooldown_max = 3
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         for a in self.ally:
@@ -973,8 +953,7 @@ class Ninja(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=1.5, repeat=12, target_kw1="enemy_in_front")
@@ -1014,8 +993,7 @@ class KillerBee(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def sting_effect(self, target):
@@ -1047,8 +1025,7 @@ class Samurai(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def bleed_effect(self, target):
@@ -1088,8 +1065,7 @@ class BlackKnight(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.5, repeat=12)
@@ -1128,8 +1104,7 @@ class AssassinB(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         new_multiplier_func = lambda self, target, x, y: 3.2 if target.hp < target.maxhp * 0.2 else 2.2
@@ -1174,8 +1149,7 @@ class Asura(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def vulnerable_effect(self, target):
@@ -1238,8 +1212,7 @@ class WarriorB(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def dilemma_effect(self, target):
@@ -1291,8 +1264,7 @@ class Angel(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def weaken_blind_effect(self, target):
@@ -1344,8 +1316,7 @@ class Valkyrie(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
@@ -1390,8 +1361,7 @@ class Cavalier(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def blind_effect(self, target):
@@ -1441,8 +1411,7 @@ class Warrior(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.5, repeat=4, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy", ignore_protected_effect=True)
@@ -1486,8 +1455,7 @@ class Kerberos(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def execute(self, target: character.Character):
@@ -1531,8 +1499,7 @@ class MultiLegTank(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def stun_effect(self, target):
@@ -1583,8 +1550,7 @@ class Shenlong(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         for e in self.enemy:
@@ -1638,8 +1604,7 @@ class Assassin(Monster):
         self.skill2_cooldown_max = 3
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Fast', 24, True, {'atk' : 1.33, 'spd' : 1.33}))
@@ -1683,8 +1648,7 @@ class Fairy(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def confuse_effect(self, target):
@@ -1894,8 +1858,7 @@ class Skeleton(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
@@ -1935,8 +1898,7 @@ class Ork(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def burn_effect(self, target):
@@ -1971,8 +1933,7 @@ class Minotaur(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def damage_increase(self, target, final_damage):
@@ -2019,8 +1980,7 @@ class BlackDragon(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def bleed_effect(self, target):
@@ -2067,8 +2027,7 @@ class BakeNeko(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         for a in self.ally:
@@ -2105,8 +2064,7 @@ class Biobird(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def def_down(self, target: character.Character):
@@ -2164,8 +2122,7 @@ class Captain(Monster):
         self.skill2_add_unhealable = False
         super().clear_others()
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def def_down(self, target):
@@ -2227,8 +2184,7 @@ class Wizard(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         for e in self.enemy:
@@ -2265,8 +2221,7 @@ class WizardB(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         for e in self.enemy:
@@ -2310,8 +2265,7 @@ class General(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         if self.hp == self.maxhp:
@@ -2367,8 +2321,7 @@ class Merman(Monster):
         self.is_boss = False
         self.s1target = None
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         t = next(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="spd", keyword4="enemy"))
@@ -2415,8 +2368,7 @@ class Wyvern(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def slow_effect(self, target):
@@ -2460,8 +2412,7 @@ class Agent(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def bleed_effect(self, target):
@@ -2498,8 +2449,7 @@ class Windspirit(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         for a in self.ally:
@@ -2546,8 +2496,7 @@ class SoldierB(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat=4)
@@ -2587,8 +2536,7 @@ class Queen(Monster):
         self.skill2_cooldown_max = 3
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def critdmg_increase(self, target):
@@ -2630,8 +2578,7 @@ class KungFuA(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def critdmg_increase(self, target):
@@ -2671,8 +2618,7 @@ class PaladinB(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         for neighbor in self.get_neighbor_allies_not_including_self():
@@ -2716,8 +2662,7 @@ class Bat(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Bad Bat', 20, True, {'crit' : 0.1, 'critdmg' : 0.6}))
@@ -2756,8 +2701,7 @@ class Killerfish(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def critdef_down(self, target):
@@ -2795,8 +2739,7 @@ class Dryad(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def critrate_down(self, target):
@@ -2849,8 +2792,7 @@ class Paladin(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=8.0, repeat=1, target_kw1="enemy_in_front")
@@ -2885,8 +2827,7 @@ class Father(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         targets = self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally")
@@ -2921,8 +2862,7 @@ class Kobold(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         if len(self.ally) == 1:
@@ -2962,9 +2902,6 @@ class SoldierA(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         def bleed_effect_defence_break(self, target):
             dice = random.randint(1, 100)
@@ -3001,9 +2938,6 @@ class FutureSoldier(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def defence_break(self, target):
@@ -3048,9 +2982,6 @@ class FutureElite(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         def defence_break(self, target):
             target.apply_effect(StatsEffect('Defence Break', 30, False, {'defense' : 0.85}))
@@ -3086,9 +3017,6 @@ class SkeletonB(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="defense", target_kw4="enemy")
         return damage_dealt
@@ -3121,9 +3049,6 @@ class Mandrake(Monster):
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         neighbors = self.get_neighbor_allies_not_including_self()
@@ -3164,8 +3089,6 @@ class Thiefb(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=1.6, repeat=8, target_kw1="enemy_in_front")
@@ -3194,6 +3117,47 @@ class Thiefb(Monster):
         self.apply_effect(StatsEffect('Thiefb Passive', -1, True, {'defense' : 1.3}, can_be_removed_by_skill=False))
 
 
+class SubjectA(Monster):
+    # high def, protect allies, attack with def.
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "SubjectA"
+        self.skill1_description = "Attack closest enemy 4 times with 300% def and recover hp by 50% of damage dealt."
+        self.skill2_description = "Heal all allies by 300% of def and apply Def Up on them, increase their defense by 50% of your defense for 24 turns."
+        self.skill3_description = "Defense is increased by 100%. Protect all allies, the allies damage taken is reduced by 50%, 50% of damage taken is" \
+        " redirected to you."
+        self.skill1_description_jp = ""
+        self.skill2_description_jp = ""
+        self.skill3_description_jp = ""
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=3.0, repeat=4, target_kw1="enemy_in_front", damage_is_based_on="def")
+        self.heal_hp(damage_dealt * 0.5, self)
+        return damage_dealt
+
+    def skill2_logic(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            ally.heal_hp(self.defense * 3.0, self)
+            ally.apply_effect(StatsEffect('Def Up', 24, True, main_stats_additive_dict={'defense' : self.defense * 0.5}))
+        return 0
+    
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Def Up', -1, True, {'defense' : 2.0}, can_be_removed_by_skill=False))
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Subject Protect", -1, True, False, self, 0.50, 0.5)
+            e.additional_name = "SubjectA_Protect"
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
+
 
 
 # ====================================
@@ -3217,9 +3181,6 @@ class Coward(Monster):
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         if not self.has_effect_that_named("Concealed", "Coward_Concealed"):
@@ -3266,9 +3227,6 @@ class Yamatanoorochi(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def poison_effect(self, target):
@@ -3317,9 +3275,6 @@ class Hero(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 3
         self.is_boss = True
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def additional_attacks(self, target, is_crit):
@@ -3370,9 +3325,6 @@ class HeroB(Monster):
         self.skill2_cooldown_max = 3
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         def additional_attacks(self, target, is_crit):
             if not target.is_dead():
@@ -3418,9 +3370,6 @@ class Puppet(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Floating Flag', 20, True, {'eva' : 0.5}))
         return 0
@@ -3454,9 +3403,6 @@ class PuppetB(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Movement Control', 20, True, {'spd' : 1.15}))
@@ -3509,9 +3455,6 @@ class Gryphon(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         self_and_neighbor = self.get_neighbor_allies_including_self() # list
         for ally in self_and_neighbor:
@@ -3551,9 +3494,6 @@ class Hermit(Monster):
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
@@ -3598,9 +3538,6 @@ class KungFuB(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         self.apply_effect(StatsEffect('KungFu', 1, True, {'acc' : 0.25}))
         def bleed_stun_effect(self, target):
@@ -3640,9 +3577,6 @@ class HauntedTree(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         targets = self.target_selection("n_enemy_in_front", "3")
@@ -3692,9 +3626,6 @@ class Cobold(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat=3, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy", always_hit=True)
         return damage_dealt
@@ -3725,9 +3656,6 @@ class MimicB(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def evasion_reduction(self, target):
@@ -3763,9 +3691,6 @@ class Swordman(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         allies = self.ally
@@ -3806,9 +3731,6 @@ class Mage(Monster):
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def burn_effect(self, target):
@@ -3856,9 +3778,6 @@ class Orklord(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         target = next(self.target_selection(keyword="enemy_in_front"))
         damage_dealt = self.attack(multiplier=2.2, repeat=3, target_list=[target])
@@ -3905,9 +3824,6 @@ class MageB(Monster):
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def poison_effect(self, target):
@@ -3966,9 +3882,6 @@ class Thief(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         def buffed_target_amplify(self, target: character.Character, final_damage):
             buffs = target.get_active_removable_effects(get_buffs=True, get_debuffs=False)
@@ -4006,9 +3919,6 @@ class Goliath(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 2
         self.is_boss = True
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def buffed_target_amplify(self, target, is_crit):
@@ -4059,9 +3969,6 @@ class ReconMecha(Monster):
         self.is_boss = False
         self.enemycounter = len(self.enemy)
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
             if len([e for e in target.buffs if not e.is_set_effect and not e.duration == -1]) == 0:
@@ -4105,9 +4012,6 @@ class SecurityRobot(Monster):
         self.is_boss = False
         self.enemycounter = len(self.enemy)
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         for e in self.enemy:
             if len(e.get_active_removable_effects(get_buffs=True, get_debuffs=False)) == 0:
@@ -4147,9 +4051,6 @@ class Thiefc(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill1_logic(self):
         def confuse_target(self, target):
@@ -4201,9 +4102,6 @@ class Cockatorice(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_enemy_in_front", target_kw2=3)
         return damage_dealt
@@ -4235,8 +4133,7 @@ class Cockatrice(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def defence_break(self, target):
@@ -4273,8 +4170,7 @@ class Fanatic(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         if self.get_num_of_turns_not_taken_damage() < 6:
@@ -4317,8 +4213,7 @@ class Emperor(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
@@ -4366,8 +4261,7 @@ class Tanuki(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         self.update_ally_and_enemy()
@@ -4402,8 +4296,7 @@ class Werewolf(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def atk_down(self, target):
@@ -4445,8 +4338,7 @@ class Kunoichi(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Acc Up', 4, True, {'acc' : 0.2}))
@@ -4485,8 +4377,7 @@ class ArabianSoldier(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Atk Up', 10, True, {'atk' : 1.20}))
@@ -4521,8 +4412,7 @@ class Infantry(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def atk_down(self, target):
@@ -4569,8 +4459,7 @@ class Mushroom(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.4, repeat_seq=2, target_kw1="n_enemy_in_front", target_kw2="3")
@@ -4606,8 +4495,7 @@ class Vampire(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat_seq=2, target_kw1="n_enemy_in_front", target_kw2="3")
@@ -4653,8 +4541,7 @@ class Lich(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=4.0, repeat=3, target_kw1="enemy_in_front")
@@ -4693,8 +4580,7 @@ class Cleric(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         targets = list(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="3"))
@@ -4727,8 +4613,7 @@ class Priest(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         self.heal(target_kw1="n_lowest_attr", target_kw2="1", target_kw3="hp", target_kw4="ally", value=self.atk * 6)
@@ -4771,8 +4656,7 @@ class Kyubi(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=3.0, repeat=6)
@@ -4816,8 +4700,7 @@ class Delf(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def heal_down(self, target):
@@ -4856,8 +4739,7 @@ class DelfB(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Accuracy Up', 12, True, {'acc' : 0.3}))
@@ -4899,8 +4781,7 @@ class Darkpriest(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Def Up', 12, True, {'defense' : 1.3}))
@@ -4954,8 +4835,7 @@ class Chimera(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def heal_down(self, target):
@@ -5012,8 +4892,7 @@ class Darklord(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         self.apply_effect(StatsEffect('Accuracy Up', 1, True, {'acc' : 0.3}))
@@ -5075,8 +4954,7 @@ class ClericB(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         target = next(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="1"))
@@ -5113,8 +4991,7 @@ class ClericC(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         for ally in self.ally:
@@ -5156,8 +5033,7 @@ class EarthSpirit(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def heal_down(self, target):
@@ -5209,8 +5085,7 @@ class ArchAngel(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         self.update_ally_and_enemy()
@@ -5246,8 +5121,7 @@ class Unicorn(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         def deep_wound(self, target):
@@ -5281,8 +5155,7 @@ class Zhenniao(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
@@ -5321,8 +5194,7 @@ class YataGarasu(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         t = next(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
@@ -5362,8 +5234,7 @@ class Anubis(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.7, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3")
@@ -5409,8 +5280,7 @@ class Garuda(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def generate_random_buff(self):
         b1 = StatsEffect('Atk Up', 20, True, {'atk' : 1.3})
@@ -5478,8 +5348,7 @@ class FootSoldier(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.5, repeat=3, target_kw1="enemy_in_front")
@@ -5531,8 +5400,7 @@ class Daji(Monster):
         self.current_atk_bonus = 1.11
         self.current_shield_bonus = 3
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def clear_others(self):
         self.current_atk_bonus = 1.11
@@ -5602,8 +5470,7 @@ class EvilKing(Monster):
         self.skill2_cooldown_max = 4
         self.is_boss = True
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+    
 
     def skill1_logic(self):
         base_multiplier = 2.34

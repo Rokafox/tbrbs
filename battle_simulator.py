@@ -211,6 +211,8 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                         image_to_process = images_item[item.image].copy()
                     except KeyError:
                         image_to_process = images_item["404"].copy()
+                    # scale the image to 800 x 800
+                    image_to_process = pygame.transform.scale(image_to_process, (800, 800))
                     create_yellow_text(image_to_process, str(item.current_stack), 310, (0, 0, 0), add_background=True)
                     ui_image.set_image(image_to_process)
                 else:
@@ -478,7 +480,7 @@ def get_all_characters():
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
-                       "Ulric", "FreyaSK"]
+                       "Ulric", "FreyaSK", "ZedAN"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -3260,6 +3262,8 @@ if __name__ == "__main__":
                         image_to_process = images_item[item.image].copy()
                     except KeyError:
                         image_to_process = images_item["404"].copy()
+                    # scale the image to 800 x 800
+                    image_to_process = pygame.transform.scale(image_to_process, (800, 800))
                     create_yellow_text(image_to_process, str(item.current_stack), 310, (0, 0, 0), add_background=True)
                     ui_image.set_image(image_to_process)
                 else:
