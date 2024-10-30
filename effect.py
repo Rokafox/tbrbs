@@ -28,6 +28,7 @@ class Effect:
         self.can_be_removed_by_skill = can_be_removed_by_skill
         self.show_stacks = show_stacks
         self.is_protected_effect = False
+        self.original_duration = duration
     
     def is_permanent(self):
         return self.duration == -1
@@ -2590,8 +2591,27 @@ class UlricInCloudEffect(StatsEffect):
                 self.check_full_cloud = False
 
 
+class FreyaDuckySilenceEffect(SilenceEffect):
+    """
+    Ducky Silence: Functions the same as Silence, when this effect is removed, a new Ducky Silence is applied on a random ally.
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
+        super().__init__(name, duration, is_buff, cc_immunity, delay_trigger)
+        self.name = "Ducky Silence"
 
+    def apply_effect_at_end_of_turn(self, character):
+        if character.is_dead():
+            character.remove_effect(self)
 
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            character.remove_effect(self)
+
+    def apply_effect_on_remove(self, character):
+        character.update_ally_and_enemy()
+        if character.ally:
+            ally = random.choice(character.ally)
+            ally.apply_effect(FreyaDuckySilenceEffect("Ducky Silence", self.original_duration, False))
 
 
 class PharaohPassiveEffect(Effect):

@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -1563,11 +1563,18 @@ class Character:
         for effect in buffs_copy + debuffs_copy:
             effect.apply_effect_on_turn(self)
 
+    def character_specific_at_end_of_turn(self):
+        """
+        This function is for character specific effect at the end of turn.
+        """
+        pass
+
     def status_effects_at_end_of_turn(self):
         # TODO: Change this.
-        # The following character/monster has a local implementation of this function:
+        # The following character/monster has a local implementation of this method:
         # Character: BeastTamer Yuri, Moonrabbit Beacon
         # Monster: Security Guard, Emperor
+        self.character_specific_at_end_of_turn()
         buffs_copy = self.buffs.copy()
         debuffs_copy = self.debuffs.copy()
         for effect in buffs_copy + debuffs_copy:
@@ -2109,29 +2116,63 @@ class FreyaSK(Character):
 class FreyaBP(Character): 
     """
     Bath Play version of Freya
-    Silence
+    Special Silence
     Build: 
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "FreyaBP"
-        self.skill1_description = ""
-        self.skill2_description = ""
-        self.skill3_description = ""
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = ""
+        self.skill1_description = "Attack 1 random enemy with 570% atk, if target is ducky silenced, apply Bind and Dilemma for 20 turns." \
+        " Bind: reduce atk, def, spd by 30%. Dilemma: reduce crit rate by 60%."
+        self.skill2_description = "Attack 1 random enemy with 570% atk, apply Ducky Silence for 10 turns." \
+        " Ducky Silence: Functions the same as Silence, when this effect is removed, a new Ducky Silence is applied on a random ally." \
+        " If target is already Ducky Silenced, cooldown of skill1 is reduced by 2."
+        self.skill3_description = "Apply Ducky Guard on yourself. When taking damage from a silenced or ducky silenced enemy, damage is reduced by 70%." \
+        " If you take down an enemy with a skill, apply Cancellation Shield and Absorption Shield on yourself." \
+        " Cancellation Shield: cancel up to 5 normal damage and provide CC immunity. Absorption Shield: absorb up to 800% of your atk damage."
+        # 沈黙のカモ
+        self.skill1_description_jp = "ランダムな敵1体に攻撃力の570%で攻撃し、対象がカモ沈黙状態の場合、20ターンの間「束縛」と「難局」を付与する。束縛：攻撃力、防御力、速度を30%減少させる。難局：クリティカル率を60%減少させる。"
+        self.skill2_description_jp = "ランダムな敵1体に攻撃力の570%で攻撃し、10ターンの間「カモ沈黙」を付与する。カモ沈黙：沈黙と同じ効果を持ち、この効果が解除されると新たなカモ沈黙がランダムな味方に付与される。対象が既にカモ沈黙状態の場合、スキル1のクールダウンが2減少する。"
+        self.skill3_description_jp =  "自身に「カモ防御」を付与する。沈黙またはカモ沈黙状態の敵からダメージを受けた時、そのダメージが70%減少する。スキルで敵を倒した場合、自身に「キャンセルシールド」と「吸収シールド」を付与する。キャンセルシールド：通常ダメージを最大5回無効化し、CC免疫を提供する。吸収シールド：攻撃力の800%分のダメージを吸収する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
 
     def skill1_logic(self):
-        pass
+        def effect(self, target: Character):
+            if target.has_effect_that_named(None, None, "FreyaDuckySilenceEffect"):
+                target.apply_effect(StatsEffect("Bind", 20, False, {"atk": 0.7, "defense": 0.7, "spd": 0.7}))
+                target.apply_effect(StatsEffect("Dilemma", 20, False, {"crit": -0.6}))
+                # print("Ducky Silenced, effect applied.")
+            if target.is_dead():
+                self.apply_effect(CancellationShield("Cancellation Shield", -1, True, 0, cc_immunity=True, uses=5, cover_status_damage=False))
+                self.apply_effect(AbsorptionShield("Absorption Shield", -1, True, self.atk * 8, cc_immunity=False))
+        damage_dealt = self.attack(multiplier=5.7, repeat=1, func_after_dmg=effect)
+        return damage_dealt
 
     def skill2_logic(self):
-        pass
+        def duckysilence_effect(self: Character, target: Character):
+            if target.has_effect_that_named(None, None, "FreyaDuckySilenceEffect"):
+                self.skill1_cooldown = max(0, self.skill1_cooldown - 2)
+                # print(f"Skill 1 cooldown reduced to {self.skill1_cooldown}")
+            target.apply_effect(FreyaDuckySilenceEffect("Ducky Silence", 10, False))
+            if target.is_dead():
+                self.apply_effect(CancellationShield("Cancellation Shield", -1, True, 0, cc_immunity=True, uses=5, cover_status_damage=False))
+                self.apply_effect(AbsorptionShield("Absorption Shield", -1, True, self.atk * 8, cc_immunity=False))
+        damage_dealt = self.attack(multiplier=5.7, repeat=1, func_after_dmg=duckysilence_effect)
+        return damage_dealt
 
     def skill3(self):
         pass
+
+    def battle_entry_effects(self):
+        def requirement_func(charac: Character, attacker: Character):
+            return attacker.has_effect_that_named("Silence") or attacker.has_effect_that_named("Ducky Silence")
+        ducky_guard = ReductionShield("Ducky Guard", -1, True, 0.7, False, cover_normal_damage=True, cover_status_damage=True,
+                                         requirement=requirement_func,
+                                         requirement_description="When taking damage from an Silenced or Ducky Silenced enemy.",
+                                         requirement_description_jp="沈黙状態または沈黙のカモ状態の敵からダメージを受けた時。")
+        ducky_guard.can_be_removed_by_skill = False
+        self.apply_effect(ducky_guard)
 
 
 class Luna(Character):
@@ -3771,12 +3812,6 @@ class April(Character):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
-
     def skill1_logic(self):
         def copy_effect(self, target: Character):
             for e in target.buffs:
@@ -3821,33 +3856,27 @@ class Nata(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Nata"
-        self.skill1_description = "Attack random enemies 4 times with 200% atk. All duration of beneficial effects on yourself is increased by 10 turns," \
+        self.skill1_description = "Attack random enemies 4 times with 180% atk. All duration of beneficial effects on yourself is increased by 10 turns," \
         " if you have Renka effect, its stack is increased by 1 if less than 10."
-        self.skill2_description = "Focus attack 1 enemy of highest crit rate with 210% atk 3 times." \
+        self.skill2_description = "Focus attack 1 enemy of highest crit rate with 190% atk 3 times." \
         " if the enemy falls by this attack, recover 20% hp."
         self.skill3_description = "The first time you are defeated, recover 12% hp and apply Renka status effect on yourself," \
         " Renka has 15 stacks, each time when taking lethal damage, consume 1 stack, cancel the damage and recover 12% hp." \
         " When taking damage, reduce damage taken by 6% + 4% for each stack."
-        self.skill1_description_jp = "ランダムな敵に200%の攻撃を4回行う。自身に有益な効果の持続時間が4ターン延長され、" \
-                                    "「連花」効果を持っている場合、スタックが10未満であれば1増加する。"
-        self.skill2_description_jp = "最もクリティカル率の高い敵に210%の攻撃を3回集中して行う。" \
+        self.skill1_description_jp = "ランダムな敵に180%の攻撃を4回行う。自身に有益な効果の持続時間が4ターン延長され、" \
+                                    "「蓮花」効果を持っている場合、スタックが10未満であれば1増加する。"
+        self.skill2_description_jp = "最もクリティカル率の高い敵に190%の攻撃を3回集中して行う。" \
                                     "この攻撃で敵が倒れた場合、HPを20%回復する。"
-        self.skill3_description_jp = "初めて敗北した際、HPを12%回復し、自身に「連花」状態効果を付与する。" \
-                                    "連花は15スタックを持ち、致死ダメージを受けるたびに1スタックを消費し、ダメージを無効化してHPを12%回復する。" \
+        self.skill3_description_jp = "初めて敗北した際、HPを12%回復し、自身に「蓮花」状態効果を付与する。" \
+                                    "蓮花は15スタックを持ち、致死ダメージを受けるたびに1スタックを消費し、ダメージを無効化してHPを12%回復する。" \
                                     "ダメージを受ける際、被ダメージが6% + スタックごとに4%軽減される。"
-        self.skill1_cooldown_max = 5
-        self.skill2_cooldown_max = 5
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
         self.skill3_used = False
 
     def clear_others(self):
         self.skill3_used = False
         super().clear_others()
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def skill1_logic(self):
         def after_the_attack():
@@ -3859,7 +3888,7 @@ class Nata(Character):
                 if renka.stacks < 10:
                     renka.stacks += 1
                     # print(f"{self.name} gained 1 stack of Renka.")
-        damage_dealt = self.attack(multiplier=2.0, repeat=4)
+        damage_dealt = self.attack(multiplier=1.8, repeat=4)
         if self.is_alive():
             after_the_attack()
         return damage_dealt
@@ -3869,7 +3898,7 @@ class Nata(Character):
         def recovery(self, target):
             if target.is_dead():
                 self.heal_hp(self.maxhp * 0.2, self)
-        damage_dealt = self.attack(target_kw1="n_highest_attr", target_kw2="1", target_kw3="crit", target_kw4="enemy", multiplier=2.1, repeat_seq=3, func_after_dmg=recovery)
+        damage_dealt = self.attack(target_kw1="n_highest_attr", target_kw2="1", target_kw3="crit", target_kw4="enemy", multiplier=1.9, repeat_seq=3, func_after_dmg=recovery)
         return damage_dealt
 
 
@@ -3886,6 +3915,83 @@ class Nata(Character):
                 renka.can_be_removed_by_skill = False
                 renka.additional_name = "Nata_Renka"
                 self.apply_effect(renka)
+                self.skill3_used = True
+            return 
+        return
+    
+
+class Taiyi(Character):
+    """
+    A better Renka effect, Nata paired with this character can become a damage dealer
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Taiyi"
+        self.skill1_description = "Attack random enemies 6 times with 150% atk, each attack has a 3% chance to Stun the target for 10 turns."
+        self.skill2_description = "Attack random enemy pair 3 times with 150% atk."
+        self.skill3_description = "The first time you are defeated, recover 12% hp and apply Renka and Seren on yourself," \
+        " Renka has 15 stacks, each time when taking lethal damage, consume 1 stack, cancel the damage and recover 12% hp." \
+        " When taking damage, reduce damage taken by 2% + 4% for each stack." \
+        " Seren: Critical damage and accuracy is increased by 40%." \
+        " At end of turn, apply Seren to all allies who have Renka effect but does not have Seren effect."
+        # 蓮花 青蓮
+        self.skill1_description_jp = "ランダムな敵に攻撃力の150%で6回攻撃し、各攻撃に3%の確率で10ターンの間スタンさせる。"
+        self.skill2_description_jp = "ランダムな敵ペアに攻撃力の150%で3回攻撃する。"
+        self.skill3_description_jp = "初めて敗北した際、HPを12%回復し、自身に「蓮花」と「青蓮」を付与する。蓮花には15スタックがあり、致命的なダメージを受けるたびに1スタックを消費してそのダメージを無効化し、HPを12%回復する。ダメージを受けた際、受けるダメージが2%＋スタックごとに4%減少する。青蓮：クリティカルダメージと命中率が40%増加する。ターン終了時、蓮花効果を持つが青蓮効果を持たない味方全員に青蓮を付与する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.skill3_used = False
+
+    def clear_others(self):
+        self.skill3_used = False
+        super().clear_others()
+
+    def skill1_logic(self):
+        def stun_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 3:
+                target.apply_effect(StunEffect('Stun', duration=10, is_buff=False))
+        damage_dealt = self.attack(multiplier=1.5, repeat=6, func_after_dmg=stun_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=1.5, repeat=3, target_kw1="random_enemy_pair")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def character_specific_at_end_of_turn(self):
+        seren = self.get_effect_that_named("Seren", "Taiyi_Seren", "StatsEffect")
+        if seren:
+            # ("ally_that_must_have_effect_full", effect_name, additional_name, class_name)
+            allies = list(self.target_selection(keyword="ally_that_must_have_effect_full", keyword2="Renka", keyword3="None", keyword4="RenkaEffect"))
+            if allies:
+                for ally in allies:
+                    if not ally.has_effect_that_named("Seren", "Taiyi_Seren"):
+                        seren2 = StatsEffect("Seren", -1, True, {"critdmg": 0.4, "acc": 0.4})
+                        seren.apply_rule = "stack"
+                        seren2.additional_name = "Taiyi_Seren"
+                        ally.apply_effect(seren2)
+                        # print(f"{ally.name} gained Seren.")
+        return
+
+
+    def defeated_by_taken_damage(self, damage, attacker):
+        if not self.skill3_used:
+            self.heal_hp(self.maxhp * 0.12, self, ignore_death=True)
+            # print(self.hp)
+            # print(self.is_alive())
+            if self.is_alive():
+                renka = RenkaEffect("Renka", -1, True, False, damage_reduction=0.02)
+                renka.can_be_removed_by_skill = False
+                renka.additional_name = "Taiyi_Renka"
+                self.apply_effect(renka)
+                seren = StatsEffect("Seren", -1, True, {"critdmg": 0.4, "acc": 0.4})
+                seren.apply_rule = "stack"
+                seren.additional_name = "Taiyi_Seren"
+                self.apply_effect(seren)
                 self.skill3_used = True
             return 
         return

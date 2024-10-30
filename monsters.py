@@ -5498,8 +5498,43 @@ class EvilKing(Monster):
                                       use_active_flag=False,  condition=condition, can_be_removed_by_skill=False))
 
 
+class RoyalPriest(Monster):
+    """
+    Very high maxhp
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "RoyalPriest"
+        self.skill1_description = "Increase maxhp by 25% for all allies and heal 10% of maxhp for all allies. This effect is not removable."
+        self.skill2_description = "For 25 turns, all allies have their main stats except maxhp (atk, def, spd) increased by 1% of their own maxhp."
+        self.skill3_description = "Maxhp is increased by 30%, normal attack attack 4 times."
+        self.skill1_description_jp = "全ての味方の最大HPを25%増加させ、最大HPの10%分HPを回復する。この効果は解除されない。"
+        self.skill2_description_jp = "全ての味方の最大HPを除く主要ステータス（攻撃力、防御力、速度）が、25ターンの間、自分の最大HPの1%分増加する。"
+        self.skill3_description_jp = "最大HPが30%増加し、通常攻撃が4回攻撃になる。"
+        self.skill1_cooldown_max = 2
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
 
+    def skill1_logic(self):
+        for ally in self.ally:
+            ally.apply_effect(StatsEffect('Infinity', -1, True, {'maxhp' : 1.25}, can_be_removed_by_skill=False))
+            ally.heal_hp(ally.maxhp * 0.1, self)
+        return 0
 
+    def skill2_logic(self):
+        for ally in self.ally:
+            ally.apply_effect(StatsEffect('AA Stats Up', 25, True, main_stats_additive_dict={'atk': ally.maxhp * 0.01, 'defense': ally.maxhp * 0.01, 'spd': ally.maxhp * 0.01}))
+        return 0
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        self.attack(repeat=4)
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Infinity', -1, True, {'maxhp' : 1.3}, can_be_removed_by_skill=False))
+        self.hp = self.maxhp
 
 
 # ====================================
