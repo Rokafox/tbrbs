@@ -1227,10 +1227,14 @@ class Character:
             effect.apply_effect_after_damage_step(self, damage, attacker)
 
         global_vars.turn_info_string += f"{self.name} took {damage} damage.\n"
-        if is_crit:
-            self.damage_taken_this_turn.append((damage, attacker, "normal_critical"))
+        # Also need to handle when the attacker is from the same party, if so, the damage is 'friendlyfire'.
+        if attacker is not None and attacker in self.party:
+            self.damage_taken_this_turn.append((damage, attacker, "friendlyfire"))
         else:
-            self.damage_taken_this_turn.append((damage, attacker, "normal"))
+            if is_crit:
+                self.damage_taken_this_turn.append((damage, attacker, "normal_critical"))
+            else:
+                self.damage_taken_this_turn.append((damage, attacker, "normal"))
         if self.is_dead():
             self.defeated_by_taken_damage(damage, attacker)
         if self.is_dead():
@@ -1282,7 +1286,10 @@ class Character:
             effect.apply_effect_after_status_damage_step(self, damage, attacker)
 
         global_vars.turn_info_string += f"{self.name} took {damage} status damage.\n"
-        self.damage_taken_this_turn.append((damage, attacker, "status"))
+        if attacker is not None and attacker in self.party:
+            self.damage_taken_this_turn.append((damage, attacker, "friendlyfire"))
+        else:
+            self.damage_taken_this_turn.append((damage, attacker, "status"))
         if self.is_dead():
             self.defeated_by_taken_damage(damage, attacker)
         if self.is_dead():
@@ -1304,7 +1311,10 @@ class Character:
             raise Exception("damage cannot be negative.")
         self.hp -= damage
         global_vars.turn_info_string += f"{self.name} took {damage} bypass status effect damage.\n"
-        self.damage_taken_this_turn.append((damage, attacker, "bypass"))
+        if attacker is not None and attacker in self.party:
+            self.damage_taken_this_turn.append((damage, attacker, "friendlyfire"))
+        else:
+            self.damage_taken_this_turn.append((damage, attacker, "bypass"))
         if self.is_dead():
             self.defeated_by_taken_damage(damage, attacker)
         if self.is_dead():
@@ -3252,7 +3262,7 @@ class Raven(Character):
         self.skill3_description = "After using 2 times of skill 2, apply a shield on neighbor allies after the skill, absorb damage up to 80% of total" \
         " damage dealt by skill 2."
         self.skill1_description_jp = "自身に30ターンの間ブラックバードを適用する。15ターンの間、隣接する味方の攻撃力が30%減少し、その減少分を自身の攻撃力に加える。" \
-                                    "すでにブラックバードがある場合、持続時間が更新され、攻撃力の減少および増加は発動しない。"
+                                    "すでにブラックバード状態中の場合、持続時間が更新され、攻撃力の減少および増加は発動しない。"
         self.skill2_description_jp = "最も防御力の低い敵に285%の攻撃力で6回攻撃する。"
         self.skill3_description_jp = "スキル2を2回使用後、スキル使用後に隣接する味方にシールドを適用し、スキル2によって与えた総ダメージの80%までを吸収する。"
         self.skill1_cooldown_max = 5
@@ -3274,7 +3284,7 @@ class Raven(Character):
     def skill1_logic(self):
         blackbird = self.get_effect_that_named("Blackbird", "Raven_Blackbird")
         if blackbird:
-            blackbird.duration = 16
+            blackbird.duration = blackbird.original_duration
             global_vars.turn_info_string += f"{self.name} refreshed Blackbird.\n"
         else:
             v = 0
@@ -3299,6 +3309,89 @@ class Raven(Character):
 
     def skill3(self):
         pass
+
+
+class RavenWB(Character):
+    """
+    Welcome back Version of Raven
+    With increased survivability but lower damage
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "RavenWB"
+        self.skill1_description = "Apply Blackbird on your self for 30 turns. For 15 turns, neighbor allies lose 30% of their atk, add the reduced atk to your atk." \
+        " If you already have Blackbird, its duration is refreshed, atk lose and gain is not triggered."
+        self.skill2_description = "Attack enemy with lowest crit def 6 times with 240% atk." \
+        " If you have Blackbird, each attack has a 50% chance to apply Burn for 20 turns, dealing 20% of atk as damage per turn."
+        self.skill3_description = "After using 2 times of skill 2, apply a shield on neighbor allies after the skill, absorb damage up to 50% of total" \
+        " damage dealt by skill 2. At start of battle, apply unremovable Raccoon! on yourself, when defeated, revive with 1 hp on the next turn,"
+        " then apply a shield that absorbs damage up to 30% of total damage dealt by skill 2."
+        self.skill1_description_jp = "自身に30ターンの間ブラックバードを適用する。15ターンの間、隣接する味方の攻撃力が30%減少し、その減少分を自身の攻撃力に加える。" \
+        "すでにブラックバード状態中の場合、持続時間が更新され、攻撃力の減少および増加は発動しない。"
+        self.skill2_description_jp = "最もクリティカル防御力の低い敵に230%の攻撃力で6回攻撃する。" \
+        "ブラックバード状態中の場合、各攻撃には50%の確率で20ターンの間燃焼を付与する、毎ターン攻撃力の20%のダメージを与える。"
+        self.skill3_description_jp = "スキル2を2回使用後、スキル使用後に隣接する味方にシールドを適用し、スキル2で与えた総ダメージの50%までを吸収する。" \
+        "戦闘開始時に、自身に解除不可の「洗熊！」を付与し、撃破された場合、次のターンに1HPで復活し、その後スキル2で与えた総ダメージの30%までのシールドを付与する。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.raven_skill2_counter = 0
+        self.raven_skill2_damage_dealt = 0
+
+    def clear_others(self):
+        self.raven_skill2_counter = 0
+        self.raven_skill2_damage_dealt = 0
+        super().clear_others()
+
+    def skill_tooltip(self):
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n Skill 2 counter : {self.raven_skill2_counter}\n Shield value : {self.raven_skill2_damage_dealt}\n"
+
+    def skill_tooltip_jp(self):
+        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n スキル2 カウンター : {self.raven_skill2_counter}\n シールド値 : {self.raven_skill2_damage_dealt}\n"
+
+    def skill1_logic(self):
+        blackbird = self.get_effect_that_named("Blackbird", "Raven_Blackbird")
+        if blackbird:
+            blackbird.duration = blackbird.original_duration
+            global_vars.turn_info_string += f"{self.name} refreshed Blackbird.\n"
+        else:
+            v = 0
+            for a in self.get_neighbor_allies_not_including_self():
+                v += a.atk * 0.3
+                a.apply_effect(StatsEffect("Atk Down", 15, False, {"atk": 0.7}))
+            self.apply_effect(StatsEffect("Blackbird", 30, True, main_stats_additive_dict={"atk": v}))
+        return 0
+
+    def skill2_logic(self):
+        def burn_effect(self: Character, target):
+            if self.has_effect_that_named("Blackbird"):
+                dice = random.randint(1, 100)
+                if dice <= 50:
+                    target.apply_effect(ContinuousDamageEffect('Burn', duration=20, is_buff=False, value=self.atk * 0.2, imposter=self))
+        damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="critdef",target_kw4="enemy", multiplier=2.30, repeat=6, 
+                                   func_after_dmg=burn_effect)
+        self.raven_skill2_damage_dealt += damage_dealt
+        self.raven_skill2_counter += 1
+        if self.raven_skill2_counter == 2:
+            neighbors = self.get_neighbor_allies_not_including_self()
+            for ally in neighbors:
+                shield = AbsorptionShield("Shield", -1, True, self.raven_skill2_damage_dealt * 0.5, cc_immunity=False)
+                ally.apply_effect(shield)
+            self.raven_skill2_counter = 0
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        passive = RebornEffect("Raccoon!", -1, True, effect_value=0, cc_immunity=False, buff_applier=self, effect_value_constant=1)
+        passive.can_be_removed_by_skill = False
+        self.apply_effect(passive)
+
+    def after_revive(self):
+        if self.raven_skill2_damage_dealt > 0:
+            shield = AbsorptionShield("Shield", -1, True, self.raven_skill2_damage_dealt * 0.3, cc_immunity=False)
+            self.apply_effect(shield)
 
 
 class Ophelia(Character):  

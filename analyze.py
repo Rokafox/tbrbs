@@ -51,7 +51,7 @@ def create_damage_summary_new(sort_reference_list=None, dataframe=None):
 
     def process_damage_entry(damage, attacker, damage_type):
         if attacker not in damage_dealt_summary:
-            damage_dealt_summary[attacker] = {'total': 0, 'normal': 0, 'normal_critical': 0, 'status': 0, 'bypass': 0}
+            damage_dealt_summary[attacker] = {'total': 0, 'normal': 0, 'normal_critical': 0, 'status': 0, 'bypass': 0, 'friendlyfire': 0}
         
         damage_dealt_summary[attacker]['total'] += damage
         damage_dealt_summary[attacker][damage_type] += damage
@@ -63,7 +63,7 @@ def create_damage_summary_new(sort_reference_list=None, dataframe=None):
         else:
             damage_history = damage_history_input
 
-        damage_summary = {'total': 0, 'normal': 0, 'normal_critical': 0, 'status': 0, 'bypass': 0}
+        damage_summary = {'total': 0, 'normal': 0, 'normal_critical': 0, 'status': 0, 'bypass': 0, 'friendlyfire': 0}
 
         for entry in damage_history:
             if not entry:  # Skip empty entries
@@ -86,7 +86,7 @@ def create_damage_summary_new(sort_reference_list=None, dataframe=None):
     # print(damage_dealt_df)
 
     if damage_dealt_df.empty:
-        damage_dealt_df = pd.DataFrame(columns=['Character', 'total', 'normal', 'normal_critical', 'status', 'bypass'])
+        damage_dealt_df = pd.DataFrame(columns=['Character', 'total', 'normal', 'normal_critical', 'status', 'bypass', 'friendlyfire'])
 
 
     combined_df = pd.merge(damage_received_df, damage_dealt_df, on='Character', how='outer', suffixes=('_received', '_dealt'))
@@ -109,7 +109,7 @@ def create_damage_summary_new(sort_reference_list=None, dataframe=None):
 def damage_summary_visualize(df: pd.DataFrame, what_to_visualize: str):
     if what_to_visualize == 'received':
         # Prepare data for Damage Received
-        damage_data = df[['Character', 'normal_received', 'normal_critical_received', 'status_received', 'bypass_received']].copy()
+        damage_data = df[['Character', 'normal_received', 'normal_critical_received', 'status_received', 'bypass_received', 'friendlyfire_received']].copy()
         # Shorten character names if they are too long
         damage_data['Character'] = damage_data['Character'].apply(lambda x: x[:7] if len(x) > 7 else x)
         # In-memory buffer for saving the image
@@ -120,6 +120,7 @@ def damage_summary_visualize(df: pd.DataFrame, what_to_visualize: str):
         plt.bar(damage_data['Character'], damage_data['normal_critical_received'], bottom=damage_data['normal_received'], label='Normal Critical Damage Received', color='darkturquoise')
         plt.bar(damage_data['Character'], damage_data['status_received'], bottom=damage_data['normal_received'] + damage_data['normal_critical_received'], label='Status Damage Received', color='lightblue')
         plt.bar(damage_data['Character'], damage_data['bypass_received'], bottom=damage_data['normal_received'] + damage_data['normal_critical_received'] + damage_data['status_received'], label='Bypass Damage Received', color='cadetblue')
+        plt.bar(damage_data['Character'], damage_data['friendlyfire_received'], bottom=damage_data['normal_received'] + damage_data['normal_critical_received'] + damage_data['status_received'] + damage_data['bypass_received'], label='Friendly Fire Damage Received', color='gray')
         plt.xticks(fontsize=22)
         plt.yticks(fontsize=22)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
@@ -135,7 +136,7 @@ def damage_summary_visualize(df: pd.DataFrame, what_to_visualize: str):
 
     elif what_to_visualize == 'dealt':
         # Prepare data for Damage Dealt
-        damage_data = df[['Character', 'normal_dealt', 'normal_critical_dealt', 'status_dealt', 'bypass_dealt']].copy()
+        damage_data = df[['Character', 'normal_dealt', 'normal_critical_dealt', 'status_dealt', 'bypass_dealt', 'friendlyfire_dealt']].copy()
         # Shorten character names if they are too long
         damage_data['Character'] = damage_data['Character'].apply(lambda x: x[:7] if len(x) > 7 else x)
         # In-memory buffer for saving the image
@@ -146,6 +147,7 @@ def damage_summary_visualize(df: pd.DataFrame, what_to_visualize: str):
         plt.bar(damage_data['Character'], damage_data['normal_critical_dealt'], bottom=damage_data['normal_dealt'], label='Normal Critical Damage Dealt', color='firebrick')
         plt.bar(damage_data['Character'], damage_data['status_dealt'], bottom=damage_data['normal_dealt'] + damage_data['normal_critical_dealt'], label='Status Damage Dealt', color='orange')
         plt.bar(damage_data['Character'], damage_data['bypass_dealt'], bottom=damage_data['normal_dealt'] + damage_data['normal_critical_dealt'] + damage_data['status_dealt'], label='Bypass Damage Dealt', color='cadetblue')
+        plt.bar(damage_data['Character'], damage_data['friendlyfire_dealt'], bottom=damage_data['normal_dealt'] + damage_data['normal_critical_dealt'] + damage_data['status_dealt'] + damage_data['bypass_dealt'], label='Friendly Fire Damage Dealt', color='gray')
         plt.xticks(fontsize=22)
         plt.yticks(fontsize=22)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)

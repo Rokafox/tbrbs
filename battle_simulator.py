@@ -480,7 +480,7 @@ def get_all_characters():
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
-                       "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi"]
+                       "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -2993,15 +2993,15 @@ if __name__ == "__main__":
                         if global_vars.language == "日本語":
                             tooltip_text = "与えたダメージ合計:\n"
                             for line in df_damage_summary.values:
-                                tooltip_text += f"{line[0]}は合計で{line[6]}のダメージを与えました。通常ダメージ{line[7]}、クリティカルダメージ{line[8]}、異常状態ダメージ{line[9]}、異常状態無視ダメージ{line[10]}。\n"
+                                tooltip_text += f"{line[0]}は合計で{line[7]}のダメージを与えました。通常ダメージ{line[8]}、クリティカルダメージ{line[9]}、異常状態ダメージ{line[10]}、異常状態無視ダメージ{line[11]}、誤爆ダメージ{line[12]}。\n"
                         elif global_vars.language == "English":
                             tooltip_text = "Damage dealt summary:\n"
                             for line in df_damage_summary.values:
-                                tooltip_text += f"{line[0]} dealt {line[6]} damage in total, {line[7]} normal damage, {line[8]} critical damage, {line[9]} status damage, and {line[10]} bypass damage.\n"
-                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                                tooltip_text += f"{line[0]} dealt {line[7]} damage in total, {line[8]} normal damage, {line[9]} critical damage, {line[10]} status damage, {line[11]} bypass damage, {line[12]} friendly fire damage.\n"
+                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=700)
                 else:
                     damage_graph_slot.set_image(images_item["405"])
-                    damage_graph_slot.set_tooltip("", delay=0.1, wrap_width=600)
+                    damage_graph_slot.set_tooltip("", delay=0.1, wrap_width=100)
             case "Damage Taken Chart":
                 if plot_damage_r_chart:
                     damage_graph_slot.set_image(plot_damage_r_chart)
@@ -3009,15 +3009,15 @@ if __name__ == "__main__":
                         if global_vars.language == "日本語":
                             tooltip_text = "受けたダメージ合計:\n"
                             for line in df_damage_summary.values:
-                                tooltip_text += f"{line[0]}は合計で{line[1]}のダメージを受けました。通常ダメージ{line[2]}、クリティカルダメージ{line[3]}、異常状態ダメージ{line[4]}、異常状態無視ダメージ{line[5]}。\n"
+                                tooltip_text += f"{line[0]}は合計で{line[1]}のダメージを受けました。通常ダメージ{line[2]}、クリティカルダメージ{line[3]}、異常状態ダメージ{line[4]}、異常状態無視ダメージ{line[5]}、誤爆ダメージ{line[6]}。\n"
                         elif global_vars.language == "English":
                             tooltip_text = "Damage taken summary:\n"
                             for line in df_damage_summary.values:
-                                tooltip_text += f"{line[0]} received {line[1]} damage in total, {line[2]} normal damage, {line[3]} critical damage, {line[4]} status damage, and {line[5]} bypass damage.\n"
-                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
+                                tooltip_text += f"{line[0]} received {line[1]} damage in total, {line[2]} normal damage, {line[3]} critical damage, {line[4]} status damage, {line[5]} bypass damage, {line[6]} friendly fire damage.\n"
+                        damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=700)
                 else:
                     damage_graph_slot.set_image(images_item["405"])
-                    damage_graph_slot.set_tooltip("", delay=0.1, wrap_width=600)
+                    damage_graph_slot.set_tooltip("", delay=0.1, wrap_width=100)
             case "Healing Chart":
                 if plot_healing_chart:
                     damage_graph_slot.set_image(plot_healing_chart)
@@ -3033,7 +3033,7 @@ if __name__ == "__main__":
                         damage_graph_slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=600)
                 else:
                     damage_graph_slot.set_image(images_item["405"])
-                    damage_graph_slot.set_tooltip("", delay=0.1, wrap_width=600)
+                    damage_graph_slot.set_tooltip("", delay=0.1, wrap_width=100)
             case _:
                 raise Exception(f"Unknown current_display_chart: {current_display_chart}")
 
