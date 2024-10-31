@@ -2905,6 +2905,9 @@ if __name__ == "__main__":
                                 create_yellow_text(character_image_overlay, str(a), 25, (255, 165, 0), current_offset_for_damage_and_healing)
                             case "normal_critical":
                                 create_yellow_text(character_image_overlay, str(a), 25, (255, 0, 0), current_offset_for_damage_and_healing, bold=True, italic=True)
+                            case "friendlyfire":
+                                # grey text
+                                create_yellow_text(character_image_overlay, str(a), 25, (153, 153, 153), current_offset_for_damage_and_healing)
                             case _:
                                 raise Exception(f"Unknown damage type: {c}")
                         current_offset_for_damage_and_healing += 12

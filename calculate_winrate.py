@@ -229,7 +229,71 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
         return None, turn, None
 
 
-def calculate_winrate_for_character(sample, character_list, fineprint_mode="default"):
+def build_parties_with_pairs(character_list, pairs_dict=None):
+    # If pairs_dict is None or empty, treat all characters as individual units
+    if not pairs_dict:
+        pairs_dict = {}
+
+    units = []
+    processed_characters = set()
+
+    for character in character_list:
+        if character.name in processed_characters:
+            continue
+        pair_name = pairs_dict.get(character.name)
+        if pair_name:
+            if pair_name in processed_characters:
+                continue  # Pair already processed
+            # Find the pair character
+            pair_character = next((ch for ch in character_list if ch.name == pair_name), None)
+            if pair_character:
+                units.append([character, pair_character])
+                processed_characters.add(character.name)
+                processed_characters.add(pair_name)
+            else:
+                # Pair character not found, treat as individual
+                units.append([character])
+                processed_characters.add(character.name)
+        else:
+            # Not part of a pair
+            units.append([character])
+            processed_characters.add(character.name)
+
+    # Randomly shuffle units
+    random.shuffle(units)
+    party1 = []
+    party2 = []
+
+    units_to_assign = units.copy()
+
+    # Try to fill parties
+    while len(party1) < 5 or len(party2) < 5:
+        if not units_to_assign:
+            break  # No more units to assign
+
+        unit = units_to_assign.pop()
+        unit_size = len(unit)
+
+        # Randomly choose the order
+        parties = [party1, party2]
+        random.shuffle(parties)
+
+        assigned = False
+        for party in parties:
+            if len(party) + unit_size <= 5:
+                party.extend(unit)
+                assigned = True
+                break
+
+        if not assigned:
+            # Cannot assign unit to any party, discard unit
+            continue
+
+    return party1, party2
+
+
+
+def calculate_winrate_for_character(sample, character_list: list[character.Character], fineprint_mode="default"):
     start_time = time.time()  
     # win_counts = {c.name: 0 for c in character_list}
     # total_games = {c.name: 0 for c in character_list}
@@ -239,6 +303,12 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
     printer = FinePrinter(mode=fineprint_mode)
     amount_of_error = 0
 
+    pairs_dict = {
+        # Too good to be separated
+        "Fenrir": "Taily",
+        "Taily": "Fenrir",
+    }
+
     for i in range(sample):
         # If there are too many errors, we know it is not a hardware failure or cosmic rays bit flipping
         # We should stop the simulation if 1 in 1000 games are errors
@@ -246,10 +316,8 @@ def calculate_winrate_for_character(sample, character_list, fineprint_mode="defa
             print("Too many errors, stopping the simulation.")
             break
 
-        # Sample 10 unique elements from character_list
-        sampled_characters = random.sample(character_list, 10)
-        party1 = sampled_characters[:5]
-        party2 = sampled_characters[5:]
+        party1, party2 = build_parties_with_pairs(character_list, pairs_dict)
+        # print([c.name for c in party1])
 
         for character in itertools.chain(party1, party2):
             # total_games[character.name] += 1
