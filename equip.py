@@ -170,7 +170,7 @@ class Equip(Block):
                 return (
                     "increase speed by 5%, decrease atk by 10% and grant hide for 50 turns at the start of battle. You cannot be targeted unless for skills that targets 5 enemies." \
                     " Hide effect is removed when all allies are hidden. When this hide effect is removed, apply Full Cloud, for 10 turns, speed is increased by 100%," \
-                    " final damage taken is reduced by 70%." 
+                    " final damage taken is reduced by 30%." 
                 )
             case "Purplestar":
                 return (
@@ -274,7 +274,7 @@ class Equip(Block):
             case "Cloud":
                 return (
                     "バトル開始時に速度が5%増加し攻撃力が10%減少する。50ターンの間雲隠状態を付与される。雲隠状態中は、5体の敵を対象とするスキル以外のターゲットにはされません。"
-                    "雲隠状態が解除されると、雲満を付与し、10ターンの間速度が100%増加し、最終ダメージ倍率70%減少する。"
+                    "雲隠状態が解除されると、雲満を付与し、10ターンの間速度が100%増加し、最終ダメージ倍率30%減少する。"
                 )
             case "Purplestar":
                 return (

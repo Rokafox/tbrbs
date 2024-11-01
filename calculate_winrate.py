@@ -133,7 +133,8 @@ def calculate_win_loss_rate(wins_data, losses_data, write_csv=False):
     return sorted_result
 
 
-def simulate_battle_between_party(party1: list[character.Character], party2: list[character.Character], printer: FinePrinter):
+def simulate_battle_between_party(party1: list[character.Character], party2: list[character.Character], printer: FinePrinter,
+                                  run_ucst=False):
     # -> (winner_party, turns, loser_party)
 
     turn = 1
@@ -210,6 +211,18 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
         printer.fine_print("Party 2:")
         for character in party2:
             printer.fine_print(character)
+
+        if run_ucst:
+            # Unexpected Character Stats Test
+            # Can help identifying debuffs mistakenly applied as buffs
+            for character in itertools.chain(party1, party2):
+                if not character.debuffs:
+                    if character.heal_efficiency < 0.99:
+                        raise Exception(f"{character.name} has heal efficiency less than 60%: {character.heal_efficiency * 100:.2f}% but has no debuff, likely a bug.")
+                    if character.crit < 0:
+                        raise Exception(f"{character.name} has negative crit: {character.crit * 100:.2f}%, likely a bug.")
+
+
         turn += 1
     if turn > 300:
         printer.fine_print("Battle is taking too long.")
@@ -240,7 +253,9 @@ def build_parties_with_pairs(character_list, pairs_dict=None):
     for character in character_list:
         if character.name in processed_characters:
             continue
-        pair_name = pairs_dict.get(character.name)
+        pair_name_list = pairs_dict.get(character.name)
+        # randomly choose a pair from the list
+        pair_name = random.choice(pair_name_list) if pair_name_list else None
         if pair_name:
             if pair_name in processed_characters:
                 continue  # Pair already processed
@@ -293,7 +308,8 @@ def build_parties_with_pairs(character_list, pairs_dict=None):
 
 
 
-def calculate_winrate_for_character(sample, character_list: list[character.Character], fineprint_mode="default"):
+def calculate_winrate_for_character(sample, character_list: list[character.Character], fineprint_mode="default",
+                                    run_tests=False):
     start_time = time.time()  
     # win_counts = {c.name: 0 for c in character_list}
     # total_games = {c.name: 0 for c in character_list}
@@ -304,9 +320,7 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
     amount_of_error = 0
 
     pairs_dict = {
-        # Too good to be separated
-        "Fenrir": "Taily",
-        "Taily": "Fenrir",
+        "Fenrir": ["Taily"],
     }
 
     for i in range(sample):
@@ -322,11 +336,11 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
         for character in itertools.chain(party1, party2):
             # total_games[character.name] += 1
             character.fineprint_mode = fineprint_mode
-            character.equip_item_from_list(generate_equips_list(4, random_full_eqset=True))
+            character.equip_item_from_list(generate_equips_list(4, random_full_eqset=True, locked_rarity="Legendary"))
             character.reset_stats()
 
         try:
-            winner_party, turns, loser_party = simulate_battle_between_party(party1, party2, printer)
+            winner_party, turns, loser_party = simulate_battle_between_party(party1, party2, printer, run_tests)
         except Exception as e:
             amount_of_error += 1
             print(f"Error: {e}")
@@ -386,7 +400,8 @@ if __name__ == "__main__":
         sample = int(sys.argv[1])
     else:
         sample = 6000
-    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress")
+    # "default", "file", "suppress"
+    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress", run_tests=True)
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze

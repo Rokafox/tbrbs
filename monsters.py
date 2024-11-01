@@ -903,7 +903,7 @@ class Sylphid(Monster):
     def skill1_logic(self):
         for a in self.ally:
             a.apply_effect(StatsEffect('Force', 24, True, {'atk' : 1.2, 'defense' : 1.2}))
-            a.apply_effect(StatsEffect('Weakness', 24, True, {'heal_efficiency' : -0.4}))
+            a.apply_effect(StatsEffect('Weakness', 24, False, {'heal_efficiency' : -0.4}))
         return 0
 
     def skill2_logic(self):
@@ -914,10 +914,10 @@ class Sylphid(Monster):
         pass
 
     def battle_entry_effects(self):
-        ashield = ReductionShield('Air Shield', -1, True, 0.45, False,
-                                    cover_status_damage=False, cover_normal_damage=True)
-        ashield.can_be_removed_by_skill = False
         for a in self.ally:
+            ashield = ReductionShield('Air Shield', -1, True, 0.45, False,
+                                        cover_status_damage=False, cover_normal_damage=True)
+            ashield.can_be_removed_by_skill = False
             a.apply_effect(ashield)
 
 
@@ -3570,10 +3570,10 @@ class HauntedTree(Monster):
         self.skill1_description = "3 closest enemies are Rooted for 18 turns. Rooted: evasion is reduced by 55%, def and critdef is reduced by 20%." \
         " Effect duration refreshes if same effect is applied again."
         self.skill2_description = "If no enemy is Rooted, this skill has no effect." \
-        " Attack all Rooted enemies with 360% atk 3 times, each attack deals additional damage equal to 5% of self maxhp."
+        " Attack all Rooted enemies with 320% atk 3 times, each attack deals additional damage equal to 5% of self maxhp."
         self.skill3_description = "Damage taken is reduced by 70% from Rooted enemies. maxhp, def and critdef is increased by 30%."
         self.skill1_description_jp = "最も近い敵3体を18ターンの間ルートする。ルート:回避率が55%減少、防御力とクリティカル防御力が20%減少。同じ効果が再度適用されると効果時間が更新される。"
-        self.skill2_description_jp = "ルートした敵がいない場合、このスキルは効果がない。ルートした敵全てに攻撃力360%で3回攻撃し、各攻撃は自分の最大HPの5%の分ダメージを追加。"
+        self.skill2_description_jp = "ルートした敵がいない場合、このスキルは効果がない。ルートした敵全てに攻撃力320%で3回攻撃し、各攻撃は自分の最大HPの5%の分ダメージを追加。"
         self.skill3_description_jp = "ルートした敵から受けるダメージを70%減少。最大HP、防御力、クリティカル防御力を30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -3581,10 +3581,10 @@ class HauntedTree(Monster):
 
     def skill1_logic(self):
         targets = self.target_selection("n_enemy_in_front", "3")
-        eff = StatsEffect('Rooted', 18, False, {'eva' : -0.55, 'defense' : 0.8, 'critdef' : -0.2})
-        eff.additional_name = "HauntedTree_Rooted"
-        eff.apply_rule = 'stack'
         for target in targets:
+            eff = StatsEffect('Rooted', 18, False, {'eva' : -0.55, 'defense' : 0.8, 'critdef' : -0.2})
+            eff.additional_name = "HauntedTree_Rooted"
+            eff.apply_rule = 'stack'
             target.apply_effect(eff)
         return 0
 
@@ -3595,7 +3595,7 @@ class HauntedTree(Monster):
         def additional_damage(self, target, final_damage):
             final_damage += 0.05 * self.maxhp
             return final_damage
-        damage_dealt = self.attack(multiplier=3.6, repeat=3, func_damage_step=additional_damage, target_list=rooted_enemies)
+        damage_dealt = self.attack(multiplier=3.2, repeat=3, func_damage_step=additional_damage, target_list=rooted_enemies)
         return damage_dealt
 
     def skill3(self):
@@ -4558,11 +4558,10 @@ class Lich(Monster):
         pass
 
     def battle_entry_effects(self):
-        reborn = RebornEffect('Undead', -1, True, 1.0, True, self)
-        reborn.can_be_removed_by_skill = False
-        self.apply_effect(reborn)
-        self.apply_effect(reborn)
-        self.apply_effect(reborn)
+        for i in range(3):
+            reborn = RebornEffect('Undead', -1, True, 1.0, True, self)
+            reborn.can_be_removed_by_skill = False
+            self.apply_effect(reborn)
         self.apply_effect(StatsEffect('Lich Passive', -1, True, {'maxhp' : 1.1}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 

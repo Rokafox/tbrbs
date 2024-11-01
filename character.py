@@ -1410,6 +1410,14 @@ class Character:
         return False
 
     def apply_effect(self, effect: Effect):
+        if effect.already_applied:
+            # find out who has the very same effect
+            # This prevents attempting to apply the same effect instance multiple times.
+            for c in self.party + self.enemyparty:
+                if c.has_effect_that_is(effect):
+                    print(f"Warning: {effect.name}, which already applied to someone before, is attempting to apply on {self.name}.")
+                    print(f"Warning: {c.name} has the same effect instance.")
+
         # if self.is_dead():
         #     print(f"Warning: {self.name} is dead, should not be a valid target to apply effect. Effect name: {effect.name}")
         if not effect.is_set_effect:
@@ -1420,7 +1428,7 @@ class Character:
         if self.is_immune_to_cc() and effect.is_cc_effect:
             global_vars.turn_info_string += f"{self.name} is immune to {effect.name}.\n"
             return
-        if effect.apply_rule == "stack" and self.is_alive():
+        if effect.apply_rule == "stack":
             for e in self.debuffs.copy() + self.buffs.copy():
                 if e.name == effect.name:
                     # if they both have attr additional_name, they must match
@@ -1436,7 +1444,7 @@ class Character:
                     e.apply_effect_when_adding_stacks(self, effect.stacks)
                     global_vars.turn_info_string += f"{effect.name} duration on {self.name} has been refreshed.\n"
                     return
-        elif effect.apply_rule == "replace" and self.is_alive():
+        elif effect.apply_rule == "replace":
             for e in self.debuffs.copy() + self.buffs.copy():
                 if e.name == effect.name:
                     # if they both have attr additional_name, they must match
@@ -1450,12 +1458,14 @@ class Character:
                     effect.apply_effect_when_replacing_old_same_effect(e)
                     global_vars.turn_info_string += f"{e.name} on {self.name} has been replaced by {effect.name}.\n"
                     break
-        if self.is_alive() and effect.is_buff:
+        # Do we allow applying effect on dead character? Yes, for some effects.
+        if effect.is_buff:
             self.buffs.append(effect)
             self.buffs.sort(key=lambda x: x.sort_priority)
-        elif self.is_alive() and not effect.is_buff:
+        else:
             self.debuffs.append(effect)
             self.debuffs.sort(key=lambda x: x.sort_priority)
+        effect.already_applied = True
         if not effect.is_set_effect:
             global_vars.turn_info_string += f"{effect.name} has been applied on {self.name}.\n"
         effect.apply_effect_on_apply(self)
@@ -1475,6 +1485,7 @@ class Character:
         global_vars.turn_info_string += f"{effect.name} on {self.name} has been removed.\n"
         if not purge:
             effect.apply_effect_on_remove(self)
+        effect.already_applied = False
 
     def try_remove_effect_with_name(self, effect_name: str, strict=False, remove_all_found_effects=False) -> bool:
         """
@@ -1696,7 +1707,7 @@ class Character:
         elif set_name == "Newspaper":
             self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
         elif set_name == "Cloud":
-            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": 0.30})
+            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": -0.30})
             cloud_hide_effect = HideEffect("Hide", 50, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
             cloud_hide_effect.is_set_effect = True
             cloud_hide_effect.sort_priority = 2000
@@ -4804,9 +4815,9 @@ class Mitsuki(Character):
         pass
 
     def battle_entry_effects(self):
-        azure_sea = ReductionShield("Azure Sea", -1, True, 0.7, False, cover_status_damage=True, cover_normal_damage=False)
-        azure_sea.can_be_removed_by_skill = False
         for a in self.ally:
+            azure_sea = ReductionShield("Azure Sea", -1, True, 0.7, False, cover_status_damage=True, cover_normal_damage=False)
+            azure_sea.can_be_removed_by_skill = False
             a.apply_effect(azure_sea)
         def heal_func(character: Character):
             return character.hp * 0.03
@@ -4943,12 +4954,12 @@ class Zhen(Character):
                                         requirement_description_jp="スタンしている味方がいる敵からダメージを受けた時。")
         wavering_glow.can_be_removed_by_skill = False
         self.apply_effect(wavering_glow)
-        shadow_of_great_bird = ReductionShield("Shadow of Great Bird", -1, False, 0.5, False, cover_status_damage=True, cover_normal_damage=True,
-                                               requirement=lambda x, y: x.is_stunned(),
-                                               requirement_description="Taking damage while being stunned.",
-                                                requirement_description_jp="スタン状態でダメージを受けた時。")
-        shadow_of_great_bird.can_be_removed_by_skill = False
         for e in self.enemy:
+            shadow_of_great_bird = ReductionShield("Shadow of Great Bird", -1, False, 0.5, False, cover_status_damage=True, cover_normal_damage=True,
+                                                requirement=lambda x, y: x.is_stunned(),
+                                                requirement_description="Taking damage while being stunned.",
+                                                    requirement_description_jp="スタン状態でダメージを受けた時。")
+            shadow_of_great_bird.can_be_removed_by_skill = False
             e.apply_effect(shadow_of_great_bird)
 
 
@@ -5011,10 +5022,10 @@ class Cupid(Character):
         return 0
 
     def battle_entry_effects(self):
-        for_love = RebornEffect("For Love", -1, True, effect_value=0.5, cc_immunity=False, buff_applier=self, effect_value_constant=0)
-        for_love.additional_name = "Cupid_For_Love"
-        for_love.can_be_removed_by_skill = False
         for i in range(2):
+            for_love = RebornEffect("For Love", -1, True, effect_value=0.5, cc_immunity=False, buff_applier=self, effect_value_constant=0)
+            for_love.additional_name = "Cupid_For_Love"
+            for_love.can_be_removed_by_skill = False
             self.apply_effect(for_love)
 
 
@@ -5327,12 +5338,12 @@ class Sunny(Character):
         if self.is_alive():
             def heal_func(char, buff_applier):
                 return buff_applier.atk * 0.2
-            summer_breeze = ContinuousHealEffect("Summer Breeze", 10, True, value_function=heal_func, buff_applier=self,
-                                                value_function_description="20% of Sunny atk", value_function_description_jp="20%Sunnyの攻撃力")
-            summer_breeze_part2 = StatsEffect("Summer Breeze", 10, True, {"defense": 1.15, "critdef": 1.15})
             self.update_ally_and_enemy()
             ally_selection = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
             for a in ally_selection:
+                summer_breeze = ContinuousHealEffect("Summer Breeze", 10, True, value_function=heal_func, buff_applier=self,
+                                                value_function_description="20% of Sunny atk", value_function_description_jp="20%Sunnyの攻撃力")
+                summer_breeze_part2 = StatsEffect("Summer Breeze", 10, True, {"defense": 1.15, "critdef": 1.15})
                 a.apply_effect(summer_breeze)
                 a.apply_effect(summer_breeze_part2)
         return damage_dealt
@@ -5354,11 +5365,11 @@ class Sunny(Character):
         if self.is_alive():
             def heal_func(char, buff_applier):
                 return buff_applier.atk * 0.2
-            summer_breeze = ContinuousHealEffect("Summer Breeze", 10, True, value_function=heal_func, buff_applier=self,
-                                                value_function_description="20% of Sunny atk", value_function_description_jp="20%Sunnyの攻撃力")
-            summer_breeze_part2 = StatsEffect("Summer Breeze", 10, True, {"defense": 1.15, "critdef": 1.15})
             ally_selection = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
             for a in ally_selection:
+                summer_breeze = ContinuousHealEffect("Summer Breeze", 10, True, value_function=heal_func, buff_applier=self,
+                                                    value_function_description="20% of Sunny atk", value_function_description_jp="20%Sunnyの攻撃力")
+                summer_breeze_part2 = StatsEffect("Summer Breeze", 10, True, {"defense": 1.15, "critdef": 1.15})
                 a.apply_effect(summer_breeze)
                 a.apply_effect(summer_breeze_part2)
         return damage_dealt
@@ -5541,13 +5552,13 @@ class Lu(Character):
         " remove 2 debuffs and apply Regeneration for 10 turns on that ally. Regeneration: Recover hp by 100% of your highest main stats except maxhp each turn." 
         self.skill2_description = "Apply Big Bear on all allies for 20 turns, Big Bear absorbs damage equal to 400% of your" \
         " highest main stats except maxhp. When applied on yourself, the absorption value is increased by 100%."
-        self.skill3_description = "Attack start of battle, apply unremovable Flapping Sound on the closest enemy," \
+        self.skill3_description = "Attack start of battle, apply Flapping Sound on the closest enemy," \
         " when the affected enemy takes action and a skill can be used, for 1 turn, silence the enemy by paying hp equal to 100 * level." \
         " Paying hp treats as taking status damage. If you are defeated, the effect on the enemy is removed." 
         # 羽ばたく音
         self.skill1_description_jp = "攻撃力が最も高い味方1人のHPを、自身の最大HPを除く主要ステータスのうち最も高い値の400%分治療し、デバフを2つ解除して、その味方に10ターンの間「再生」を付与する。再生：毎ターン、自身の最大HPを除く最も高い主要ステータスの100%分のHPを回復する。"
         self.skill2_description_jp = "全ての味方に20ターンの間「ビッグベア」を付与する。ビッグベアは、自身の最大HPを除く最も高い主要ステータスの400%分のダメージを吸収する。自分に付与した場合、吸収量が100%増加する。"
-        self.skill3_description_jp = "戦闘開始時、最も近い敵に解除不能な「羽ばたく音」を付与する。この効果を受けた敵が行動を起こし、スキルが使用可能な場合、その敵を1ターンの間「沈黙」させ、自分が100×レベル分のHPを支払われる。HPの支払いは状態異常ダメージとして扱われる。自分が倒された場合、敵にかかっている効果は解除される。"
+        self.skill3_description_jp = "戦闘開始時、最も近い敵に「羽ばたく音」を付与する。この効果を受けた敵が行動を起こし、スキルが使用可能な場合、その敵を1ターンの間「沈黙」させ、自分が100×レベル分のHPを支払われる。HPの支払いは状態異常ダメージとして扱われる。自分が倒された場合、敵にかかっている効果は解除される。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
 
@@ -5594,14 +5605,14 @@ class Ulric(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Ulric"
-        self.skill1_description = "Attack 3 closest enemies with 300% atk, 50% chance to apply Bind for 20 turns." \
-        " Bind: all main stats except maxhp are reduced by 15%. Heal all allies by 30% of damage dealt."
+        self.skill1_description = "Attack 3 closest enemies with 260% atk, 50% chance to apply Bind for 20 turns." \
+        " Bind: all main stats except maxhp are reduced by 10%. Heal all allies by 30% of damage dealt."
         self.skill2_description = "Select 2 allies of highest atk, apply Full Cloud for the allies for 2 turns." \
         " Full Cloud: Speed is increased by 12%, final damage taken is reduced by 7%."
         self.skill3_description = "At start of battle, apply unremovable In Cloud for all allies. In Cloud: Speed is increased by 5%, final damage taken is reduced by 3%." \
         " At end of turn, if Full Cloud effect is applied while you have this effect, Full Cloud duration is" \
         " increased by 10 turns, and can no longer be removed by skill." 
-        self.skill1_description_jp = "最も近い3人の敵に攻撃力の300%で攻撃し、50%確率で20ターンの間「束縛」を付与する。束縛：最大HPを除く全ての主要ステータスが15%減少する。与えたダメージの30%分、全ての味方を治療する。"
+        self.skill1_description_jp = "最も近い3人の敵に攻撃力の260%で攻撃し、50%確率で20ターンの間「束縛」を付与する。束縛：最大HPを除く全ての主要ステータスが10%減少する。与えたダメージの30%分、全ての味方を治療する。"
         self.skill2_description_jp = "攻撃力が最も高い味方2人を選択し、2ターンの間「雲満」を付与する。雲満：速度が12%増加し、最終ダメージ倍率が7%減少する。"
         self.skill3_description_jp = "戦闘開始時、全ての味方に解除不能な「雲中」を付与する。雲中：速度が5%増加し、最終ダメージ倍率が3%減少する。ターン終了時、自分にこの効果がある状態で「雲満」効果が適用されている場合、雲満の持続時間が10ターン延長され、スキルで解除できなくなる。"
         self.skill1_cooldown_max = 4
@@ -5611,8 +5622,8 @@ class Ulric(Character):
     def skill1_logic(self):
         def bind_effect(self, target: Character):
             if random.random() < 0.50:
-                target.apply_effect(StatsEffect("Bind", 20, False, {"atk": 0.85, "defense": 0.85, "spd": 0.85}))
-        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=bind_effect)
+                target.apply_effect(StatsEffect("Bind", 20, False, {"atk": 0.90, "defense": 0.90, "spd": 0.90}))
+        damage_dealt = self.attack(multiplier=2.6, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=bind_effect)
         self.update_ally_and_enemy()
         if self.is_alive():
             self.heal(value=damage_dealt * 0.30, target_kw1="all_ally")
@@ -5629,10 +5640,10 @@ class Ulric(Character):
 
     def battle_entry_effects(self):
         # other effects in description is implemented in the effect class
-        in_cloud = UlricInCloudEffect("In Cloud", -1, True, {"spd": 1.05, "final_damage_taken_multipler": -0.03})
-        in_cloud.can_be_removed_by_skill = False
-        in_cloud.additional_name = "Ulric_In_Cloud"
         for a in self.ally:
+            in_cloud = UlricInCloudEffect("In Cloud", -1, True, {"spd": 1.05, "final_damage_taken_multipler": -0.03})
+            in_cloud.can_be_removed_by_skill = False
+            in_cloud.additional_name = "Ulric_In_Cloud"
             a.apply_effect(in_cloud)
 
 

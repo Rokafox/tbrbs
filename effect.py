@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from collections import Counter
+import copy
 import random
 import global_vars
 
@@ -29,6 +30,7 @@ class Effect:
         self.show_stacks = show_stacks
         self.is_protected_effect = False
         self.original_duration = duration
+        self.already_applied = False
     
     def is_permanent(self):
         return self.duration == -1
@@ -1636,8 +1638,6 @@ class ContinuousDamageEffect_Poison(Effect):
             character.remove_effect(self)
 
     def apply_effect_at_end_of_turn(self, character):
-        # NOTE: Because we are applying the same effect, if this effect is modified in place, the effect will be modified for all characters.
-        # But this is probably how plagues work.
         if not self.is_plague:
             super().apply_effect_at_end_of_turn(character)
         else:
@@ -1647,11 +1647,11 @@ class ContinuousDamageEffect_Poison(Effect):
                 # if a.is_dead():
                 #     raise Exception("Logic Error")
                 # Actually, plague can be transmitted to dead bodies.
-                if a.has_effect_that_is(self):
-                    return
+                # if a.has_effect_that_is(self):
+                #     return
                 if random.random() < self.is_plague_transmission_chance:
                     self.is_plague_transmission_chance = max(0, self.is_plague_transmission_chance - self.is_plague_transmission_decay)
-                    a.apply_effect(self)
+                    a.apply_effect(copy.copy(self))
 
     def tooltip_description(self):
         s = f"Take {(self.ratio*100):.2f}% {self.base} damage each turn."
@@ -1891,7 +1891,9 @@ class NotTakingDamageEffect(Effect):
             return
         twd = character.get_num_of_turns_not_taken_damage()
         if twd >= self.require_turns_without_damage:
-            character.apply_effect(self.effect_to_apply)
+            # apply a copy of the effect.
+            copyed = copy.copy(self.effect_to_apply)
+            character.apply_effect(copyed)
 
     def tooltip_description(self):
         return f"Apply {self.effect_to_apply.name} effect after {self.require_turns_without_damage} turns without taking damage."
