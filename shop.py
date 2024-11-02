@@ -114,7 +114,8 @@ class Armory_Brand_Specific_Reforged(Shop):
 
     def get_items_from_manufacturers(self):
         package_of_items = []
-        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=100, locked_eq_set=self.brand_name))
+        package_of_items.extend(equip.generate_equips_list(9, eq_level=1, min_market_value=100, locked_eq_set=self.brand_name))
+        package_of_items.append(consumable.EquipPackageBrandSpecific(random.randint(1, 20), self.brand_name))
 
         if len(package_of_items) < 5:
             raise ValueError(f"Not enough items in the package_of_items, only {len(package_of_items)} items is available.")
@@ -124,7 +125,10 @@ class Armory_Brand_Specific_Reforged(Shop):
 
     def decide_price(self):
         for k, (s, d, f) in self.inventory.copy().items():
-            price = k.market_value // 50
+            if k.__class__ == equip.Equip:
+                price = k.market_value // 50
+            else:
+                price = k.market_value * k.current_stack // 55500
             self.inventory[k] = (price, d, f)
 
     def decide_discount(self):

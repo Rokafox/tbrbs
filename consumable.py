@@ -168,6 +168,35 @@ class EquipPackage6(Consumable):
         return False
 
 
+
+class EquipPackageBrandSpecific(Consumable):
+    def __init__(self, stack: int, brand: str):
+        super().__init__(f"{brand} Chest", f"Obtain 100 random {brand} equipment.")
+        self.brand = brand
+        self.image = "special_chest"
+        self.rarity = "Epic"
+        self.type = "Eqpackage"
+        self.eq_set = self.brand
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 500000
+        self.can_use_for_auto_battle = False
+
+    def E(self, user, player):
+        return f"{user.name} obtained a bunch of equipment from {self.name}."
+
+    def E_actual(self, user, player):
+        equips = generate_equips_list(100, eq_level=1, locked_eq_set=self.brand)
+        player.add_package_of_items_to_inventory(equips)
+        return None
+
+    def auto_E_condition(self, user, player):
+        return False
+
+
+
+
+
 #==================================================================================================
 # Food Sacks
 #==================================================================================================

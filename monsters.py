@@ -4573,8 +4573,8 @@ class Cleric(Monster):
         self.skill1_description = "Heal 3 allies with lowest hp by 600% atk."
         self.skill2_description = "Target 3 allies with lowest hp, apply a shield that absorbs up to 300% atk damage for 12 turns."
         self.skill3_description = "Heal efficiency increased by 30%."
-        self.skill1_description_jp = "最もHPが低い味方3体を攻撃力600%で回復。"
-        self.skill2_description_jp = "HPが最も低い味方3体に、最大攻撃力の300%のダメージを吸収するシールドを12ターン付与。"
+        self.skill1_description_jp = "最もHPが低い味方3体を攻撃力600%で回復する。"
+        self.skill2_description_jp = "HPが最も低い味方3体に、最大攻撃力の300%のダメージを吸収するシールドを12ターン付与する。"
         self.skill3_description_jp = "回復効率が30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -4590,7 +4590,7 @@ class Cleric(Monster):
     def skill2_logic(self):
         targets = list(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="3"))
         for target in targets:
-            target.apply_effect(AbsorptionShield('Cleric Shield', 12, True, 3 * self.atk, self))
+            target.apply_effect(AbsorptionShield('Cleric Shield', 12, True, 3 * self.atk, False))
 
     def skill3(self):
         pass

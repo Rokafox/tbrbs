@@ -267,6 +267,7 @@ class ProtectedEffect(Effect):
 # =========================================================
 
 class AbsorptionShield(Effect):
+    # NOTE: apply_effect() method on Character class has a apply rule for this effect.
     """
     Absorb [shield_value] amount of damage.
     """
@@ -1415,9 +1416,9 @@ class StatsEffect(Effect):
             for key, value in self.main_stats_additive_dict.items():
                 if key in ["maxhp", "hp", "atk", "defense", "spd"]:
                     if value > 0:
-                        string += f"{key} is increased by {value}."
+                        string += f"{key} is increased by {value:.2f}."
                     else:
-                        string += f"{key} is decreased by {value}."
+                        string += f"{key} is decreased by {value:.2f}."
         return string
     
     def tooltip_description_jp(self):
@@ -1448,9 +1449,9 @@ class StatsEffect(Effect):
                 japanese_key = self.translate_key(key)
                 if key in ["maxhp", "hp", "atk", "defense", "spd"]:
                     if value > 0:
-                        string += f"{japanese_key}が{value}増加する。"
+                        string += f"{japanese_key}が{value:.2f}増加する。"
                     else:
-                        string += f"{japanese_key}が{value}減少する。"
+                        string += f"{japanese_key}が{value:.2f}減少する。"
         return string
 
 
@@ -1588,10 +1589,11 @@ class ContinuousDamageEffect_Poison(Effect):
     if [remove_by_heal] is True, this effect will be removed when character is healed.
     [damage_type] can be "status", "bypass". 
     if [is_plague], transmit the same effect to a neighbor ally at the end of turn with [is_plague_transmission_chance*100]% chance.
+    for each transmission, the next time transmission chance is multiplied by [is_plague_transmission_decay].
     """
     def __init__(self, name, duration, is_buff, ratio, imposter, base: str, remove_by_heal=False, 
                  damage_type="status", is_plague=False, is_plague_transmission_chance=0.0,
-                 is_plague_transmission_decay=0):
+                 is_plague_transmission_decay=0.5):
         super().__init__(name, duration, is_buff)
         self.ratio = float(ratio)
         self.is_buff = is_buff
@@ -1650,8 +1652,9 @@ class ContinuousDamageEffect_Poison(Effect):
                 # if a.has_effect_that_is(self):
                 #     return
                 if random.random() < self.is_plague_transmission_chance:
-                    self.is_plague_transmission_chance = max(0, self.is_plague_transmission_chance - self.is_plague_transmission_decay)
-                    a.apply_effect(copy.copy(self))
+                    self.is_plague_transmission_chance = max(0, self.is_plague_transmission_chance * (1 - self.is_plague_transmission_decay))
+                    new_plague = copy.copy(self)
+                    a.apply_effect(new_plague)
 
     def tooltip_description(self):
         s = f"Take {(self.ratio*100):.2f}% {self.base} damage each turn."
@@ -1659,6 +1662,8 @@ class ContinuousDamageEffect_Poison(Effect):
             s += " This effect can be removed by healing."
         if self.is_plague:
             s += f" At end of turn, {int(self.is_plague_transmission_chance*100)}% chance to apply the same effect to a neighbor ally."
+            if self.is_plague_transmission_decay > 0:
+                s += f" After each transmission, the transmission chance is reduced by {int(self.is_plague_transmission_decay*100)}%."
         return s
 
     def tooltip_description_jp(self):
@@ -1673,6 +1678,8 @@ class ContinuousDamageEffect_Poison(Effect):
             s += "この効果は回復されると解除される。"
         if self.is_plague:
             s += f"ターン終了時に、{int(self.is_plague_transmission_chance*100)}%の確率で隣接する味方に同じ効果が伝染する。"
+            if self.is_plague_transmission_decay > 0:
+                s += f"伝染するたびに、次の伝染確率が{int(self.is_plague_transmission_decay*100)}%減少する。"
         return s
 
 
@@ -2446,7 +2453,7 @@ class CupidLeadArrowEffect(StatsEffect):
 
     def apply_effect_on_remove(self, character):
         if character.is_alive():
-            character.take_bypass_status_effect_damage(1, self.effect_applier)
+            character.take_status_damage(1, self.effect_applier)
         return super().apply_effect_on_remove(character)
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
@@ -2457,13 +2464,26 @@ class CupidLeadArrowEffect(StatsEffect):
                 damage = character.hp - 1
             # if attack_is_crit in keywords and its True, apply love fantasy effect.
             if "attack_is_crit" in keywords and keywords["attack_is_crit"]:
-                love_fantasy = Effect("Love Fantasy", 4, False, False)
-                love_fantasy.additional_name = "Cupid_Love_Fantasy"
-                love_fantasy.apply_rule = "stack"
-                love_fantasy.is_cc_effect = True
+                love_fantasy = CupidLoveFantasyEffect("Love Fantasy", 4, False, False)
                 character.apply_effect(love_fantasy)
                 self.duration = love_fantasy.duration
         return damage
+
+
+class CupidLoveFantasyEffect(Effect):
+    def __init__(self, name, duration, is_buff, cc_immunity):
+        super().__init__(name, duration, is_buff, cc_immunity)
+        self.sort_priority = 1999
+        self.additional_name = "Cupid_Love_Fantasy"
+        self.apply_rule = "stack"
+        self.is_cc_effect = True
+
+    def tooltip_description(self):
+        return f"This is love."
+    
+    def tooltip_description_jp(self):
+        return f"これは愛です。"
+
 
 
 class EastBoilingWaterEffect(ContinuousDamageEffect):

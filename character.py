@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Tuple
 from numpy import character
-from effect import AbsorptionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -949,7 +949,9 @@ class Character:
         return self.has_effect_that_named("Stun", class_name="StunEffect")
     
     def is_silenced(self):
-        return self.has_effect_that_named("Silence", class_name="SilenceEffect")
+        s1 = self.has_effect_that_named("Silence", class_name="SilenceEffect")
+        s2 = self.has_effect_that_named("Ducky Silence")
+        return s1 or s2 
     
     def is_sleeping(self):
         return self.has_effect_that_named("Sleep", class_name="SleepEffect")
@@ -965,6 +967,9 @@ class Character:
             if e.name == "Hide" and e.is_active:
                 return True
         return False
+
+    def is_protected(self):
+        return self.has_effect_that_named(None, None, class_name="ProtectedEffect")
 
     def trigger_hidden_effect_on_allies(self, attacker: 'Character'=None, damage_overkill: int | float=-1, damage_is_taken_by_protector: bool=False):
         self.update_ally_and_enemy()
@@ -1168,6 +1173,8 @@ class Character:
         if self.is_dead():
             self.hp += hp_to_revive
             self.hp += self.maxhp * hp_percentage_to_revive
+            if self.hp < 1:
+                raise Exception(f"{self.name} is not revived. HP is less than 1.")
             if self.hp > self.maxhp:
                 self.hp = self.maxhp
             self.hp = int(self.hp)
@@ -1323,6 +1330,32 @@ class Character:
                 attacker.number_of_take_downs += 1
         return None
 
+    def get_the_amount_of_effect(self) -> tuple[int, int, int]:
+        """
+        Return the amount of special effects, buffs, and debuffs.
+        sp: must not be set_effect, it has -1 duration and cannot be removed by skill.
+        buff: must not be set_effect
+        debuff: must not be set_effect
+        """
+        sp = 0
+        buff = 0
+        debuff = 0
+        for effect in self.buffs:
+            if effect.is_set_effect:
+                continue
+            if effect.duration == -1 and not effect.can_be_removed_by_skill:
+                sp += 1
+            else:
+                buff += 1
+        for effect in self.debuffs:
+            if effect.is_set_effect:
+                continue
+            if effect.duration == -1 and not effect.can_be_removed_by_skill:
+                sp += 1
+            else:
+                debuff += 1
+        return sp, buff, debuff
+
     def has_effect_that_is(self, effect: Effect):
         """ Check if the character has the same effect object. """
         return effect in self.buffs + self.debuffs
@@ -1458,6 +1491,15 @@ class Character:
                     effect.apply_effect_when_replacing_old_same_effect(e)
                     global_vars.turn_info_string += f"{e.name} on {self.name} has been replaced by {effect.name}.\n"
                     break
+        # if effect is AbsorptionShield and they have the same name and duration and cc_immunity, we can stack them.
+        if isinstance(effect, AbsorptionShield):
+            for e in self.buffs.copy() + self.debuffs.copy():
+                if e.name == effect.name and e.duration == effect.duration and e.cc_immunity == effect.cc_immunity:
+                    e.shield_value += effect.shield_value
+                    global_vars.turn_info_string += f"{effect.name} on {self.name} has been stacked.\n"
+                    # print(f"Warning: AbsorptionShield is stacked. {self.name}, {effect.name}")
+                    return
+
         # Do we allow applying effect on dead character? Yes, for some effects.
         if effect.is_buff:
             self.buffs.append(effect)
@@ -1707,7 +1749,7 @@ class Character:
         elif set_name == "Newspaper":
             self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
         elif set_name == "Cloud":
-            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": -0.30})
+            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": -0.40})
             cloud_hide_effect = HideEffect("Hide", 50, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
             cloud_hide_effect.is_set_effect = True
             cloud_hide_effect.sort_priority = 2000
@@ -1862,8 +1904,8 @@ class Lillia(Character):
         self.skill1_description_jp = "ランダムな敵に攻撃力155%12回攻撃。1回のクリティカルヒット後、その後の全ての攻撃がクリティカルヒットとなり、周囲の敵に先与えたダメージの20%の状態ダメージを与える。"
         self.skill2_description_jp = "自身に無限の泉を30ターン付与し、CC無効、ダメージを35%軽減。効果が既に付与されている場合、効果時間更新される。無限の泉はスキルによって除去されない。"
         self.skill3_description_jp = "行動時、無限の泉が付与されている場合、最大HPの8%回復。"
-        self.skill1_cooldown_max = 6
-        self.skill2_cooldown_max = 5
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 4
 
     def skill_tooltip(self):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
@@ -3310,9 +3352,10 @@ class Raven(Character):
         self.raven_skill2_damage_dealt += damage_dealt
         self.raven_skill2_counter += 1
         if self.raven_skill2_counter == 2:
-            neighbors = self.get_neighbor_allies_not_including_self()
+            neighbors:list[Character] = self.get_neighbor_allies_not_including_self()
             for ally in neighbors:
                 shield = AbsorptionShield("Shield", -1, True, self.raven_skill2_damage_dealt * 0.8, cc_immunity=False)
+                shield.additional_name = "Raven_Shield"
                 ally.apply_effect(shield)
             self.raven_skill2_counter = 0
         return damage_dealt
@@ -3904,13 +3947,13 @@ class April(Character):
         self.name = "April"
         self.skill1_description = "Attack closest enemy with 275% atk 3 times. For each attack, if target has a beneficial effect, create a" \
         " copy of that effect and apply it on self. Effect created this way always have a duration of 36 turns." \
-        " Each effect can only be copied once. Equippment set effect cannot be copied."
+        " Each effect can only be copied once. Equippment set effect cannot be copied. Special effects can also be copied."
         self.skill2_description = "Attack 3 enemy with 330% atk. If you have beneficial effect, for each effect you have," \
         " attack enemy of highest hp with 200% atk."
         self.skill3_description = "Before taking normal damage, for each beneficial effect you have, reduce damage taken by 7%." \
         " Maximum reduction is 70%."
         self.skill1_description_jp = "最も近い敵に300%の攻撃を3回行う。各攻撃ごとに、対象が有益な効果を持っている場合、その効果をコピーして自身に適用する。" \
-                                    "この方法で作成された効果の持続時間は常に36ターンとなる。各効果は一度しかコピーできない。装備セット効果はコピーできない。"
+                                    "この方法で作成された効果の持続時間は常に36ターンとなる。各効果は一度しかコピーできない。装備セット効果はコピーできない、特殊効果もコピーできる。"
         self.skill2_description_jp = "3体の敵に330%の攻撃を行う。自身が有益な効果を持っている場合、効果ごとに、最もHPが高い敵に200%の攻撃を行う。"
         self.skill3_description_jp = "通常ダメージを受ける前に、有益な効果ごとに被ダメージが7%軽減される。最大軽減率は70%。"
         self.skill1_cooldown_max = 4
@@ -3961,14 +4004,14 @@ class Nata(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Nata"
         self.skill1_description = "Attack random enemies 4 times with 180% atk. All duration of beneficial effects on yourself is increased by 10 turns," \
-        " if you have Renka effect, its stack is increased by 1 if less than 10."
+        " if you have Renka effect, its stack is increased by 1 if less than 4."
         self.skill2_description = "Focus attack 1 enemy of highest crit rate with 190% atk 3 times." \
         " if the enemy falls by this attack, recover 20% hp."
         self.skill3_description = "The first time you are defeated, recover 12% hp and apply Renka status effect on yourself," \
         " Renka has 15 stacks, each time when taking lethal damage, consume 1 stack, cancel the damage and recover 12% hp." \
         " When taking damage, reduce damage taken by 6% + 4% for each stack."
         self.skill1_description_jp = "ランダムな敵に180%の攻撃を4回行う。自身に有益な効果の持続時間が4ターン延長され、" \
-                                    "「蓮花」効果を持っている場合、スタックが10未満であれば1増加する。"
+                                    "「蓮花」効果を持っている場合、スタックが4未満であれば1増加する。"
         self.skill2_description_jp = "最もクリティカル率の高い敵に190%の攻撃を3回集中して行う。" \
                                     "この攻撃で敵が倒れた場合、HPを20%回復する。"
         self.skill3_description_jp = "初めて敗北した際、HPを12%回復し、自身に「蓮花」状態効果を付与する。" \
@@ -3989,7 +4032,7 @@ class Nata(Character):
                     e.duration += 10
             renka = self.get_effect_that_named("Renka", "Nata_Renka", "RenkaEffect")
             if renka:
-                if renka.stacks < 10:
+                if renka.stacks < 4:
                     renka.stacks += 1
                     # print(f"{self.name} gained 1 stack of Renka.")
         damage_dealt = self.attack(multiplier=1.8, repeat=4)
@@ -4655,18 +4698,20 @@ class Lester(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Lester"
-        self.skill1_description = "Apply Exciting Time for the ally with Bookmarks of Memories for 22 turns." \
+        self.skill1_description = "Apply Exciting Time for the ally with Bookmarks of Memories for 24 turns." \
         " Exciting Time: Every time when a hp recovery is received, atk is increased by 15% of the amount of overheal," \
         " Atk bonus effect lasts for 10 turns. If the same effect is applied, atk bonus is accumulated to the new effect."
         self.skill2_description = "Remove a maximum of 4 active debuffs from the ally with Bookmarks of Memories and" \
         " heal 10% of maxhp to the ally. For each debuff removed, heal amount is increased by 10% of maxhp."
         self.skill3_description = "Select 1 neighbor ally of highest atk, apply Bookmarks of Memories to that ally." \
-        " Bookmarks of Memories: Everytime when missing an attack, atk and accuracy is increased by 10% and recover 10% of maxhp." \
-        " When using skills, if the ally with Bookmarks of Memories is defeated, the skill becomes normal attack."
+        " Bookmarks of Memories: Everytime when missing an attack, atk, spd and accuracy is increased by 10% and recover 10% of maxhp." \
+        " When using skills, if the ally with Bookmarks of Memories is defeated, the skill becomes normal attack," \
+        " before this normal attack, 30% chance to revive the ally with 50% hp."
         # 思い出のしおり ドキドキタイム
-        self.skill1_description_jp = "「思い出のしおり」を持つ味方に22ターンの間「ドキドキタイム」を付与する。ドキドキタイム：HP回復を受けるたびに、超過回復分の15%攻撃力が増加する。この攻撃力のボーナス効果は10ターン持続する。同じ効果が再度適用された場合、攻撃力のボーナスは新しい効果に累積される。"
+        self.skill1_description_jp = "「思い出のしおり」を持つ味方に24ターンの間「ドキドキタイム」を付与する。ドキドキタイム：HP回復を受けるたびに、超過回復分の15%攻撃力が増加する。この攻撃力のボーナス効果は10ターン持続する。同じ効果が再度適用された場合、攻撃力のボーナスは新しい効果に累積される。"
         self.skill2_description_jp = "「思い出のしおり」を持つ味方から最大4つのアクティブなデバフを解除し、その味方の最大HPの10%を治療する。解除されたデバフ1つにつき、回復量が最大HPの10%増加する。"
-        self.skill3_description_jp = "攻撃力が最も高い隣接する味方1体を選び、その味方に「思い出のしおり」を付与する。思い出のしおり：攻撃が外れるたびに攻撃力と命中率が10%増加し、最大HPの10%を回復する。スキルを使用する際、「思い出のしおり」を持つ味方が倒されている場合、そのスキルは通常攻撃に変わる。"
+        self.skill3_description_jp = "攻撃力が最も高い隣接する味方1体を選び、その味方に「思い出のしおり」を付与する。思い出のしおり：攻撃が外れるたびに攻撃力、速度と命中率が10%増加し、最大HPの10%を回復する。スキルを使用する際、「思い出のしおり」を持つ味方が倒されている場合、そのスキルは通常攻撃に変わる。" \
+        "この通常攻撃の前に、30%の確率でその味方を50%のHPで復活させる。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
 
@@ -4675,10 +4720,25 @@ class Lester(Character):
         t = list(self.target_selection(keyword="ally_that_must_have_effect_full", keyword2="Bookmarks of Memories", keyword3="Lester_Bookmarks_of_Memories",
                                           keyword4="LesterBookofMemoryEffect"))
         if not t:
+            if random.random() < 0.3:
+                dead_t = None
+                for a in self.party:
+                    if a.has_effect_that_named("Bookmarks of Memories", "Lester_Bookmarks_of_Memories", "LesterBookofMemoryEffect") and a.is_dead():
+                        dead_t = a
+                        break
+                if dead_t:
+                    dead_t.revive(0, 0.5, self)
+            else:
+                return self.attack()
+        self.update_ally_and_enemy()
+        t = list(self.target_selection(keyword="ally_that_must_have_effect_full", keyword2="Bookmarks of Memories", keyword3="Lester_Bookmarks_of_Memories",
+                                          keyword4="LesterBookofMemoryEffect"))
+        if not t:
+            # This happens when the ally targeting is limited, for example, confuse, charm, etc.
             return self.attack()
         a = t[0]
         if a.is_alive():
-            et = LesterExcitingTimeEffect("Exciting Time", 22, True, buff_applier=self)
+            et = LesterExcitingTimeEffect("Exciting Time", 24, True, buff_applier=self)
             et.additional_name = "Lester_Exciting_Time"
             et.apply_rule = "stack"
             a.apply_effect(et)
@@ -4688,6 +4748,21 @@ class Lester(Character):
         t = list(self.target_selection(keyword="ally_that_must_have_effect_full", keyword2="Bookmarks of Memories", keyword3="Lester_Bookmarks_of_Memories",
                                           keyword4="LesterBookofMemoryEffect"))
         if not t:
+            if random.random() < 0.3:
+                dead_t = None
+                for a in self.party:
+                    if a.has_effect_that_named("Bookmarks of Memories", "Lester_Bookmarks_of_Memories", "LesterBookofMemoryEffect") and a.is_dead():
+                        dead_t = a
+                        break
+                if dead_t:
+                    dead_t.revive(0, 0.5, self)
+            else:
+                return self.attack()
+        self.update_ally_and_enemy()
+        t = list(self.target_selection(keyword="ally_that_must_have_effect_full", keyword2="Bookmarks of Memories", keyword3="Lester_Bookmarks_of_Memories",
+                                          keyword4="LesterBookofMemoryEffect"))
+        if not t:
+            # This happens when the ally targeting is limited, for example, confuse, charm, etc.
             return self.attack()
         a: Character = t[0]
         if a.is_alive():
@@ -4702,7 +4777,7 @@ class Lester(Character):
 
 
     def battle_entry_effects(self):
-        bom = LesterBookofMemoryEffect("Bookmarks of Memories", -1, True, {'atk': 1.00, "acc": 0.00}, buff_applier=self)
+        bom = LesterBookofMemoryEffect("Bookmarks of Memories", -1, True, {'atk': 1.00, 'spd': 1.00, "acc": 0.00}, buff_applier=self)
         bom.can_be_removed_by_skill = False
         bom.additional_name = "Lester_Bookmarks_of_Memories"
         neighbors = self.get_neighbor_allies_not_including_self()
@@ -4905,12 +4980,12 @@ class Zhen(Character):
         self.skill1_description = "Attack enemy of highest atk with 240% atk 3 times, each attack has a 40% chance to Stun the target for 12 turns."
         self.skill2_description = "Attack enemy of highest atk with 280% atk, heal all allies by 50% of damage dealt." \
         " If target hp percentage is lower than 20%, 80% chance to Stun the target for 12 turns."
-        self.skill3_description = "Apply Dragon Cushion on yourself. When taking normal damage from the enemy who has a stunned ally, damage taken is reduced by 50%." \
-        " At start of battle, apply unremovable Shadow of Great Bird on all enemies, when taking damage while being stunned," \
+        self.skill3_description = "Apply Dragon Cushion on yourself. When taking normal damage from the enemy who has a stunned ally, damage taken is reduced by 60%." \
+        " At start of battle, apply Shadow of Great Bird on all enemies, when taking damage while being stunned," \
         " all damage taken is increased by 50%."
         self.skill1_description_jp = "攻撃力が最も高い敵に攻撃力の240%で3回攻撃する。各攻撃には40%の確率で対象を12ターンの間スタンさせる。"
         self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の280%で攻撃し、与えたダメージの50%分、全ての味方を回復する。対象のHP割合が20%以下の場合、80%の確率で対象を12ターンの間スタンさせる。"
-        self.skill3_description_jp = "自身に「龍クッション」を付与する。スタンしている味方がいる敵から通常ダメージを受けた時、そのダメージが50%減少する。戦闘開始時に全ての敵に解除不能な「鴻影」を付与する。スタン状態でダメージを受けた時、受ける全てのダメージが50%増加する。"
+        self.skill3_description_jp = "自身に「龍クッション」を付与する。スタンしている味方がいる敵から通常ダメージを受けた時、そのダメージが60%減少する。戦闘開始時に全ての敵に「鴻影」を付与する。スタン状態でダメージを受けた時、受ける全てのダメージが50%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
@@ -4948,7 +5023,7 @@ class Zhen(Character):
                 if a.is_alive() and a.is_stunned():
                     return True
             return False
-        wavering_glow = ReductionShield("Dragon Cushion", -1, True, 0.5, False, cover_status_damage=False, cover_normal_damage=True,
+        wavering_glow = ReductionShield("Dragon Cushion", -1, True, 0.6, False, cover_status_damage=False, cover_normal_damage=True,
                                         requirement=requirement_func,
                                         requirement_description="Taking damage from the enemy who has a stunned ally.",
                                         requirement_description_jp="スタンしている味方がいる敵からダメージを受けた時。")
@@ -4959,7 +5034,6 @@ class Zhen(Character):
                                                 requirement=lambda x, y: x.is_stunned(),
                                                 requirement_description="Taking damage while being stunned.",
                                                     requirement_description_jp="スタン状態でダメージを受けた時。")
-            shadow_of_great_bird.can_be_removed_by_skill = False
             e.apply_effect(shadow_of_great_bird)
 
 
@@ -4972,7 +5046,7 @@ class Cupid(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Cupid"
         self.skill1_description = "Apply Lead Arrow on 3 enemies of highest atk for 20 turns, apply Gold Arrow on yourself for 20 turns." \
-        " Lead Arrow: Critical defense is decreased by 100%, when this effect is removed, take 1 bypass status damage." \
+        " Lead Arrow: Critical defense is decreased by 100%, when this effect is removed, take 1 status damage." \
         " Gold Arrow: Critical damage is increased by 100%. When Lead Arrow or Gold Arrow is applied on the same target, duration is refreshed."
         self.skill2_description = "Attack all enemies with 200% atk who have Lead Arrow." \
         " When attacking enemy while you have Gold Arrow and target has Lead Arrow, damage increased by 100%," \
@@ -4982,7 +5056,7 @@ class Cupid(Character):
         " If no enemy has Lead Arrow, heal hp by 200% of atk."
         self.skill3_description = "Normal attack does nothing. Apply For Love 2 times on yourself, when defeated, revive with 50% hp."
         # 鉛矢 金矢 恋愛妄想 愛のために
-        self.skill1_description_jp = "攻撃力が最も高い3人の敵に20ターンの間「鉛矢」を付与し、自身に20ターンの間「金矢」を付与する。鉛矢:クリティカル防御が100%減少し、この効果が解除されると状態異常無視ダメージを1受ける。金矢:クリティカルダメージが100%増加する。鉛矢または金矢が同じ対象に再度適用された場合、持続時間が更新される。"
+        self.skill1_description_jp = "攻撃力が最も高い3人の敵に20ターンの間「鉛矢」を付与し、自身に20ターンの間「金矢」を付与する。鉛矢:クリティカル防御が100%減少し、この効果が解除されると状態異常ダメージを1受ける。金矢:クリティカルダメージが100%増加する。鉛矢または金矢が同じ対象に再度適用された場合、持続時間が更新される。"
         self.skill2_description_jp = "鉛矢を持つ全ての敵に攻撃力の200%で攻撃する。自分が金矢を持ち、対象が鉛矢を持っている場合、ダメージが100%増加するが、この攻撃で致命的ダメージを与えた場合、対象のHPは1残る。クリティカルの場合、対象に4ターンの間「恋愛妄想」を付与し、鉛矢の持続時間を恋愛妄想の持続時間に設定する。恋愛妄想:鉛矢を持つ味方は敵として認識され、鉛矢を持つ者だけが味方として認識される。同じ効果が再度適用された場合、既存の効果の持続時間が更新される。敵に鉛矢を持つ者がいない場合、攻撃力の200%分HPを治療する。"
         self.skill3_description_jp = "通常攻撃は何もしない。自身に「愛のために」を2回付与し、撃破された時、HP50%で復活する。"
         self.skill1_cooldown_max = 2
@@ -5321,12 +5395,12 @@ class Sunny(Character):
         self.skill2_description = "Attack enemy of lowest hp with 300% atk, inflict another Burn effect for 20 turns if target" \
         " already has Burn effect and inflict Weaken for 20 turns, Weaken reduce atk and def by 30%. If target has more than" \
         " 3 Burn effects, stats reduction is increased to 60%."
-        self.skill3_description = "After using a skill, apply Summer Breeze on 3 allies of lowest hp for 10 turns." \
+        self.skill3_description = "After using a skill, apply Summer Breeze on 2 allies of lowest hp for 10 turns." \
         " Summer Breeze: Recover hp by 20% of your atk each turn, defense and critdef increased by 15%."
         # 薫風
         self.skill1_description_jp = "ランダムな敵に攻撃力の160%で4回攻撃し、20ターンの間「燃焼」を付与する。燃焼は毎ターン攻撃力の30%分の状態異常ダメージを与える。"
         self.skill2_description_jp = "HPが最も低い敵に攻撃力の300%で攻撃し、対象に既に「燃焼」効果がある場合、さらに20ターンの間「燃焼」を付与し、20ターンの間「弱化」を付与する。弱化は攻撃力と防御力を30%減少させる。対象に3つ以上の火傷効果がある場合、ステータス減少は60%になる。"
-        self.skill3_description_jp = "スキル使用後、HPが最も低い3人の味方に10ターンの間「薫風」を付与する。薫風：毎ターン攻撃力の20%分のHPを回復し、防御力とクリティカル防御が15%増加する。"
+        self.skill3_description_jp = "スキル使用後、HPが最も低い2人の味方に10ターンの間「薫風」を付与する。薫風：毎ターン攻撃力の20%分のHPを回復し、防御力とクリティカル防御が15%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
@@ -5339,7 +5413,7 @@ class Sunny(Character):
             def heal_func(char, buff_applier):
                 return buff_applier.atk * 0.2
             self.update_ally_and_enemy()
-            ally_selection = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
+            ally_selection = list(self.target_selection(keyword="n_lowest_attr", keyword2="2", keyword3="hp", keyword4="ally"))
             for a in ally_selection:
                 summer_breeze = ContinuousHealEffect("Summer Breeze", 10, True, value_function=heal_func, buff_applier=self,
                                                 value_function_description="20% of Sunny atk", value_function_description_jp="20%Sunnyの攻撃力")
@@ -5365,7 +5439,7 @@ class Sunny(Character):
         if self.is_alive():
             def heal_func(char, buff_applier):
                 return buff_applier.atk * 0.2
-            ally_selection = list(self.target_selection(keyword="n_lowest_attr", keyword2="3", keyword3="hp", keyword4="ally"))
+            ally_selection = list(self.target_selection(keyword="n_lowest_attr", keyword2="2", keyword3="hp", keyword4="ally"))
             for a in ally_selection:
                 summer_breeze = ContinuousHealEffect("Summer Breeze", 10, True, value_function=heal_func, buff_applier=self,
                                                     value_function_description="20% of Sunny atk", value_function_description_jp="20%Sunnyの攻撃力")
@@ -5549,15 +5623,15 @@ class Lu(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Lu"
         self.skill1_description = "Heal one ally of highest atk with 400% of your highest main stats except maxhp," \
-        " remove 2 debuffs and apply Regeneration for 10 turns on that ally. Regeneration: Recover hp by 100% of your highest main stats except maxhp each turn." 
-        self.skill2_description = "Apply Big Bear on all allies for 20 turns, Big Bear absorbs damage equal to 400% of your" \
+        " remove 2 debuffs and apply Regeneration for 15 turns on that ally. Regeneration: Recover hp by 100% of your highest main stats except maxhp each turn." 
+        self.skill2_description = "Apply Big Bear on all allies for 20 turns, Big Bear absorbs damage equal to 500% of your" \
         " highest main stats except maxhp. When applied on yourself, the absorption value is increased by 100%."
         self.skill3_description = "Attack start of battle, apply Flapping Sound on the closest enemy," \
         " when the affected enemy takes action and a skill can be used, for 1 turn, silence the enemy by paying hp equal to 100 * level." \
         " Paying hp treats as taking status damage. If you are defeated, the effect on the enemy is removed." 
         # 羽ばたく音
-        self.skill1_description_jp = "攻撃力が最も高い味方1人のHPを、自身の最大HPを除く主要ステータスのうち最も高い値の400%分治療し、デバフを2つ解除して、その味方に10ターンの間「再生」を付与する。再生：毎ターン、自身の最大HPを除く最も高い主要ステータスの100%分のHPを回復する。"
-        self.skill2_description_jp = "全ての味方に20ターンの間「ビッグベア」を付与する。ビッグベアは、自身の最大HPを除く最も高い主要ステータスの400%分のダメージを吸収する。自分に付与した場合、吸収量が100%増加する。"
+        self.skill1_description_jp = "攻撃力が最も高い味方1人のHPを、自身の最大HPを除く主要ステータスのうち最も高い値の400%分治療し、デバフを2つ解除して、その味方に15ターンの間「再生」を付与する。再生：毎ターン、自身の最大HPを除く最も高い主要ステータスの100%分のHPを回復する。"
+        self.skill2_description_jp = "全ての味方に20ターンの間「ビッグベア」を付与する。ビッグベアは、自身の最大HPを除く最も高い主要ステータスの500%分のダメージを吸収する。自分に付与した場合、吸収量が100%増加する。"
         self.skill3_description_jp = "戦闘開始時、最も近い敵に「羽ばたく音」を付与する。この効果を受けた敵が行動を起こし、スキルが使用可能な場合、その敵を1ターンの間「沈黙」させ、自分が100×レベル分のHPを支払われる。HPの支払いは状態異常ダメージとして扱われる。自分が倒された場合、敵にかかっている効果は解除される。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
@@ -5572,7 +5646,7 @@ class Lu(Character):
             def heal_func(char, buff_applier):
                 heal_value = max(buff_applier.atk, buff_applier.defense, buff_applier.spd)
                 return heal_value * 1.00
-            regen = ContinuousHealEffect("Regeneration", 10, True, value_function=heal_func, buff_applier=self,
+            regen = ContinuousHealEffect("Regeneration", 15, True, value_function=heal_func, buff_applier=self,
                                         value_function_description="50% of Lu's highest main stats except maxhp",
                                         value_function_description_jp="Luの最高主要ステータスの50%")
             ally.apply_effect(regen)
@@ -5581,7 +5655,7 @@ class Lu(Character):
 
     def skill2_logic(self):
         for a in self.ally:
-            big_bear_value = max(self.atk, self.defense, self.spd) * 4.00
+            big_bear_value = max(self.atk, self.defense, self.spd) * 5.00
             if a is self:
                 big_bear_value *= 2.00
             big_bear = AbsorptionShield("Big Bear", 20, True, big_bear_value, False)
@@ -5647,11 +5721,96 @@ class Ulric(Character):
             a.apply_effect(in_cloud)
 
 
+class Xunmu(Character):
+    """
+    Maxhp buff
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Xunmu"
+        self.skill1_description = "Attack all enemies with 150% atk, 100% chance to inflict Burn for 20 turns." \
+        " Burn deals 15% of atk status damage each turn."
+        self.skill2_description = "Apply Regeneration for 12 turns for nearby allies including yourself." \
+        " Regeneration: Recover hp by 4% of their lost hp each turn."
+        self.skill3_description = "Initial Maxhp is increased by 40%. At start of battle, 2 nearby allies have their maxhp increased by 40%" \
+        " of your maxhp and their hp is set to 100% of their maxhp. This effect cannot be removed by skill." 
+        self.skill1_description_jp = "全ての敵に攻撃力の150%で攻撃し、100%の確率で20ターンの間「燃焼」を付与する。燃焼は毎ターン攻撃力の15%分の状態異常ダメージを与える。"
+        self.skill2_description_jp = "自分を含む近くの味方に12ターンの間「再生」を付与する。再生：毎ターン、失ったHPの4%分を回復する。"
+        self.skill3_description_jp = "初期最大HPが40%増加する。戦闘開始時、近くの味方2人の最大HPが自分の最大HPの40%増加し、HPが最大HPの100%に設定される。この効果はスキルで解除されない。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
 
+    def skill1_logic(self):
+        def burn_effect(self, target: Character):
+            target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.15 * self.atk, self))
+        damage_dealt = self.attack(multiplier=1.5, repeat=1, target_kw1="all_enemy", func_after_dmg=burn_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        self.update_ally_and_enemy()
+        for a in self.get_neighbor_allies_including_self():
+            def value_func(char, effect_applier):
+                return (char.maxhp - char.hp) * 0.04
+            regen = ContinuousHealEffect("Regeneration", 12, True, value_function=value_func, buff_applier=self,
+                                         value_function_description="5% of lost hp", value_function_description_jp="失ったHPの5%")
+            a.apply_effect(regen)
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.maxhp *= 1.4
+        self.maxhp = int(self.maxhp)
+        self.hp = self.maxhp
+        for a in self.get_neighbor_allies_not_including_self():
+            a.apply_effect(StatsEffect("Milk", -1, True, main_stats_additive_dict={"maxhp": int(self.maxhp * 0.4)}, can_be_removed_by_skill=False))
+            a.hp = a.maxhp
 
 
+class Xunyu(Character):
+    """
+    Buff support, good against multi strike
+    Build: speed, maybe
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Xunyu"
+        self.skill1_description = "Apply Chord Mixing on all allies for 18 turns, Chord Mixing: All stats except maxhp are increased by 10%," \
+        " crit and critdmg are increased by 10%."
+        self.skill2_description = "Apply Wide Range Sound on all allies for 18 turns. Wide Range Sound: Damage taken is reduced by 20%," \
+        " damage taken from the same turn is further reduced by 20%."
+        self.skill3_description = "When applying effect on a ally who does not have protected effect, effect value is doubled."
+        # 音色模倣 広い音域 
+        self.skill1_description_jp = "全ての味方に20ターンの間「音色模倣」を付与する。音色模倣：最大HPを除く全てのステータスが10%増加し、クリティカル率とクリティカルダメージが10%増加する。"
+        self.skill2_description_jp = "全ての味方に20ターンの間「広い音域」を付与する。広い音域：受けるダメージが20%減少し、同じターン内で受けるダメージがさらに20%減少する。"
+        self.skill3_description_jp = "守護効果を持たない味方に効果を適用する際、その効果値が2倍になる。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
+    def skill1_logic(self):
+        for a in self.ally:
+            chord_mixing_p1 = StatsEffect("Chord Mixing", 18, True, {"atk": 1.10, "defense": 1.10, "spd": 1.10})
+            chord_mixing_p2 = StatsEffect("Chord Mixing", 18, True, {"crit": 0.10, "critdmg": 0.10})
+            if not a.is_protected():
+                chord_mixing_p1 = StatsEffect("Chord Mixing", 18, True, {"atk": 1.20, "defense": 1.20, "spd": 1.20})
+                chord_mixing_p2 = StatsEffect("Chord Mixing", 18, True, {"crit": 0.20, "critdmg": 0.20})
+            a.apply_effect(chord_mixing_p1)
+            a.apply_effect(chord_mixing_p2)
+        return 0
+
+    def skill2_logic(self):
+        for a in self.ally:
+            wrs = AntiMultiStrikeReductionShield("Wide Range Sound", 18, True, 0.20, False)
+            if not a.is_protected():
+                wrs = AntiMultiStrikeReductionShield("Wide Range Sound", 18, True, 0.40, False)
+            a.apply_effect(wrs)
+        return 0
+
+    def skill3(self):
+        pass
 
 
 

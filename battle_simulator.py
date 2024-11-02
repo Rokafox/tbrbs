@@ -99,6 +99,9 @@ def load_player(filename="player_data.json"):
             case ("<class 'consumable.EquipPackage6'>", _):
                 # "object": "<class 'consumable.EquipPackage'>",
                 item = EquipPackage6(item_data["current_stack"])
+            case ("<class 'consumable.EquipPackageBrandSpecific'>", _):
+                # "object": "<class 'consumable.EquipPackage'>",
+                item = EquipPackageBrandSpecific(item_data["current_stack"], item_data["eq_set"])
             # FoodPackage
             case ("<class 'consumable.FoodPackage'>", _):
                 item = FoodPackage(item_data["current_stack"])
@@ -242,10 +245,15 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         if not item:
             raise ValueError("Item is None")
         # Check if the item type is already in the inventory
+        # inv_item is item in inventory
         if item.can_be_stacked:
             item_added = False
             for inv_item in self.inventory:
                 if isinstance(inv_item, type(item)) and not inv_item.is_full():
+                    # if they both has attr 'brand' but does not match, skip
+                    if hasattr(inv_item, "brand") and hasattr(item, "brand") and inv_item.brand != item.brand:
+                        continue
+
                     # print(f"Adding {item.current_stack} {item.name} to existing stack...")
                     # Add to the existing stack
                     added_stack = min(item.current_stack, inv_item.max_stack - inv_item.current_stack)
@@ -380,6 +388,29 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         self.current_page = 0
         self.build_inventory_slots()
 
+    def sort_inventory_by_stats(self, stat: str):
+        """
+        sort by any of the following, coming from Equip() class:
+        self.maxhp_percent = 0.00
+        self.atk_percent = 0.00
+        self.def_percent = 0.00
+        self.spd = 0.00
+        self.eva = 0.00
+        self.acc = 0.00
+        self.crit = 0.00
+        self.critdmg = 0.00
+        self.critdef = 0.00
+        self.penetration = 0.00
+        self.heal_efficiency = 0.00
+        self.maxhp_flat = 0
+        self.atk_flat = 0
+        self.def_flat = 0
+        self.spd_flat = 0
+        """
+        self.inventory.sort(key=lambda x: getattr(x, stat, 0), reverse=True)
+        self.current_page = 0
+        self.build_inventory_slots()
+
     def to_next_page(self):
         if self.current_page == self.max_pages:
             return
@@ -480,7 +511,7 @@ def get_all_characters():
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
-                       "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB"]
+                       "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -515,7 +546,7 @@ if __name__ == "__main__":
     light_red = pygame.Color("#fbe4e4")
     light_green = pygame.Color("#e5fae5")
     light_blue = pygame.Color("#e6f3ff")
-    light_pink = pygame.Color("#fae5f0")
+    light_pink = pygame.Color("#fae5eb")
 
     display_surface = pygame.display.set_mode((1600, 900), flags=pygame.SCALED | pygame.RESIZABLE)
     ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
@@ -947,8 +978,8 @@ if __name__ == "__main__":
         for m in all_monsters:
             m.lvl = adventure_mode_current_stage
         # Boss monsters have attribute is_boss = True, every 10 stages, starting from stage 10, summon a boss monster
-        # Stage 1000 to 2400, every stage has a boss monster in the middle of the stage.
-        # Howerver, on stage 2400 and later, there will be no restriction on whether boss or not.
+        # Stage 1000 to 2000, every stage has a boss monster in the middle of the stage.
+        # Howerver, on stage 2000 and later, there will be no restriction on whether boss or not.
         if (adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000) and adventure_mode_current_stage < 2000:
             new_selection_of_monsters = random.sample([x for x in all_monsters if not x.is_boss], k=4)
             boss_monster = random.choice([x for x in all_monsters if x.is_boss])
@@ -1021,19 +1052,22 @@ if __name__ == "__main__":
         set_up_characters_adventure_mode()
 
     def adventure_mode_exp_reward():
-        global adventure_mode_current_stage, party1
+        global adventure_mode_current_stage, party1, party2
         average_party_level = sum([x.lvl for x in party1]) / 5
         enemy_average_level = adventure_mode_current_stage
         # if enemy level is above average party level, then exp reward is increased by a percentage
         exp_reward_multiplier = 1
         if enemy_average_level > average_party_level:
             exp_reward_multiplier = (enemy_average_level / average_party_level)
-        if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # boss stage
-            exp_reward_multiplier *= 1.5
+        if current_game_mode == "Adventure Mode":
+            for m in party2:
+                if m.is_boss:
+                    exp_reward_multiplier *= 1.5
+
         return int(adventure_mode_current_stage * exp_reward_multiplier)
 
     def adventure_mode_cash_reward():
-        global adventure_mode_current_stage, party1
+        global adventure_mode_current_stage, party1, party2
         average_party_level = sum([x.lvl for x in party1]) / 5
         enemy_average_level = adventure_mode_current_stage
         cash_reward_multiplier = 1
@@ -1042,23 +1076,52 @@ if __name__ == "__main__":
         random_factor = random.uniform(0.8, 1.2)
         cash_before_random = adventure_mode_current_stage * 2 * cash_reward_multiplier
         cash = cash_before_random * random_factor
-        if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # boss stage
-            cash *= 1.5
-            cash_before_random *= 1.5
+        if current_game_mode == "Adventure Mode":
+            for m in party2:
+                if m.is_boss:
+                    cash *= 1.5
+                    cash_before_random *= 1.5
         cash = max(1, cash)
         return int(cash), int(cash_before_random)
     
     def adventure_mode_info_tooltip() -> str:
         global adventure_mode_current_stage
+        if global_vars.language == "日本語":
+            return adventure_mode_info_tooltip_jp()
         str = f"Current Stage: {adventure_mode_current_stage}\n"
         if adventure_mode_current_stage > sum([x.lvl for x in party1]) / 5:
-            str += f"Enemy level is higher than average party level, reward is increased by {(adventure_mode_current_stage / (sum([x.lvl for x in party1]) / 5) - 1) * 100:.2f}%\n"
-        if adventure_mode_current_stage % 10 == 0 or adventure_mode_current_stage > 1000: # boss stage
-            str += "Boss Stage. Reward is increased by 50%.\n"
-        str += f"Exp Reward: {adventure_mode_exp_reward()}\n"
+            str += f"Enemy level is higher than average party level, reward is increased by {(adventure_mode_current_stage / (sum([x.lvl for x in party1]) / 5) - 1) * 100:.2f}%."
+        str += " Rewards are increased by 50% for each boss monsters."
+        try:
+            amount_of_bosses = len([x for x in party2 if x.is_boss])
+        # sometimes someone in party2 is not a monster
+        except AttributeError:
+            amount_of_bosses = 0
+        if amount_of_bosses > 0:
+            str += f" Amount of Bosses: {amount_of_bosses}."
+        str += f" Exp Reward: {adventure_mode_exp_reward()}."
         a, b = adventure_mode_cash_reward()
-        str += f"Cash Reward: approxmately {b}\n"
+        str += f" Cash Reward: approxmately {b}."
         return str
+
+    def adventure_mode_info_tooltip_jp() -> str:
+        global adventure_mode_current_stage
+        str = f"現在のステージ:{adventure_mode_current_stage}\n"
+        if adventure_mode_current_stage > sum([x.lvl for x in party1]) / 5:
+            str += f"敵のレベルがパーティーの平均レベルより高いため、報酬が{(adventure_mode_current_stage / (sum([x.lvl for x in party1]) / 5) - 1) * 100:.2f}%増加する。"
+        str += "ボスモンスターごとに報酬が50%増加する。"
+        try:
+            amount_of_bosses = len([x for x in party2 if x.is_boss])
+        # sometimes someone in party2 is not a monster
+        except AttributeError:
+            amount_of_bosses = 0
+        if amount_of_bosses > 0:
+            str += f"ボスの数:{amount_of_bosses}."
+        str += f"経験値報酬:{adventure_mode_exp_reward()}。"
+        a, b = adventure_mode_cash_reward()
+        str += f"現金報酬:約{b}。"
+        return str
+
 
     # =====================================
     # End of Game Mode Section
@@ -1660,10 +1723,7 @@ if __name__ == "__main__":
             raise ValueError(f"Unknown theme: {global_vars.theme}")
         
         ui_manager.rebuild_all_from_changed_theme_data()
-        redraw_ui(party1, party2)
-        player.build_inventory_slots()
-        if global_vars.player_is_in_shop:
-            redraw_ui_shop_edition(reload_shop=False)
+        swap_language()
 
 
     language_selection_menu = pygame_gui.elements.UIDropDownMenu(["English", "日本語"],
@@ -1678,6 +1738,7 @@ if __name__ == "__main__":
         if global_vars.player_is_in_shop:
             redraw_ui_shop_edition(reload_shop=False) 
         # print(f"Language changed to {global_vars.language}.")
+        box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
 
 
 
@@ -1706,6 +1767,9 @@ if __name__ == "__main__":
                                                             pygame.Rect((1300, 60), (114, 35)),
                                                             ui_manager)
 
+    cheap_inventory_sort_by_selection_menu.add_options(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc", "crit", "critdmg", "critdef", "penetration", "heal_efficiency",
+                                                        "maxhp_flat", "atk_flat", "def_flat", "spd_flat"])                                                        
+
     cheap_inventory_filter_selection_menu = pygame_gui.elements.UIDropDownMenu(["All", "No Owner", "Has Owner"],
                                                             "All",
                                                             pygame.Rect((1416, 60), (114, 35)),
@@ -1718,6 +1782,23 @@ if __name__ == "__main__":
 
 
     def cheap_inventory_sort():
+        """
+        self.maxhp_percent = 0.00
+        self.atk_percent = 0.00
+        self.def_percent = 0.00
+        self.spd = 0.00
+        self.eva = 0.00
+        self.acc = 0.00
+        self.crit = 0.00
+        self.critdmg = 0.00
+        self.critdef = 0.00
+        self.penetration = 0.00
+        self.heal_efficiency = 0.00
+        self.maxhp_flat = 0
+        self.atk_flat = 0
+        self.def_flat = 0
+        self.spd_flat = 0
+        """
         match cheap_inventory_sort_by_selection_menu.selected_option[0]:
             case "Rarity":
                 player.sort_inventory_by_rarity()
@@ -1731,6 +1812,36 @@ if __name__ == "__main__":
                 player.sort_inventory_by_market_value()
             case "BOGO":
                 player.sort_inventory_bogo()
+            case "maxhp_percent":
+                player.sort_inventory_by_stats("maxhp_percent")
+            case "atk_percent":
+                player.sort_inventory_by_stats("atk_percent")
+            case "def_percent":
+                player.sort_inventory_by_stats("def_percent")
+            case "spd":
+                player.sort_inventory_by_stats("spd")
+            case "eva":
+                player.sort_inventory_by_stats("eva")
+            case "acc":
+                player.sort_inventory_by_stats("acc")
+            case "crit":
+                player.sort_inventory_by_stats("crit")
+            case "critdmg":
+                player.sort_inventory_by_stats("critdmg")
+            case "critdef":
+                player.sort_inventory_by_stats("critdef")
+            case "penetration":
+                player.sort_inventory_by_stats("penetration")
+            case "heal_efficiency":
+                player.sort_inventory_by_stats("heal_efficiency")
+            case "maxhp_flat":
+                player.sort_inventory_by_stats("maxhp_flat")
+            case "atk_flat":
+                player.sort_inventory_by_stats("atk_flat")
+            case "def_flat":
+                player.sort_inventory_by_stats("def_flat")
+            case "spd_flat":
+                player.sort_inventory_by_stats("spd_flat")
             case _:
                 print(f"Warning: Unknown option: {cheap_inventory_sort_by_selection_menu.selected_option[0]}")
 
@@ -2358,20 +2469,35 @@ if __name__ == "__main__":
                                                                     pygame.Rect((900, 400), (156, 35)),
                                                                     ui_manager)
 
-    def set_up_characters(is_start_of_app=False):
+    def set_up_characters(is_start_of_app=False, reset_party1: bool = True, reset_party2: bool = True):
         global character_selection_menu, reserve_character_selection_menu, all_characters, party2, party1, text_box
         if not is_start_of_app:
             text_box.set_text("==============================\n")
         for character in all_characters:
             character.reset_stats()
-        party1 = []
-        party2 = []
-        list_of_characters = random.sample(all_characters, 10)
-        remaining_characters = [character for character in all_characters if character not in list_of_characters]
+        if not party1:
+            reset_party1 = True
+        if not party2:
+            reset_party2 = True
+        if reset_party1 and reset_party2:
+            party1 = []
+            party2 = []
+            list_of_characters = random.sample(all_characters, 10)
+            random.shuffle(list_of_characters)
+            party1 = list_of_characters[:5]
+            party2 = list_of_characters[5:]
+        elif reset_party1 and not reset_party2:
+            party1 = random.sample([character for character in all_characters if character not in party2], 5)
+            random.shuffle(party1)
+            
+        elif not reset_party1 and reset_party2:
+            party2 = random.sample([character for character in all_characters if character not in party1], 5)
+            random.shuffle(party2)
+        else:
+            pass
+
+        remaining_characters = [character for character in all_characters if character not in itertools.chain(party1, party2)]
         remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
-        random.shuffle(list_of_characters)
-        party1 = list_of_characters[:5]
-        party2 = list_of_characters[5:]
 
         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
         remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
@@ -2445,8 +2571,7 @@ if __name__ == "__main__":
             handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu, nci)
         else:
             raise Exception(f"Unknown game mode: {current_game_mode} in replace_character_with_reserve_member()")
-        reset_ally_enemy_attr(party1, party2)
-        new_character.battle_entry_effects_activate()
+        restart_battle()
         redraw_ui(party1, party2)
         text_box.append_html_text(f"{character_name} has been replaced with {new_character_name}.\n")
 
@@ -2636,94 +2761,94 @@ if __name__ == "__main__":
     # each healthbar is divided into 3 parts, a overlay is created on top of it.
     # this overlay will be used to show status effects tooltips,
     # we create 3 pages because often, status effects have too much text to be shown in one page
-    character_healthbar_slot_top1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 220), (58, 30)),
+    character_healthbar_slot_top1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 220), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 220), (59, 30)),
+    character_healthbar_slot_top1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 220), (59, 55)),
                                         pygame.Surface((59, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 220), (58, 30)),
+    character_healthbar_slot_top1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 220), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 220), (58, 30)),
+    character_healthbar_slot_top2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 220), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 220), (59, 30)),
+    character_healthbar_slot_top2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 220), (59, 55)),
                                         pygame.Surface((59, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 220), (58, 30)),
+    character_healthbar_slot_top2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 220), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 220), (58, 30)),
+    character_healthbar_slot_top3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 220), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 220), (59, 30)),
+    character_healthbar_slot_top3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 220), (59, 55)),
                                         pygame.Surface((59, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 220), (58, 30)),
+    character_healthbar_slot_top3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 220), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 220), (58, 30)),
+    character_healthbar_slot_top4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 220), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 220), (59, 30)),
+    character_healthbar_slot_top4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 220), (59, 55)),
                                         pygame.Surface((59, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 220), (58, 30)),
+    character_healthbar_slot_top4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 220), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 220), (58, 30)),
+    character_healthbar_slot_top5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 220), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 220), (59, 30)),
+    character_healthbar_slot_top5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 220), (59, 55)),
                                         pygame.Surface((59, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_top5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 220), (58, 30)),
+    character_healthbar_slot_top5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 220), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 825), (58, 30)),
+    character_healthbar_slot_buttom1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 825), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 825), (59, 30)),
+    character_healthbar_slot_buttom1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 825), (59, 55)),
                                         pygame.Surface((59, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 825), (58, 30)),
+    character_healthbar_slot_buttom1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 825), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 825), (58, 30)),
+    character_healthbar_slot_buttom2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 825), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 825), (59, 30)),
+    character_healthbar_slot_buttom2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 825), (59, 55)),
                                         pygame.Surface((59, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 825), (58, 30)),
+    character_healthbar_slot_buttom2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 825), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 825), (58, 30)),
+    character_healthbar_slot_buttom3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 825), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 825), (59, 30)),
+    character_healthbar_slot_buttom3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 825), (59, 55)),
                                         pygame.Surface((59, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 825), (58, 30)),
+    character_healthbar_slot_buttom3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 825), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 825), (58, 30)),
+    character_healthbar_slot_buttom4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 825), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 825), (59, 30)),
+    character_healthbar_slot_buttom4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 825), (59, 55)),
                                         pygame.Surface((59, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 825), (58, 30)),
+    character_healthbar_slot_buttom4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 825), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 825), (58, 30)),
+    character_healthbar_slot_buttom5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 825), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 825), (59, 30)),
+    character_healthbar_slot_buttom5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 825), (59, 55)),
                                         pygame.Surface((59, 30)),
                                         ui_manager_overlay)
-    character_healthbar_slot_buttom5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 825), (58, 30)),
+    character_healthbar_slot_buttom5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 825), (58, 55)),
                                         pygame.Surface((58, 30)),
                                         ui_manager_overlay)
     health_bar_party1_overlay = [[character_healthbar_slot_top1_o1, character_healthbar_slot_top1_o2, character_healthbar_slot_top1_o3],
@@ -2835,9 +2960,9 @@ if __name__ == "__main__":
                 labels[i].set_text(f"lv {character.lvl} {character.name}")
 
                 if global_vars.language == "日本語" and hasattr(character, "skill_tooltip_jp"):
-                    labels[i].set_tooltip(character.skill_tooltip_jp(), delay=0.1, wrap_width=500)
+                    labels[i].set_tooltip(character.skill_tooltip_jp(), delay=0.1, wrap_width=555)
                 else:
-                    labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=500)
+                    labels[i].set_tooltip(character.skill_tooltip(), delay=0.1, wrap_width=555)
                 # Doesn't work so commented out
                 # labels[i].set_text_alpha(255) if character.is_alive() else labels[i].set_text_alpha(125)
 
@@ -2848,39 +2973,29 @@ if __name__ == "__main__":
                 # Edit on 2.2.9: Optimize is removed because we wont be able to catch skills that change maxhp or shield
                 healthbar[i].set_image(create_healthbar(character.hp, character.maxhp, 176, 30, shield_value=character.get_shield_value(), auto_color=True))
 
-                # 2.7.0 Implemention:
-                # character_status_effect_str = character.tooltip_status_effects()
-                # # Sometimes the string is very long, so we need to wrap it to next 'page':
-                # # healthbar_overlays[i][1] and healthbar_overlays[i][2] are the other pages
-                # # One plan is to count how many \n there are in the string, and then split it into 3 parts
-
-                # lines = character_status_effect_str.split('\n')
-                # max_lines_per_page = 16
-
-                # # Split lines into three parts
-                # part1 = '\n'.join(lines[:max_lines_per_page])
-                # part2 = '\n'.join(lines[max_lines_per_page:max_lines_per_page*2])
-                # part3 = '\n'.join(lines[max_lines_per_page*2:max_lines_per_page*3])
-
-                # # Set tooltips for each part
-                # if part1:
-                #     healthbar_overlays[i][0].set_tooltip(part1, delay=0.1, wrap_width=400)
-                # else:
-                #     healthbar_overlays[i][0].set_tooltip("", delay=0.1, wrap_width=400)
-                # if part2:
-                #     healthbar_overlays[i][1].set_tooltip(part2, delay=0.1, wrap_width=400)
-                # else:
-                #     healthbar_overlays[i][1].set_tooltip("", delay=0.1, wrap_width=400)
-                # if part3:
-                #     healthbar_overlays[i][2].set_tooltip(part3, delay=0.1, wrap_width=400)
-                # else:
-                #     healthbar_overlays[i][2].set_tooltip("", delay=0.1, wrap_width=400)
-
                 character_status_effect_str_sp, character_status_effect_str_buff, character_status_effect_str_debuff = character.tooltip_status_effects()
-                healthbar_overlays[i][0].set_tooltip(character_status_effect_str_sp, delay=0.1, wrap_width=400)
-                healthbar_overlays[i][1].set_tooltip(character_status_effect_str_buff, delay=0.1, wrap_width=400)
-                healthbar_overlays[i][2].set_tooltip(character_status_effect_str_debuff, delay=0.1, wrap_width=400)
-
+                healthbar_overlays[i][0].set_tooltip(character_status_effect_str_sp, delay=0.1, wrap_width=430)
+                healthbar_overlays[i][1].set_tooltip(character_status_effect_str_buff, delay=0.1, wrap_width=430)
+                healthbar_overlays[i][2].set_tooltip(character_status_effect_str_debuff, delay=0.1, wrap_width=430)
+                # Create text on them to show how many status effect there are
+                # character.get_the_amount_of_effect() returns a tuple of (sp, buff, debuff)
+                healthbar_overlays[i][0].set_image((images_item["405"]))
+                healthbar_overlays[i][1].set_image((images_item["405"]))
+                healthbar_overlays[i][2].set_image((images_item["405"]))
+                # if character.battle_turns > 0: # Keep it tidy
+                healthbar_overlays_a = healthbar_overlays[i][0].image
+                healthbar_overlays_b = healthbar_overlays[i][1].image
+                healthbar_overlays_c = healthbar_overlays[i][2].image
+                sp_count, buff_count, debuff_count = character.get_the_amount_of_effect()
+                if sp_count:
+                    create_yellow_text(healthbar_overlays_a, str(sp_count), 25, (186, 186, 255), 0)
+                    healthbar_overlays[i][0].set_image(healthbar_overlays_a)
+                if buff_count:
+                    create_yellow_text(healthbar_overlays_b, str(buff_count), 25, (0, 255, 0), 0)
+                    healthbar_overlays[i][1].set_image(healthbar_overlays_b)
+                if debuff_count:
+                    create_yellow_text(healthbar_overlays_c, str(debuff_count), 25, (255, 0, 0), 0)
+                    healthbar_overlays[i][2].set_image(healthbar_overlays_c)
 
 
                 if main_char == character:
@@ -3487,22 +3602,6 @@ if __name__ == "__main__":
 
 
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
-                # if event.ui_element == button_left_change_chart:
-                #     if current_display_chart == "Damage Dealt Chart":
-                #         current_display_chart = "Damage Taken Chart"
-                #         create_plot_damage_r_chart()
-                #         draw_chart()
-                #         button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
-                #     elif current_display_chart == "Damage Taken Chart":
-                #         current_display_chart = "Healing Chart"
-                #         create_plot_healing_chart()
-                #         draw_chart()
-                #         button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
-                #     elif current_display_chart == "Healing Chart":
-                #         current_display_chart = "Damage Dealt Chart"
-                #         create_plot_damage_d_chart()
-                #         draw_chart()
-                #         button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
                 if event.ui_element == button1: # Shuffle party
                     text_box.set_text("==============================\n")
                     if current_game_mode == "Training Mode":
@@ -3529,7 +3628,7 @@ if __name__ == "__main__":
                         # box_submenu_explore_funds_selection.show()
                     elif current_game_mode == "Adventure Mode":
                         current_game_mode = "Training Mode"
-                        party1, party2 = set_up_characters()
+                        party1, party2 = set_up_characters(reset_party1=False)
                         turn = 1
                         switch_game_mode_button.set_text("Adventure Mode")
                         text_box.set_dimensions((556, 295))
