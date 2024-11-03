@@ -2058,6 +2058,56 @@ class Cate(Character):
         self.apply_effect(effect2)
 
 
+class Cattee(Character):
+    """
+    High accuracy attacker
+    Build: atk, penetration
+    """    
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Cattee"
+        self.skill1_description = "Attack 1 random enemy with 480% atk, inflict Stun for 10 turns and Bind for 20 turns."
+        " Bind: All main stats except maxhp are reduced by 30%."
+        self.skill2_description = "Attack random enemies with 220% atk 6 times, each attack has a 40% chance to inflict Burn for 20 turns," \
+        " dealing 10% atk status damage each turn."
+        self.skill3_description = "Apply Accurate Lock-On and Cat Ritual on yourself, accuracy is increased by 20%, everytime you miss an attack," \
+        " accuracy is increased by 20%. When hp is below 40%, reduce damage taken by 40%."
+        self.skill1_description_jp = "ランダムな敵1体に攻撃力の480%で攻撃し、10ターンの間スタンと20ターンの間「束縛」を付与する。束縛：最大HPを除く全ての主要ステータスが30%減少する。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力の220%で6回攻撃し、各攻撃に40%の確率で20ターンの間「燃焼」を付与する。燃焼は毎ターン攻撃力の10%分の状態異常ダメージを与える。"
+        self.skill3_description_jp = "自身に「精密ロックオン」と「猫の儀式」を付与する。命中率が20%増加し、攻撃をミスするたびに命中率がさらに20%増加する。HPが40%以下の場合、受けるダメージが40%減少する。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+
+    def skill1_logic(self):
+        def stun_and_bind(self, target):
+            target.apply_effect(StunEffect("Stun", 10, False))
+            target.apply_effect(StatsEffect("Bind", 20, False, {"atk": 0.70, "defense": 0.70, "spd": 0.70}))
+        damage_dealt = self.attack(multiplier=4.8, repeat=1, func_after_dmg=stun_and_bind)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def burn(self, target):
+            if random.randint(1, 100) <= 40:
+                target.apply_effect(ContinuousDamageEffect("Burn", 20, False, self.atk * 0.10, self))
+        damage_dealt = self.attack(multiplier=2.2, repeat=6, func_after_dmg=burn)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect("Accurate Lock-On", -1, True, {"acc": 0.20}, 
+                                      stats_dict_value_increase_when_missing_attack=0.2, can_be_removed_by_skill=False))
+        e2 = ReductionShield("Cat Ritual", -1, True, 0.4, cc_immunity=False,
+                                            requirement=lambda a, b: a.hp <= a.maxhp * 0.4,
+                                            requirement_description="hp below 40%.",
+                                            requirement_description_jp="HPが40%以下。")
+        e2.can_be_removed_by_skill = False
+        self.apply_effect(e2)
+
+
+
+
 class Iris(Character):
     """
     Generic attacker, attack all enemies
@@ -2690,13 +2740,13 @@ class Pheonix(Character):
         self.skill2_description = "First time cast: apply Reborn to all neighbor allies. " \
         "Reborn: when defeated, revive with 40% hp. Second and further cast: attack random enemy pair with 260% atk, 80% chance to inflict burn for 25 turns. " \
         "Burn deals 20% atk damage per turn."
-        self.skill3_description = "Revive with 80% hp the next turn after fallen. If revived by this effect, increase atk by 20% for 30 turns." \
+        self.skill3_description = "Revive with 80% hp the next turn after fallen. When revived, increase atk by 20% for 30 turns." \
         " This effect cannot be removed by skill."
         self.skill1_description_jp = "全ての敵に190%の攻撃を行い、80%の確率で25ターンの間燃焼を付与する。燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
-        self.skill2_description_jp = "初回発動時: 隣接する全ての味方に再生を付与する。" \
-                                    "再生:倒された場合、HP40%で復活する。2回目以降の発動:ランダムな敵のペアに260%の攻撃を行い、80%の確率で25ターンの間燃焼を付与する。" \
+        self.skill2_description_jp = "初回発動時: 隣接する全ての味方に新生を付与する。" \
+                                    "新生:倒された場合、HP40%で復活する。2回目以降の発動:ランダムな敵のペアに260%の攻撃を行い、80%の確率で25ターンの間燃焼を付与する。" \
                                     "燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
-        self.skill3_description_jp = "倒れた次のターンにHP80%で復活する。この効果で復活した場合、攻撃力が30ターンの間20%増加する。" \
+        self.skill3_description_jp = "倒れた次のターンにHP80%で復活する。復活した場合、攻撃力が30ターンの間20%増加する。" \
                                     "この効果はスキルで取り除くことができない。"
         self.first_time = True
         self.skill1_cooldown_max = 5
@@ -3400,14 +3450,14 @@ class RavenWB(Character):
         self.skill2_description = "Attack enemy with lowest crit def 6 times with 240% atk." \
         " If you have Blackbird, each attack has a 50% chance to apply Burn for 20 turns, dealing 20% of atk as damage per turn."
         self.skill3_description = "After using 2 times of skill 2, apply a shield on neighbor allies after the skill, absorb damage up to 50% of total" \
-        " damage dealt by skill 2. At start of battle, apply unremovable Raccoon! on yourself, when defeated, revive with 1 hp on the next turn,"
-        " then apply a shield that absorbs damage up to 30% of total damage dealt by skill 2."
+        " damage dealt by skill 2. At start of battle, apply unremovable Raccoon! on yourself, when defeated, revive with 1 hp on the next turn."
+        " When revived, apply a shield that absorbs damage up to 30% of total damage dealt by skill 2."
         self.skill1_description_jp = "自身に30ターンの間ブラックバードを適用する。15ターンの間、隣接する味方の攻撃力が30%減少し、その減少分を自身の攻撃力に加える。" \
         "すでにブラックバード状態中の場合、持続時間が更新され、攻撃力の減少および増加は発動しない。"
         self.skill2_description_jp = "最もクリティカル防御力の低い敵に230%の攻撃力で6回攻撃する。" \
         "ブラックバード状態中の場合、各攻撃には50%の確率で20ターンの間燃焼を付与する、毎ターン攻撃力の20%のダメージを与える。"
         self.skill3_description_jp = "スキル2を2回使用後、スキル使用後に隣接する味方にシールドを適用し、スキル2で与えた総ダメージの50%までを吸収する。" \
-        "戦闘開始時に、自身に解除不可の「洗熊！」を付与し、撃破された場合、次のターンに1HPで復活し、その後スキル2で与えた総ダメージの30%までのシールドを付与する。"
+        "戦闘開始時に、自身に解除不可の「洗熊！」を付与し、撃破された場合、次のターンに1HPで復活する。復活した際、スキル2で与えた総ダメージの30%までのシールドを付与する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.raven_skill2_counter = 0
@@ -4256,13 +4306,13 @@ class CheiHW(Character):
         " After the attack, apply Reflect on yourself for 20 turns." \
         " Reflect: reflect 30% of received normal damage."
         self.skill2_description = "Attack enemy of lowest hp percentage with 400% atk, if the enemy has a active negative effect, Stun for 10 turns."
-        self.skill3_description = "Apply unremovable Surprise Trap on yourself, when defeated, recover 70% hp and apply Assist on yourself for 20 turns." \
+        self.skill3_description = "Apply unremovable Surprise Trap on yourself, when defeated, revive with 70% hp. When revived, apply Assist on yourself for 20 turns." \
         " Apply absorption shield Mr. Naughty Ghost on yourself, shield absorbs 70% of maxhp damage, lasts for 20 turns." \
         " Assist: reflect 120% of received normal damage that exceeds 15% of maxhp to the attacker as status damage, damage taken cannot exceed 15% of maxhp." \
         " Maximum reflect damage is 200% of your maxhp."
         self.skill1_description_jp = "HP割合が最も低い敵に攻撃力の220%で3回攻撃する。敵にアクティブなデバフがある場合、ダメージが2倍になる。攻撃後、自身に20ターンの間「キャンディ警告」を付与する。キャンディ警告:受けた通常ダメージの30%を反射する。"
         self.skill2_description_jp = "HP割合が最も低い敵に攻撃力の400%で攻撃する。敵にアクティブなデバフがある場合、10ターンの間スタンさせる。"
-        self.skill3_description_jp = "自身に解除不能な「びっくりトラップ」を付与する。撃破された時、HPを70%回復し、20ターンの間「援護」を自身に付与する。自身に「いたずら幽霊さん」の吸収シールドを付与し、このシールドは最大HPの70%分のダメージを吸収し、20ターン持続する。援護:受けた通常ダメージが最大HPの15%を超える場合、そのダメージの120%を状態異常ダメージとして攻撃者に反射する。受けるダメージは最大HPの15%を超えない。最大反射ダメージは自身の最大HPの120%。"
+        self.skill3_description_jp = "自身に解除不能な「びっくりトラップ」を付与する。撃破された時、HPを70%で復活する。復活した際、20ターンの間「援護」を自身に付与する。自身に「いたずら幽霊さん」の吸収シールドを付与し、このシールドは最大HPの70%分のダメージを吸収し、20ターン持続する。援護:受けた通常ダメージが最大HPの15%を超える場合、そのダメージの120%を状態異常ダメージとして攻撃者に反射する。受けるダメージは最大HPの15%を超えない。最大反射ダメージは自身の最大HPの120%。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
@@ -4600,7 +4650,7 @@ class Scout(Character):
         " 1: This attack never misses. 2: This attack will guarantee a critical hit. 3: Before attacking, atk and critdmg is increased by 30% for 12 turns, final damage taken is reduced by 80%." \
         " 4: Convert damage to bypass all damage. 5: Attack all enemies." 
         self.skill3_description = "Gain unremovable reborn effect at start of battle." \
-        " When defeated, revive with 100 * lvl hp and apply Eight Camps for 20 turns." \
+        " When defeated, revive with 100 * lvl hp. When revived, apply Eight Camps for 20 turns." \
         " Eight Camps: def and critdef is increased by 40%."
         self.skill1_description_jp = "全ての敵に250%の攻撃を行い、20ターンの間「写真」を付与する。" \
                                     "写真:ダメージを受けた際、自身の攻撃力の30%を状態異常ダメージとして受ける。"
@@ -4609,7 +4659,7 @@ class Scout(Character):
                                     "1:この攻撃は外れない。2:この攻撃は必ずクリティカルになる。3:攻撃前に、12ターンの間、攻撃力とクリティカルダメージが30%増加し、受ける最終ダメージが80%減少する。" \
                                     "4:ダメージが全ての状態無視するように変換される。5:全ての敵を攻撃する。"
         self.skill3_description_jp = "戦闘開始時に解除不可の再生効果を得る。" \
-                                    "倒された際、HPがレベル×100で復活し、20ターンの間「八陣」を適用する。" \
+                                    "倒された際、HPがレベル×100で復活する。復活した際、20ターンの間「八陣」を適用する。" \
                                     "八陣:防御力とクリティカル防御が40%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 4

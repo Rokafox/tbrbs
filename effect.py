@@ -1283,7 +1283,7 @@ class FearEffect(Effect):
 class StatsEffect(Effect):
     def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True, 
                  stats_dict_function=None, is_set_effect=False, can_be_removed_by_skill=True,
-                 main_stats_additive_dict=None):
+                 main_stats_additive_dict=None, stats_dict_value_increase_when_missing_attack=0):
         """
         [condition] function takes character as argument. if specified, this effect will trigger a stats update every turn, 
         use it with True [use_active_flag]: for example, increase atk by 20% if hp < 50%,
@@ -1292,6 +1292,7 @@ class StatsEffect(Effect):
         called when condition is met, revert the old stats and update with the new stats if anything changed.
         [main_stats_additive_dict] is a dictionary containing main stats, for example {'hp': 200, 'atk: 40'}, this dict is added to additive_main_stats
         of Character class on effect apply, and removed on effect removal. I do not want to implement a dynamic dict for this because it will be complex.
+        [stats_dict_value_increase_when_missing_attack] is added to stats dict when attack is missing. For example, {'acc': 1.0} -> {'acc': 1.1}
         """
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
         self.stats_dict = stats_dict
@@ -1306,6 +1307,7 @@ class StatsEffect(Effect):
         self.is_set_effect = is_set_effect
         self.can_be_removed_by_skill = can_be_removed_by_skill
         self.main_stats_additive_dict = main_stats_additive_dict
+        self.stats_dict_value_increase_when_missing_attack = stats_dict_value_increase_when_missing_attack
 
     def apply_effect_on_apply(self, character):
         if self.condition is None or self.condition(character):
@@ -1391,6 +1393,23 @@ class StatsEffect(Effect):
             raise Exception("Only main_stats_additive_dict is supported for now.")
 
 
+    def apply_effect_when_missing_attack(self, character, target):
+        if self.stats_dict_value_increase_when_missing_attack == 0:
+            return
+        if not self.stats_dict:
+            return
+        old_stats_dict = self.stats_dict.copy()  
+        new_stats_dict = self.stats_dict.copy()  
+        for key, value in self.stats_dict.items():
+            new_stats_dict[key] = value + self.stats_dict_value_increase_when_missing_attack
+        character.update_stats(old_stats_dict, reversed=True)
+        self.stats_dict = new_stats_dict
+        character.update_stats(self.stats_dict, reversed=False)
+        global_vars.turn_info_string += f"Attack missed! {character.name}'s stats are increased by {self.stats_dict_value_increase_when_missing_attack * 100:.2f}%.\n"
+        # if character.is_alive():
+        #     character.heal_hp(character.maxhp * 0.10, self.buff_applier)
+
+
     def tooltip_description(self):
         string = ""
         if self.condition is not None:
@@ -1412,6 +1431,8 @@ class StatsEffect(Effect):
                         string += f"{processed_key} is increased by {value*100:.2f}%."
                     else:
                         string += f"{processed_key} is decreased by {-value*100:.2f}%."
+            if self.stats_dict_value_increase_when_missing_attack > 0:
+                string += f"The above stats are increased by {self.stats_dict_value_increase_when_missing_attack*100:.2f}% when attack is missing."
         if self.main_stats_additive_dict:
             for key, value in self.main_stats_additive_dict.items():
                 if key in ["maxhp", "hp", "atk", "defense", "spd"]:
@@ -1444,6 +1465,8 @@ class StatsEffect(Effect):
                         string += f"{processed_key}が{value*100:.2f}%増加する。"
                     else:
                         string += f"{processed_key}が{-value*100:.2f}%減少する。"
+            if self.stats_dict_value_increase_when_missing_attack > 0:
+                string += f"攻撃が外れた時、上記のステータスが{self.stats_dict_value_increase_when_missing_attack*100:.2f}%増加する。"
         if self.main_stats_additive_dict:
             for key, value in self.main_stats_additive_dict.items():
                 japanese_key = self.translate_key(key)
