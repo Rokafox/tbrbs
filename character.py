@@ -1,9 +1,9 @@
 from collections.abc import Callable
 import copy, random
 import re
-from typing import Tuple
+from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, CancellationShield, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, CancellationShield, CocoaSleepEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -248,7 +248,7 @@ class Character:
     def skill2_logic(self):
         pass
 
-    def target_selection(self, keyword="Undefined", keyword2="Undefined", keyword3="Undefined", keyword4="Undefined", target_list=None):
+    def target_selection(self, keyword: str = "Undefined", keyword2: str = "Undefined", keyword3: str = "Undefined", keyword4: str = "Undefined", target_list: list | None = None) -> Generator['Character', None, None]:
         # This function is a generator
         # default : random choice of a single enemy
         # NOTE: currently, target_selection is used for all attack skills, but it should also be used for healing and others
@@ -1069,7 +1069,7 @@ class Character:
         prev = {}
         new = {}
         delta = {}
-        self.update_main_stats_additive(reversed=True)
+        hp_removed = self.update_main_stats_additive(reversed=True)
         for attr, value in stats.items():
             if attr in ["maxhp", "hp", "atk", "defense", "spd"]:
                 if reversed:
@@ -1094,6 +1094,7 @@ class Character:
             new[attr] = new_value
             delta[attr] = new_value - prev[attr]
         self.update_main_stats_additive()
+        self.hp = min(self.maxhp, self.hp + hp_removed)
         return prev, new, delta
 
     def update_main_stats_additive(self, reversed=False, effect_pointer=None):
@@ -1101,27 +1102,36 @@ class Character:
         # example : [{'hp': 200, 'effect_pointer': a Effect object}, {'atk': 30, 'spd': 50, 'effect_pointer': another Effect object}]
         # effect_pointer: A Effect object. If it is None, update with every records, otherwise, only update with the certain matched record.
         if not self.additive_main_stats: # No dict records
-            return None
+            return 0
         for dict_record in self.additive_main_stats:
-            # Check if effect_pointer is specified and should match the record's effect_pointer
             if effect_pointer is not None and dict_record.get('effect_pointer') != effect_pointer:
                 continue
             for attr, value in dict_record.items():
-                if attr == "effect_pointer":  # Skip 'effect_pointer' itself
+                if attr == "effect_pointer":  
                     continue
                 if attr not in ["maxhp", "hp", "atk", "defense", "spd"]:
                     raise Exception(f"Unexpected attribute {attr} found in additive stats.")
-                # Apply or reverse the effect based on the `reversed` flag
                 if reversed:
                     new_value = getattr(self, attr) - value
                 else:
                     new_value = getattr(self, attr) + value
-                # Ensure `hp` does not exceed `maxhp` and is non-negative
                 if attr == "hp":
                     new_value = min(new_value, self.maxhp)
                     new_value = max(new_value, 0)
+                if attr == "maxhp":
+                    new_value = max(new_value, 1)
+                assert new_value >= 0, f"New value is negative: {new_value}"
+                maxhp_prev = self.maxhp
+                hp_prev = self.hp
                 setattr(self, attr, new_value)
-        return None
+                self.hp = min(self.hp, self.maxhp)
+                maxhp_curr = self.maxhp
+                hp_curr = self.hp
+                if maxhp_curr < maxhp_prev:
+                    hp_illegally_removed_by_this_operation = hp_prev - hp_curr
+                else:
+                    hp_illegally_removed_by_this_operation = 0
+        return hp_illegally_removed_by_this_operation
 
     def heal_hp(self, value, healer, ignore_death=False):
         # Remember the healer can be a Character object or Consumable object or Effect or perhaps other objects
@@ -1155,6 +1165,24 @@ class Character:
         for e in self.buffs.copy() + self.debuffs.copy():
             e.apply_effect_after_heal_step(self, healing, overhealing)
         return healing, healer, overhealing
+
+
+
+                # self.hp = min(self.hp, self.maxhp)
+                # maxhp_curr = self.maxhp
+                # hp_curr = self.hp
+                # if maxhp_curr < maxhp_prev:
+                #     hp_illegally_removed_by_this_operation = hp_prev - hp_curr
+                # else:
+                #     hp_illegally_removed_by_this_operation = 0
+                # return True, hp_illegally_removed_by_this_operation
+
+
+
+
+
+
+
 
     def pay_hp(self, value):
         if self.is_dead():
@@ -1993,17 +2021,11 @@ class Cate(Character):
         self.skill1_description = "4 hits on random enemies, 245% atk each hit, each hit has a 50% chance to stun for 10 turns."
         self.skill2_description = "Attack all enemies for 220% atk, damage increases by 60% if you have higher atk than target."
         self.skill3_description = "Apply Cat Ritual for yourself. Cat Ritual: Increases atk and critdmg by 20%. When hp is below 40%, reduce damage taken by 40%."
-        self.skill1_description_jp = "ランダムな敵に攻撃力245%4回攻撃。各攻撃50%の確率で10ターンスタン効果を付与。"
-        self.skill2_description_jp = "全ての敵に攻撃力220%攻撃。自分の攻撃力が対象より高い場合、ダメージが60%増加。"
-        self.skill3_description_jp = "「猫儀式」を付与する。「猫儀式」:攻撃力とクリティカルダメージを20%増加。HPが40%以下の時、受けるダメージを40%軽減。"
+        self.skill1_description_jp = "ランダムな敵に攻撃力245%4回攻撃。各攻撃50%の確率で10ターンの間スタンさせる。"
+        self.skill2_description_jp = "全ての敵に攻撃力220%攻撃。自分の攻撃力が対象より高い場合、ダメージが60%増加する。"
+        self.skill3_description_jp = "「猫儀式」を付与する。「猫儀式」:攻撃力とクリティカルダメージを20%増加。HPが40%以下の時、受けるダメージを40%軽減する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def skill1_logic(self):
         def stun_effect(self, target):
@@ -4299,31 +4321,20 @@ class Cocoa(Character):
         self.skill1_description = "Focus attack closest enemy with 380% atk 3 times, if you have Sweet Dreams, double the damage."
         self.skill2_description = "Select an ally of highest atk, reduce the allys skill cooldown by 2," \
         " and increase the allys speed by 200% for 2 turns. If the same effect is applied, duration is refreshed." \
-        " if the selected ally is Cocoa, hp is recovered by 300% atk."
+        " if the selected ally is Cocoa, hp is also recovered by 300% atk."
         self.skill3_description = "If haven't taken damage for 5 turns, fall asleep. This effect does not reduce evasion." \
         " While asleep, recover 8% hp each turn. When this effect is removed, for 20 turns," \
         " apply Sweet Dreams on yourself, atk and defense is increased by 30%."
         self.skill1_description_jp = "最も近い敵に380%の集中攻撃を3回行う。幻夢効果がある場合、ダメージが2倍になる。"
         self.skill2_description_jp = "最も攻撃力が高い味方を選択し、その味方のスキルクールダウンを2減少させ、2ターンの間速度を200%増加させる。" \
                                     "同じ効果が適用された場合、持続時間が更新される。" \
-                                    "選択された味方が自分である場合、攻撃力の300%でHPが回復する。"
+                                    "選択された味方が自分である場合、さらに攻撃力の300%でHPが回復する。"
         self.skill3_description_jp = "5ターンの間攻撃されていない場合、睡眠を付与する。この効果は回避率を減少させない。" \
                                     "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、20ターンの間、" \
                                     "自身に幻夢を付与し、攻撃力と防御力が30%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
-        self.skill3_used = False
-        self.has_effect_that_named
 
-    def clear_others(self):
-        self.skill3_used = False
-        super().clear_others()
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
@@ -4356,31 +4367,82 @@ class Cocoa(Character):
         pass
 
     def battle_entry_effects(self):
-        effect = SleepEffect("Sleep", -1, True, True)
-        effect.is_buff = True
-        effect.additional_name = "Cocoa_Sleep"
-        def new_apply_effect_on_trigger(character: Character):
-            if character.is_dead():
-                character.remove_effect(effect)
-                return
-            character.heal_hp(character.maxhp * 0.08, character)
-        def new_apply_effect_on_apply(character):
-            pass
-        def new_apply_effect_on_remove(character):
-            sd = StatsEffect("Sweet Dreams", 20, True, {"atk": 1.3, "defense": 1.3})
-            sd.additional_name = "Cocoa_Sweet_Dreams"
-            character.apply_effect(sd)
-        effect.apply_effect_on_trigger = new_apply_effect_on_trigger
-        effect.apply_effect_on_apply = new_apply_effect_on_apply
-        effect.apply_effect_on_remove = new_apply_effect_on_remove
-        effect.can_be_removed_by_skill = False
-        def new_tooltip_description():
-            return "While asleep, recover 8% hp each turn. When this effect is removed, for 10 turns, atk and defense is increased by 30%."
-        def new_tooltip_description_jp():
-            return "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、12ターんの間、攻撃力と防御力が30%増加する。"
-        effect.tooltip_description = new_tooltip_description
-        effect.tooltip_description_jp = new_tooltip_description_jp
-        shda = NotTakingDamageEffect("Shopping Date", -1, True, 5, effect)
+        cocoa_sleep = CocoaSleepEffect("Sleep", -1, True)
+        cocoa_sleep.can_be_removed_by_skill = False
+        shda = NotTakingDamageEffect("Shopping Date", -1, True, 5, cocoa_sleep)
+        shda.can_be_removed_by_skill = False
+        self.apply_effect(shda)
+
+
+class CocoaRT(Character):
+    """
+    Rest time version of Cocoa
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "CocoaRT"
+        self.skill1_description = "Focus attack closest enemy with 230% atk 3 times, if you have Sweet Dreams, attack 3 closest enemies 2 times." \
+        " If target is alive after the attack, apply Sleep on the target."
+        self.skill2_description = "Select an ally of highest defense, reduce the allys skill cooldown by 3," \
+        " and increase the allys speed by 300% for 2 turns. If the same effect is applied, duration is refreshed." \
+        " if the selected ally is Cocoa, hp also is recovered by 300% atk."
+        self.skill3_description = "If haven't taken damage for 5 turns, fall asleep. This effect does not reduce evasion." \
+        " While asleep, recover 8% hp each turn. When this effect is removed, for 20 turns," \
+        " apply Sweet Dreams on yourself, atk and defense is increased by 30%."
+        self.skill1_description_jp = "最も近い敵に230%の集中攻撃を3回行う。幻夢効果がある場合、最も近い敵3体を2回攻撃する。" \
+                                    "攻撃後、対象が生存している場合、対象に睡眠を付与する。"
+        self.skill2_description_jp = "最も防御力が高い味方を選択し、その味方のスキルクールダウンを3減少させ、2ターンの間速度を300%増加させる。" \
+                                    "同じ効果が適用された場合、持続時間が更新される。" \
+                                    "選択された味方が自分である場合、さらに攻撃力の300%でHPが回復する。"
+        self.skill3_description_jp = "5ターンの間攻撃されていない場合、睡眠を付与する。この効果は回避率を減少させない。" \
+                                    "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、20ターンの間、" \
+                                    "自身に幻夢を付与し、攻撃力と防御力が30%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 5
+
+    def skill1_logic(self):
+        t = self.target_selection(keyword="enemy_in_front")
+        t = mit.one(t)
+        t3 = self.target_selection(keyword="n_enemy_in_front", keyword2="3")
+        t3 = list(t3)
+        if self.has_effect_that_named("Sweet Dreams", "Cocoa_Sweet_Dreams"):
+            damage_dealt = self.attack(multiplier=2.3, repeat_seq=2, target_list=t3)
+            if self.is_alive():
+                for t in t3:
+                    if t.is_alive():
+                        t.apply_effect(SleepEffect("Sleep", -1, False))
+        else:
+            damage_dealt = self.attack(multiplier=2.3, repeat_seq=3, target_list=[t])
+            if t.is_alive() and self.is_alive():
+                t.apply_effect(SleepEffect("Sleep", -1, False))
+        return damage_dealt
+
+    def skill2_logic(self):
+        def speed_effect(target: Character):
+            spd_e = target.get_effect_that_named("Speed Up", "CocoaRT_Speed_Up")
+            if not spd_e:
+                spd_e = StatsEffect("Speed Up", 2, True, {"spd": 3.0})
+                spd_e.additional_name = "CocoaRT_Speed_Up"
+                target.apply_effect(spd_e)
+            else:
+                spd_e.duration = 3
+
+            target.update_cooldown()
+            target.update_cooldown()
+            target.update_cooldown()
+            if target == self:
+                self.heal_hp(self.atk * 3.0, self)
+        ally = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="defense", keyword4="ally"))
+        speed_effect(ally)
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        cocoa_sleep = CocoaSleepEffect("Sleep", -1, True)
+        cocoa_sleep.can_be_removed_by_skill = False
+        shda = NotTakingDamageEffect("Resting Time", -1, True, 5, cocoa_sleep)
         shda.can_be_removed_by_skill = False
         self.apply_effect(shda)
 
@@ -5778,13 +5840,13 @@ class Xunyu(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Xunyu"
-        self.skill1_description = "Apply Chord Mixing on all allies for 18 turns, Chord Mixing: All stats except maxhp are increased by 10%," \
+        self.skill1_description = "Apply Chord Mixing on all allies for 18 turns, Chord Mixing: All main stats except maxhp are increased by 10%," \
         " crit and critdmg are increased by 10%."
         self.skill2_description = "Apply Wide Range Sound on all allies for 18 turns. Wide Range Sound: Damage taken is reduced by 20%," \
         " damage taken from the same turn is further reduced by 20%."
         self.skill3_description = "When applying effect on a ally who does not have protected effect, effect value is doubled."
         # 音色模倣 広い音域 
-        self.skill1_description_jp = "全ての味方に20ターンの間「音色模倣」を付与する。音色模倣：最大HPを除く全てのステータスが10%増加し、クリティカル率とクリティカルダメージが10%増加する。"
+        self.skill1_description_jp = "全ての味方に20ターンの間「音色模倣」を付与する。音色模倣：最大HPを除く全ての主要ステータスが10%増加し、クリティカル率とクリティカルダメージが10%増加する。"
         self.skill2_description_jp = "全ての味方に20ターンの間「広い音域」を付与する。広い音域：受けるダメージが20%減少し、同じターン内で受けるダメージがさらに20%減少する。"
         self.skill3_description_jp = "守護効果を持たない味方に効果を適用する際、その効果値が2倍になる。"
         self.skill1_cooldown_max = 4

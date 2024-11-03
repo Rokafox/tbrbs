@@ -4730,10 +4730,10 @@ class DelfB(Monster):
         self.skill1_description = "Attack closest enemy 3 times with 250% atk, reduce their heal efficiency by 35% for 12 turns." \
         " Before attacking, increase accuracy by 30% for 12 turns."
         self.skill2_description = "Attack closest enemy with 400% atk, if target has lower than 30% hp, " \
-        " apply poison, blind and heal efficiency down by 100% for 12 turns. Poison: deals 4% of lost hp each turn. Blind: reduce accuracy by 50%."
+        " apply poison, blind and heal efficiency down by 100% for 12 turns. Poison: deals 4% of lost hp each turn. Blind: reduce accuracy by 30%."
         self.skill3_description = "speed is increased by 20%, defense is increased by 20%."
         self.skill1_description_jp = "最も近い敵に攻撃力250%で3回攻撃し、12ターンの間回復効率を35%減少させる。攻撃前、12ターンの間命中率を30%増加。"
-        self.skill2_description_jp = "最も近い敵に攻撃力400%で攻撃。対象のHPが30%未満の場合、毒、暗闇を付与し、回復効率を100%減少させる。毒:失ったHPの4%のダメージ。暗闇:命中率を50%減少。"
+        self.skill2_description_jp = "最も近い敵に攻撃力400%で攻撃。対象のHPが30%未満の場合、毒、暗闇を付与し、回復効率を100%減少させる。毒:失ったHPの4%のダメージ。暗闇:命中率を30%減少。"
         self.skill3_description_jp = "速度が20%、防御力が20%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -4752,7 +4752,7 @@ class DelfB(Monster):
         def massive_debuff(self, target):
             if target.hp < target.maxhp * 0.3:
                 target.apply_effect(ContinuousDamageEffect_Poison('Poison', 10, False, ratio=0.04, imposter=self, base="losthp"))
-                target.apply_effect(StatsEffect('Blind', 10, False, {'acc' : 0.5}))
+                target.apply_effect(StatsEffect('Blind', 10, False, {'acc' : -0.3}))
                 target.apply_effect(StatsEffect('Heal Efficiency Down', 12, False, {'heal_efficiency' : -1.0}))
         damage_dealt = self.attack(multiplier=4.0, repeat=1, func_after_dmg=massive_debuff, target_kw1="enemy_in_front")
         return damage_dealt

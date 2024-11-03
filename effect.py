@@ -1657,13 +1657,14 @@ class ContinuousDamageEffect_Poison(Effect):
                     a.apply_effect(new_plague)
 
     def tooltip_description(self):
-        s = f"Take {(self.ratio*100):.2f}% {self.base} damage each turn."
+        s = f"Take {(self.ratio*100):.2f}% {self.base} {self.damage_type} damage each turn."
         if self.remove_by_heal:
             s += " This effect can be removed by healing."
         if self.is_plague:
-            s += f" At end of turn, {int(self.is_plague_transmission_chance*100)}% chance to apply the same effect to a neighbor ally."
+            # s += f" At end of turn, {int(self.is_plague_transmission_chance*100)}% chance to apply the same effect to a neighbor ally."
+            s += f" At end of turn, some chance to apply the same effect to a neighbor ally."
             if self.is_plague_transmission_decay > 0:
-                s += f" After each transmission, the transmission chance is reduced by {int(self.is_plague_transmission_decay*100)}%."
+                s += f" For each transmission, its chance is reduced by {int(self.is_plague_transmission_decay*100)}%."
         return s
 
     def tooltip_description_jp(self):
@@ -1672,14 +1673,21 @@ class ContinuousDamageEffect_Poison(Effect):
             "hp": "現在のHP",
             "losthp": "失ったHP"
         }
+        damage_type_dict = {
+            "status": "状態異常",
+            "bypass": "状態異常無視",
+            "normal": "通常"
+        }
         base = base_dict.get(self.base, self.base)
-        s = f"毎ターン{(self.ratio*100):.2f}%の{base}に応じたダメージを受ける。"
+        damage_type = damage_type_dict.get(self.damage_type, self.damage_type)
+        s = f"毎ターン{(self.ratio*100):.2f}%の{base}に応じた{damage_type}ダメージを受ける。"
         if self.remove_by_heal:
             s += "この効果は回復されると解除される。"
         if self.is_plague:
-            s += f"ターン終了時に、{int(self.is_plague_transmission_chance*100)}%の確率で隣接する味方に同じ効果が伝染する。"
+            # s += f"ターン終了時に、{int(self.is_plague_transmission_chance*100)}%の確率で隣接する味方に伝染する。"
+            s += f"ターン終了時に、一定の確率で隣接する味方に伝染する。"
             if self.is_plague_transmission_decay > 0:
-                s += f"伝染するたびに、次の伝染確率が{int(self.is_plague_transmission_decay*100)}%減少する。"
+                s += f"伝染するたびに、伝染確率が{int(self.is_plague_transmission_decay*100)}%減少する。"
         return s
 
 
@@ -1784,10 +1792,10 @@ class StingEffect(Effect):
         character.take_status_damage(self.value, self.imposter)
 
     def tooltip_description(self):
-        return f"Take {self.value} status damage every time after taking damage."
+        return f"Take {self.value:.2f} status damage every time after taking damage."
     
     def tooltip_description_jp(self):
-        return f"ダメージを受けた後、{self.value}の状態異常ダメージを受ける。"
+        return f"ダメージを受けた後、{self.value:.2f}の状態異常ダメージを受ける。"
     
 
 class HideEffect(Effect):
@@ -2634,6 +2642,34 @@ class FreyaDuckySilenceEffect(SilenceEffect):
         if character.ally:
             ally = random.choice(character.ally)
             ally.apply_effect(FreyaDuckySilenceEffect("Ducky Silence", self.original_duration, False))
+
+
+class CocoaSleepEffect(SleepEffect):
+    def __init__(self, name, duration, is_buff, cc_immunity=False, delay_trigger=0):
+        super().__init__(name, duration, is_buff, cc_immunity, delay_trigger)
+        self.name = "Sleep"
+        self.is_buff = True
+        self.additional_name = "Cocoa_Sleep"
+
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            character.remove_effect(self)
+            return
+        character.heal_hp(character.maxhp * 0.08, character)
+
+    def apply_effect_on_apply(self, character):
+        pass
+
+    def apply_effect_on_remove(self, character):
+        sd = StatsEffect("Sweet Dreams", 20, True, {"atk": 1.3, "defense": 1.3})
+        sd.additional_name = "Cocoa_Sweet_Dreams"
+        character.apply_effect(sd)
+
+    def tooltip_description(self):
+        return "While asleep, recover 8% hp each turn. When this effect is removed, for 10 turns, atk and defense is increased by 30%."
+
+    def tooltip_description_jp(self):
+        return "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、12ターんの間、攻撃力と防御力が30%増加する。"
 
 
 class PharaohPassiveEffect(Effect):

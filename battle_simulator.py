@@ -270,7 +270,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         if rebuild_inventory_slots:
             self.build_inventory_slots()
 
-    def remove_from_inventory(self, item_type, amount_to_remove, rebuild_inventory_slots=True):
+    def remove_from_inventory(self, item_type, amount_to_remove, rebuild_inventory_slots=True, item_brand=None):
         if amount_to_remove <= 0:
             raise ValueError("Amount to remove must be positive")
 
@@ -279,6 +279,9 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         for inv_item in self.inventory.copy():
             if isinstance(inv_item, item_type):
                 if inv_item.can_be_stacked:
+                    if hasattr(inv_item, "brand") and inv_item.brand != item_brand:
+                        # print(f"Brand mismatch: {inv_item.brand} != {item_brand}")
+                        continue
                     amount_removed = min(amount_to_remove - removed_count, inv_item.current_stack)
                     inv_item.current_stack -= amount_removed
                     removed_count += amount_removed
@@ -327,7 +330,10 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             if b: # is_highlighted
                 # cannot use 7 bananas when we only have 5
                 uhmt_fixed = min(use_how_many_times, item.current_stack)
-                self.remove_from_inventory(type(item), uhmt_fixed, False)
+                if hasattr(item, 'brand'):
+                    self.remove_from_inventory(type(item), uhmt_fixed, False, item.brand)
+                else:
+                    self.remove_from_inventory(type(item), uhmt_fixed, False)
                 for i in range(uhmt_fixed):
                     item.E_actual(who_the_character, self)
 
@@ -511,7 +517,7 @@ def get_all_characters():
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
-                       "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu"]
+                       "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -1324,7 +1330,10 @@ if __name__ == "__main__":
             eq_market_value = int(item_to_sell.market_value)
             player.add_cash(eq_market_value, False)
             text_box.append_html_text(f"Sold {item_to_sell.name} in inventory and gained {eq_market_value} cash.\n")
-            player.remove_from_inventory(type(item_to_sell), 1, False)
+            if hasattr(item_to_sell, 'brand'):
+                player.remove_from_inventory(type(item_to_sell), 1, False, item_to_sell.brand)
+            else:
+                player.remove_from_inventory(type(item_to_sell), 1, False)
         player.build_inventory_slots()
 
 
@@ -1358,7 +1367,10 @@ if __name__ == "__main__":
             this_item_income = item_market_value * amount_to_sell
             total_income += this_item_income
             text_box.append_html_text(f"Sold {amount_to_sell} {item_to_sell.name} in inventory and gained {this_item_income} cash.\n")
-            player.remove_from_inventory(type(item_to_sell), amount_to_sell, False)
+            if hasattr(item_to_sell, 'brand'):
+                player.remove_from_inventory(type(item_to_sell), amount_to_sell, False, item_to_sell.brand)
+            else:
+                player.remove_from_inventory(type(item_to_sell), amount_to_sell, False)
         
         text_box.append_html_text(f"Total income: {total_income} cash.\n")
         player.add_cash(total_income, True)
@@ -3785,6 +3797,7 @@ if __name__ == "__main__":
                             use_item_button.set_text("Equip Item")
                             eq_selection_menu.show()
                             character_eq_unequip_button.show()
+                            character_eq_unequip_all_button.show()
                             eq_levelup_button.show()
                             eq_levelup_buttonx10.show()
                             eq_level_up_to_max_button.show()
@@ -3804,6 +3817,7 @@ if __name__ == "__main__":
                             use_item_button.set_text("Use Item")
                             eq_selection_menu.hide()
                             character_eq_unequip_button.hide()
+                            character_eq_unequip_all_button.hide()
                             eq_levelup_button.hide()
                             eq_levelup_buttonx10.hide()
                             eq_level_up_to_max_button.hide()
@@ -3823,6 +3837,7 @@ if __name__ == "__main__":
                             use_item_button.set_text("Use Item")
                             eq_selection_menu.hide()
                             character_eq_unequip_button.hide()
+                            character_eq_unequip_all_button.hide()
                             eq_levelup_button.hide()
                             eq_levelup_buttonx10.hide()
                             eq_level_up_to_max_button.hide()
