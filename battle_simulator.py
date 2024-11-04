@@ -517,7 +517,8 @@ def get_all_characters():
                        "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Air", "Raven", "April",
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
-                       "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika"]
+                       "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
+                       "Clarence"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -3025,7 +3026,7 @@ if __name__ == "__main__":
                     new_image = add_outline_to_image(image, (255, 0, 0), 4)
                     for a, b, c in character.damage_taken_this_turn:
                         match c:
-                            case "normal" | "bypass":
+                            case "normal":
                                 create_yellow_text(character_image_overlay, str(a), 25, (255, 0, 0), current_offset_for_damage_and_healing)
                             case "status":
                                 # orange text
@@ -3035,6 +3036,9 @@ if __name__ == "__main__":
                             case "friendlyfire":
                                 # grey text
                                 create_yellow_text(character_image_overlay, str(a), 25, (153, 153, 153), current_offset_for_damage_and_healing)
+                            case "bypass":
+                                # cadetblue
+                                create_yellow_text(character_image_overlay, str(a), 25, (95, 158, 160), current_offset_for_damage_and_healing)
                             case _:
                                 raise Exception(f"Unknown damage type: {c}")
                         current_offset_for_damage_and_healing += 12

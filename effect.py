@@ -134,10 +134,13 @@ class Effect:
     def print_stats_html(self):
         color_buff = "#659a00"
         color_debuff = "#ff0000"
+        color_special = "#a6a6ff"
         string_unremovable = ""
         if not self.can_be_removed_by_skill or self.is_set_effect:
             string_unremovable += ": Unremovable"
-        if self.is_buff:
+        if self.can_be_removed_by_skill == False and self.is_set_effect == False and self.duration == -1:
+            string = "<font color=" + color_special + ">" + self.name + ": Permanent" + string_unremovable + "</font>" + "\n"
+        elif self.is_buff:
             if self.duration == -1:
                 string = "<font color=" + color_buff + ">" + self.name + ": Permanent" + string_unremovable + "</font>" + "\n"
             else:
@@ -159,10 +162,13 @@ class Effect:
     def print_stats_html_jp(self):
         color_buff = "#659a00"
         color_debuff = "#ff0000"
+        color_special = "#a6a6ff"
         string_unremovable = ""
         if not self.can_be_removed_by_skill or self.is_set_effect:
             string_unremovable += ":解除不可"
-        if self.is_buff:
+        if self.can_be_removed_by_skill == False and self.is_set_effect == False and self.duration == -1:
+            string = "<font color=" + color_special + ">" + self.name + ":永続" + string_unremovable + "</font>" + "\n"
+        elif self.is_buff:
             if self.duration == -1:
                 string = "<font color=" + color_buff + ">" + self.name + ":永続" + string_unremovable + "</font>" + "\n"
             else:
@@ -177,7 +183,7 @@ class Effect:
         if self.delay_trigger > 0:
             string += str(self.delay_trigger) + "ターン後に発動。"
         if self.show_stacks:
-            string += "現在のスタック数:" + str(self.stacks)
+            string += "現在のスタック数:" + str(self.stacks) + "。"
         if hasattr(self, "tooltip_description_jp"):
             s = self.tooltip_description_jp()
             es = self.tooltip_description()
@@ -1334,7 +1340,8 @@ class StatsEffect(Effect):
         called when condition is met, revert the old stats and update with the new stats if anything changed.
         [main_stats_additive_dict] is a dictionary containing main stats, for example {'hp': 200, 'atk: 40'}, this dict is added to additive_main_stats
         of Character class on effect apply, and removed on effect removal. I do not want to implement a dynamic dict for this because it will be complex.
-        [stats_dict_value_increase_when_missing_attack] is added to stats dict when attack is missing. For example, {'acc': 1.0} -> {'acc': 1.1}
+        [stats_dict_value_increase_when_missing_attack] is added to stats dict when attack is missing. For example, {'acc': 1.0} -> {'acc': 1.1},
+        it does not support codition, use_active_flag, stats_dict_function.
         """
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
         self.stats_dict = stats_dict
@@ -1580,8 +1587,8 @@ class ContinuousHealEffect(Effect):
         self.value_function_description_jp = value_function_description_jp
     
     def apply_effect_on_trigger(self, character):
-        amount_to_heal = self.value_function(character, self.buff_applier)
         if character.is_alive():
+            amount_to_heal = self.value_function(character, self.buff_applier)
             character.heal_hp(amount_to_heal, self.buff_applier)
     
     def tooltip_description(self):

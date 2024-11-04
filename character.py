@@ -111,6 +111,9 @@ class Character:
         self.initialize_stats(resethp, resetally, resetenemy, reset_battle_entry)
 
     def get_self_index(self):
+        """
+        Get the index of self in the self party.
+        """
         for i, char in enumerate(self.party):
             if char == self:
                 return i
@@ -290,7 +293,13 @@ class Character:
             case ("all_enemy", _, _, _):
                 yield from ts_available_enemy
 
+            case ("all_enemies", _, _, _):
+                yield from ts_available_enemy
+
             case ("all_ally", _, _, _):
+                yield from self.ally
+
+            case ("all_allies", _, _, _):
                 yield from self.ally
 
             case ("n_random_target", n, _, _):
@@ -1039,6 +1048,68 @@ class Character:
     def has_enemy(self, enemy_name):
         return enemy_name in [enemy.name for enemy in self.enemy]
 
+    def is_middle(self, of_the_party=False):
+        """
+        Check if self is in the middle position(s) of self.ally.
+        self.ally has a length from 0 to 5.
+        of_the_party: Check self.party instead. self.party has a fixed length of 5, never changes in one battle.
+        Examples:
+        [a, b, self, c, d] -> True
+        [a, b, c, d, self] -> False
+        [a, self, c, d]    -> True
+        [a, b, self, d]    -> True
+        [self, b]          -> True
+        [self]             -> True
+        """
+        if of_the_party:
+            return self.get_self_index() == 2
+        ally = self.ally
+        n = len(ally)
+        if n == 0:
+            return False  
+        if self not in ally:
+            return False  
+        # Determine middle index/indices
+        if n % 2 == 1:
+            # Odd length, single middle index
+            middle_indices = [n // 2]
+        else:
+            # Even length, two middle indices
+            middle_indices = [n // 2 - 1, n // 2]
+        self_index = ally.index(self)
+        return self_index in middle_indices
+
+    def get_distance_to_middle(self, of_the_party=False):
+        """
+        Get the distance to the middle position of self.ally.
+
+        Examples:
+        [a, b, self, c, d] -> 0
+        [a, b, c, d, self] -> 2
+        [a, self, c, d]    -> 0
+        [a, b, self, d]    -> 0
+        [self, b]          -> 0
+        [self]             -> 0
+        """
+        if of_the_party:
+            return abs(2 - self.get_self_index())
+        ally = self.ally
+        n = len(ally)
+        if n == 0:
+            return 0
+        if self not in ally:
+            return 0
+        self_index = ally.index(self)
+        if n % 2 == 1:
+            # Odd length, single middle index
+            middle_indices = [n // 2]
+        else:
+            # Even length, two middle indices
+            middle_indices = [n // 2 - 1, n // 2]
+        # Compute the minimum distance to either middle index
+        distances = [abs(self_index - mi) for mi in middle_indices]
+        return min(distances)
+
     def get_neighbors(self, party, char, include_self=True, distance=1) -> list:
         neighbors = []
         for is_adj, item in mit.adjacent(lambda x: x == char, party, distance):
@@ -1279,6 +1350,9 @@ class Character:
         return None
     
     def take_damage_before_calculation(self, damage, attacker):
+        """
+        Event triggered before taking normal damage, not status nor bypass.
+        """
         return damage
 
     def take_damage_aftermath(self, damage, attacker):
@@ -4107,6 +4181,7 @@ class April(Character):
     def take_damage_before_calculation(self, damage, attacker):
         reduction = 0.07 * sum(1 for e in self.buffs if e.is_buff and not e.is_set_effect)
         reduction = min(reduction, 0.7)
+        global_vars.turn_info_string += f"{self.name} reduced {reduction * 100}% of damage taken.\n"
         return damage * (1 - reduction)
     
 
@@ -5326,7 +5401,7 @@ class East(Character):
         nmdm = ReductionShield("No Matter Day or Month", -1, True, 1.0, False, cover_status_damage=True, cover_normal_damage=True,
                                requirement=requirement_func,
                                requirement_description="Attacker is both poisoned and burning.",
-                               requirement_description_jp="攻撃側は毒と火傷を負っている。")
+                               requirement_description_jp="攻撃側は毒と燃焼の両方が負っている。")
         nmdm.can_be_removed_by_skill = False
         self.apply_effect(nmdm)
         
@@ -5968,13 +6043,87 @@ class Xunyu(Character):
         pass
 
 
+class Clarence(Character):
+    """
 
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Clarence"
+        self.skill1_description = "Attack all enemies with 500% atk, enemy in the middle takes 100% damage, damage reduced by 50%" \
+        " for each position away from the middle. If their hp falls below 10% after this attack, they take bypass damage equal to 100% of their current hp."
+        self.skill2_description = "Consume all stars to attack random enemies, the first 5 stars deals 200% atk normal damage," \
+        " the next 5 stars deals 100% atk status damage, the last 5 stars deals 100% atk bypass damage."
+        self.skill3_description = "Start the battle with 5 stacks of Stars, after taking normal damage, consume 1 stack of Stars to reduce damage taken by 20%." \
+        " After using a skill, gain 5 stacks of Stars."
+        self.skill1_description_jp = "全ての敵に攻撃力の500%で攻撃し、中央の敵は100%のダメージを受ける。中央から離れるごとにダメージが50%減少する。この攻撃の後、敵のHPが10%以下になった場合、現在のHPの100%分の状態異常無視ダメージを受ける。"
+        self.skill2_description_jp = "全ての星を消費してランダムな敵に攻撃する。最初の5つは攻撃力の200%の通常ダメージを与え、次の5つは攻撃力の100%の状態異常ダメージを与え、最後の5つは攻撃力の100%の状態異常無視ダメージを与える。"
+        self.skill3_description_jp = "戦闘開始時に5スタックの星を持つ。通常ダメージを受けた後、スターを1スタック消費して受けるダメージを20%減少させる。スキルを使用すると、5つの星を獲得する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
+    def skill1_logic(self):
+        def damage_reduction(self, target: Character, final_damage):
+            if target.is_middle():
+                return final_damage
+            else:
+                distance = target.get_distance_to_middle()
+                return final_damage * (0.50 ** distance)
+        def after_dmg(self, target: Character):
+            if target.is_alive() and target.hp < target.maxhp * 0.10:
+                target.take_bypass_status_effect_damage(target.hp, self)
+        damage_dealt = self.attack(multiplier=5.0, repeat=1, target_kw1="all_enemy", func_damage_step=damage_reduction, func_after_dmg=after_dmg)
+        self.clarence_gain_stars(5)
+        return damage_dealt
 
+    def skill2_logic(self):
+        stars = self.get_effect_that_named("Stars", "Clarence_Stars")
+        stars_available = max(stars.stacks, 0)
+        damage_dealt = 0
+        if stars_available:
+            if 0 < stars_available <= 5:
+                damage_dealt = self.attack(multiplier=2.0, repeat=stars_available)
+            elif 5 < stars_available <= 10:
+                damage_dealt = self.attack(multiplier=2.0, repeat=5)
+                self.update_ally_and_enemy()
+                if self.is_alive() and self.enemy:
+                    damage_dealt += self.attack(multiplier=1.0, repeat=stars_available - 5, damage_type="status")
+            else:
+                damage_dealt = self.attack(multiplier=2.0, repeat=5)
+                self.update_ally_and_enemy()
+                if self.is_alive() and self.enemy:
+                    damage_dealt += self.attack(multiplier=1.0, repeat=5, damage_type="status")
+                    self.update_ally_and_enemy()
+                    if self.is_alive() and self.enemy:
+                        damage_dealt += self.attack(multiplier=1.0, repeat=stars_available - 10, damage_type="bypass")
+            stars.stacks = 0
 
+        self.clarence_gain_stars(5)
+        return damage_dealt
 
+    def skill3(self):
+        pass
 
+    def battle_entry_effects(self):
+        stars = Effect("Stars", -1, True, show_stacks=True, can_be_removed_by_skill=False)
+        stars.additional_name = "Clarence_Stars"
+        stars.stacks = 5
+        self.apply_effect(stars)
 
+    def take_damage_before_calculation(self, damage, attacker):
+        stars = self.get_effect_that_named("Stars", "Clarence_Stars")
+        if stars is not None and stars.stacks > 0:
+            stars.stacks -= 1
+            global_vars.turn_info_string += f"{self.name} consumed 1 stack of Stars to reduce damage taken by 20%.\n"
+            return damage * 0.80
+        return damage
+
+    def clarence_gain_stars(self, amount):
+        stars = self.get_effect_that_named("Stars", "Clarence_Stars")
+        if stars is not None:
+            stars.stacks += amount
+            stars.stacks = min(stars.stacks, 15)
 
 
 
