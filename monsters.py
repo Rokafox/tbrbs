@@ -3178,7 +3178,7 @@ class Coward(Monster):
         " Start the battle with a Absorption Shield covering 40% maxhp."
         self.skill1_description_jp = "20ターンの間、防御力を20%増加させる。同じ効果を重複して適用することはできない。"
         self.skill2_description_jp = "最も近い敵に攻撃力550%で攻撃。"
-        self.skill3_description_jp = "全ての味方を保護する。受けるダメージを20%減少し、50%のダメージが自分が受ける。戦闘開始の時、最大HPの40%をカバーする吸収シールド自分に付与する。"
+        self.skill3_description_jp = "全ての味方を守護する。受けるダメージを20%減少し、50%のダメージが自分が受ける。戦闘開始の時、最大HPの40%をカバーする吸収シールド自分に付与する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -3224,7 +3224,7 @@ class Yamatanoorochi(Monster):
         " Increase maxhp by 60%, defense by 30%."
         self.skill1_description_jp = "ランダムな敵に攻撃力300%で6回攻撃。自分のHPが80%以上の場合、8回攻撃。各攻撃で50%の確率で3ターンの間毒を付与。毒:毎ターン最大HPの3%を状態ダメージとして受ける。"
         self.skill2_description_jp = "最大HPの30%回復し、全ての味方の防御力を24ターンで8%増加。"
-        self.skill3_description_jp = "全ての味方を保護する。受けるダメージを30%減少し、70%のダメージが自分が受ける。最大HPを60%、防御力を30%増加。"
+        self.skill3_description_jp = "全ての味方を守護する。受けるダメージを30%減少し、70%のダメージが自分が受ける。最大HPを60%、防御力を30%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -3272,7 +3272,7 @@ class Hero(Monster):
         " Atk, def and spd is increased by 20%."
         self.skill1_description_jp = "最も低いHPの敵に攻撃力350%で3回攻撃。この攻撃または追加攻撃で敵を倒すと、再度攻撃。"
         self.skill2_description_jp = "12ターンの間、隣接する味方と自分の攻撃力と防御力が自分失ったHPの割合で増加する。"
-        self.skill3_description_jp = "隣接する2体の味方を保護する。受けるダメージを60%減少し、80%のダメージが自分が受ける。攻撃力、防御力、速度を20%増加。"
+        self.skill3_description_jp = "隣接する2体の味方を守護する。受けるダメージを60%減少し、80%のダメージが自分が受ける。攻撃力、防御力、速度を20%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 3
         self.is_boss = True
@@ -3321,7 +3321,7 @@ class HeroB(Monster):
         " Atk, def and spd is increased by 10%."
         self.skill1_description_jp = "最も高いHPの敵に攻撃力300%で3回攻撃し、このスキルで敵を倒せない場合、再度攻撃。"
         self.skill2_description_jp = "自分と2体の隣接する味方に12ターンの間シールドを付与し、シールドは自分の失ったHPに等しいダメージを吸収。"
-        self.skill3_description_jp = "隣接する2体の味方を保護。受けるダメージを50%減少し、50%のダメージが自分が受ける。攻撃力、防御力、速度を10%増加。"
+        self.skill3_description_jp = "隣接する2体の味方を守護。受けるダメージを50%減少し、50%のダメージが自分が受ける。攻撃力、防御力、速度を10%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 3
         self.is_boss = True
@@ -3366,7 +3366,7 @@ class Puppet(Monster):
         self.skill3_description = "Protect all allies. Damage taken is reduced 50%, 90% of damage taken is redirected to you."
         self.skill1_description_jp = "20ターンの間、回避率を50%増加。"
         self.skill2_description_jp = "最大HPの40%回復。"
-        self.skill3_description_jp = "全ての味方を保護。受けるダメージを50%減少し、90%のダメージが自分が受ける。"
+        self.skill3_description_jp = "全ての味方を守護。受けるダメージを50%減少し、90%のダメージが自分が受ける。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
@@ -3400,7 +3400,7 @@ class PuppetB(Monster):
         self.skill3_description = "Protect all allies. Damage taken is reduced 25%, 90% of damage taken is redirected to you."
         self.skill1_description_jp = "20ターンの間、速度を15%増加。"
         self.skill2_description_jp = "自分に吸収シールドを付与し、シールドは最大HPの60%のダメージを吸収。"
-        self.skill3_description_jp = "全ての味方を保護。受けるダメージを25%減少し、90%のダメージが自分が受ける。"
+        self.skill3_description_jp = "全ての味方を守護。受けるダメージを25%減少し、90%のダメージが自分が受ける。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False

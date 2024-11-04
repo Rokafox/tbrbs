@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, CancellationShield, CocoaSleepEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, CancellationShield, CocoaSleepEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, RikaResolveEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -3067,12 +3067,6 @@ class Taily(Character):
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
-
     def skill1_logic(self):
         def stun_effect(self, target):
             target.apply_effect(StunEffect('Stun', duration=10, is_buff=False))
@@ -3096,6 +3090,55 @@ class Taily(Character):
             e = ProtectedEffect("Blessing of Firewood", -1, True, False, self, 0.6)
             e.can_be_removed_by_skill = False
             ally.apply_effect(e)
+
+
+class Rika(Character): 
+    """
+    Tank & Status damage
+    Build: hp, def
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Rika"
+        self.skill1_description = "Attack random enemy triple with 160% atk, 80% chance to inflict Burn for 20 turns. Burn deals 20% atk damage per turn."
+        self.skill2_description = "Apply Burn on all enemies for 20 turns. Burn deals 20% atk damage per turn."
+        self.skill3_description = "Apply Fire & Flower to all allies at the start of battle." \
+        " Fire % Flower: Before taking normal damage, damage taken is reduced by 40% and 50% of the damage is taken by the protector." \
+        " Apply unremovable Blossom on yourself, Blossom: The first time when about to take lethal damage, all allies have their hp set to 1 and all damage taken is reduced to 0" \
+        " for 20 turns. Blossom applied on allies can be removed by skill."
+        # 浄火朱華 咲き誇る花
+        self.skill1_description_jp = "ランダムな敵3匹に攻撃力の160%で攻撃し、20ターンの間「燃焼」を付与する確率が80%ある。燃焼は毎ターン攻撃力の20%分のダメージを与える。"
+        self.skill2_description_jp = "全ての敵に20ターンの間「燃焼」を付与する。燃焼は毎ターン攻撃力の20%分のダメージを与える。"
+        self.skill3_description_jp = "戦闘開始時に全ての味方に「浄火朱華」を付与する。浄火朱華：通常ダメージを受ける前に、受けるダメージが40%減少し、そのダメージの50%を守護者が引き受ける。自身に解除不能な「咲き誇る花」を付与する。咲き誇る花：致命的なダメージを受ける際、全ての味方のHPが1に設定され、20ターンの間全てのダメージが0に軽減される。味方に付与された咲き誇る花はスキルによって解除されることがある。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+
+    def skill1_logic(self):
+        def burn_effect(self, target):
+            if random.randint(1, 100) <= 80:
+                target.apply_effect(ContinuousDamageEffect("Burn", 20, False, self.atk * 0.20, self))
+        damage_dealt = self.attack(target_kw1="random_enemy_triple", multiplier=1.6, repeat=1, func_after_dmg=burn_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        for enemy in self.enemy:
+            enemy.apply_effect(ContinuousDamageEffect("Burn", 20, False, self.atk * 0.20, self))
+        return 0
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Fire & Flower", -1, True, False, self, 0.6, 0.5)
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
+        blossom = RikaResolveEffect("Blossom", -1, True, False, damage_immune_duration=20)
+        blossom.can_be_removed_by_skill = False
+        self.apply_effect(blossom)
+
 
 
 class Air(Character):
@@ -5362,13 +5405,13 @@ class George(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "George"
-        self.skill1_description = "Attack 3 closest enemies with 260% atk and apply Close River for 20 turns. Close River: When targeting an enemy," \
+        self.skill1_description = "Attack 3 closest enemies with 260% atk and apply Close River for 24 turns. Close River: When targeting an enemy," \
         " only the character in the middle of enemy party can be targeted. Effect is removed when the enemy in middle is defeated." \
         " or you are defeated, or the enemy in the middle cannot be targeted."
         self.skill2_description = "Attack random enemies 7 times with 200% atk each, for each lost ally of the target, damage is increased by 30%."
         self.skill3_description = "Apply Distant Mountain on yourself. Distant Mountain: Before taken action in battle, reduce damage taken by 50%."
         # 遠山 近水
-        self.skill1_description_jp = "最も近い3人の敵に攻撃力の260%で攻撃し、20ターンの間「近水」を付与する。近水：敵をターゲットにする際、敵パーティの中央のキャラクターのみを対象にできる。この効果は、中央の敵が倒された時、または自分が倒された時、もしくは中央の敵がターゲットにできない状態になった時に解除される。"
+        self.skill1_description_jp = "最も近い3人の敵に攻撃力の260%で攻撃し、24ターンの間「近水」を付与する。近水：敵をターゲットにする際、敵パーティの中央のキャラクターのみを対象にできる。この効果は、中央の敵が倒された時、または自分が倒された時、もしくは中央の敵がターゲットにできない状態になった時に解除される。"
         self.skill2_description_jp = "ランダムな敵に攻撃力の200%で7回攻撃する。対象が失った味方1人につき、ダメージが30%増加する。"
         self.skill3_description_jp = "自身に「遠山」を付与する。遠山：戦闘中、行動する前に受けるダメージが50%減少する。"
         self.skill1_cooldown_max = 4
@@ -5378,7 +5421,7 @@ class George(Character):
     def skill1_logic(self):
         character_marked = mit.one(self.target_selection(keyword="n_ally_in_middle", keyword2="1"))
         def apply_taunt_effect(self: Character, target: Character):
-            target.apply_effect(TauntEffect("Close River", 20, False, False, marked_character=character_marked))
+            target.apply_effect(TauntEffect("Close River", 24, False, False, marked_character=character_marked))
         damage_dealt = self.attack(multiplier=2.6, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=apply_taunt_effect)
         return damage_dealt
 

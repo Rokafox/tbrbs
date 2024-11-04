@@ -757,13 +757,15 @@ class DamageReflect(Effect):
 class ResolveEffect(Effect):
     """
     When taking damage, if damage exceed current hp, it is reduced to current hp - [hp_to_leave].
+    NOTE: When calculating damage, buff is resolved before debuff, which means if a character has a debuff effect that increases damage
+    during damage step, ResolveEffect will not be able to guarantee survival.
     """
     def __init__(self, name, duration, is_buff, cc_immunity, hp_to_leave=1, 
                     cover_status_damage=False, cover_normal_damage=True, same_turn_usage="unlimited"):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.cc_immunity = cc_immunity
-        self.sort_priority = 203
+        self.sort_priority = 204
         self.hp_to_leave = hp_to_leave
         self.cover_status_damage = cover_status_damage
         self.cover_normal_damage = cover_normal_damage
@@ -811,6 +813,46 @@ class ResolveEffect(Effect):
             s += "状態異常ダメージに適用。"
         if type(self.same_turn_usage) == int:
             s += f"1ターンに{self.same_turn_usage}回まで発動可能。"
+        return s
+
+
+class ResolveEffectVariation1(Effect):
+    """
+    A variant of ResolveEffect, not reducing damage to 1, but set hp to 1 and return damage as 0.
+    gurantee survival against debuffs that increase damage taken by a percentage, 
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, damage_immune_duration=1,):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.cc_immunity = cc_immunity
+        self.sort_priority = 299
+        self.onehp_effect_triggered = False
+        self.damage_immune_duration = damage_immune_duration
+
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        if self.onehp_effect_triggered:
+            return 0
+        if damage >= character.hp:
+            character.hp = 1
+            global_vars.turn_info_string += f"{character.name} survived with 1 hp by {self.name}.\n"
+            self.onehp_effect_triggered = True
+            self.duration = self.damage_immune_duration
+            return 0
+        else:
+            return damage
+
+    def tooltip_description(self):
+        if not self.onehp_effect_triggered:
+            s = f"Leave with 1 hp when taking fatal damage. For {self.damage_immune_duration} turns, damage taken is reduced to 0."
+        else:
+            s = f"Damage taken is reduced to 0."
+        return s
+    
+    def tooltip_description_jp(self):
+        if not self.onehp_effect_triggered:
+            s = f"致命ダメージを受けたとき、1HPで生き残る。{self.damage_immune_duration}ターンの間、受けるダメージが0になる。"
+        else:
+            s = f"受けるダメージが0になる。"
         return s
 
 
@@ -1570,6 +1612,8 @@ class ContinuousDamageEffect(Effect):
         self.how_many_times_this_effect_is_triggered_lifetime = 0
     
     def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            return
         match self.damage_type:
             case "status":
                 character.take_status_damage(self.value, self.imposter)
@@ -2693,6 +2737,34 @@ class CocoaSleepEffect(SleepEffect):
 
     def tooltip_description_jp(self):
         return "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、12ターんの間、攻撃力と防御力が30%増加する。"
+
+
+class RikaResolveEffect(ResolveEffectVariation1):
+    """
+    When triggers, all allies also gains this effect.
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, damage_immune_duration=1):
+        super().__init__(name, duration, is_buff, cc_immunity, damage_immune_duration)
+
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        if self.onehp_effect_triggered:
+            return 0
+        if damage >= character.hp:
+            character.hp = 1
+            global_vars.turn_info_string += f"{character.name} survived with 1 hp by {self.name}.\n"
+            self.onehp_effect_triggered = True
+            self.duration = self.damage_immune_duration
+            character.update_ally_and_enemy()
+            for a in character.ally:
+                if a != character:
+                    a.hp = 1
+                    copy_effect = copy.copy(self)
+                    copy_effect.can_be_removed_by_skill = True
+                    a.apply_effect(copy_effect)
+            return 0
+        else:
+            return damage
+
 
 
 class PharaohPassiveEffect(Effect):
