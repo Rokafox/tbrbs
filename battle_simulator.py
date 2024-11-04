@@ -174,6 +174,14 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         # c: means Characters, only show items that has attr owner = filter_inventory_suboption.split(":")[1].strip()
         if filter_inventory_suboption.startswith("s:"):
             filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
+        elif filter_inventory_suboption.startswith("sno:"):
+            # No Owner
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
+        elif filter_inventory_suboption.startswith("sho:"):
+            # Has Owner
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
         elif filter_inventory_suboption.startswith("c:"):
             filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == filter_inventory_suboption.split(":")[1].strip()]
         elif filter_inventory_suboption == "No Owner":
@@ -1772,7 +1780,7 @@ if __name__ == "__main__":
 
     cheap_inventory_what_to_show_selection_menu = pygame_gui.elements.UIDropDownMenu(["Equip", "Consumable", "Item"],
                                                             "Equip",
-                                                            pygame.Rect((1300, 20), (230, 35)),
+                                                            pygame.Rect((1300, 20), (240, 35)),
                                                             ui_manager)
 
     cheap_inventory_sort_by_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
@@ -1785,11 +1793,12 @@ if __name__ == "__main__":
 
     cheap_inventory_filter_selection_menu = pygame_gui.elements.UIDropDownMenu(["All", "No Owner", "Has Owner"],
                                                             "All",
-                                                            pygame.Rect((1416, 60), (114, 35)),
+                                                            pygame.Rect((1416, 60), (154, 35)),
                                                             ui_manager)
+    # was 114
 
     # craft a new list of s: + set name
-    cheap_inventory_filter_selection_menu.add_options([f"s: {x}" for x in eq_set_list_without_none_and_void])
+    cheap_inventory_filter_selection_menu.add_options([f"{prefix}: {x}" for prefix in ["s", "sno", "sho"] for x in eq_set_list_without_none_and_void])
     # character names start with c:
     cheap_inventory_filter_selection_menu.add_options([f"c: {x}" for x in all_characters_names])
 
