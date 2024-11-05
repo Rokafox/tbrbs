@@ -134,7 +134,7 @@ class Effect:
     def print_stats_html(self):
         color_buff = "#659a00"
         color_debuff = "#ff0000"
-        color_special = "#a6a6ff"
+        color_special = "#9292ff"
         string_unremovable = ""
         if not self.can_be_removed_by_skill or self.is_set_effect:
             string_unremovable += ": Unremovable"
@@ -222,7 +222,7 @@ class Effect:
 # When a protected character is about to take damage, that damage is taken by the protector instead. Does not apply to status damage.
 class ProtectedEffect(Effect):
     def __init__(self, name, duration, is_buff, cc_immunity=False, protector=None, damage_after_reduction_multiplier=1.0, 
-                 damage_redirect_percentage=1.0):
+                 damage_redirect_percentage=1.0, can_be_removed_by_skill=True):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.cc_immunity = cc_immunity
         self.protector = protector
@@ -230,6 +230,7 @@ class ProtectedEffect(Effect):
         self.damage_redirect_percentage = damage_redirect_percentage
         self.sort_priority = self.calculate_sort_priority()
         self.is_protected_effect = True
+        self.can_be_removed_by_skill = can_be_removed_by_skill
 
     def calculate_sort_priority(self):
         return int(100 + self.damage_redirect_percentage * 99)

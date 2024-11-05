@@ -526,7 +526,7 @@ def get_all_characters():
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
                        "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
-                       "Clarence"]
+                       "Clarence", "Jingke"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -2593,9 +2593,10 @@ if __name__ == "__main__":
             handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu, nci)
         else:
             raise Exception(f"Unknown game mode: {current_game_mode} in replace_character_with_reserve_member()")
+        text_box.set_text("=====================================\n")
+        text_box.append_html_text(f"{character_name} has been replaced with {new_character_name}.\n")
         restart_battle()
         redraw_ui(party1, party2)
-        text_box.append_html_text(f"{character_name} has been replaced with {new_character_name}.\n")
 
     def add_outline_to_image(surface, outline_color, outline_thickness):
         """

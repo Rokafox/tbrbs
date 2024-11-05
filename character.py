@@ -836,7 +836,7 @@ class Character:
                         effect_str = effect_key.replace('X', '?')
                 result += effect_str
                 if count > 1:
-                    color_repeat = "#6600ff"
+                    color_repeat = "#ff80ff"
                     if durations:
                         # List all durations
                         durations_str = ', '.join(durations)
@@ -1126,6 +1126,18 @@ class Character:
     def get_neighbor_allies_not_including_self(self, get_from_self_ally=True):
         return self.get_neighbors(self.ally, self, False) if get_from_self_ally else self.get_neighbors(self.party, self, False)
 
+    def get_neighbor_ally_left(self, get_from_self_ally=True):
+        neighbors = self.get_neighbor_allies_not_including_self(get_from_self_ally)
+        if neighbors:
+            return neighbors[0]
+        return None
+
+    def get_neighbor_ally_right(self, get_from_self_ally=True):
+        neighbors = self.get_neighbor_allies_not_including_self(get_from_self_ally)
+        if neighbors:
+            return neighbors[-1]
+        return None
+
     def has_neighbor(self, character_name, get_from_self_ally=True):
         neighbors = self.get_neighbor_allies_not_including_self(get_from_self_ally)
         for n in neighbors:
@@ -1236,24 +1248,6 @@ class Character:
         for e in self.buffs.copy() + self.debuffs.copy():
             e.apply_effect_after_heal_step(self, healing, overhealing)
         return healing, healer, overhealing
-
-
-
-                # self.hp = min(self.hp, self.maxhp)
-                # maxhp_curr = self.maxhp
-                # hp_curr = self.hp
-                # if maxhp_curr < maxhp_prev:
-                #     hp_illegally_removed_by_this_operation = hp_prev - hp_curr
-                # else:
-                #     hp_illegally_removed_by_this_operation = 0
-                # return True, hp_illegally_removed_by_this_operation
-
-
-
-
-
-
-
 
     def pay_hp(self, value):
         if self.is_dead():
@@ -6124,6 +6118,97 @@ class Clarence(Character):
         if stars is not None:
             stars.stacks += amount
             stars.stacks = min(stars.stacks, 15)
+
+
+class Jingke(Character):
+    """
+    Poison and Burn, create protector(low damage redirect)
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Jingke"
+        self.skill1_description = "Attack enemy with highest hp with 500% atk, inflict Poison and Burn for 20 turns." \
+        " Poison deals 1% of target hp status damage each turn, Burn deals 20% of atk status damage each turn."
+        self.skill2_description = "Apply Black Cat on yourself for 20 turns, increase evasion and attack and critdmg by 40%, but accuracy is reduced by 40%." \
+        " When same effect is applied, duration is refreshed."
+        self.skill3_description = "At start of battle, target an ally on the left, if there are none, target right, apply Protected to the rest of" \
+        " allies and target becomes protector. Protected: Damage taken is reduced by 30%, 40% of damage is taken by the protector instead."
+        self.skill1_description_jp = "HPが最も高い敵に攻撃力の500%で攻撃し、20ターンの間「毒」と「燃焼」を付与する。毒は毎ターン、対象のHPの1%分の状態異常ダメージを与え、燃焼は毎ターン攻撃力の20%分の状態異常ダメージを与える。"
+        self.skill2_description_jp = "自身に20ターンの間「黒猫」を付与し、回避率、攻撃力、クリティカルダメージを40%増加させるが、命中率が40%減少する。同じ効果が再度適用された場合、持続時間が更新される。"
+        self.skill3_description_jp = "戦闘開始時、左側にいる味方を対象にし、いない場合は右側を対象にする。対象は守護者になり、残りの味方には「守護」を付与する。守護：受けるダメージが30%減少し、ダメージの40%は守護者が代わりに受ける。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        def after_dmg(self, target: Character):
+            target.apply_effect(ContinuousDamageEffect_Poison("Poison", 20, False, 0.01, imposter=self, base="hp"))
+            target.apply_effect(ContinuousDamageEffect("Burn", 20, False, 0.20 * self.atk, self))
+        damage_dealt = self.attack(multiplier=5.0, repeat=1, target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", 
+                                                    target_kw4="enemy", func_after_dmg=after_dmg)
+        return damage_dealt
+
+    def skill2_logic(self):
+        e = StatsEffect("Black Cat", 20, True, {"atk": 1.40, "eva": 0.40,  "critdmg": 0.40, "acc": -0.40})
+        e.additional_name = "Jingke_Black_Cat"
+        e.apply_rule = "stack"
+        self.apply_effect(e)
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        left = self.get_neighbor_ally_left()
+        if left is None:
+            left = self
+        for a in self.ally:
+            if a is not left:
+                a.apply_effect(ProtectedEffect("Protected", -1, True, cc_immunity=False, protector=left,
+                                               damage_after_reduction_multiplier=0.70, damage_redirect_percentage=0.40,
+                                               can_be_removed_by_skill=False))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
