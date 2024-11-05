@@ -109,6 +109,9 @@ class Effect:
     def apply_effect_before_action(self, character):
         pass
 
+    def apply_effect_when_taking_friendly_fire(self, character, damage, attacker):
+        return damage
+
 
     def __str__(self):
         return self.name
@@ -731,6 +734,51 @@ class EffectShield2_HealonDamage(Effect):
     
     def tooltip_description_jp(self):
         return f"ダメージが最大HPの{self.hp_threshold*100:.1f}%を超えると、最大HPの{self.heal_with_self_maxhp_percentage*100:.1f}%回復する。"
+
+
+class FriendlyFireShield(Effect):
+    """
+    When taking damage from allies, reduce the damage by [damage_reduction]*100%.
+    if [heal_by_damage] is more than 0, heal by damage*100% of the damage taken before reduction. 
+    if [apply_shield_on_full_hp] is True, also apply shield on full hp, shield value is damage*100%
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, effect_applier , damage_reduction=0.5, heal_by_damage=0, 
+                 apply_shield_on_full_hp=False):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.cc_immunity = cc_immunity
+        self.effect_applier = effect_applier
+        self.damage_reduction = damage_reduction
+        self.heal_by_damage = heal_by_damage
+        self.apply_shield_on_full_hp = apply_shield_on_full_hp
+        self.sort_priority = 201 # Does not matter as this effect is calculated before damage step.
+
+    def apply_effect_when_taking_friendly_fire(self, character, damage, attacker):
+        if self.apply_shield_on_full_hp and character.hp == character.maxhp:
+            shield_value = damage * 1.00
+            character.apply_effect(AbsorptionShield("Shield", -1, True, shield_value, False))
+        if self.heal_by_damage > 0:
+            character.heal_hp(damage * self.heal_by_damage, self.effect_applier)
+        final_dmg = damage * (1 - self.damage_reduction)
+        return final_dmg
+    
+    def tooltip_description(self):
+        description = f"Reduces damage taken from allies by {self.damage_reduction * 100:.1f}%."
+        if self.heal_by_damage > 0:
+            description += f" Heals {self.heal_by_damage * 100:.1f}% of the damage taken from allies before reduction."
+        if self.apply_shield_on_full_hp:
+            description += " Grants a shield equal to the damage amount when at full health."
+        return description
+    
+    def tooltip_description_jp(self):
+        description = f"味方から受けるダメージを{self.damage_reduction * 100:.1f}%減少する。"
+        if self.heal_by_damage > 0:
+            description += f"ダメージの{self.heal_by_damage * 100:.1f}%でHPを回復する。"
+        if self.apply_shield_on_full_hp:
+            description += "最大HP時、ダメージ分のシールドを付与する。"
+        return description
+
+
 
 
 

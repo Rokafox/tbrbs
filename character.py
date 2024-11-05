@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, CancellationShield, CocoaSleepEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, RikaResolveEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, CancellationShield, CocoaSleepEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, RikaResolveEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -1284,6 +1284,11 @@ class Character:
         pass
 
     def take_damage(self, value, attacker=None, func_after_dmg=None, disable_protected_effect=False, is_crit=False):
+        friendly_fire = False
+        if attacker is not None and attacker in self.party:
+            friendly_fire = True
+            global_vars.turn_info_string += f"{self.name} is taking friendly fire from {attacker.name}.\n"
+
         global_vars.turn_info_string += f"{self.name} is about to take {value} damage.\n"
         if self.is_dead():
             print(global_vars.turn_info_string)
@@ -1291,6 +1296,9 @@ class Character:
         value = max(0, value)
         # Attention: final_damage_taken_multipler is calculated before shields effects.
         damage = value * self.final_damage_taken_multipler
+        if damage > 0 and friendly_fire:
+            for effect in itertools.chain(self.buffs.copy(), self.debuffs.copy()):
+                damage = effect.apply_effect_when_taking_friendly_fire(self, damage, attacker)
 
         if damage > 0:
             copyed_buffs = self.buffs.copy() # Some effect will try apply other effects during this step, see comments on Effect class for details.
@@ -1328,7 +1336,7 @@ class Character:
 
         global_vars.turn_info_string += f"{self.name} took {damage} damage.\n"
         # Also need to handle when the attacker is from the same party, if so, the damage is 'friendlyfire'.
-        if attacker is not None and attacker in self.party:
+        if friendly_fire:
             self.damage_taken_this_turn.append((damage, attacker, "friendlyfire"))
         else:
             if is_crit:
@@ -1364,9 +1372,18 @@ class Character:
     def take_status_damage(self, value, attacker=None, is_reflect=False):
         if self.is_dead():
             return 0, attacker
+        friendly_fire = False
+        if attacker is not None and attacker in self.party:
+            friendly_fire = True
+            global_vars.turn_info_string += f"{self.name} is taking friendly fire from {attacker.name}.\n"
         global_vars.turn_info_string += f"{self.name} is about to take {value} status damage.\n"
         value = max(0, value)
         damage = value * self.final_damage_taken_multipler
+
+        if damage > 0 and friendly_fire:
+            for effect in itertools.chain(self.buffs.copy(), self.debuffs.copy()):
+                damage = effect.apply_effect_when_taking_friendly_fire(self, damage, attacker)
+
         if damage > 0:
             copyed_buffs = self.buffs.copy() 
             copyed_debuffs = self.debuffs.copy()
@@ -1389,17 +1406,19 @@ class Character:
             effect.apply_effect_after_status_damage_step(self, damage, attacker)
 
         global_vars.turn_info_string += f"{self.name} took {damage} status damage.\n"
-        if attacker is not None and attacker in self.party:
+        if friendly_fire:
             self.damage_taken_this_turn.append((damage, attacker, "friendlyfire"))
         else:
             self.damage_taken_this_turn.append((damage, attacker, "status"))
         if self.is_dead():
             self.defeated_by_taken_damage(damage, attacker)
+        # defeated_by_taken_damage may trigger instant revive effect, so need to check again.
         if self.is_dead():
             self.trigger_hidden_effect_on_allies()
             if attacker is not None:
                 attacker.number_of_take_downs += 1
-        return None
+        # We do not need the return value yet.
+        return None, None 
 
     def take_bypass_status_effect_damage(self, value, attacker=None):
         global_vars.turn_info_string += f"{self.name} is about to take {value} bypass status effect damage.\n"
@@ -5022,10 +5041,10 @@ class Moe(Character):
         " otherwise attack with 200% atk. Attack 4 times, each attack removes 1 active buff from the target." \
         " After the attack, apply Paradox on target for 24 turns, reduce crit damage by 60%."
         self.skill2_description = "Attack all enemies with 200% atk, if enemy has active buffs, attack with 400% atk."
-        self.skill3_description = "When taking critical damage, recover hp by 300% atk, reduced that damage by 45%."
+        self.skill3_description = "When taking critical damage, recover hp by 300% atk, reduced that damage by 50%."
         self.skill1_description_jp = "クリティカル率が最も高い敵を対象にする。対象にアクティブなバフがある場合、攻撃力の400%で攻撃し、ない場合は攻撃力の200%で攻撃する。4回攻撃し、各攻撃で1つのアクティブなバフを解除する。攻撃後、対象に24ターンの間「矛盾」を付与し、クリティカルダメージを60%減少させる。"
         self.skill2_description_jp = "全ての敵に攻撃力の200%で攻撃し、敵にアクティブなバフがある場合は攻撃力の400%で攻撃する。"
-        self.skill3_description_jp = "クリティカルダメージを受けた際、攻撃力の300%分HPを回復し、そのダメージを45%軽減する。"
+        self.skill3_description_jp = "クリティカルダメージを受けた際、攻撃力の300%分HPを回復し、そのダメージを50%軽減する。"
 
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -5068,7 +5087,7 @@ class Moe(Character):
         def heal_func(character: Character):
             return character.atk * 3.0
         sf = EffectShield1_healoncrit("Sweets Fluffy", -1, True, 1, effect_applier=self, cc_immunity=False,
-                                      heal_function=heal_func, critdmg_reduction=0.45)
+                                      heal_function=heal_func, critdmg_reduction=0.50)
         sf.can_be_removed_by_skill = False
         self.apply_effect(sf)
 
@@ -6215,6 +6234,60 @@ class Shuijing(Character):
         return damage_dealt
 
 
+class Martin(Character):
+    """
+
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Martin"
+        self.skill1_description = "Apply Fair Trade to enemies and allies." \
+        " Each enemy of lowest atk, def, speed has their selected stats increased by 20% for 20 turns." \
+        " Each ally of highest atk, def, speed has their selected stats increased by 20% for 20 turns."
+        self.skill2_description = "Attack random enemy 4 times with 240% atk, inflict Defence Break for 20 turns." \
+        " Defence Break: Defence is reduced by 10%."
+        self.skill3_description = "Apply Maneki-neko to all allies." \
+        " Maneki-neko: When taking friendly fire damage, heal hp by the amount of damage instead and reduce damage to 0." \
+        " If at full hp, apply a shield that absorbs damage equal to the damage." \
+        # " Maneki-neko cannot protect against self-harm damage."
+        self.skill1_description_jp = "敵と味方に「大儲け」を付与する。攻撃力、防御力、速度が最も低い各敵の該当ステータスが20ターンの間20%増加する。攻撃力、防御力、速度が最も高い各味方の該当ステータスが20ターンの間20%増加する。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力の240%で4回攻撃し、20ターンの間「防御ダウン」を付与する。防御ダウン：防御力が10%減少する。"
+        self.skill3_description_jp = "全ての味方に「招き猫」を付与する。招き猫：味方からのダメージを受けた際、ダメージ量分のHPを回復し、ダメージを0に軽減する。HPが満タンの場合、そのダメージ量と同じダメージを吸収するシールドを付与する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 3
+
+    def skill1_logic(self):
+        low_atk = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="atk", keyword4="enemy"))
+        low_def = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="defense", keyword4="enemy"))
+        low_spd = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="spd", keyword4="enemy"))
+        low_atk.apply_effect(StatsEffect("Fair Trade", 20, True, {"atk": 1.20}))
+        low_def.apply_effect(StatsEffect("Fair Trade", 20, True, {"defense": 1.20}))
+        low_spd.apply_effect(StatsEffect("Fair Trade", 20, True, {"spd": 1.20}))
+        high_atk = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
+        high_def = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="defense", keyword4="ally"))
+        high_spd = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="spd", keyword4="ally"))
+        high_atk.apply_effect(StatsEffect("Fair Trade", 20, True, {"atk": 1.20}))
+        high_def.apply_effect(StatsEffect("Fair Trade", 20, True, {"defense": 1.20}))
+        high_spd.apply_effect(StatsEffect("Fair Trade", 20, True, {"spd": 1.20}))
+        return 0
+
+    def skill2_logic(self):
+        def after_dmg(self, target: Character):
+            target.apply_effect(StatsEffect("Defence Break", 20, False, {"defense": 0.90}))
+        damage_dealt = self.attack(multiplier=2.4, repeat=4, func_after_dmg=after_dmg)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    # FriendlyFireShield
+    def battle_entry_effects(self):
+        for a in self.ally:
+            e = FriendlyFireShield("Maneki-neko", -1, True, cc_immunity=False, effect_applier=self,
+                                              damage_reduction=1.0, heal_by_damage=1.0, apply_shield_on_full_hp=True)
+            e.can_be_removed_by_skill = False
+            a.apply_effect(e)
 
 
 
