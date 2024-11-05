@@ -1855,23 +1855,67 @@ class RebornEffect(Effect):
 class StingEffect(Effect):
     """
     every time target take damage, take [value] status damage.
+    take [value_s] bypass damage every time after taking status damage. If value function is provided, use that instead.
     """
-    def __init__(self, name, duration, is_buff, value, imposter):
+    def __init__(self, name, duration, is_buff, value, imposter, value_function_normal_damage_step=None,
+                        value_s=0, value_function_status_damage_step=None):
+
         super().__init__(name, duration, is_buff)
         self.name = name
         self.is_buff = is_buff
         self.value = value
         self.imposter = imposter
+        self.value_function_normal_damage_step = value_function_normal_damage_step
+        self.value_s = value_s
+        self.value_function_status_damage_step = value_function_status_damage_step
 
     def apply_effect_after_damage_step(self, character, damage, attacker):
-        character.take_status_damage(self.value, self.imposter)
+        if self.value == 0 and self.value_function_normal_damage_step is None:
+            return
+        if self.value_function_normal_damage_step:
+            damage_to_take = self.value_function_normal_damage_step(character, damage, attacker, self.imposter)
+        else:
+            damage_to_take = self.value
+        if damage_to_take > 0 and character.is_alive():
+            character.take_status_damage(damage_to_take, self.imposter)
+
+    def apply_effect_after_status_damage_step(self, character, damage, attacker):
+        if self.value_s == 0 and self.value_function_status_damage_step is None:
+            return
+        if self.value_function_status_damage_step:
+            damage_to_take = self.value_function_status_damage_step(character, damage, attacker, self.imposter)
+        else:
+            damage_to_take = self.value_s
+        if damage_to_take > 0 and character.is_alive():
+            character.take_bypass_status_effect_damage(damage_to_take, self.imposter)
 
     def tooltip_description(self):
-        return f"Take {self.value:.2f} status damage every time after taking damage."
+        s = ""
+        if self.value or self.value_function_normal_damage_step:
+            if self.value:
+                s += f"Take {self.value:.2f} status damage every time after taking damage."
+            else:
+                s += f"Take status damage every time after taking damage, damage is calculated by a function."
+        if self.value_s or self.value_function_status_damage_step:
+            if self.value_s:
+                s += f"Take {self.value_s:.2f} bypass damage every time after taking status damage."
+            else:
+                s += f"Take bypass damage every time after taking status damage, damage is calculated by a function."
+        return s
     
     def tooltip_description_jp(self):
-        return f"ダメージを受けた後、{self.value:.2f}の状態異常ダメージを受ける。"
-    
+        s = ""
+        if self.value or self.value_function_normal_damage_step:
+            if self.value:
+                s += f"ダメージを受けた後、{self.value:.2f}の状態異常ダメージを受ける。"
+            else:
+                s += f"ダメージを受けた後、状態異常ダメージを受ける。ダメージは関数で計算される。"
+        if self.value_s or self.value_function_status_damage_step:
+            if self.value_s:
+                s += f"状態異常ダメージを受けた後、{self.value_s:.2f}の状態異常無視ダメージを受ける。"
+            else:
+                s += f"状態異常ダメージを受けた後、状態異常無視ダメージを受ける。ダメージは関数で計算される。"
+        return s
 
 class HideEffect(Effect):
     """

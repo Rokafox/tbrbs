@@ -1219,7 +1219,7 @@ class Character:
     def heal_hp(self, value, healer, ignore_death=False):
         # Remember the healer can be a Character object or Consumable object or Effect or perhaps other objects
         # if healer is not Character class, give error for now, testing purpose
-        if not isinstance(healer, Character) and not isinstance(healer, EquipmentSetEffect_Snowflake) and not isinstance(healer, EquipmentSetEffect_Bamboo):
+        if not isinstance(healer, Character):
             # raise Exception(f"Invalid healer: {healer}, {healer.__class__}")
             healer = self
         if self.is_dead() and not ignore_death:
@@ -1362,9 +1362,9 @@ class Character:
         pass
 
     def take_status_damage(self, value, attacker=None, is_reflect=False):
-        global_vars.turn_info_string += f"{self.name} is about to take {value} status damage.\n"
         if self.is_dead():
             return 0, attacker
+        global_vars.turn_info_string += f"{self.name} is about to take {value} status damage.\n"
         value = max(0, value)
         damage = value * self.final_damage_taken_multipler
         if damage > 0:
@@ -6169,9 +6169,50 @@ class Jingke(Character):
                                                can_be_removed_by_skill=False))
 
 
+class Shuijing(Character):
+    """
+    Enemy take extra damage whenever takes damage.
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Shuijing"
+        self.skill1_description = "Attack all enemies with 300% atk and inflict Matsu for 20 turns." \
+        " Matsu: When taking damage, take status damage equal to 20% of the damage taken."
+        self.skill2_description = "Attack all enemies with 300% atk and inflict Tsuru for 20 turns." \
+        " Tsuru: When taking status damage, take bypass damage equal to 20% of the status damage taken."
+        self.skill3_description = "Normal attack cast 2 times, the second attack deals status damage."
+        self.skill1_description_jp = "全ての敵に攻撃力の300%で攻撃し、20ターンの間「松」を付与する。松：ダメージを受けた際、受けたダメージの20%に相当する状態異常ダメージを受ける。"
+        self.skill2_description_jp = "全ての敵に攻撃力の300%で攻撃し、20ターンの間「鶴」を付与する。鶴：状態異常ダメージを受けた際、受けた状態異常ダメージの20%に相当する状態異常無視ダメージを受ける。"
+        self.skill3_description_jp = "通常攻撃を2回行い、2回目の攻撃は状態異常ダメージを与える。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
+    def skill1_logic(self):
+        def after_dmg(self, target: Character):
+            def value_func(char, dmg, attacker, effect_applier):
+                return dmg * 0.20
+            target.apply_effect(StingEffect("Matsu", 20, False, 0, self, value_function_normal_damage_step=value_func))
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="all_enemy", func_after_dmg=after_dmg)
+        return damage_dealt
 
+    def skill2_logic(self):
+        def after_dmg(self, target: Character):
+            def value_func(char, dmg, attacker, effect_applier):
+                return dmg * 0.20
+            target.apply_effect(StingEffect("Tsuru", 20, False, 0, self, value_function_status_damage_step=value_func))
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="all_enemy", func_after_dmg=after_dmg)
+        return damage_dealt
 
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        damage_dealt = self.attack()
+        self.update_ally_and_enemy()
+        if self.is_alive() and self.enemy:
+            damage_dealt += self.attack(damage_type="status")
+        return damage_dealt
 
 
 
