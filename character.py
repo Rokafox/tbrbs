@@ -1609,7 +1609,7 @@ class Character:
         # if effect is AbsorptionShield and they have the same name and duration and cc_immunity, we can stack them.
         if isinstance(effect, AbsorptionShield):
             for e in self.buffs.copy() + self.debuffs.copy():
-                if e.name == effect.name and e.duration == effect.duration and e.cc_immunity == effect.cc_immunity:
+                if isinstance(e, AbsorptionShield) and e.name == effect.name and e.duration == effect.duration and e.cc_immunity == effect.cc_immunity:
                     e.shield_value += effect.shield_value
                     global_vars.turn_info_string += f"{effect.name} on {self.name} has been stacked.\n"
                     # print(f"Warning: AbsorptionShield is stacked. {self.name}, {effect.name}")

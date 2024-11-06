@@ -401,7 +401,7 @@ if __name__ == "__main__":
     else:
         sample = 6000
     # "default", "file", "suppress"
-    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress", run_tests=True)
+    a, b = calculate_winrate_for_character(sample, get_all_characters(2), "suppress", run_tests=True)
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze

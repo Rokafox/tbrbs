@@ -1832,8 +1832,48 @@ class Icelady(Monster):
         self.attack(func_after_dmg=freeze_effect)
 
 
+class GargoyleB(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "GargoyleB"
+        self.skill1_description = "Attack closest enemy 3 times with 210% atk."
+        self.skill2_description = "Attack closest enemy 3 times with 210% atk."
+        self.skill3_description = "Each skill attack and normal attack has 10% chance to petrify the target for 35 turns." \
+        " Normal attack will target closest enemy."
+        # PetrifyEffect
+        self.skill1_description_jp = "最も近い敵に攻撃力の210%で3回攻撃する。"
+        self.skill2_description_jp = "最も近い敵に攻撃力の210%で3回攻撃する。"
+        self.skill3_description_jp = "各スキル攻撃および通常攻撃には、10%の確率で対象を35ターンの間「石化」させる。通常攻撃は最も近い敵を対象とする。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
 
 
+    def skill1_logic(self):
+        def petrify_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 10:
+                target.apply_effect(PetrifyEffect('Petrify', duration=35, is_buff=False, imposter=self))
+        damage_dealt = self.attack(multiplier=2.1, repeat=3, target_kw1="enemy_in_front", func_after_dmg=petrify_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def petrify_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 10:
+                target.apply_effect(PetrifyEffect('Petrify', duration=35, is_buff=False, imposter=self))
+        damage_dealt = self.attack(multiplier=2.1, repeat=3, target_kw1="enemy_in_front", func_after_dmg=petrify_effect)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def petrify_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 10:
+                target.apply_effect(PetrifyEffect('Petrify', duration=35, is_buff=False, imposter=self))
+        self.attack(func_after_dmg=petrify_effect, target_kw1="enemy_in_front")
 
 
 # ====================================
@@ -3164,6 +3204,27 @@ class Dragon(Monster):
 # ====================================
 # End of Defence & Mitigation
 # ====================================
+# Survival Effects
+# For example, monsters that survives with 1 hp
+# TODO: Add at least 2 monsters in this category
+# ====================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ====================================
+# End of Survival Effects
+# ====================================
 # Protection Effects
 # ====================================
 
@@ -3439,6 +3500,8 @@ class PuppetB(Monster):
 # ====================================
 # Evasion related
 # ====================================
+
+# TODO: Add a monster for full party evasion buff
 
 
 class Gryphon(Monster):
@@ -3854,9 +3917,7 @@ class MageB(Monster):
         self.apply_effect(StatsEffect('MageB Passive', -1, True, {'acc' : 0.7}, can_be_removed_by_skill=False))
 
 
-
-
-# # Increase damage taken for debuffed target, always attack debuffed target
+# TODO: Increase damage taken for debuffed target, always attack debuffed target
 # class SubjectA2(Monster):
 #     pass
 
@@ -5542,3 +5603,4 @@ class RoyalPriest(Monster):
 # No ally
 # ====================================
 # Monster in this category either punish for being solo alive or gain benefit for being solo alive
+# TODO: Add at least 1 monster in this category

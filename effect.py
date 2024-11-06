@@ -1169,7 +1169,6 @@ class PetrifyEffect(Effect):
         self.name = "Petrify"
         self.is_buff = False
         self.imposter = imposter
-        self.cc_immunity = True
         self.delay_trigger = delay_trigger
         self.apply_rule = "stack"
         self.is_cc_effect = True
