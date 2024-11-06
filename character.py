@@ -3909,11 +3909,6 @@ class Gabe(Character):
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def skill1_logic(self):
         def damage_amplify(self, target, final_damage):
@@ -3947,48 +3942,48 @@ class Gabe(Character):
 class Inaba(Character):
     """
     Special character
-    Build: atk, hp, def
+    Build:
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Inaba"
-        self.skill1_description = "Heal random allies 5 times by 400% atk."
-        self.skill2_description = "Prepare 9 Shintou (Oryza sativa) and heal yourself by 300% atk. Apply Shintou to yourself 9 times, Shintou has 9 counters," \
+        self.skill1_description = "Heal random allies 3 times by 480% atk, then attack random enemies 5 times with 240% atk."
+        self.skill2_description = "Prepare 9 Shintou (Oryza sativa). Apply Shintou to yourself 9 times, Shintou has 9 counters," \
         " each turn, throw a dice, counter decreases by the dice number." \
         " When counter reaches 0, heal by 300% of applier atk and apply Blessing for 20 turns." \
         " At the end of the turn, this effect is applied to a random enemy." \
-        " Blessing: Heal efficiency increased by 30%, evasion rate increased by 30%."
-        self.skill3_description = ""
+        " Blessing: Heal efficiency increased by 30%."
+        self.skill3_description = "When a Blessing effect by Shintou is about to be applied on yourself while you have 4 or more Blessing effects," \
+        " Revive all allies with 100% hp, all enemies takes status damage equal to 400% of your atk."
         # 神稲
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = ""
+        self.skill1_description_jp = "ランダムな味方を攻撃力の480%で3回回復し、その後ランダムな敵を攻撃力の240%で5回攻撃する。"
+        self.skill2_description_jp = "9回分の「神稲（イネ）」を準備する。自身に9回分の神稲を適用し、神稲には9つのカウンターがある。各ターン、サイコロを振り、カウンターはその目の数だけ減少する。カウンターが0になると、適用者の攻撃力の300%分を回復し、20ターンの間「祝福」を付与する。ターン終了時、この効果はランダムな敵にも適用される。祝福：回復効果が30%増加する。"
+        self.skill3_description_jp = "神稲による祝福効果が自身に適用されようとする際、既に4つ以上の祝福効果を持っている場合、全ての味方をHP100%で復活させ、全ての敵に攻撃力の400%分の状態異常ダメージを与える。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
         
     def skill1_logic(self):
-        for i in range(5):
-            self.heal(value=self.atk * 4.0)
+        for i in range(3):
+            self.heal(value=self.atk * 4.8)
             self.update_ally_and_enemy()
             if not self.enemy:
                 break
-        return 0
+        damage_dealt = self.attack(multiplier=2.4, repeat=5)
+        return damage_dealt
 
     def skill2_logic(self):
         for i in range(9):
             self.apply_effect(ShintouEffect("Shintou", -1, True, 9, self))
-        for shintou in self.debuffs:
+        for shintou in self.buffs:
             if shintou.name == "Shintou":
                 shintou.apply_effect_on_trigger(self)
-        if self.is_alive():
-            self.heal(target_kw1="yourself", value=self.atk * 3.0)
         return 0
         
     def skill3(self):
         pass
 
 
-class Yuri(Character):    
+class Yuri(Character):     
     """
     Late game attacker, normal attack
     Build: atk, crit, critdmg, penetration

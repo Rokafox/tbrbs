@@ -1874,67 +1874,6 @@ class NewYearFireworksEffect(Effect):
         return f"あけましておめでとうございます！花火をお楽しみください！現在のカウンター数:{self.current_counters}。"
 
 
-class ShintouEffect(Effect):
-    """
-    Apply Shintou to yourself 9 times, Shintou has 9 counters,
-    each turn, throw a dice, counter decreases by the dice number.
-    When counter reaches 0, heal by 300% of applier atk and apply Blessing for 20 turns.
-    At the end of the turn, this effect is applied to a random enemy.
-    """
-    def __init__(self, name, duration, is_buff, max_counters, buff_applier):
-        super().__init__(name, duration, is_buff)
-        self.name = name
-        self.is_buff = is_buff
-        self.max_counters = max_counters
-        self.current_counters = max_counters
-        self.buff_applier = buff_applier
-        self.should_trigger_end_of_turn_effect = True # We only want to trigger once per end of turn.
-    
-    def apply_effect_on_trigger(self, character):
-        self.should_trigger_end_of_turn_effect = True
-        number = character.fake_dice()
-        self.current_counters -= number
-        self.current_counters = max(self.current_counters, 0)
-        if character.is_dead():
-            character.remove_effect(self)
-            return
-        if self.current_counters == 0:
-            heal_value = self.buff_applier.atk * 3
-            character.heal_hp(heal_value, self.buff_applier)
-            # Heal efficiency increased by 30%, evasion rate increased by 30%.
-            blessing_effect = StatsEffect("Blessing", 20, True, {"heal_efficiency": 0.3, "eva": 0.3})
-            if character is self.buff_applier:
-                bae = len(self.buff_applier.get_all_effect_that_named("Blessing"))
-                if bae >= 3:
-                    print("Shintou applied on self.")
-            # if character in self.buff_applier.party:
-            #     global_vars.shintou_applied_on_ally += 1
-            # else:
-            #     global_vars.shintou_applied_on_enemy += 1
-            character.apply_effect(blessing_effect)
-            character.remove_effect(self)
-
-    def apply_effect_at_end_of_turn(self, character):
-        if not self.should_trigger_end_of_turn_effect:
-            return
-        available_enemies = character.enemy
-        if not available_enemies:
-            character.remove_effect(self)
-        else:
-            target = next(character.target_selection())
-            new_effect = ShintouEffect(self.name, self.duration, self.is_buff, self.max_counters, self.buff_applier)
-            new_effect.current_counters = self.current_counters
-            new_effect.should_trigger_end_of_turn_effect = False
-            target.apply_effect(new_effect)
-            character.remove_effect(self)
-
-    def tooltip_description(self):
-        return f"Shintou has {self.current_counters} counters."
-    
-    def tooltip_description_jp(self):
-        return f"神稲のカウンター数:{self.current_counters}。"
-
-
 class RebornEffect(Effect):
     """
     revive with [effect_value*100]% hp the turn after defeated.
@@ -2927,6 +2866,67 @@ class RikaResolveEffect(ResolveEffectVariation1):
             return damage
 
 
+class ShintouEffect(Effect):
+    """
+    see class Inaba(Character) for details.
+    """
+    def __init__(self, name, duration, is_buff, max_counters, buff_applier):
+        super().__init__(name, duration, is_buff)
+        self.name = name
+        self.is_buff = is_buff
+        self.max_counters = max_counters
+        self.current_counters = max_counters
+        self.buff_applier = buff_applier
+        self.should_trigger_end_of_turn_effect = True # We only want to trigger once per end of turn.
+    
+    def apply_effect_on_trigger(self, character):
+        self.should_trigger_end_of_turn_effect = True
+        number = character.fake_dice()
+        self.current_counters -= number
+        self.current_counters = max(self.current_counters, 0)
+        if character.is_dead():
+            character.remove_effect(self)
+            return
+        if self.current_counters == 0:
+            heal_value = self.buff_applier.atk * 3
+            character.heal_hp(heal_value, self.buff_applier)
+            # Heal efficiency increased by 30%, evasion rate increased by 30%.
+            blessing_effect = StatsEffect("Blessing", 20, True, {"heal_efficiency": 0.3})
+            if character is self.buff_applier:
+                bae = len(self.buff_applier.get_all_effect_that_named("Blessing"))
+                if bae >= 4:
+                    for a in self.buff_applier.party:
+                        if a.is_dead():
+                            a.revive(0, 100, self.buff_applier)
+                    for e in self.buff_applier.enemy:
+                        e.take_status_damage(self.buff_applier.atk * 4.0, self.buff_applier)
+            # if character in self.buff_applier.party:
+            #     global_vars.shintou_applied_on_ally += 1
+            # else:
+            #     global_vars.shintou_applied_on_enemy += 1
+            character.apply_effect(blessing_effect)
+            character.remove_effect(self)
+
+    def apply_effect_at_end_of_turn(self, character):
+        if not self.should_trigger_end_of_turn_effect:
+            return
+        available_enemies = character.enemy
+        if not available_enemies:
+            character.remove_effect(self)
+        else:
+            target = next(character.target_selection())
+            new_effect = ShintouEffect(self.name, self.duration, self.is_buff, self.max_counters, self.buff_applier)
+            new_effect.current_counters = self.current_counters
+            new_effect.should_trigger_end_of_turn_effect = False
+            target.apply_effect(new_effect)
+            character.remove_effect(self)
+
+    def tooltip_description(self):
+        return f"Shintou has {self.current_counters} counters."
+    
+    def tooltip_description_jp(self):
+        return f"神稲のカウンター数:{self.current_counters}。"
+    
 
 class PharaohPassiveEffect(Effect):
     # Used by Pharaoh
