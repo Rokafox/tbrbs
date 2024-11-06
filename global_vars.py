@@ -12,3 +12,6 @@ player_is_in_shop = False
 current_shop_instance = None
 # others
 allow_cheat = False
+# temp
+shintou_applied_on_ally = 0
+shintou_applied_on_enemy = 0
