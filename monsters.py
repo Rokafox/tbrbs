@@ -3206,18 +3206,142 @@ class Dragon(Monster):
 # ====================================
 # Survival Effects
 # For example, monsters that survives with 1 hp
-# TODO: Add at least 2 monsters in this category
 # ====================================
 
 
+class MinotaurB(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "MinotaurB"
+        self.skill1_description = "Recover hp by 30% of maxhp and apply Resolve on yourself, when taking normal damage that would exceed" \
+        " current hp, reduce damage taken to your current hp minus 1, effect last for 30 turns. When the same effect is applied, duration" \
+        " is refreshed."
+        self.skill2_description = "Attack one closest enemy with 800% atk and Stun the target for 8 turns."
+        self.skill3_description = "Normal attack deals 100% more damage to enemy if they have less speed than you."
+        self.skill1_description_jp = "最大HPの30%分のHPを回復し、自身に「決意」を付与する。通常ダメージを受けて現在のHPを超える場合、そのダメージを現在のHPから1を引いた値に減少させる。この効果は30ターン持続する。同じ効果が再度付与された場合、持続時間がリフレッシュされる。"
+        self.skill2_description_jp = "最も近い敵1体に攻撃力の800%で攻撃し、8ターンの間スタンさせる。"
+        self.skill3_description_jp = "通常攻撃時、敵の速度が自分より低い場合、与えるダメージが100%増加する。"
+        # ResolveEffect
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
 
 
+    def skill1_logic(self):
+        self.heal_hp(self.maxhp * 0.3, self)
+        if self.is_alive():
+            resolve = ResolveEffect('Resolve', 30, True, cc_immunity=False, hp_to_leave=1)
+            resolve.additional_name = "MinotaurB_Resolve"
+            resolve.apply_rule = "stack"
+            self.apply_effect(resolve)
+
+    def skill2_logic(self):
+        def stun(self, target):
+            target.apply_effect(StunEffect('Stun', 8, False))
+        damage_dealt = self.attack(multiplier=8.0, repeat=1, target_kw1="enemy_in_front", func_after_dmg=stun)
+        return damage_dealt
+    
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def dmg_amplify(self, target, final_damage):
+            if target.spd < self.spd:
+                final_damage *= 2.0
+            return final_damage
+        self.attack(func_damage_step=dmg_amplify)
 
 
+class CaptainB(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "CaptainB"
+        self.skill1_description = "Attack 1 closest enemy with 320% atk 2 times. If your hp is below 5%, damage is increased by 100%."
+        self.skill2_description = "Attack 1 closest enemy with 320% atk 2 times. If your hp is below 5%, inflict Cripple for 20 turns." \
+        " Cripple: atk decreased by 20%, spd decreased by 30%, evasion decreased by 40%."
+        self.skill3_description = "Normal attack attacks 2 times. At start of battle, apply Resolve on all allies, when taking normal damage that would exceed" \
+        " current hp, reduce damage taken to your current hp minus 1, effect last for 30 turns. When the same effect is applied, duration" \
+        " is refreshed."
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の320%で2回攻撃する。自身のHPが5%未満の場合、ダメージが100%増加する。"
+        self.skill2_description_jp = "最も近い敵1体に攻撃力の320%で2回攻撃する。自身のHPが5%未満の場合、20ターンの間「衰弱」を付与する。衰弱：攻撃力が20%減少、速度が30%減少、回避率が40%減少する。"
+        self.skill3_description_jp = "通常攻撃が2回攻撃になる。戦闘開始時、全ての味方に「決意」を付与する。通常ダメージが現在のHPを超える場合、受けるダメージを現在のHPから1引いた値に軽減する。この効果は30ターン持続する。同じ効果が再度付与された場合、持続時間がリフレッシュされる。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill1_logic(self):
+        def additional_damage(self, target, final_damage):
+            if self.hp / self.maxhp < 0.05:
+                final_damage *= 2.0
+            return final_damage
+        damage_dealt = self.attack(multiplier=3.2, repeat=2, target_kw1="enemy_in_front", func_damage_step=additional_damage)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def cripple(self, target):
+            if self.hp / self.maxhp < 0.05:
+                target.apply_effect(StatsEffect('Cripple', 20, False, {'atk' : 0.8, 'spd' : 0.7, 'eva' : -0.4}))
+        damage_dealt = self.attack(multiplier=3.2, repeat=2, target_kw1="enemy_in_front", func_after_dmg=cripple)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        self.attack(repeat=2)
+
+    def battle_entry_effects(self):
+        for ally in self.ally:
+            resolve = ResolveEffect('Resolve', 30, True, cc_immunity=False, hp_to_leave=1)
+            resolve.additional_name = "CaptainB_Resolve"
+            resolve.apply_rule = "stack"
+            ally.apply_effect(resolve)
 
 
+class DarklordB(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "DarklordB"
+        self.skill1_description = "Attack 1 closest enemy with 150% atk 9 times. Before attack, apply Sting on all enemies for 20 turns." \
+            " Sting: When taking damage, take 30% of your atk as status damage."
+        self.skill2_description = "Attack 1 closest enemy with 150% atk 9 times. Before attack, apply Evasion Up on all allies for 20 turns," \
+            " increase evasion by 15%."
+        self.skill3_description = "At start of battle, apply Resolve on all allies, when taking normal damage that would exceed" \
+        " current hp, reduce damage taken to your current hp minus 1."
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の150%で9回攻撃する。攻撃前に全ての敵に20ターンの間「スティング」を付与する。スティング：ダメージを受けた時、攻撃力の30%分の状態異常ダメージを受ける。"
+        self.skill2_description_jp = "最も近い敵1体に攻撃力の150%で9回攻撃する。攻撃前に全ての味方に20ターンの間「回避アップ」を付与し、回避率を15%増加させる。"
+        self.skill3_description_jp = "戦闘開始時に全ての味方に「決意」を付与する。通常ダメージが現在のHPを超える場合、受けるダメージを現在のHPから1を引いた値に軽減する。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = True
+
+    def skill1_logic(self):
+        for e in self.enemy:
+            e.apply_effect(StingEffect("Sting", 20, False, 0.30 * self.atk, imposter=self))
+        damage_dealt = self.attack(multiplier=1.50, repeat=9, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill2_logic(self):
+        for a in self.ally:
+            a.apply_effect(StatsEffect('Evasion Up', 20, True, {'eva' : 0.15}))
+        damage_dealt = self.attack(multiplier=1.50, repeat=9, target_kw1="enemy_in_front")
+        # self.update_ally_and_enemy()
+        # if self.is_alive():
+        #     for a in self.ally:
+        #         a.heal_hp(damage_dealt, self)
+        return damage_dealt
 
 
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        for ally in self.ally:
+            resolve = ResolveEffect('Resolve', -1, True, cc_immunity=False, hp_to_leave=1)
+            resolve.additional_name = "DarklordB_Resolve"
+            resolve.apply_rule = "stack"
+            resolve.can_be_removed_by_skill = False
+            ally.apply_effect(resolve)
 
 
 
@@ -4178,7 +4302,9 @@ class Cockatorice(Monster):
     def battle_entry_effects(self):
         effect = StatsEffect("Cockatorice Madness", 4, True, {'atk' : 1.77, 'spd' : 1.77})
         effect.apply_rule = "stack"
-        self.apply_effect(NotTakingDamageEffect("Cockatorice Passive", -1, True, 8, effect))
+        passive = NotTakingDamageEffect("Cockatorice Passive", -1, True, 8, effect)
+        passive.can_be_removed_by_skill = False
+        self.apply_effect(passive)
 
 
 class Cockatrice(Monster):
@@ -4215,7 +4341,9 @@ class Cockatrice(Monster):
     def battle_entry_effects(self):
         effect = StatsEffect("Cockatorice Madness", 8, True, {'critdef' : 0.77, 'defense' : 1.77})
         effect.apply_rule = "stack"
-        self.apply_effect(NotTakingDamageEffect("Cockatorice Passive", -1, True, 8, effect))
+        passive = NotTakingDamageEffect("Cockatorice Passive", -1, True, 8, effect)
+        passive.can_be_removed_by_skill = False
+        self.apply_effect(passive)
 
 
 class Fanatic(Monster):

@@ -829,6 +829,8 @@ class ResolveEffect(Effect):
         self.character_current_turn = 0
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        if character.is_dead():
+            return damage
         if damage > character.hp and self.same_turn_usage == "unlimited":
             if self.cover_normal_damage and which_ds == "normal":
                 return character.hp - self.hp_to_leave
@@ -845,6 +847,7 @@ class ResolveEffect(Effect):
                     return character.hp - self.hp_to_leave
                 elif self.cover_status_damage and which_ds == "status":
                     return character.hp - self.hp_to_leave
+        return damage
 
     def tooltip_description(self):
         s = f"When taking damage that exceeds current HP, the damage is reduced so that HP becomes {self.hp_to_leave}."
@@ -1204,7 +1207,7 @@ class PetrifyEffect(Effect):
     
     def tooltip_description_jp(self):
         return "行動不可、回避率が100%減少。" \
-        "受ける状態異常ダメージを無効化、通常ダメージが200%増加。" \
+        "受ける状態異常ダメージを無効化、通常ダメージが100%増加。" \
         "30ターン後、この効果は解除できなくなり、持続時間が無限になる。"
 
 
