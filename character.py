@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, CancellationShield, CocoaSleepEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -6329,8 +6329,52 @@ class Martin(Character):
             a.apply_effect(e)
 
 
+class Joe(Character):
+    """
+    Berserk(Increase atk but attack random ally or enemy)
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Joe"
+        self.skill1_description = "Attack closest enemy with 220% atk 4 times."
+        self.skill2_description = "Attack enemy of highest atk with 220% atk 4 times, 40% chance to inflict Blind for 20 turns each attack." \
+        " Blind: acc reduced by 40%."
+        self.skill3_description = "When the first time your hp is reaches below 50%, apply Berserk and Confuse to yourself for 30 turns." \
+        " Berserk: atk increased by 100%, final damage taken increased by 50%. Confuse: attack random ally or enemy."
+        self.skill1_description_jp = ""
+        self.skill2_description_jp = ""
+        self.skill3_description_jp = ""
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.skill3_used = False
 
+    def clear_others(self):
+        self.skill3_used = False
 
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=2.2, repeat=4, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def blind_effect(self, target: Character):
+            if random.random() < 0.40:
+                target.apply_effect(StatsEffect("Blind", 20, False, {"acc": -0.40}))
+        damage_dealt = self.attack(multiplier=2.2, repeat=4, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
+                                   func_after_dmg=blind_effect)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def character_specific_at_end_of_turn(self):
+        if not self.skill3_used and self.is_alive() and self.hp < self.maxhp * 0.50:
+            berserk = StatsEffect("Berserk", 30, True, {"atk": 2.00, "final_damage_taken_multipler": 0.50})
+            berserk.additional_name = "Joe_Berserk"
+            confuse = ConfuseEffect("Confuse", 30, False, False)
+            self.apply_effect(berserk)
+            self.apply_effect(confuse)
+            self.skill3_used = True
 
 
 
