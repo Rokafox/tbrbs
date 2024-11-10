@@ -3954,11 +3954,11 @@ class Inaba(Character):
         " At the end of the turn, this effect is applied to a random enemy." \
         " Blessing: Heal efficiency increased by 30%."
         self.skill3_description = "When a Blessing effect by Shintou is about to be applied on yourself while you have 4 or more Blessing effects," \
-        " Revive all allies with 100% hp, all enemies takes status damage equal to 400% of your atk."
+        " Revive all allies with 100% hp, all enemies takes status damage equal to 400% of your atk, the allies alive are healed by 300% atk."
         # 神稲
-        self.skill1_description_jp = "ランダムな味方を攻撃力の480%で3回回復し、その後ランダムな敵を攻撃力の240%で5回攻撃する。"
+        self.skill1_description_jp = "ランダムな味方を攻撃力の480%で3回治療し、その後ランダムな敵を攻撃力の240%で5回攻撃する。"
         self.skill2_description_jp = "9回分の「神稲（イネ）」を準備する。自身に9回分の神稲を適用し、神稲には9つのカウンターがある。各ターン、サイコロを振り、カウンターはその目の数だけ減少する。カウンターが0になると、適用者の攻撃力の300%分を回復し、20ターンの間「祝福」を付与する。ターン終了時、この効果はランダムな敵にも適用される。祝福：回復効果が30%増加する。"
-        self.skill3_description_jp = "神稲による祝福効果が自身に適用されようとする際、既に4つ以上の祝福効果を持っている場合、全ての味方をHP100%で復活させ、全ての敵に攻撃力の400%分の状態異常ダメージを与える。"
+        self.skill3_description_jp = "神稲による祝福効果が自身に適用されようとする際、既に4つ以上の祝福効果を持っている場合、全ての味方をHP100%で復活させ、全ての敵に攻撃力の400%分の状態異常ダメージを与える。生存している味方は攻撃力の300%で回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
         
@@ -6337,14 +6337,14 @@ class Joe(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Joe"
-        self.skill1_description = "Attack closest enemy with 220% atk 4 times."
+        self.skill1_description = "Attack closest enemy with 220% atk 5 times."
         self.skill2_description = "Attack enemy of highest atk with 220% atk 4 times, 40% chance to inflict Blind for 20 turns each attack." \
         " Blind: acc reduced by 40%."
-        self.skill3_description = "When the first time your hp is reaches below 50%, apply Berserk and Confuse to yourself for 30 turns." \
+        self.skill3_description = "When the first time your hp is reaches below 50%, apply Berserk and Confuse to yourself for 30 turns at end of that turn." \
         " Berserk: atk increased by 100%, final damage taken increased by 50%. Confuse: attack random ally or enemy."
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = ""
+        self.skill1_description_jp = "最も近い敵に攻撃力の220%で4回攻撃する。"
+        self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の220%で4回攻撃し、各攻撃には20ターンの間「暗闇」を付与する確率が40%ある。暗闇：命中率が40%減少する。"
+        self.skill3_description_jp = "自身のHPが初めて50%未満になった時、ターン終了の時に30ターンの間「バーサーク」と「混乱」を自分に付与する。バーサーク：攻撃力が100%増加し、受ける最終ダメージが50%増加する。混乱：ランダムな味方または敵を攻撃する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.skill3_used = False
@@ -6353,7 +6353,7 @@ class Joe(Character):
         self.skill3_used = False
 
     def skill1_logic(self):
-        damage_dealt = self.attack(multiplier=2.2, repeat=4, target_kw1="enemy_in_front")
+        damage_dealt = self.attack(multiplier=2.2, repeat=5, target_kw1="enemy_in_front")
         return damage_dealt
 
     def skill2_logic(self):
@@ -6377,8 +6377,54 @@ class Joe(Character):
             self.skill3_used = True
 
 
+class Jerry(Character):
+    """
+    Sleep
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Jerry"
+        self.skill1_description = "Heal all allies by 200% of your defense, remove 2 debuffs from each ally. Each enemy has a 50% chance to" \
+        " fall asleep."
+        self.skill2_description = "Attack all enemies with 200% atk, 20% chance to apply Sleep, 40% chance to apply Slow for 20 turns." \
+        " Slow: spd reduced by 20%."
+        self.skill3_description = "At start of battle, increase speed by 100% for 3 turns."
+        self.skill1_description_jp = "防御力の200%分、全ての味方を回復し、各味方からデバフを2つ解除する。全ての敵に50%の確率で睡眠状態を付与する。"
+        self.skill2_description_jp = "攻撃力の200%で全ての敵に攻撃し、20%の確率で睡眠状態を、40%の確率で20ターンの間「和音」を付与する。和音：速度が20%減少する。"
+        self.skill3_description_jp = "戦闘開始時に、3ターンの間速度が100%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.skill3_used = False
 
+    def clear_others(self):
+        self.skill3_used = False
 
+    def skill1_logic(self):
+        self.heal(value=self.defense * 2, target_kw1="all_ally")
+        for a in self.ally:
+            a.remove_random_amount_of_debuffs(2)
+        for e in self.enemy:
+            if random.random() < 0.50:
+                e.apply_effect(SleepEffect("Sleep", 20, False, False))
+        return 0
+
+    def skill2_logic(self):
+        def effect(self, target: Character):
+            chance = random.random()
+            if chance < 0.20:
+                target.apply_effect(SleepEffect("Sleep", 20, False, False))
+            elif chance < 0.60:
+                target.apply_effect(StatsEffect("Slow", 20, False, {"spd": 0.70}))
+        damage_dealt = self.attack(multiplier=2.0, repeat=1, target_kw1="all_enemy", func_after_dmg=effect)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        spd = StatsEffect("Poetry", 3, True, {"spd": 2.00})
+        self.apply_effect(spd)
 
 
 

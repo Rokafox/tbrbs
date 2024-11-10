@@ -2900,6 +2900,10 @@ class ShintouEffect(Effect):
                     for a in self.buff_applier.party:
                         if a.is_dead():
                             a.revive(0, 100, self.buff_applier)
+                        # if not dead, apply heal.
+                        else:
+                            r1, r2, r3 = a.heal_hp(heal_value, self.buff_applier)
+                            # print(f"{r1} {r3}")
                     for e in self.buff_applier.enemy:
                         e.take_status_damage(self.buff_applier.atk * 4.0, self.buff_applier)
             # if character in self.buff_applier.party:
