@@ -241,7 +241,7 @@ class Yeti(Monster):
         def recoverhp(self, target):
             if target.is_dead():
                 self.heal_hp(self.maxhp * 0.5, self)
-            self.apply_effect(StatsEffect('Full', 20, True, {'atk' : 1.3, 'final_damage_taken_multipler' : -0.3}))
+                self.apply_effect(StatsEffect('Full', 20, True, {'atk' : 1.3, 'final_damage_taken_multipler' : -0.3}))
         damage_dealt = self.attack(multiplier=8.0, repeat=1, func_after_dmg=recoverhp, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -249,7 +249,7 @@ class Yeti(Monster):
         def recoverhp(self, target):
             if target.is_dead():
                 self.heal_hp(self.maxhp * 0.5, self)
-            self.apply_effect(StatsEffect('Full', 20, True, {'atk' : 1.3, 'final_damage_taken_multipler' : -0.3}))
+                self.apply_effect(StatsEffect('Full', 20, True, {'atk' : 1.3, 'final_damage_taken_multipler' : -0.3}))
         damage_dealt = self.attack(multiplier=8.0, repeat=1, func_after_dmg=recoverhp, target_kw1="enemy_in_front")
         return damage_dealt
         
@@ -1203,7 +1203,7 @@ class WarriorB(Monster):
         self.skill2_description = "Attack enemy of highest atk with 600% atk, ignore protected effects."
         self.skill3_description = "Increase maxhp by 100% and defense by 30%. After taking normal damage, apply Guard on all allies for 1 turn, reducing damage taken by 70%."
         self.skill1_description_jp = "最も攻撃力が高い敵に攻撃力250%のダメージを4回与える。" \
-        "それぞれの攻撃にジレンマを付与、25ターンの間クリティカル率を30%減少させる。"
+        "それぞれの攻撃に難局を付与、25ターンの間クリティカル率を30%減少させる。"
         self.skill2_description_jp = "最も攻撃力が高い敵に攻撃力600%のダメージを与える。" \
         "対象の守護者からの保護効果を無視。"
         self.skill3_description_jp = "最大HP100%、防御力30%増加させる。通常ダメージを受けた後、全ての味方に1ターンの間ガードを付与。" \

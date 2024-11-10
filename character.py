@@ -4220,7 +4220,7 @@ class April(Character):
             admg = 0
             for e in self.buffs:
                 if e.is_buff and not e.is_set_effect:
-                    admg = self.attack(target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy", multiplier=2.0)
+                    admg += self.attack(target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy", multiplier=2.0)
             return admg
             
         damage_dealt = self.attack(target_kw1="n_random_enemy", target_kw2="3",
@@ -4251,14 +4251,14 @@ class Nata(Character):
         " if the enemy falls by this attack, recover 20% hp."
         self.skill3_description = "The first time you are defeated, recover 12% hp and apply Renka status effect on yourself," \
         " Renka has 15 stacks, each time when taking lethal damage, consume 1 stack, cancel the damage and recover 12% hp." \
-        " When taking damage, reduce damage taken by 6% + 4% for each stack."
+        " When taking damage, reduce damage taken by 4% + 4% for each stack."
         self.skill1_description_jp = "ランダムな敵に180%の攻撃を4回行う。自身に有益な効果の持続時間が4ターン延長され、" \
                                     "「蓮花」効果を持っている場合、スタックが4未満であれば1増加する。"
         self.skill2_description_jp = "最もクリティカル率の高い敵に190%の攻撃を3回集中して行う。" \
                                     "この攻撃で敵が倒れた場合、HPを20%回復する。"
         self.skill3_description_jp = "初めて敗北した際、HPを12%回復し、自身に「蓮花」状態効果を付与する。" \
                                     "蓮花は15スタックを持ち、致死ダメージを受けるたびに1スタックを消費し、ダメージを無効化してHPを12%回復する。" \
-                                    "ダメージを受ける際、被ダメージが6% + スタックごとに4%軽減される。"
+                                    "ダメージを受ける際、被ダメージが4% + スタックごとに4%軽減される。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.skill3_used = False
@@ -4300,7 +4300,7 @@ class Nata(Character):
             # print(self.hp)
             # print(self.is_alive())
             if self.is_alive():
-                renka = RenkaEffect("Renka", -1, True, False)
+                renka = RenkaEffect("Renka", -1, True, False, damage_reduction=0.04)
                 renka.can_be_removed_by_skill = False
                 renka.additional_name = "Nata_Renka"
                 self.apply_effect(renka)
@@ -6337,14 +6337,14 @@ class Joe(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Joe"
-        self.skill1_description = "Attack closest enemy with 220% atk 5 times."
+        self.skill1_description = "Attack closest enemy with 225% atk 5 times."
         self.skill2_description = "Attack enemy of highest atk with 220% atk 4 times, 40% chance to inflict Blind for 20 turns each attack." \
         " Blind: acc reduced by 40%."
-        self.skill3_description = "When the first time your hp is reaches below 50%, apply Berserk and Confuse to yourself for 30 turns at end of that turn." \
+        self.skill3_description = "When the first time your hp is reaches below 50%, apply Berserk and Confuse to yourself for 40 turns at end of that turn." \
         " Berserk: atk increased by 100%, final damage taken increased by 50%. Confuse: attack random ally or enemy."
-        self.skill1_description_jp = "最も近い敵に攻撃力の220%で4回攻撃する。"
-        self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の220%で4回攻撃し、各攻撃には20ターンの間「暗闇」を付与する確率が40%ある。暗闇：命中率が40%減少する。"
-        self.skill3_description_jp = "自身のHPが初めて50%未満になった時、ターン終了の時に30ターンの間「バーサーク」と「混乱」を自分に付与する。バーサーク：攻撃力が100%増加し、受ける最終ダメージが50%増加する。混乱：ランダムな味方または敵を攻撃する。"
+        self.skill1_description_jp = "最も近い敵に攻撃力の225%で5回攻撃する。"
+        self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の220%で4回攻撃し、各攻撃には40%の確率で20ターンの間「暗闇」を付与する。暗闇：命中率が40%減少する。"
+        self.skill3_description_jp = "自身のHPが初めて50%未満になった時、ターン終了の時に40ターンの間「暴走」と「混乱」を自分に付与する。暴走：攻撃力が100%増加し、受ける最終ダメージが50%増加する。混乱：ランダムな味方または敵を攻撃する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.skill3_used = False
@@ -6353,7 +6353,7 @@ class Joe(Character):
         self.skill3_used = False
 
     def skill1_logic(self):
-        damage_dealt = self.attack(multiplier=2.2, repeat=5, target_kw1="enemy_in_front")
+        damage_dealt = self.attack(multiplier=2.25, repeat=5, target_kw1="enemy_in_front")
         return damage_dealt
 
     def skill2_logic(self):
@@ -6369,9 +6369,9 @@ class Joe(Character):
 
     def character_specific_at_end_of_turn(self):
         if not self.skill3_used and self.is_alive() and self.hp < self.maxhp * 0.50:
-            berserk = StatsEffect("Berserk", 30, True, {"atk": 2.00, "final_damage_taken_multipler": 0.50})
+            berserk = StatsEffect("Berserk", 40, True, {"atk": 2.00, "final_damage_taken_multipler": 0.50})
             berserk.additional_name = "Joe_Berserk"
-            confuse = ConfuseEffect("Confuse", 30, False, False)
+            confuse = ConfuseEffect("Confuse", 40, False, False)
             self.apply_effect(berserk)
             self.apply_effect(confuse)
             self.skill3_used = True
