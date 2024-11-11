@@ -6486,14 +6486,82 @@ class Qimon(Character):
             e.apply_effect(bw)
 
 
-# class QimonNY(Character):
+class QimonNY(Character):
+    """
+    Sleep Effect Support
+    New Year Version
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "QimonNY"
+        self.skill1_description = "Remove all Sleep effects on all allies and apply Fancy Dreams for 20 turns." \
+        " Fancy Dreams: When taking damage, the part of damage that exceeds 20% of max hp is reduced by 40%." \
+        " If ally has Sleep effect, damage reduction is doubled."
+        self.skill2_description = "Remove 3 active debuffs on all allies who have either Sleep or Fancy Dreams," \
+        " their hp is recovered by 300% of your atk."
+        " This skill becomes normal attack if" \
+        " there are no allies with Sleep or Fancy Dreams."
+        self.skill3_description = "At start of battle, apply Dream Invitation on all enemies." \
+        " Dream Invitation: When falling asleep, 3 active buffs are removed, damage taken is increased by 30% and only have 30% chance to" \
+        " remove Sleep effect."
+        # Fancy Dreams: "美夢"
+        # "Dream Invitation", "QimonNY_Dream_Invitation", "BubbleWorldEffect"
+        self.skill1_description_jp = "全ての味方の睡眠効果を解除し、20ターンの間「美夢」を付与する。美夢：ダメージを受けた際、最大HPの20%を超える部分のダメージが40%減少する。味方が睡眠効果を持っている場合、ダメージ軽減効果が2倍になる。"
+        self.skill2_description_jp = "睡眠または美夢効果を持つ全ての味方のアクティブなデバフを3つ解除し、攻撃力の300%分のHPを回復させる。味方に睡眠または美夢効果を持つ者がいない場合、このスキルは通常攻撃に変わる。"
+        self.skill3_description_jp = "戦闘開始時、全ての敵に「夢の誘い」を付与する。夢の誘い：睡眠状態になると、アクティブなバフが3つ解除され、受けるダメージが30%増加し、睡眠効果を解除する確率が30%になる。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        # test, del later
+
+    def skill1_logic(self):
+        for a in self.ally:
+            success = a.try_remove_effect_with_name("Sleep", remove_all_found_effects=True)
+            if not success:
+                a.apply_effect(EffectShield2("Fancy Dreams", 20, True, cc_immunity=False, damage_reduction=0.40,
+                                             shrink_rate=0, hp_threshold=0.20))
+            else:
+                a.apply_effect(EffectShield2("Fancy Dreams", 20, True, cc_immunity=False, damage_reduction=0.80,
+                                             shrink_rate=0, hp_threshold=0.20))
+        return 0
+
+    def skill2_logic(self):
+        allies_has_effect = 0
+        for a in self.ally:
+            if a.has_effect_that_named("Sleep") or a.has_effect_that_named("Fancy Dreams"):
+                allies_has_effect += 1
+                a.remove_random_amount_of_debuffs(3, False)
+                if a.is_alive():
+                    a.heal_hp(self.atk * 3.0, healer=self)
+        if allies_has_effect == 0:
+            damage_dealt = self.attack()
+            return damage_dealt
+        else:
+            return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        for e in self.enemy:
+            di = BubbleWorldEffect("Dream Invitation", -1, False, self, di=True)
+            di.additional_name = "QimonNY_Dream_Invitation"
+            e.apply_effect(di)
+
+
+
+
+
+
+
+# class NC(Character):
 #     """
-#     New Year version of Qimon
+#     Character Template
 #     Build: 
 #     """
 #     def __init__(self, name, lvl, exp=0, equip=None, image=None):
 #         super().__init__(name, lvl, exp, equip, image)
-#         self.name = "QimonNY"
+#         self.name = "NC"
 #         self.skill1_description = ""
 #         self.skill2_description = ""
 #         self.skill3_description = ""

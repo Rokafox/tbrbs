@@ -1239,16 +1239,30 @@ class SleepEffect(Effect):
         self.is_cc_effect = True
     
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        remove_effect = True
         if character.has_effect_that_named("Bubble World", "Qimon_Bubble_World", "BubbleWorldEffect"):
             # taken damage less than 10% of maxhp, do not wake up.
             if damage < character.maxhp * 0.1 and character.is_alive():
                 global_vars.turn_info_string += f"Damage less than {character.maxhp * 0.1:.2f}, {character.name} still sleeping.\n"
-                return damage
-        character.remove_effect(self)
+                remove_effect = False
+        if character.has_effect_that_named("Dream Invitation", "QimonNY_Dream_Invitation", "BubbleWorldEffect"):
+            # wake up chance only 30%, damage taken is increased by 30%.
+            if random.random() < 0.3:
+                global_vars.turn_info_string += f"{character.name} wakes up from the dream.\n"
+            else:
+                remove_effect = False
+                new_dmg = damage * 1.3
+                global_vars.turn_info_string += f"{character.name} still sleeping, damage is increased by {new_dmg - damage:.2f}.\n"
+                damage = new_dmg
+                
+        if remove_effect:
+            character.remove_effect(self)
         return damage
 
     def apply_effect_on_apply(self, character):
         if character.has_effect_that_named("Bubble World", "Qimon_Bubble_World", "BubbleWorldEffect"):
+            character.remove_random_amount_of_buffs(3, False)
+        if character.has_effect_that_named("Dream Invitation", "QimonNY_Dream_Invitation", "BubbleWorldEffect"):
             character.remove_random_amount_of_buffs(3, False)
         stats_dict = {"eva": -1.00}
         character.update_stats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
@@ -2945,18 +2959,26 @@ class BubbleWorldEffect(Effect):
     """
     When falling asleep, all active buffs are removed, damage taken that below 10% of maxhp
     cannot remove Sleep effect.
+    [di]: Convert this effect to Dream Invitation effect for QimonNY
     """
-    def __init__(self, name, duration, is_buff, imposter):
+    def __init__(self, name, duration, is_buff, imposter, di=False):
         super().__init__(name, duration, is_buff)
         self.name = name
         self.is_buff = is_buff
         self.imposter = imposter
+        self.di = di
 
     def tooltip_description(self):
-        return "When falling asleep, 3 active buffs are removed, damage taken that below 10% of maxhp cannot remove Sleep effect."
+        if not self.di:
+            return "When falling asleep, 3 active buffs are removed, damage taken that below 10% of maxhp cannot remove Sleep effect."
+        else:
+            return "When falling asleep, 3 active buffs are removed, damage taken only have 30% chance to remove Sleep effect."
     
     def tooltip_description_jp(self):
-        return "睡眠状態になると、3つのアクティブなバフが解除され、最大HPの10%未満のダメージでは睡眠効果が解除されない。"
+        if not self.di:
+            return "睡眠状態になると、3つのアクティブなバフが解除され、最大HPの10%未満のダメージでは睡眠効果が解除されない。"
+        else:
+            return "睡眠状態になると、3つのアクティブなバフが解除され、ダメージを受けると睡眠効果が解除される確率は30%。"
 
 class PharaohPassiveEffect(Effect):
     # Used by Pharaoh

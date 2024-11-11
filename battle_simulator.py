@@ -526,7 +526,7 @@ def get_all_characters():
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
                        "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
-                       "Clarence", "Jingke", "Shuijing", "Martin", "Inaba", "Joe", "Jerry", "Qimon"]
+                       "Clarence", "Jingke", "Shuijing", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -2694,21 +2694,21 @@ if __name__ == "__main__":
                     color_filled_bar = (236, 192, 255)
                     shield_bar_color = (198,153,255)
                 case "Blue Theme":
-                    color_unfilled_bar = (220, 240, 255)  # 明るい青
-                    shield_bar_color = (173, 216, 230)    # 薄い青
-                    color_filled_bar = (200, 230, 255)    # ライトブルー
+                    color_unfilled_bar = (220, 240, 255)  
+                    shield_bar_color = (122, 194, 255)    
+                    color_filled_bar = (200, 230, 255)   
                 case "Green Theme":
-                    color_unfilled_bar = (230, 255, 230)  # 明るい緑
-                    shield_bar_color = (144, 238, 144)    # ライトグリーン
-                    color_filled_bar = (193, 255, 193)    # ライトな緑色
+                    color_unfilled_bar = (230, 255, 230)
+                    shield_bar_color = (144, 238, 144)
+                    color_filled_bar = (193, 255, 193)
                 case "Pink Theme":
-                    color_unfilled_bar = (255, 238, 248)  # 明るいピンク
-                    shield_bar_color = (255, 170, 207)    # 薄いピンク
-                    color_filled_bar = (255, 209, 229)    # ライトピンク
+                    color_unfilled_bar = (255, 238, 248)
+                    shield_bar_color = (255, 170, 207)
+                    color_filled_bar = (255, 209, 229)
                 case "Red Theme":
-                    color_unfilled_bar = (255, 220, 220)  # 明るい赤
-                    color_filled_bar = (255, 160, 160)    # ライトレッド
-                    shield_bar_color = (255, 128, 128)    # ライトレッド
+                    color_unfilled_bar = (255, 220, 220)
+                    color_filled_bar = (255, 160, 160)
+                    shield_bar_color = (255, 128, 128)
                 case _:
                     raise Exception(f"Unknown theme: {global_vars.theme}")
 
