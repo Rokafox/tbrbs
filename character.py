@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -6425,6 +6425,250 @@ class Jerry(Character):
     def battle_entry_effects(self):
         spd = StatsEffect("Poetry", 3, True, {"spd": 2.00})
         self.apply_effect(spd)
+
+
+class Qimon(Character):
+    """
+    Sleep Effect Support
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Qimon"
+        self.skill1_description = "Remove all Sleep effects on all allies and apply Sweet Dreams for 20 turns." \
+        " Sweet Dreams: All main stats are increased by 10%. If ally has Sleep effect, effect is tripled."
+        self.skill2_description = "Apply Regeneration on all allies who have either Sleep or Sweet Dreams for 12 turns." \
+        " Regeneration: Recover hp by 3% of their lost hp each turn. This skill becomes normal attack if" \
+        " there are no allies with Sleep or Sweet Dreams."
+        self.skill3_description = "At start of battle, apply Bubble World on all enemies." \
+        " Bubble World: When falling asleep, 3 active buffs are removed, damage taken that below 10% of maxhp" \
+        " cannot remove Sleep effect."
+        # Sweat Dreams: "幻夢"
+        # "Bubble World", "Qimon_Bubble_World", "BubbleWorldEffect"
+        self.skill1_description_jp = "全ての味方から睡眠効果を解除し、20ターンの間「幻夢」を付与する。幻夢：全ての主要ステータスが10%増加する。味方が睡眠状態の場合、この効果は3倍になる。"
+        self.skill2_description_jp = "睡眠または幻夢を持つ全ての味方に12ターンの間「再生」を付与する。再生：毎ターン、失われたHPの3%を回復する。味方に睡眠または幻夢が付与されていない場合、このスキルは通常攻撃に変わる。"
+        self.skill3_description_jp = "戦闘開始時、全ての敵に「泡沫の世界」を付与する。泡沫の世界：睡眠状態になると、3つのアクティブなバフが解除され、最大HPの10%未満のダメージでは睡眠効果が解除されない。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        # test, del later
+
+    def skill1_logic(self):
+        for a in self.ally:
+            success = a.try_remove_effect_with_name("Sleep", remove_all_found_effects=True)
+            if not success:
+                a.apply_effect(StatsEffect("Sweet Dreams", 20, True, {"atk": 1.10, "defense": 1.10, "spd": 1.10, "maxhp": 1.10}))
+            else:
+                a.apply_effect(StatsEffect("Sweet Dreams", 20, True, {"atk": 1.30, "defense": 1.30, "spd": 1.30, "maxhp": 1.30}))
+        return 0
+
+    def skill2_logic(self):
+        allies_has_effect = 0
+        for a in self.ally:
+            if a.has_effect_that_named("Sleep") or a.has_effect_that_named("Sweet Dreams"):
+                allies_has_effect += 1
+                def value_func(char, effect_applier):
+                    return (char.maxhp - char.hp) * 0.03
+                a.apply_effect(ContinuousHealEffect("Regeneration", 12, True, value_function=value_func, buff_applier=self,
+                                                   value_function_description="3% of lost hp", value_function_description_jp="失ったHPの3%"))
+        if allies_has_effect == 0:
+            damage_dealt = self.attack()
+            return damage_dealt
+        else:
+            return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        for e in self.enemy:
+            bw = BubbleWorldEffect("Bubble World", -1, False, self)
+            bw.additional_name = "Qimon_Bubble_World"
+            e.apply_effect(bw)
+
+
+# class QimonNY(Character):
+#     """
+#     New Year version of Qimon
+#     Build: 
+#     """
+#     def __init__(self, name, lvl, exp=0, equip=None, image=None):
+#         super().__init__(name, lvl, exp, equip, image)
+#         self.name = "QimonNY"
+#         self.skill1_description = ""
+#         self.skill2_description = ""
+#         self.skill3_description = ""
+#         self.skill1_description_jp = ""
+#         self.skill2_description_jp = ""
+#         self.skill3_description_jp = ""
+#         self.skill1_cooldown_max = 4
+#         self.skill2_cooldown_max = 4
+
+#     def skill1_logic(self):
+#         return 0
+
+#     def skill2_logic(self):
+#         return 0
+
+#     def skill3(self):
+#         pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

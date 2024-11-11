@@ -1239,10 +1239,17 @@ class SleepEffect(Effect):
         self.is_cc_effect = True
     
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        if character.has_effect_that_named("Bubble World", "Qimon_Bubble_World", "BubbleWorldEffect"):
+            # taken damage less than 10% of maxhp, do not wake up.
+            if damage < character.maxhp * 0.1 and character.is_alive():
+                global_vars.turn_info_string += f"Damage less than {character.maxhp * 0.1:.2f}, {character.name} still sleeping.\n"
+                return damage
         character.remove_effect(self)
         return damage
 
     def apply_effect_on_apply(self, character):
+        if character.has_effect_that_named("Bubble World", "Qimon_Bubble_World", "BubbleWorldEffect"):
+            character.remove_random_amount_of_buffs(3, False)
         stats_dict = {"eva": -1.00}
         character.update_stats(stats_dict, reversed=False) # Eva can be lower than 0, which makes sense.
 
@@ -2933,6 +2940,23 @@ class ShintouEffect(Effect):
     def tooltip_description_jp(self):
         return f"神稲のカウンター数:{self.current_counters}。"
     
+
+class BubbleWorldEffect(Effect):
+    """
+    When falling asleep, all active buffs are removed, damage taken that below 10% of maxhp
+    cannot remove Sleep effect.
+    """
+    def __init__(self, name, duration, is_buff, imposter):
+        super().__init__(name, duration, is_buff)
+        self.name = name
+        self.is_buff = is_buff
+        self.imposter = imposter
+
+    def tooltip_description(self):
+        return "When falling asleep, 3 active buffs are removed, damage taken that below 10% of maxhp cannot remove Sleep effect."
+    
+    def tooltip_description_jp(self):
+        return "睡眠状態になると、3つのアクティブなバフが解除され、最大HPの10%未満のダメージでは睡眠効果が解除されない。"
 
 class PharaohPassiveEffect(Effect):
     # Used by Pharaoh
