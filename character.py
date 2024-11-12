@@ -1273,6 +1273,9 @@ class Character:
             self.hp = int(self.hp)
             self.healing_received_this_turn.append((self.hp, healer))
             global_vars.turn_info_string += f"{self.name} is revived for {self.hp} hp.\n"
+            # if character has after_revive method, trigger it
+            if hasattr(self, "after_revive"):
+                self.after_revive()
         else:
             raise Exception(f"{self.name} is not dead. Cannot revive.")
     
@@ -2707,12 +2710,6 @@ class Pepper(Character):
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
-
     def skill1(self):
         global_vars.turn_info_string += f"{self.name} cast skill 1.\n"
         if self.skill1_cooldown > 0:
@@ -3284,12 +3281,14 @@ class RubinPF(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "RubinPF"
-        self.skill1_description = "For 30 turns, all allies have their accuracy increased by 100% of your evasion." \
-        " Minimum accuracy bonus is 10%."
-        self.skill2_description = "Focus attack on closest enemy 3 times with 240% atk."
+        self.skill1_description = "For 20 turns, increase accuracy by 40%, all allies have their evasion increased by 10% of" \
+        " your accuracy. Minimum evasion bonus is 1%."
+        self.skill2_description = "Focus attack on closest enemy 6 times with 180% atk." \
+        " Each attack has a 30% chance to apply Vulnerability for 20 turns, increasing damage taken by 20%."
         self.skill3_description = "At start of battle, apply Peach Flip to all allies." \
-        " Before the ally is about to take damage, damage taken is reduced by 30%, then 30% of the damage is taken by you." \
-        " Cannot protect against status effect and status damage."
+        " Before the ally is about to take damage, damage taken is reduced by 20%, then 30% of the damage is taken by you." \
+        " Cannot protect against status effect and status damage. At start of battle, apply Reborn to an ally of highest defense." \
+        " Reborn: Revive with 50% hp the next turn after defeated."
         self.skill1_description_jp = ""
         self.skill2_description_jp = ""
         self.skill3_description_jp = "戦闘開始時に全ての味方に桃返しを付与する。" \
@@ -3299,17 +3298,20 @@ class RubinPF(Character):
         self.skill2_cooldown_max = 4
 
     def skill1_logic(self):
+        self.apply_effect(StatsEffect("Accuracy Up", 20, True, {"acc": 0.4}))
         for ally in self.ally:
             is_buff = True
-            # if ally.eva < 0:
-            #     is_buff = False
-            eva_bonus = max(0.1, self.eva * 1.0)
-            e = StatsEffect("Accuracy Up", 30, is_buff, {"acc": eva_bonus})
+            acc_bonus = max(0.01, self.acc * 0.1)
+            e = StatsEffect("Evasion Up", 20, is_buff, {"eva": acc_bonus})
             ally.apply_effect(e)
         return 0
 
     def skill2_logic(self):
-        damage_dealt = self.attack(multiplier=2.4, repeat_seq=3, target_kw1="enemy_in_front")
+        def vulnerability_effect(self, target):
+            if random.randint(1, 100) <= 30:
+                target.apply_effect(StatsEffect("Vulnerability", 20, False, {"final_damage_taken_multipler": 0.2}))
+        damage_dealt = self.attack(multiplier=2.4, repeat_seq=6, target_kw1="enemy_in_front", 
+                                   func_after_dmg=vulnerability_effect)
         return damage_dealt
 
     def skill3(self):
@@ -3317,10 +3319,15 @@ class RubinPF(Character):
 
     def battle_entry_effects(self):
         allies = [x for x in self.ally if x != self]
+        a_highest_def = None
         for ally in allies:
-            e = ProtectedEffect("Peach Flip", -1, True, False, self, 0.7, 0.3)
+            e = ProtectedEffect("Peach Flip", -1, True, False, self, 0.8, 0.3)
             e.can_be_removed_by_skill = False
             ally.apply_effect(e)
+            if not a_highest_def or ally.defense > a_highest_def.defense:
+                a_highest_def = ally
+        if a_highest_def:
+            a_highest_def.apply_effect(RebornEffect("Reborn", -1, True, 0.5, cc_immunity=False, buff_applier=self))
 
 
 class Seth(Character):
@@ -6386,7 +6393,7 @@ class Joe(Character):
         self.skill1_description_jp = "最も近い敵に攻撃力の225%で5回攻撃する。"
         self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の220%で4回攻撃し、各攻撃には40%の確率で20ターンの間「暗闇」を付与する。暗闇：命中率が40%減少する。"
         self.skill3_description_jp = "自身のHPが初めて50%未満になった時、ターン終了の時に40ターンの間「暴走」と「混乱」を自分に付与する。暴走：攻撃力が100%増加し、受ける最終ダメージが50%増加する。混乱：ランダムな味方または敵を攻撃する。"
-        self.skill1_cooldown_max = 4
+        self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
         self.skill3_used = False
 
