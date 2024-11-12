@@ -3228,34 +3228,28 @@ class Rika(Character):
 
 
 
-class Air(Character):
+class Rubin(Character):
     """
     tank
     Build: spd, def, hp
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
-        self.name = "Air"
+        self.name = "Rubin"
         self.skill1_description = "For 30 turns, all allies have their accuracy increased by 100% of your evasion." \
         " Minimum accuracy bonus is 10%."
-        self.skill2_description = "Focus attack on closest enemy 3 times with 230% atk."
-        self.skill3_description = "At start of battle, apply Blessing of Air to all allies." \
+        self.skill2_description = "Focus attack on closest enemy 3 times with 240% atk."
+        self.skill3_description = "At start of battle, apply Unnamed Blessing to all allies." \
         " Before the ally is about to take damage, damage taken is reduced by 30%, then 30% of the damage is taken by you." \
         " Cannot protect against status effect and status damage."
         self.skill1_description_jp = "30ターンの間、全ての味方の命中率を自分の回避率の100%増加させる。" \
                                     "最低命中率ボーナスは10%。"
-        self.skill2_description_jp = "最も近い敵に230%で3回集中攻撃する。"
+        self.skill2_description_jp = "最も近い敵に240%で3回集中攻撃する。"
         self.skill3_description_jp = "戦闘開始時に全ての味方に名無しの加護を付与する。" \
                                     "味方がダメージを受ける前に、受けるダメージが30%軽減され、その30%のダメージを自身が受ける。" \
                                     "状態異常および状態ダメージからは守れない。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def skill1_logic(self):
         for ally in self.ally:
@@ -3268,7 +3262,7 @@ class Air(Character):
         return 0
 
     def skill2_logic(self):
-        damage_dealt = self.attack(multiplier=2.3, repeat_seq=3, target_kw1="enemy_in_front")
+        damage_dealt = self.attack(multiplier=2.4, repeat_seq=3, target_kw1="enemy_in_front")
         return damage_dealt
 
     def skill3(self):
@@ -3277,7 +3271,54 @@ class Air(Character):
     def battle_entry_effects(self):
         allies = [x for x in self.ally if x != self]
         for ally in allies:
-            e = ProtectedEffect("The Unknown", -1, True, False, self, 0.7, 0.3)
+            e = ProtectedEffect("Unnamed Blessing", -1, True, False, self, 0.7, 0.3)
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
+
+
+class RubinPF(Character):
+    """
+    Peach Festival Rubin
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "RubinPF"
+        self.skill1_description = "For 30 turns, all allies have their accuracy increased by 100% of your evasion." \
+        " Minimum accuracy bonus is 10%."
+        self.skill2_description = "Focus attack on closest enemy 3 times with 240% atk."
+        self.skill3_description = "At start of battle, apply Peach Flip to all allies." \
+        " Before the ally is about to take damage, damage taken is reduced by 30%, then 30% of the damage is taken by you." \
+        " Cannot protect against status effect and status damage."
+        self.skill1_description_jp = ""
+        self.skill2_description_jp = ""
+        self.skill3_description_jp = "戦闘開始時に全ての味方に桃返しを付与する。" \
+                                    "味方がダメージを受ける前に、受けるダメージが30%軽減され、その30%のダメージを自身が受ける。" \
+                                    "状態異常および状態ダメージからは守れない。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        for ally in self.ally:
+            is_buff = True
+            # if ally.eva < 0:
+            #     is_buff = False
+            eva_bonus = max(0.1, self.eva * 1.0)
+            e = StatsEffect("Accuracy Up", 30, is_buff, {"acc": eva_bonus})
+            ally.apply_effect(e)
+        return 0
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=2.4, repeat_seq=3, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Peach Flip", -1, True, False, self, 0.7, 0.3)
             e.can_be_removed_by_skill = False
             ally.apply_effect(e)
 
@@ -4258,7 +4299,7 @@ class Nata(Character):
                                     "この攻撃で敵が倒れた場合、HPを20%回復する。"
         self.skill3_description_jp = "初めて敗北した際、HPを12%回復し、自身に「蓮花」状態効果を付与する。" \
                                     "蓮花は15スタックを持ち、致死ダメージを受けるたびに1スタックを消費し、ダメージを無効化してHPを12%回復する。" \
-                                    "ダメージを受ける際、被ダメージが4% + スタックごとに4%軽減される。"
+                                    "ダメージを受ける際、被ダメージが4%+スタックごとに4%軽減される。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.skill3_used = False
