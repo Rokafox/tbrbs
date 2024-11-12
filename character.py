@@ -3281,24 +3281,23 @@ class RubinPF(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "RubinPF"
-        self.skill1_description = "For 20 turns, increase accuracy by 40%, all allies have their evasion increased by 10% of" \
+        self.skill1_description = "For 20 turns, increase accuracy by 30%, all allies have their evasion increased by 10% of" \
         " your accuracy. Minimum evasion bonus is 1%."
-        self.skill2_description = "Focus attack on closest enemy 6 times with 180% atk." \
-        " Each attack has a 30% chance to apply Vulnerability for 20 turns, increasing damage taken by 20%."
+        self.skill2_description = "Focus attack on closest enemy 6 times with 170% atk." \
+        " Each attack has a 30% chance to apply Disputed Space for 20 turns, increasing damage taken by 20%."
         self.skill3_description = "At start of battle, apply Peach Flip to all allies." \
         " Before the ally is about to take damage, damage taken is reduced by 20%, then 30% of the damage is taken by you." \
-        " Cannot protect against status effect and status damage. At start of battle, apply Reborn to an ally of highest defense." \
-        " Reborn: Revive with 50% hp the next turn after defeated."
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = "戦闘開始時に全ての味方に桃返しを付与する。" \
-                                    "味方がダメージを受ける前に、受けるダメージが30%軽減され、その30%のダメージを自身が受ける。" \
-                                    "状態異常および状態ダメージからは守れない。"
+        " Cannot protect against status effect and status damage. At start of battle, apply Peach Blossoms to an ally of highest defense." \
+        " Peach Blossoms: Revive with 40% hp the next turn after defeated."
+        # 論外空間 桃返し 桃華満開
+        self.skill1_description_jp = "20ターンの間、命中率が30%増加し、全ての味方の回避率が自分の命中率の10%分増加する。最低回避率のボーナスは1%となる。"
+        self.skill2_description_jp = "最も近い敵に攻撃力の170%で6回集中攻撃する。各攻撃には、30%の確率で20ターンの間「論外空間」を付与し、受けるダメージを20%増加させる。"
+        self.skill3_description_jp = "戦闘開始時に全ての味方に「桃返し」を付与する。味方がダメージを受ける直前に、そのダメージが20%減少し、残りの30%のダメージを自分が引き受ける。状態異常や状態異常ダメージには適用されない。戦闘開始時、防御力が最も高い味方1人に「桃華満開」を付与する。桃華満開：倒された次のターンにHP40%で復活する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
     def skill1_logic(self):
-        self.apply_effect(StatsEffect("Accuracy Up", 20, True, {"acc": 0.4}))
+        self.apply_effect(StatsEffect("Accuracy Up", 20, True, {"acc": 0.3}))
         for ally in self.ally:
             is_buff = True
             acc_bonus = max(0.01, self.acc * 0.1)
@@ -3309,7 +3308,7 @@ class RubinPF(Character):
     def skill2_logic(self):
         def vulnerability_effect(self, target):
             if random.randint(1, 100) <= 30:
-                target.apply_effect(StatsEffect("Vulnerability", 20, False, {"final_damage_taken_multipler": 0.2}))
+                target.apply_effect(StatsEffect("Disputed Space", 20, False, {"final_damage_taken_multipler": 0.2}))
         damage_dealt = self.attack(multiplier=2.4, repeat_seq=6, target_kw1="enemy_in_front", 
                                    func_after_dmg=vulnerability_effect)
         return damage_dealt
@@ -3327,7 +3326,7 @@ class RubinPF(Character):
             if not a_highest_def or ally.defense > a_highest_def.defense:
                 a_highest_def = ally
         if a_highest_def:
-            a_highest_def.apply_effect(RebornEffect("Reborn", -1, True, 0.5, cc_immunity=False, buff_applier=self))
+            a_highest_def.apply_effect(RebornEffect("Peach Blossoms", -1, True, 0.4, cc_immunity=False, buff_applier=self))
 
 
 class Seth(Character):

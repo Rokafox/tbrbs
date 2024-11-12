@@ -1912,8 +1912,8 @@ class RebornEffect(Effect):
     def apply_effect_on_trigger(self, character):
         if character.is_dead():
             character.revive(self.effect_value_constant, self.effect_value, self.buff_applier)
-            if hasattr(character, "after_revive"):
-                character.after_revive()
+            # if hasattr(character, "after_revive"):
+            #     character.after_revive() # v3.2.4 Already handled in revive method.
             character.remove_effect(self)
 
     def tooltip_description(self):

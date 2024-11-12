@@ -942,27 +942,9 @@ if __name__ == "__main__":
                                                ui_manager,
                                                None)
 
-    # If these options are changed, make sure to change the corresponding functions by searching for the function name
-    auto_battle_speed_selection_menu = pygame_gui.elements.UIDropDownMenu(["Veryslow", "Slow", "Normal", "Fast", "Veryfast"],
-                                                            "Normal",
-                                                            pygame.Rect((1080, 260), (156, 35)),
-                                                            ui_manager)
-
-    auto_battle_speed_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 220), (156, 35)),
-                                        "Autobattle Speed: ",
-                                        ui_manager)
-
-    after_auto_battle_selection_menu = pygame_gui.elements.UIDropDownMenu(["Do Nothing", "Restart", "Shuffle Party", "Next Stage"],
-                                                            "Do Nothing",
-                                                            pygame.Rect((1080, 180), (156, 35)),
-                                                            ui_manager)
-
-    after_auto_battle_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 140), (156, 35)),
-                                        "After Autobattle: ",
-                                        ui_manager)
 
     def decide_auto_battle_speed():
-        speed = auto_battle_speed_selection_menu.selected_option[0]
+        speed = global_vars.autobattle_speed
         match speed:
             case "Veryslow":
                 return 10.0
@@ -1710,15 +1692,82 @@ if __name__ == "__main__":
     # Settings Section
     # =====================================
 
-    settings_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 20), (156, 35)),
-                                        "Settings:",
-                                        ui_manager)
+    settings_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 20), (156, 50)),
+                                        text='Settings',
+                                        manager=ui_manager,)
+    settings_button.set_tooltip("Open settings window.", delay=0.1, wrap_width=300)
+
+    def build_settings_window():
+        global theme_selection_menu, settings_window, language_selection_menu, auto_battle_speed_selection_menu, after_auto_battle_selection_menu
+        try:
+            settings_window.kill()
+        except Exception as e:
+            print(f"Error: {e}")
+        settings_window = pygame_gui.elements.UIWindow(pygame.Rect((500, 300), (400, 300)),
+                                            ui_manager,
+                                            window_display_title="Settings",
+                                            object_id="#settings_window",
+                                            resizable=False)
+
+        theme_selection_label = pygame_gui.elements.UILabel(pygame.Rect((10, 10), (140, 35)),
+                                            "Theme:",
+                                            ui_manager,
+                                            container=settings_window)
+
+        theme_selection_menu = pygame_gui.elements.UIDropDownMenu(["Yellow Theme", "Purple Theme", "Red Theme", "Blue Theme", "Green Theme", "Pink Theme"],
+                                                                global_vars.theme,
+                                                                pygame.Rect((180, 10), (156, 35)),
+                                                                ui_manager,
+                                                                container=settings_window,)
+
+        language_selection_label = pygame_gui.elements.UILabel(pygame.Rect((10, 50), (140, 35)),
+                                                               "Language:",
+                                                               ui_manager,
+                                                                container=settings_window)
+
+        language_selection_menu = pygame_gui.elements.UIDropDownMenu(["English", "日本語"],
+                                                                global_vars.language,
+                                                                pygame.Rect((180, 50), (156, 35)),
+                                                                ui_manager,
+                                                                container=settings_window,)
 
 
-    theme_selection_menu = pygame_gui.elements.UIDropDownMenu(["Yellow Theme", "Purple Theme", "Red Theme", "Blue Theme", "Green Theme", "Pink Theme"],
-                                                            "Yellow Theme",
-                                                            pygame.Rect((1080, 60), (156, 35)),
-                                                            ui_manager)
+        auto_battle_speed_label = pygame_gui.elements.UILabel(pygame.Rect((10, 90), (140, 35)),
+                                            "Autobattle Speed: ",
+                                            ui_manager,
+                                            container=settings_window)
+        
+        auto_battle_speed_selection_menu = pygame_gui.elements.UIDropDownMenu(["Veryslow", "Slow", "Normal", "Fast", "Veryfast"],
+                                                                global_vars.autobattle_speed,
+                                                                pygame.Rect((180, 90), (156, 35)),
+                                                                ui_manager,
+                                                                container=settings_window)
+
+
+        after_auto_battle_label = pygame_gui.elements.UILabel(pygame.Rect((10, 130), (140, 35)),
+                                            "After Autobattle: ",
+                                            ui_manager,
+                                            container=settings_window)
+
+        after_auto_battle_selection_menu = pygame_gui.elements.UIDropDownMenu(["Do Nothing", "Restart", "Shuffle Party", "Next Stage"],
+                                                                global_vars.after_autobattle,
+                                                                pygame.Rect((180, 130), (156, 35)),
+                                                                ui_manager,
+                                                                container=settings_window)
+
+
+
+
+
+
+
+    settings_window = None
+    theme_selection_menu = None
+    language_selection_menu = None
+    auto_battle_speed_selection_menu = None
+    after_auto_battle_selection_menu = None
+
+
 
     def change_theme():
         global_vars.theme = theme_selection_menu.selected_option[0]
@@ -1747,11 +1796,6 @@ if __name__ == "__main__":
         swap_language()
 
 
-    language_selection_menu = pygame_gui.elements.UIDropDownMenu(["English", "日本語"],
-                                                            "English",
-                                                            pygame.Rect((1080, 100), (156, 35)),
-                                                            ui_manager)
-
     def swap_language():
         global_vars.language = language_selection_menu.selected_option[0]
         redraw_ui(party1, party2)
@@ -1778,6 +1822,86 @@ if __name__ == "__main__":
     #                                     "Inventory:",
     #                                     ui_manager)
 
+
+    cheap_inventory_sort_filter_window = None
+    cheap_inventory_sort_a_selection_menu = None
+    cheap_inventory_sort_b_selection_menu = None
+    cheap_inventory_sort_c_selection_menu = None
+
+    # TODO: change the position later
+    cheap_inventory_sort_filter_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((0, 0), (156, 35)),
+                                        text='Sort & Filter',
+                                        manager=ui_manager)
+    cheap_inventory_sort_filter_button.set_tooltip("Open sort and filter window for inventory.", delay=0.1, wrap_width=300)
+
+
+
+    # 3.3.0: Use window for inventory sort and filter
+    def build_cheap_inventory_sort_filter_window():
+        global cheap_inventory_sort_filter_window, cheap_inventory_sort_a_selection_menu, cheap_inventory_sort_b_selection_menu, cheap_inventory_sort_c_selection_menu
+        try:
+            cheap_inventory_sort_filter_window.kill()
+        except Exception as e:
+            print(f"Error: {e}")
+        cheap_inventory_sort_filter_window = pygame_gui.elements.UIWindow(pygame.Rect((500, 300), (450, 400)),
+                                                ui_manager,
+                                                window_display_title="Sort & Filter",
+                                                object_id="#cheap_inventory_sort_filter_window",
+                                                resizable=False)
+
+        # sort has 3 selection menus, for sorting further
+        cheap_inventory_sort_a_label = pygame_gui.elements.UILabel(pygame.Rect((10, 10), (140, 35)),
+                                            "Sort A:",
+                                            ui_manager,
+                                            container=cheap_inventory_sort_filter_window)
+        cheap_inventory_sort_a_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
+                                                                global_vars.cheap_inventory_sort_a,
+                                                                pygame.Rect((180, 10), (200, 35)),
+                                                                ui_manager,
+                                                                container=cheap_inventory_sort_filter_window)
+
+        cheap_inventory_sort_b_label = pygame_gui.elements.UILabel(pygame.Rect((10, 50), (140, 35)),
+                                            "Sort B:",
+                                            ui_manager,
+                                            container=cheap_inventory_sort_filter_window)
+        cheap_inventory_sort_b_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
+                                                                global_vars.cheap_inventory_sort_b,
+                                                                pygame.Rect((180, 50), (200, 35)),
+                                                                ui_manager,
+                                                                container=cheap_inventory_sort_filter_window)
+
+        cheap_inventory_sort_c_label = pygame_gui.elements.UILabel(pygame.Rect((10, 90), (140, 35)),
+                                            "Sort C:",
+                                            ui_manager,
+                                            container=cheap_inventory_sort_filter_window)
+        cheap_inventory_sort_c_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
+                                                                global_vars.cheap_inventory_sort_c,
+                                                                pygame.Rect((180, 90), (200, 35)),
+                                                                ui_manager,
+                                                                container=cheap_inventory_sort_filter_window)
+        
+        for selection_menu in [cheap_inventory_sort_a_selection_menu, cheap_inventory_sort_b_selection_menu, cheap_inventory_sort_c_selection_menu]:
+            selection_menu.add_options(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc", "crit", "critdmg", "critdef", "penetration", "heal_efficiency",
+                                        "maxhp_flat", "atk_flat", "def_flat", "spd_flat"])
+
+        cheap_inventory_filter_have_owner_label = pygame_gui.elements.UILabel(pygame.Rect((10, 130), (140, 35)),
+                                            "Have Owner:",
+                                            ui_manager,
+                                            container=cheap_inventory_sort_filter_window)
+        cheap_inventory_filter_have_owner_selection_menu = pygame_gui.elements.UIDropDownMenu(["All", "No Owner", "Has Owner"],
+                                                                global_vars.cheap_inventory_filter_have_owner,
+                                                                pygame.Rect((180, 130), (200, 35)),
+                                                                ui_manager,
+                                                                container=cheap_inventory_sort_filter_window)
+
+
+        cheap_inventory_sort_filter_confirm_button = pygame_gui.elements.UIButton(pygame.Rect((10, 290), (200, 50)),
+                                            "Confirm",
+                                            ui_manager,
+                                            container=cheap_inventory_sort_filter_window)
+
+
+
     cheap_inventory_what_to_show_selection_menu = pygame_gui.elements.UIDropDownMenu(["Equip", "Consumable", "Item"],
                                                             "Equip",
                                                             pygame.Rect((1300, 20), (240, 35)),
@@ -1785,7 +1909,7 @@ if __name__ == "__main__":
 
     cheap_inventory_sort_by_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
                                                             "Rarity",
-                                                            pygame.Rect((1300, 60), (114, 35)),
+                                                            pygame.Rect((1280, 60), (134, 35)),
                                                             ui_manager)
 
     cheap_inventory_sort_by_selection_menu.add_options(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc", "crit", "critdmg", "critdef", "penetration", "heal_efficiency",
@@ -3770,9 +3894,28 @@ if __name__ == "__main__":
                     shop_purchase_item(player, the_shop, 3)
                 if event.ui_element == shop_item_purchase_buttone:
                     shop_purchase_item(player, the_shop, 4)
+                if event.ui_element == settings_button:
+                    # print(settings_window)
+                    # print(settings_window.groups())
+                    # settings_window.add(ui_manager.get_sprite_group()) # Does not work
+                    # settings_window.show()
+                    build_settings_window()
+                if event.ui_element == cheap_inventory_sort_filter_button:
+                    build_cheap_inventory_sort_filter_window()
 
 
             if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+                # auto_battle_speed_selection_menu
+                if event.ui_element == auto_battle_speed_selection_menu:
+                    global_vars.autobattle_speed = auto_battle_speed_selection_menu.selected_option[0]
+                if event.ui_element == after_auto_battle_selection_menu:
+                    global_vars.after_autobattle = after_auto_battle_selection_menu.selected_option[0]
+                if event.ui_element == cheap_inventory_sort_a_selection_menu:
+                    global_vars.cheap_inventory_sort_a = cheap_inventory_sort_a_selection_menu.selected_option[0]
+                if event.ui_element == cheap_inventory_sort_b_selection_menu:
+                    global_vars.cheap_inventory_sort_b = cheap_inventory_sort_b_selection_menu.selected_option[0]
+                if event.ui_element == cheap_inventory_sort_c_selection_menu:
+                    global_vars.cheap_inventory_sort_c = cheap_inventory_sort_c_selection_menu.selected_option[0]
                 if event.ui_element == language_selection_menu:
                     swap_language()
                 if event.ui_element == cheap_inventory_sort_by_selection_menu:
@@ -3870,6 +4013,7 @@ if __name__ == "__main__":
 
 
             ui_manager.process_events(event)
+            ui_manager_overlay.process_events(event)
 
         ui_manager.update(time_delta)
         ui_manager_overlay.update(time_delta)
@@ -3897,7 +4041,8 @@ if __name__ == "__main__":
                 time_acc = 0.0
                 if not next_turn(party1, party2):
                     auto_battle_active = False
-                    instruction = after_auto_battle_selection_menu.selected_option[0]
+                    instruction = global_vars.after_autobattle
+                    # print(f"Auto Battle Finished. Instruction: {instruction}")
                     if instruction == "Do Nothing":
                         pass
                     elif instruction == "Restart":
