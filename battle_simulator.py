@@ -168,28 +168,51 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             case _:
                 filtered_inventory = self.inventory
 
-        filter_inventory_suboption = cheap_inventory_filter_selection_menu.selected_option[0]
-        # in filter_inventory_suboption, "s:" means set name, ie. "s: Arasaka" only gives items in Arasaka set
-        # only Equip() has eq_set attribute
-        # c: means Characters, only show items that has attr owner = filter_inventory_suboption.split(":")[1].strip()
-        if filter_inventory_suboption.startswith("s:"):
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
-        elif filter_inventory_suboption.startswith("sno:"):
-            # No Owner
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
-        elif filter_inventory_suboption.startswith("sho:"):
-            # Has Owner
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
+        # inventory filter, global_vars have the following 3 attributes:
+        # cheap_inventory_filter_have_owner = "Not Specified" | "Has Owner" | "No Owner"
+        # cheap_inventory_filter_owned_by_char = "Not Specified" | "Character Name"
+        # cheap_inventory_filter_eqset = "Not Specified" | "Equipment Set Name"
+
+        if global_vars.cheap_inventory_filter_have_owner == "Has Owner":
             filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
-        elif filter_inventory_suboption.startswith("c:"):
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == filter_inventory_suboption.split(":")[1].strip()]
-        elif filter_inventory_suboption == "No Owner":
+        elif global_vars.cheap_inventory_filter_have_owner == "No Owner":
             filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
-        elif filter_inventory_suboption == "Has Owner":
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
-        else:
-            pass 
+
+        if global_vars.cheap_inventory_filter_owned_by_char != "Not Specified":
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == global_vars.cheap_inventory_filter_owned_by_char]
+
+        if global_vars.cheap_inventory_filter_eqset != "Not Specified":
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == global_vars.cheap_inventory_filter_eqset]
+
+
+
+
+
+
+
+        # previous implementation:
+        # filter_inventory_suboption = cheap_inventory_filter_selection_menu.selected_option[0]
+        # # in filter_inventory_suboption, "s:" means set name, ie. "s: Arasaka" only gives items in Arasaka set
+        # # only Equip() has eq_set attribute
+        # # c: means Characters, only show items that has attr owner = filter_inventory_suboption.split(":")[1].strip()
+        # if filter_inventory_suboption.startswith("s:"):
+        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
+        # elif filter_inventory_suboption.startswith("sno:"):
+        #     # No Owner
+        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
+        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
+        # elif filter_inventory_suboption.startswith("sho:"):
+        #     # Has Owner
+        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
+        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
+        # elif filter_inventory_suboption.startswith("c:"):
+        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == filter_inventory_suboption.split(":")[1].strip()]
+        # elif filter_inventory_suboption == "No Owner":
+        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
+        # elif filter_inventory_suboption == "Has Owner":
+        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
+        # else:
+        #     pass 
 
         chunked_inventory = list(mit.chunked(filtered_inventory, 24)) # The value must equal to n argument of create_inventory_image_slots()
         max_pages = max(0, len(chunked_inventory) - 1)
@@ -354,76 +377,56 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             self.add_to_inventory(item, False)
         self.build_inventory_slots()
 
-    def sort_inventory_by_rarity(self):
-        all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food", "Eqpackage", "Foodpackage"]
-        item_sample = Block("Foo", "")
-        # Create ordering dictionaries for rarity and types
-        rarity_order = dict(mit.zip_equal(item_sample.rarity_list, range(len(item_sample.rarity_list))))
-        type_order = dict(mit.zip_equal(all_possible_types, range(len(all_possible_types))))
-        # Sort inventory first by rarity, then by type
-        self.inventory.sort(key=lambda x: (rarity_order[x.rarity], type_order[x.type]), reverse=False)
-        self.current_page = 0
-        self.build_inventory_slots()
 
-    def sort_inventory_by_type(self):
-        # Certainly a little bit stupid. Every time we add a new type, we have to add it to this list.
-        # Faster than dumping Equip to a new list, sort, then dump back to inventory
-        # Slower than seperating Equip, Consumable, Item into 3 lists
-        all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food", "Eqpackage", "Foodpackage"]
-        type_order = dict(mit.zip_equal(all_possible_types, range(len(all_possible_types))))
-        self.inventory.sort(key=lambda x: type_order[x.type], reverse=False)
-        self.current_page = 0
-        self.build_inventory_slots()
-
-    def sort_inventory_by_set(self):
-        all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food", "Eqpackage", "Foodpackage"]
-        item_sample = Equip("Foo", "Weapon", "Common")
-        # Create ordering dictionaries for sets and types
-        set_order = dict(mit.zip_equal(item_sample.eq_set_list, range(len(item_sample.eq_set_list))))
-        type_order = dict(mit.zip_equal(all_possible_types, range(len(all_possible_types))))
-        # Sort inventory first by set, then by type
-        self.inventory.sort(key=lambda x: (set_order[x.eq_set], type_order[x.type]), reverse=False)
-        self.current_page = 0
-        self.build_inventory_slots()
-
-    def sort_inventory_by_level(self):
-        self.inventory.sort(key=lambda x: x.level, reverse=True)
-        self.current_page = 0
-        self.build_inventory_slots()
-
-    def sort_inventory_by_market_value(self):
-        self.inventory.sort(key=lambda x: x.market_value, reverse=True)
-        self.current_page = 0
-        self.build_inventory_slots()
-
-    def sort_inventory_bogo(self):
-        # just a shuffle
-        random.shuffle(self.inventory)
-        self.current_page = 0
-        self.build_inventory_slots()
-
-    def sort_inventory_by_stats(self, stat: str):
+    def sort_inventory_abc(self, first: str, second: str, third: str):
         """
-        sort by any of the following, coming from Equip() class:
-        self.maxhp_percent = 0.00
-        self.atk_percent = 0.00
-        self.def_percent = 0.00
-        self.spd = 0.00
-        self.eva = 0.00
-        self.acc = 0.00
-        self.crit = 0.00
-        self.critdmg = 0.00
-        self.critdef = 0.00
-        self.penetration = 0.00
-        self.heal_efficiency = 0.00
-        self.maxhp_flat = 0
-        self.atk_flat = 0
-        self.def_flat = 0
-        self.spd_flat = 0
+        Given 3 attributes, sort by first, then second, then third.
         """
-        self.inventory.sort(key=lambda x: getattr(x, stat, 0), reverse=True)
+        def convert_for_eval(s: str):
+            # "Rarity", "Type", "Set", "Level", "Market Value", "BOGO"
+            match s:
+                case "Rarity":
+                    return "rarity"
+                case "Type":
+                    return "type"
+                case "Set":
+                    return "eq_set"
+                case "Level":
+                    return "level"
+                case "Market Value":
+                    return "market_value"
+                case "BOGO":
+                    return "bogo"
+                case _:
+                    return s
+        first = convert_for_eval(first)
+        second = convert_for_eval(second)
+        third = convert_for_eval(third)
+
+        if "bogo" in [first, second, third]:
+            # we have to generate a bogo value for each item
+            for item in self.inventory:
+                item.bogo = random.random()
+
+        # all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food", "Eqpackage", "Foodpackage"]
+        # item_sample = Block("Foo", "")
+        # equip_sample = Equip("Moo", "Weapon", "Common")
+        # rarity_order = dict(mit.zip_equal(item_sample.rarity_list, range(len(item_sample.rarity_list))))
+        # type_order = dict(mit.zip_equal(all_possible_types, range(len(all_possible_types))))
+        # set_order = dict(mit.zip_equal(equip_sample.eq_set_list, range(len(item_sample.eq_set_list))))
+        # level_order: just the level
+        # market_value_order: just the market_value
+        # bogo: shuffle
+        # stats: sort by any of the stats, coming from Equip() class
+
+        try:
+            eval_string = f"self.inventory.sort(key=lambda x: (getattr(x, '{first}', 0), getattr(x, '{second}', 0), getattr(x, '{third}', 0)), reverse=True)"
+            eval(eval_string)
+        except Exception as e:
+            print(f"Error sorting inventory: {e}")
         self.current_page = 0
         self.build_inventory_slots()
+
 
     def to_next_page(self):
         if self.current_page == self.max_pages:
@@ -877,7 +880,7 @@ if __name__ == "__main__":
                                         text='Shuffle Party',
                                         manager=ui_manager,
                                         tool_tip_text = "Shuffle party and restart the battle")
-    button1.set_tooltip("Shuffle the party and restart battle.", delay=0.1, wrap_width=300)
+    button1.set_tooltip("Shuffle the party members and restart battle. On adventure mode, only party 1 is shuffled.", delay=0.1, wrap_width=300)
 
     button4 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 340), (156, 35)),
                                         text='Restart Battle',
@@ -889,7 +892,7 @@ if __name__ == "__main__":
                                         text='All Turns',
                                         manager=ui_manager,
                                         tool_tip_text = "Skip to the end of the battle.")
-    button3.set_tooltip("Skip to the end of the battle but no reward.", delay=0.1, wrap_width=300)
+    button3.set_tooltip("Skip to the end of the battle.", delay=0.1, wrap_width=300)
 
     button_left_simulate_current_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 420), (78, 50)),
                                         text='Simulate',
@@ -927,14 +930,13 @@ if __name__ == "__main__":
                                         text='Next Turn',
                                         manager=ui_manager,
                                         tool_tip_text = "Simulate the next turn")
-    next_turn_button_tooltip_str = "Next turn. Experience and cash will be earned if the battle is won in adventure mode."
-    next_turn_button_tooltip_str += "If the stage level is higher than the average party level, the reward will increase."
+    next_turn_button_tooltip_str = "Next turn. Rewards are earned if the battle is won in adventure mode." \
+    " The details of rewards are shown when hovering over the stage number label."
     next_turn_button.set_tooltip(next_turn_button_tooltip_str, delay=0.1, wrap_width=300)
 
     button_auto_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 300), (156, 50)),
-                                        text='Auto',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Auto battle")
+                                        text='Auto Battle',
+                                        manager=ui_manager,)
     button_auto_battle.set_tooltip("Automatically proceed to the next turn when the progress bar is full. Rewards are earned when the battle is over.", delay=0.1, wrap_width=300)
 
 
@@ -1804,7 +1806,48 @@ if __name__ == "__main__":
             redraw_ui_shop_edition(reload_shop=False) 
         # print(f"Language changed to {global_vars.language}.")
         box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
-
+        match global_vars.language:
+            case "English":
+                settings_button.set_text("Settings")
+                settings_button.set_tooltip("Open settings window.", delay=0.1, wrap_width=300)
+                button_quit_game.set_text("Quit")
+                button_quit_game.set_tooltip("Save player data as player_data.json and exit.", delay=0.1, wrap_width=300)
+                button_left_simulate_current_battle.set_text("Simulate")
+                button_left_simulate_current_battle.set_tooltip("Simulate current battle n times and print the result.", delay=0.1, wrap_width=300)
+                button3.set_text("All Turns")
+                button3.set_tooltip("Skip to the end of the battle.", delay=0.1, wrap_width=300)
+                button4.set_text("Restart Battle")
+                button4.set_tooltip("Restart battle.", delay=0.1)
+                button1.set_text('Shuffle Party')
+                button1.set_tooltip("Shuffle the party members and restart battle. On adventure mode, only party 1 is shuffled.", delay=0.1, wrap_width=300)
+                next_turn_button.set_text("Next Turn")
+                next_turn_button_tooltip_str = "Next turn. Rewards are earned if the battle is won in adventure mode." \
+                " The details of rewards are shown when hovering over the stage number label."
+                next_turn_button.set_tooltip(next_turn_button_tooltip_str, delay=0.1, wrap_width=300)
+                button_auto_battle.set_text("Auto Battle")
+                button_auto_battle.set_tooltip("Automatically proceed to the next turn when the progress bar is full. Rewards are earned when the battle is over.", delay=0.1, wrap_width=300)
+                cheap_inventory_sort_filter_button.set_text("Sort & Filter")
+                cheap_inventory_sort_filter_button.set_tooltip("Open sort and filter window for inventory.", delay=0.1, wrap_width=300)
+            case "日本語":
+                settings_button.set_text("設定")
+                settings_button.set_tooltip("設定ウィンドウを開く。", delay=0.1, wrap_width=300)
+                button_quit_game.set_text("終了")
+                button_quit_game.set_tooltip("プレイヤーデータをplayer_data.jsonとして保存し、アプリを終了する。", delay=0.1, wrap_width=300)
+                button_left_simulate_current_battle.set_text("勝率計算")
+                button_left_simulate_current_battle.set_tooltip("現在の戦闘をn回シミュレートし、結果を表示する。", delay=0.1, wrap_width=300)
+                button3.set_text("すべてのターン")
+                button3.set_tooltip("戦闘終了まで飛ばす。", delay=0.1, wrap_width=300)
+                button4.set_text("リスタート")
+                button4.set_tooltip("戦闘再開。", delay=0.1, wrap_width=300)
+                button1.set_text('シャッフル')
+                button1.set_tooltip("パーティメンバーをランダムに編成してバトルを再開する。冒険モードではパーティ1のみ入れ替わる。", delay=0.1, wrap_width=300)
+                next_turn_button.set_text("次のターン")
+                next_turn_button_tooltip_str = "次のターン。冒険モードで勝利すると報酬を獲得できる。報酬の詳細は、ステージ番号のラベルにカーソルを合わせると表示される。"
+                next_turn_button.set_tooltip(next_turn_button_tooltip_str, delay=0.1, wrap_width=300)
+                button_auto_battle.set_text("自動戦闘")
+                button_auto_battle.set_tooltip("進行状況バーが埋まると自動的に次のターンに進む。戦闘終了時に報酬を獲得できる。", delay=0.1, wrap_width=300)
+                cheap_inventory_sort_filter_button.set_text("ソートとフィルタ")
+                cheap_inventory_sort_filter_button.set_tooltip("インベントリの並び替えと絞り込みウィンドウを開く。", delay=0.1, wrap_width=300)
 
 
 
@@ -1818,27 +1861,32 @@ if __name__ == "__main__":
     # 10 rows, 6 columns
     # each row and column have a empty space of 8 pixels
 
-    # cheap_inventory_what_to_show_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 60), (156, 35)),
-    #                                     "Inventory:",
-    #                                     ui_manager)
-
-
     cheap_inventory_sort_filter_window = None
     cheap_inventory_sort_a_selection_menu = None
     cheap_inventory_sort_b_selection_menu = None
     cheap_inventory_sort_c_selection_menu = None
+    cheap_inventory_filter_have_owner_selection_menu = None
+    cheap_inventory_filter_owned_by_char_selection_menu = None
+    cheap_inventory_filter_eqset_selection_menu = None
+    cheap_inventory_sort_filter_confirm_button = None
 
-    # TODO: change the position later
-    cheap_inventory_sort_filter_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((0, 0), (156, 35)),
+
+    cheap_inventory_what_to_show_selection_menu = pygame_gui.elements.UIDropDownMenu(["Equip", "Consumable", "Item"],
+                                                            "Equip",
+                                                            pygame.Rect((1300, 20), (230, 35)),
+                                                            ui_manager)
+                                  
+    cheap_inventory_sort_filter_button = pygame_gui.elements.UIButton(pygame.Rect((1300, 60), (230, 35)),
                                         text='Sort & Filter',
                                         manager=ui_manager)
     cheap_inventory_sort_filter_button.set_tooltip("Open sort and filter window for inventory.", delay=0.1, wrap_width=300)
 
 
-
     # 3.3.0: Use window for inventory sort and filter
     def build_cheap_inventory_sort_filter_window():
         global cheap_inventory_sort_filter_window, cheap_inventory_sort_a_selection_menu, cheap_inventory_sort_b_selection_menu, cheap_inventory_sort_c_selection_menu
+        global cheap_inventory_filter_have_owner_selection_menu, cheap_inventory_filter_owned_by_char_selection_menu, cheap_inventory_filter_eqset_selection_menu
+        global cheap_inventory_sort_filter_confirm_button
         try:
             cheap_inventory_sort_filter_window.kill()
         except Exception as e:
@@ -1885,112 +1933,47 @@ if __name__ == "__main__":
                                         "maxhp_flat", "atk_flat", "def_flat", "spd_flat"])
 
         cheap_inventory_filter_have_owner_label = pygame_gui.elements.UILabel(pygame.Rect((10, 130), (140, 35)),
-                                            "Have Owner:",
+                                            "Has Owner:",
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
-        cheap_inventory_filter_have_owner_selection_menu = pygame_gui.elements.UIDropDownMenu(["All", "No Owner", "Has Owner"],
+        cheap_inventory_filter_have_owner_selection_menu = pygame_gui.elements.UIDropDownMenu(["Not Specified", "No Owner", "Has Owner"],
                                                                 global_vars.cheap_inventory_filter_have_owner,
                                                                 pygame.Rect((180, 130), (200, 35)),
                                                                 ui_manager,
                                                                 container=cheap_inventory_sort_filter_window)
 
+        cheap_inventory_filter_owned_by_char_label = pygame_gui.elements.UILabel(pygame.Rect((10, 170), (140, 35)),
+                                            "Owned By:",
+                                            ui_manager,
+                                            container=cheap_inventory_sort_filter_window)
+        
+        cheap_inventory_filter_owned_by_char_selection_menu = pygame_gui.elements.UIDropDownMenu(["Not Specified"] + all_characters_names,
+                                                                global_vars.cheap_inventory_filter_owned_by_char,
+                                                                pygame.Rect((180, 170), (200, 35)),
+                                                                ui_manager,
+                                                                container=cheap_inventory_sort_filter_window)
 
-        cheap_inventory_sort_filter_confirm_button = pygame_gui.elements.UIButton(pygame.Rect((10, 290), (200, 50)),
-                                            "Confirm",
+        cheap_inventory_filter_eqset_label = pygame_gui.elements.UILabel(pygame.Rect((10, 210), (140, 35)),
+                                            "Equipment Set:",
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
 
+        cheap_inventory_filter_eqset_selection_menu = pygame_gui.elements.UIDropDownMenu(["Not Specified"] + eq_set_list_without_none_and_void,
+                                                                global_vars.cheap_inventory_filter_eqset,
+                                                                pygame.Rect((180, 210), (200, 35)),
+                                                                ui_manager,
+                                                                container=cheap_inventory_sort_filter_window)
 
-
-    cheap_inventory_what_to_show_selection_menu = pygame_gui.elements.UIDropDownMenu(["Equip", "Consumable", "Item"],
-                                                            "Equip",
-                                                            pygame.Rect((1300, 20), (240, 35)),
-                                                            ui_manager)
-
-    cheap_inventory_sort_by_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
-                                                            "Rarity",
-                                                            pygame.Rect((1280, 60), (134, 35)),
-                                                            ui_manager)
-
-    cheap_inventory_sort_by_selection_menu.add_options(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc", "crit", "critdmg", "critdef", "penetration", "heal_efficiency",
-                                                        "maxhp_flat", "atk_flat", "def_flat", "spd_flat"])                                                        
-
-    cheap_inventory_filter_selection_menu = pygame_gui.elements.UIDropDownMenu(["All", "No Owner", "Has Owner"],
-                                                            "All",
-                                                            pygame.Rect((1416, 60), (154, 35)),
-                                                            ui_manager)
-    # was 114
-
-    # craft a new list of s: + set name
-    cheap_inventory_filter_selection_menu.add_options([f"{prefix}: {x}" for prefix in ["s", "sno", "sho"] for x in eq_set_list_without_none_and_void])
-    # character names start with c:
-    cheap_inventory_filter_selection_menu.add_options([f"c: {x}" for x in all_characters_names])
-
+        cheap_inventory_sort_filter_confirm_button = pygame_gui.elements.UIButton(pygame.Rect((10, 300), (200, 50)),
+                                            "Confirm",
+                                            ui_manager,
+                                            container=cheap_inventory_sort_filter_window)
+        return None      
 
     def cheap_inventory_sort():
-        """
-        self.maxhp_percent = 0.00
-        self.atk_percent = 0.00
-        self.def_percent = 0.00
-        self.spd = 0.00
-        self.eva = 0.00
-        self.acc = 0.00
-        self.crit = 0.00
-        self.critdmg = 0.00
-        self.critdef = 0.00
-        self.penetration = 0.00
-        self.heal_efficiency = 0.00
-        self.maxhp_flat = 0
-        self.atk_flat = 0
-        self.def_flat = 0
-        self.spd_flat = 0
-        """
-        match cheap_inventory_sort_by_selection_menu.selected_option[0]:
-            case "Rarity":
-                player.sort_inventory_by_rarity()
-            case "Type":
-                player.sort_inventory_by_type()
-            case "Set":
-                player.sort_inventory_by_set()
-            case "Level":
-                player.sort_inventory_by_level()
-            case "Market Value":
-                player.sort_inventory_by_market_value()
-            case "BOGO":
-                player.sort_inventory_bogo()
-            case "maxhp_percent":
-                player.sort_inventory_by_stats("maxhp_percent")
-            case "atk_percent":
-                player.sort_inventory_by_stats("atk_percent")
-            case "def_percent":
-                player.sort_inventory_by_stats("def_percent")
-            case "spd":
-                player.sort_inventory_by_stats("spd")
-            case "eva":
-                player.sort_inventory_by_stats("eva")
-            case "acc":
-                player.sort_inventory_by_stats("acc")
-            case "crit":
-                player.sort_inventory_by_stats("crit")
-            case "critdmg":
-                player.sort_inventory_by_stats("critdmg")
-            case "critdef":
-                player.sort_inventory_by_stats("critdef")
-            case "penetration":
-                player.sort_inventory_by_stats("penetration")
-            case "heal_efficiency":
-                player.sort_inventory_by_stats("heal_efficiency")
-            case "maxhp_flat":
-                player.sort_inventory_by_stats("maxhp_flat")
-            case "atk_flat":
-                player.sort_inventory_by_stats("atk_flat")
-            case "def_flat":
-                player.sort_inventory_by_stats("def_flat")
-            case "spd_flat":
-                player.sort_inventory_by_stats("spd_flat")
-            case _:
-                print(f"Warning: Unknown option: {cheap_inventory_sort_by_selection_menu.selected_option[0]}")
-
+        player.sort_inventory_abc(global_vars.cheap_inventory_sort_a,
+                                  global_vars.cheap_inventory_sort_b,
+                                  global_vars.cheap_inventory_sort_c)
 
     # cheap_inventory_cheap_label = pygame_gui.elements.UILabel(pygame.Rect((1372, 100), (72, 35)),
     #                                                           "Inventory",
@@ -1999,7 +1982,7 @@ if __name__ == "__main__":
     cheap_inventory_page_label = pygame_gui.elements.UILabel(pygame.Rect((1372, 140), (72, 35)),
                                         "1/1",
                                         ui_manager)
-    cheap_inventory_page_label.set_tooltip("ページ/最大ページ", delay=0.1)
+    cheap_inventory_page_label.set_tooltip("page/max page", delay=0.1)
 
     cheap_inventory_skip_to_first_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1300, 140), (50, 35)),
                                         text='<<<',
@@ -2014,7 +1997,7 @@ if __name__ == "__main__":
     cheap_inventory_previous_n_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1300, 100), (50, 35)),
                                         text='<<',
                                         manager=ui_manager,)
-    cheap_inventory_previous_n_button.set_tooltip("Previous page of inventory.", delay=0.1, wrap_width=300)
+    cheap_inventory_previous_n_button.set_tooltip("Previous 5th page of inventory.", delay=0.1, wrap_width=300)
 
     cheap_inventory_skip_to_last_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1480, 140), (50, 35)),
                                         text='>>>',
@@ -2024,7 +2007,7 @@ if __name__ == "__main__":
     cheap_inventory_next_n_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1480, 100), (50, 35)),
                                         text='>>',
                                         manager=ui_manager,)
-    cheap_inventory_next_n_button.set_tooltip("Next page of inventory.", delay=0.1, wrap_width=300)
+    cheap_inventory_next_n_button.set_tooltip("Next 5th page of inventory.", delay=0.1, wrap_width=300)
 
     cheap_inventory_next_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1425, 100), (50, 35)),
                                         text='>',
@@ -3902,6 +3885,8 @@ if __name__ == "__main__":
                     build_settings_window()
                 if event.ui_element == cheap_inventory_sort_filter_button:
                     build_cheap_inventory_sort_filter_window()
+                if event.ui_element == cheap_inventory_sort_filter_confirm_button:
+                    cheap_inventory_sort()
 
 
             if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
@@ -3916,17 +3901,19 @@ if __name__ == "__main__":
                     global_vars.cheap_inventory_sort_b = cheap_inventory_sort_b_selection_menu.selected_option[0]
                 if event.ui_element == cheap_inventory_sort_c_selection_menu:
                     global_vars.cheap_inventory_sort_c = cheap_inventory_sort_c_selection_menu.selected_option[0]
+                #  cheap_inventory_filter_have_owner_selection_menu
+                if event.ui_element == cheap_inventory_filter_have_owner_selection_menu:
+                    global_vars.cheap_inventory_filter_have_owner = cheap_inventory_filter_have_owner_selection_menu.selected_option[0]
+                if event.ui_element == cheap_inventory_filter_owned_by_char_selection_menu:
+                    global_vars.cheap_inventory_filter_owned_by_char = cheap_inventory_filter_owned_by_char_selection_menu.selected_option[0]
+                if event.ui_element == cheap_inventory_filter_eqset_selection_menu:
+                    global_vars.cheap_inventory_filter_eqset = cheap_inventory_filter_eqset_selection_menu.selected_option[0]
                 if event.ui_element == language_selection_menu:
                     swap_language()
-                if event.ui_element == cheap_inventory_sort_by_selection_menu:
-                    cheap_inventory_sort()
                 if event.ui_element == shop_select_a_shop:
                     the_shop = redraw_ui_shop_edition()
                 if event.ui_element == theme_selection_menu:
                     change_theme()
-                if event.ui_element == cheap_inventory_filter_selection_menu:
-                    player.current_page = 0
-                    player.build_inventory_slots()
                 if event.ui_element == button_left_change_chart_selection:
                     match button_left_change_chart_selection.selected_option[0]:
                         # ["Damage Dealt", "Damage Received", "Healing"]
