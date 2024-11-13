@@ -2901,12 +2901,6 @@ class Tian(Character):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
-
     def skill1_logic(self):
         def effect(self, target):
             target.apply_effect(StatsEffect("Dilemma", 30, False, {"crit": -1.0}))
@@ -3593,7 +3587,9 @@ class Raven(Character):
             for a in self.get_neighbor_allies_not_including_self():
                 v += a.atk * 0.3
                 a.apply_effect(StatsEffect("Atk Down", 15, False, {"atk": 0.7}))
-            self.apply_effect(StatsEffect("Blackbird", 30, True, main_stats_additive_dict={"atk": v}))
+            bb = StatsEffect("Blackbird", 30, True, main_stats_additive_dict={"atk": v})
+            bb.additional_name = "Raven_Blackbird"
+            self.apply_effect(bb)
         return 0
 
     def skill2_logic(self):
@@ -3661,7 +3657,9 @@ class RavenWB(Character):
             for a in self.get_neighbor_allies_not_including_self():
                 v += a.atk * 0.3
                 a.apply_effect(StatsEffect("Atk Down", 15, False, {"atk": 0.7}))
-            self.apply_effect(StatsEffect("Blackbird", 30, True, main_stats_additive_dict={"atk": v}))
+            bb = StatsEffect("Blackbird", 30, True, main_stats_additive_dict={"atk": v})
+            bb.additional_name = "Raven_Blackbird"
+            self.apply_effect(bb)
         return 0
 
     def skill2_logic(self):

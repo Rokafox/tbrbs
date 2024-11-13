@@ -84,3 +84,6 @@ class Block:
     
     def total_market_value(self):
         return self.market_value * self.current_stack
+    
+    def get_rarity_order(self):
+        return self.rarity_list.index(self.rarity)

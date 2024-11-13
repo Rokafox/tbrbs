@@ -137,6 +137,9 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Block)}
         self.selected_item: dict[pygame_gui.elements.UIImage, tuple[pygame.Surface, bool, Block]] = {}
         self.cleared_stages = 0
+        # cheems: player can create custom teams for battle, each entry is a list of 5 character names: ["Cerberus", "Fenrir", "Clover", 'Ruby', 'Olive']
+        # each team also has a name, like "Team AAA", "Team BBB"
+        self.cheems: dict[str, list[str]] = {}
 
         if cash > 0:
             self.add_cash(cash, False)
@@ -145,8 +148,9 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         return {
             "cash": self.cash,
             "owned_characters": [character.to_dict() for character in self.owned_characters],
+            "cleared_stages": self.cleared_stages,
+            "cheems": self.cheems,
             "inventory": [item.to_dict() for item in self.inventory],
-            "cleared_stages": self.cleared_stages
         }
 
     def build_inventory_slots(self):
@@ -178,41 +182,14 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         elif global_vars.cheap_inventory_filter_have_owner == "No Owner":
             filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
 
-        if global_vars.cheap_inventory_filter_owned_by_char != "Not Specified":
+        if global_vars.cheap_inventory_filter_owned_by_char not in ["Not Specified", "Currently Selected"]:
             filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == global_vars.cheap_inventory_filter_owned_by_char]
+        elif global_vars.cheap_inventory_filter_owned_by_char == "Currently Selected":
+            s = character_selection_menu.selected_option[0].split(" ")[-1]
+            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == s]
 
         if global_vars.cheap_inventory_filter_eqset != "Not Specified":
             filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == global_vars.cheap_inventory_filter_eqset]
-
-
-
-
-
-
-
-        # previous implementation:
-        # filter_inventory_suboption = cheap_inventory_filter_selection_menu.selected_option[0]
-        # # in filter_inventory_suboption, "s:" means set name, ie. "s: Arasaka" only gives items in Arasaka set
-        # # only Equip() has eq_set attribute
-        # # c: means Characters, only show items that has attr owner = filter_inventory_suboption.split(":")[1].strip()
-        # if filter_inventory_suboption.startswith("s:"):
-        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
-        # elif filter_inventory_suboption.startswith("sno:"):
-        #     # No Owner
-        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
-        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
-        # elif filter_inventory_suboption.startswith("sho:"):
-        #     # Has Owner
-        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == filter_inventory_suboption.split(":")[1].strip()]
-        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
-        # elif filter_inventory_suboption.startswith("c:"):
-        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == filter_inventory_suboption.split(":")[1].strip()]
-        # elif filter_inventory_suboption == "No Owner":
-        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
-        # elif filter_inventory_suboption == "Has Owner":
-        #     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
-        # else:
-        #     pass 
 
         chunked_inventory = list(mit.chunked(filtered_inventory, 24)) # The value must equal to n argument of create_inventory_image_slots()
         max_pages = max(0, len(chunked_inventory) - 1)
@@ -386,7 +363,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             # "Rarity", "Type", "Set", "Level", "Market Value", "BOGO"
             match s:
                 case "Rarity":
-                    return "rarity"
+                    return "rarity_order"
                 case "Type":
                     return "type"
                 case "Set":
@@ -407,6 +384,8 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             # we have to generate a bogo value for each item
             for item in self.inventory:
                 item.bogo = random.random()
+        for item in self.inventory:
+            item.rarity_order = item.get_rarity_order()
 
         # all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food", "Eqpackage", "Foodpackage"]
         # item_sample = Block("Foo", "")
@@ -544,6 +523,9 @@ all_characters_names: list[str]
 all_monsters = [cls(name, 1) for name, cls in monsters.__dict__.items() 
                 if inspect.isclass(cls) and issubclass(cls, Character) and cls != Character and cls != monsters.Monster]
 all_monsters: list[Character]
+all_monsters_names = [m.name for m in all_monsters]
+all_monsters_names.sort()
+all_characters_names: list[str]
 print(f"Loaded {len(all_monsters)} monsters.")
 
 
@@ -567,6 +549,7 @@ if __name__ == "__main__":
     light_pink = pygame.Color("#fae5eb")
 
     display_surface = pygame.display.set_mode((1600, 900), flags=pygame.SCALED | pygame.RESIZABLE)
+    ui_manager_lower = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
     ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
     ui_manager_overlay = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
     # debug_ui_manager = pygame_gui.UIManager((1600, 900), "theme_light_yellow.json", starting_language='ja')
@@ -872,9 +855,9 @@ if __name__ == "__main__":
     label_party2 = [label6, label7, label8, label9, label10]
     
 
-    # Some buttons
-    #  =====================================
-    # Left Side Buttons
+    # UI Components
+    # =====================================
+    # Left Side 
 
     button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 300), (156, 35)),
                                         text='Shuffle Party',
@@ -904,18 +887,11 @@ if __name__ == "__main__":
                                                             pygame.Rect((180, 420), (76, 50)),
                                                             ui_manager)
 
-    current_display_chart = "Damage Dealt Chart"
+    settings_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
+                                        text='Settings',
+                                        manager=ui_manager,)
+    settings_button.set_tooltip("Open settings window.", delay=0.1, wrap_width=300)
 
-    # button_left_change_chart = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 480), (156, 50)),
-    #                                     text='Switch Chart',
-    #                                     manager=ui_manager,
-    #                                     tool_tip_text = "")
-    # button_left_change_chart.set_tooltip(f"Switch between damage dealt chart, damage received chart or others if implemented. Current chart: {current_display_chart}", delay=0.1, wrap_width=300)
-
-    button_left_change_chart_selection = pygame_gui.elements.UIDropDownMenu(["Damage Dealt", "Damage Received", "Healing"],
-                                                            "Damage Dealt",
-                                                            pygame.Rect((100, 480), (156, 50)),
-                                                            ui_manager)
 
     button_quit_game = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 540), (156, 50)),
                                         text='Quit',
@@ -934,15 +910,32 @@ if __name__ == "__main__":
     " The details of rewards are shown when hovering over the stage number label."
     next_turn_button.set_tooltip(next_turn_button_tooltip_str, delay=0.1, wrap_width=300)
 
-    button_auto_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 300), (156, 50)),
+    auto_battle_bar = pygame_gui.elements.UIStatusBar(pygame.Rect((900, 355), (156, 10)),
+                                               ui_manager,
+                                               None)
+
+    button_auto_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 365), (156, 50)),
                                         text='Auto Battle',
                                         manager=ui_manager,)
     button_auto_battle.set_tooltip("Automatically proceed to the next turn when the progress bar is full. Rewards are earned when the battle is over.", delay=0.1, wrap_width=300)
 
+    # Cheems Button with height 50, Cheems is a meme dog = Teams
+    button_cheems = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 420), (156, 50)),
+                                        text='Cheems',
+                                        manager=ui_manager,)
+    button_cheems.set_tooltip("Open team selection window.", delay=0.1, wrap_width=300)
 
-    auto_battle_bar = pygame_gui.elements.UIStatusBar(pygame.Rect((1080, 290), (156, 10)),
-                                               ui_manager,
-                                               None)
+    # Characters Button with height 50
+    button_characters = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 480), (156, 50)),
+                                        text='Characters',
+                                        manager=ui_manager,)
+    button_characters.set_tooltip("Open character window.", delay=0.1, wrap_width=300)
+
+    # About Button with height 50
+    button_about = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 540), (156, 50)),
+                                        text='About',
+                                        manager=ui_manager,)
+    button_about.set_tooltip("Open about window.", delay=0.1, wrap_width=300)
 
 
     def decide_auto_battle_speed():
@@ -962,15 +955,176 @@ if __name__ == "__main__":
                 raise ValueError(f"Invalid speed: {speed}")
 
     # =====================================
-    # Game Mode Section
-    # =====================================
+    # Far Right
+
+    current_display_chart = "Damage Dealt Chart"
+    chart_selection_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 20), (156, 35)),
+                                        "Show Chart:",
+                                        ui_manager)
+    chart_selection_label.set_tooltip("Select the chart to display: Damage dealt, Damage received, Healing.", delay=0.1, wrap_width=300)
+
+    button_change_chart_selection = pygame_gui.elements.UIDropDownMenu(["Damage Dealt", "Damage Received", "Healing"],
+                                                            "Damage Dealt",
+                                                            pygame.Rect((1080, 60), (156, 35)),
+                                                            ui_manager)
 
     current_game_mode = "Training Mode"
-    switch_game_mode_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 360), (156, 50)),
-                                        text='Adventure Mode',
+    game_mode_selection_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 100), (156, 35)),
+                                        "Game Mode:",
+                                        ui_manager)
+    game_mode_selection_label.set_tooltip("Select the game mode: Training Mode, Adventure Mode.", delay=0.1, wrap_width=300)
+
+    game_mode_selection_menu = pygame_gui.elements.UIDropDownMenu(["Training Mode", "Adventure Mode"],
+                                                            "Training Mode",
+                                                            pygame.Rect((1080, 140), (156, 50)),
+                                                            ui_manager)
+
+    label_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((1080, 195), (156, 35)),
+                                        "Selected Character:",
+                                        ui_manager)
+    label_character_selection_menu.set_tooltip("Selected character. Use items, equip, unequip and others use this character as target.", delay=0.1, wrap_width=300)
+
+    character_selection_menu_pos = pygame.Rect((1080, 235), (156, 50))
+    character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"],
+                                                            "Option 1",
+                                                            character_selection_menu_pos,
+                                                            ui_manager)
+
+    use_item_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 290), (100, 35)),
+                                        text='Equip Item',
                                         manager=ui_manager,
-                                        tool_tip_text = "Switch between Casual Training Mode and Adventure Mode")
-    switch_game_mode_button.set_tooltip("Switch between adventure mode and training mode.", delay=0.1, wrap_width=300)
+                                        tool_tip_text = "Use selected item for selected character.")
+    use_item_button.set_tooltip("The selected item is used on the selected character. If the selected item is an equipment item, equip it to the selected character. Multiple items may be equipped or used at one time.",
+                                delay=0.1, wrap_width=300)
+    use_itemx10_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1185, 290), (51, 35)),
+                                        text='x10',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Use selected item 10 times.")
+    use_itemx10_button.set_tooltip("Use selected item 10 times, only effective on comsumables.", delay=0.1, wrap_width=300)
+
+    eq_rarity_list, eq_types_list, eq_set_list = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
+    eq_set_list_without_none_and_void = [x for x in eq_set_list if x != "None" and x != "Void"]
+    eq_set_list_without_none_and_void.sort()
+    print(f"Loaded {len(eq_set_list_without_none_and_void)} equipment sets.")
+
+    eq_selection_menu = pygame_gui.elements.UIDropDownMenu(eq_types_list,
+                                                            eq_types_list[0],
+                                                            pygame.Rect((1080, 330), (156, 35)),
+                                                            ui_manager)
+
+    character_eq_unequip_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 370), (100, 35)),
+                                        text='Unequip',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Unequip selected item from selected character")
+    character_eq_unequip_button.set_tooltip("Remove equipment from the selected character.", delay=0.1, wrap_width=300)
+
+    character_eq_unequip_all_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1185, 370), (51, 35)),
+                                        text='All',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Unequip all items from selected character")
+    character_eq_unequip_all_button.set_tooltip("Remove all equipment from the selected character.", delay=0.1, wrap_width=300)
+
+    eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 410), (100, 35)),
+                                        text='Level Up',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Level up selected item.")
+    eq_levelup_button.set_tooltip("Level up selected equipment in the inventory.", delay=0.1, wrap_width=300)
+
+    eq_levelup_buttonx10 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1185, 410), (51, 35)),
+                                        text='x10',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Level up selected item.")
+    eq_levelup_buttonx10.set_tooltip("Level up for 10 levels for selected equipment in the inventory.", delay=0.1, wrap_width=300)
+
+
+    eq_level_up_to_max_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 450), (156, 35)),
+                                        text='Level Up To Max',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Try level up selected item to max level until Cash is exhausted.")
+    eq_level_up_to_max_button.set_tooltip("Level up selected equipment in the inventory to the maximum level.", delay=0.1, wrap_width=300)
+
+
+    eq_stars_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 490), (156, 35)),
+                                        text='Star Enhancement',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Upgrade stars for item")
+    eq_stars_upgrade_button.set_tooltip("Increase the star rank of selected equipment in inventory.", delay=0.1, wrap_width=300)
+
+    
+    eq_sell_selected_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 530), (156, 35)),
+                                        text='Sell Selected',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Sell selected item.")
+    eq_sell_selected_button.set_tooltip("Sell selected equipment in the inventory.", delay=0.1, wrap_width=300)
+
+    eq_sell_low_value_selection_menu = pygame_gui.elements.UIDropDownMenu(["50", "60", "70", "80", "90", "100", "120",
+                                                                           "140", "160", "180", "200", "220", "240", "260", "280", "300",
+                                                                           "320", "340", "360", "380", "400"],
+                                                            "100",
+                                                            pygame.Rect((1080, 570), (156, 35)),
+                                                            ui_manager)
+
+
+    eq_sell_low_value_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 610), (156, 35)),
+                                        text='Sell Low Value',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Sell all equipment that is below the selected market value.")
+    eq_sell_low_value_button.set_tooltip("Sell equipment in inventory that is below market value.", delay=0.1, wrap_width=300)
+
+
+    # =====================================
+    # Switches on when changing cheap_inventory_what_to_show to Consumables
+    item_sell_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 330), (156, 35)),
+                                        text='Sell Item',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Sell selected item in inventory.")
+    item_sell_button.set_tooltip("Sell one selected item from your inventory.", delay=0.1, wrap_width=300)
+    item_sell_button.hide()
+    item_sell_half_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 370), (100, 35)),
+                                        text='Sell Half',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Sell half stack of selected item in inventory.")
+    item_sell_half_button.set_tooltip("Sell half a stack of selected items.", delay=0.1, wrap_width=300)
+    item_sell_half_button.hide()
+    item_sell_all_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1185, 370), (51, 35)),
+                                        text='All',
+                                        manager=ui_manager,
+                                        tool_tip_text = "Sell all of selected item in inventory.")
+    item_sell_all_button.set_tooltip("Sell all of selected items.", delay=0.1, wrap_width=300)
+    item_sell_all_button.hide()
+
+    use_random_consumable_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 410), (156, 35)),
+                                        "Random Use:",
+                                        ui_manager)
+    use_random_consumable_label.set_tooltip("Use one appropriate consumable each turn during auto battles.", delay=0.1, wrap_width=300)
+    use_random_consumable_label.hide()
+    use_random_consumable_selection_menu = pygame_gui.elements.UIDropDownMenu(["True", "False"],
+                                                            "False",
+                                                            pygame.Rect((1080, 450), (156, 35)),
+                                                            ui_manager)
+    use_random_consumable_selection_menu.hide()
+
+
+    # reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option1"],
+    #                                                         "Option1",
+    #                                                         pygame.Rect((900, 400), (156, 35)),
+    #                                                         ui_manager)
+
+    # 3.3.0: Deprecated
+    # label_reserve_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((870, 400), (25, 35)),
+    #                                     "→",
+    #                                     ui_manager)
+    # label_reserve_character_selection_menu.set_tooltip("The reserve members, sorted by character level.", delay=0.1)
+
+    # character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 440), (156, 35)),
+    #                                     text='Replace',
+    #                                     manager=ui_manager,
+    #                                     tool_tip_text = "Replace selected character with reserve character")
+    # character_replace_button.set_tooltip("Replace the selected character with a reserve member.", delay=0.1, wrap_width=300)
+
+    # =====================================
+    # Game Mode Section
+    # =====================================
 
     def adventure_mode_generate_stage(force_regenerate_stage: bool = False):
         global current_game_mode, adventure_mode_current_stage, adventure_mode_stages
@@ -991,29 +1145,30 @@ if __name__ == "__main__":
         if not adventure_mode_stages.get(adventure_mode_current_stage) or force_regenerate_stage:
             adventure_mode_stages[adventure_mode_current_stage] = new_selection_of_monsters
 
-        # if adventure_mode_current_stage > 1000:
+        # v3.3.0: Because we can easily edit party members now, generating for all monsters is needed.
         if adventure_mode_current_stage < 500:
-            for m in adventure_mode_stages[adventure_mode_current_stage]:
+            # for m in adventure_mode_stages[adventure_mode_current_stage]:
+            for m in all_monsters:
                 m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Common", 
                                                             eq_level=int(adventure_mode_current_stage)))
         elif 500 <= adventure_mode_current_stage < 1000:
-            for m in adventure_mode_stages[adventure_mode_current_stage]:
+            for m in all_monsters:
                 m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Uncommon", 
                                                             eq_level=int(adventure_mode_current_stage)))
         elif 1000 <= adventure_mode_current_stage < 1500:
-            for m in adventure_mode_stages[adventure_mode_current_stage]:
+            for m in all_monsters:
                 m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Rare", 
                                                             eq_level=int(adventure_mode_current_stage)))
         elif 1500 <= adventure_mode_current_stage < 2000:
-            for m in adventure_mode_stages[adventure_mode_current_stage]:
+            for m in all_monsters:
                 m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Epic", 
                                                             eq_level=int(adventure_mode_current_stage)))
         elif 2000 <= adventure_mode_current_stage < 2500:
-            for m in adventure_mode_stages[adventure_mode_current_stage]:
+            for m in all_monsters:
                 m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Unique", 
                                                             eq_level=int(adventure_mode_current_stage)))
         elif 2500 <= adventure_mode_current_stage:
-            for m in adventure_mode_stages[adventure_mode_current_stage]:
+            for m in all_monsters:
                 m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Legendary", 
                                                             eq_level=int(adventure_mode_current_stage)))
 
@@ -1127,74 +1282,6 @@ if __name__ == "__main__":
     # =====================================
     # Character Section
     # =====================================
-
-    character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"],
-                                                            "Option 1",
-                                                            pygame.Rect((900, 360), (156, 35)),
-                                                            ui_manager)
-
-    label_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((870, 360), (25, 35)),
-                                        "→",
-                                        ui_manager)
-    label_character_selection_menu.set_tooltip("Selected character. You can also select a character by clicking on the character image.", delay=0.1)
-
-    reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option1"],
-                                                            "Option1",
-                                                            pygame.Rect((900, 400), (156, 35)),
-                                                            ui_manager)
-
-    label_reserve_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((870, 400), (25, 35)),
-                                        "→",
-                                        ui_manager)
-    label_reserve_character_selection_menu.set_tooltip("The reserve members, sorted by character level.", delay=0.1)
-
-    character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 440), (156, 35)),
-                                        text='Replace',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Replace selected character with reserve character")
-    character_replace_button.set_tooltip("Replace the selected character with a reserve member.", delay=0.1, wrap_width=300)
-
-    use_item_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 480), (100, 35)),
-                                        text='Equip Item',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Use selected item for selected character.")
-    use_item_button.set_tooltip("The selected item is used on the selected character. If the selected item is an equipment item, equip it to the selected character. Multiple items may be equipped or used at one time.",
-                                delay=0.1, wrap_width=300)
-    use_itemx10_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1005, 480), (51, 35)),
-                                        text='x10',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Use selected item 10 times.")
-    use_itemx10_button.set_tooltip("Use selected item 10 times, only effective on comsumables.", delay=0.1, wrap_width=300)
-
-    item_sell_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 520), (156, 35)),
-                                        text='Sell Item',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Sell selected item in inventory.")
-    item_sell_button.set_tooltip("Sell one selected item from your inventory.", delay=0.1, wrap_width=300)
-    item_sell_button.hide()
-    item_sell_half_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 560), (100, 35)),
-                                        text='Sell Half',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Sell half stack of selected item in inventory.")
-    item_sell_half_button.set_tooltip("Sell half a stack of selected items.", delay=0.1, wrap_width=300)
-    item_sell_half_button.hide()
-    item_sell_all_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1005, 560), (51, 35)),
-                                        text='All',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Sell all of selected item in inventory.")
-    item_sell_all_button.set_tooltip("Sell all of selected items.", delay=0.1, wrap_width=300)
-    item_sell_all_button.hide()
-    use_random_consumable_label = pygame_gui.elements.UILabel(pygame.Rect((1080, 420), (156, 35)),
-                                        "Random Use:",
-                                        ui_manager)
-    use_random_consumable_label.set_tooltip("Use one appropriate consumable each turn during auto battles.", delay=0.1, wrap_width=300)
-    use_random_consumable_label.hide()
-    use_random_consumable_selection_menu = pygame_gui.elements.UIDropDownMenu(["True", "False"],
-                                                            "False",
-                                                            pygame.Rect((1080, 460), (156, 35)),
-                                                            ui_manager)
-    use_random_consumable_selection_menu.hide()
-
 
     def use_item(how_many_times: int = 1):
         # Nine.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Equip|Consumable|Item)})}
@@ -1369,26 +1456,6 @@ if __name__ == "__main__":
         player.add_cash(total_income, True)
 
 
-    # def item_trade(item: str, amount: int=1):
-    #     text_box.set_text("==============================\n")
-    #     match item:
-    #         case "Sliver Ingot":
-    #             if player.get_cash() < 111000 * amount:
-    #                 text_box.append_html_text(f"Not enough cash to buy {amount} Sliver Ingot.\n")
-    #                 return
-    #             player.add_to_inventory(SliverIngot(amount), False)
-    #             player.lose_cash(111000 * amount, True)
-    #             text_box.append_html_text(f"Bought {amount} Sliver Ingot for {111000 * amount} cash.\n")
-    #         case "Gold Ingot":
-    #             if player.get_cash() < 9820000 * amount:
-    #                 text_box.append_html_text(f"Not enough cash to buy {amount} Gold Ingot.\n")
-    #                 return
-    #             player.add_to_inventory(GoldIngot(amount), False)
-    #             player.lose_cash(9820000 * amount, True)
-    #             text_box.append_html_text(f"Bought {amount} Gold Ingot for {9820000 * amount} cash.\n")
-    #         case _:
-    #             raise ValueError(f"Invalid item: {item}")
-
     def buy_one_item(player: Nine, item: Block, item_price: int, currency: str) -> None:
         if currency == "Cash":
             if player.get_cash() < item_price:
@@ -1411,39 +1478,9 @@ if __name__ == "__main__":
     # =====================================
     # End of Character Section
     # =====================================
-    # Debug Section
-    # =====================================
-
-
-
-    # =====================================
-    # End of Debug Section
     # =====================================
     # Equip Section
     # =====================================
-
-    eq_rarity_list, eq_types_list, eq_set_list = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
-    eq_set_list_without_none_and_void = [x for x in eq_set_list if x != "None" and x != "Void"]
-    eq_set_list_without_none_and_void.sort()
-    print(f"Loaded {len(eq_set_list_without_none_and_void)} equipment sets.")
-
-    eq_selection_menu = pygame_gui.elements.UIDropDownMenu(eq_types_list,
-                                                            eq_types_list[0],
-                                                            pygame.Rect((900, 520), (156, 35)),
-                                                            ui_manager)
-
-    character_eq_unequip_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 560), (106, 35)),
-                                        text='Unequip',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Unequip selected item from selected character")
-    character_eq_unequip_button.set_tooltip("Remove equipment from the selected character.", delay=0.1, wrap_width=300)
-
-    character_eq_unequip_all_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1011, 560), (45, 35)),
-                                        text='All',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Unequip all items from selected character")
-    character_eq_unequip_all_button.set_tooltip("Remove all equipment from the selected character.", delay=0.1, wrap_width=300)
-
 
     def unequip_item():
         text_box.set_text("==============================\n")
@@ -1483,12 +1520,6 @@ if __name__ == "__main__":
             elif character.name == character_selection_menu.selected_option[0].split()[-1] and not character.is_alive():
                 text_box.append_html_text(f"Can only unequip items from alive characters.\n")
                 return
-
-    eq_stars_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 420), (156, 35)),
-                                        text='Star Enhancement',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Upgrade stars for item")
-    eq_stars_upgrade_button.set_tooltip("Increase the star rank of selected equipment in inventory.", delay=0.1, wrap_width=300)
 
     def eq_stars_upgrade(is_upgrade: bool):
         text_box.set_text("==============================\n")
@@ -1533,18 +1564,6 @@ if __name__ == "__main__":
             player.lose_cash(cost_total, False)
             text_box_text_to_append += f"Upgraded {len(selected_items)} items for {cost_total} cash.\n"
         text_box.append_html_text(text_box_text_to_append)
-
-    eq_levelup_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 460), (100, 35)),
-                                        text='Level Up',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Level up selected item.")
-    eq_levelup_button.set_tooltip("Level up selected equipment in the inventory.", delay=0.1, wrap_width=300)
-
-    eq_levelup_buttonx10 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1185, 460), (51, 35)),
-                                        text='x10',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Level up selected item.")
-    eq_levelup_buttonx10.set_tooltip("Level up for 10 levels for selected equipment in the inventory.", delay=0.1, wrap_width=300)
 
 
     def eq_level_up(is_level_up: bool = True, amount_to_level: int = 1):
@@ -1594,12 +1613,6 @@ if __name__ == "__main__":
         text_box.append_html_text(text_box_text_to_append)
 
 
-    
-    eq_sell_selected_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 500), (156, 35)),
-                                        text='Sell Selected',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Sell selected item.")
-    eq_sell_selected_button.set_tooltip("Sell selected equipment in the inventory.", delay=0.1, wrap_width=300)
 
     def eq_sell_selected():
         text_box.set_text("==============================\n")
@@ -1620,20 +1633,6 @@ if __name__ == "__main__":
             text_box.append_html_text(f"Sold {item_to_sell} in inventory and gained {eq_market_value} cash.\n")
         player.remove_selected_item_from_inventory(True)
 
-    eq_sell_low_value_selection_menu = pygame_gui.elements.UIDropDownMenu(["50", "60", "70", "80", "90", "100", "120",
-                                                                           "140", "160", "180", "200", "220", "240", "260", "280", "300",
-                                                                           "320", "340", "360", "380", "400"],
-                                                            "100",
-                                                            pygame.Rect((1080, 540), (156, 35)),
-                                                            ui_manager)
-
-
-    eq_sell_low_value_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 580), (156, 35)),
-                                        text='Sell Low Value',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Sell all equipment that is below the selected market value.")
-    eq_sell_low_value_button.set_tooltip("Sell equipment in inventory that is below market value.", delay=0.1, wrap_width=300)
-
 
     def eq_sell_low_value(sell_value_below: int):
         # sell half of all equipment, sorted by market value
@@ -1650,12 +1649,6 @@ if __name__ == "__main__":
         text_box.append_html_text(f"Sold {len(eq_to_sell)} equipment for {total_income} cash.\n")
         player.build_inventory_slots()
 
-
-    eq_level_up_to_max_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 620), (156, 35)),
-                                        text='Level Up To Max',
-                                        manager=ui_manager,
-                                        tool_tip_text = "Try level up selected item to max level until Cash is exhausted.")
-    eq_level_up_to_max_button.set_tooltip("Level up selected equipment in the inventory to the maximum level.", delay=0.1, wrap_width=300)
 
     def eq_level_up_to_max():
         text_box.set_text("==============================\n")
@@ -1693,11 +1686,6 @@ if __name__ == "__main__":
     # =====================================
     # Settings Section
     # =====================================
-
-    settings_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 20), (156, 50)),
-                                        text='Settings',
-                                        manager=ui_manager,)
-    settings_button.set_tooltip("Open settings window.", delay=0.1, wrap_width=300)
 
     def build_settings_window():
         global theme_selection_menu, settings_window, language_selection_menu, auto_battle_speed_selection_menu, after_auto_battle_selection_menu
@@ -1759,10 +1747,6 @@ if __name__ == "__main__":
 
 
 
-
-
-
-
     settings_window = None
     theme_selection_menu = None
     language_selection_menu = None
@@ -1774,27 +1758,35 @@ if __name__ == "__main__":
     def change_theme():
         global_vars.theme = theme_selection_menu.selected_option[0]
         if global_vars.theme == "Yellow Theme":
+            ui_manager_lower.get_theme().load_theme("theme_light_yellow.json")
             ui_manager.get_theme().load_theme("theme_light_yellow.json")
             ui_manager_overlay.get_theme().load_theme("theme_light_yellow.json")
         elif global_vars.theme == "Purple Theme":
+            ui_manager_lower.get_theme().load_theme("theme_light_purple.json")
             ui_manager.get_theme().load_theme("theme_light_purple.json")
             ui_manager_overlay.get_theme().load_theme("theme_light_purple.json")
         elif global_vars.theme == "Red Theme":
+            ui_manager_lower.get_theme().load_theme("theme_light_red.json")
             ui_manager.get_theme().load_theme("theme_light_red.json")
             ui_manager_overlay.get_theme().load_theme("theme_light_red.json")
         elif global_vars.theme == "Blue Theme":
+            ui_manager_lower.get_theme().load_theme("theme_light_blue.json")
             ui_manager.get_theme().load_theme("theme_light_blue.json")
             ui_manager_overlay.get_theme().load_theme("theme_light_blue.json")
         elif global_vars.theme == "Green Theme":
+            ui_manager_lower.get_theme().load_theme("theme_light_green.json")
             ui_manager.get_theme().load_theme("theme_light_green.json")
             ui_manager_overlay.get_theme().load_theme("theme_light_green.json")
         elif global_vars.theme == "Pink Theme":
+            ui_manager_lower.get_theme().load_theme("theme_light_pink.json")
             ui_manager.get_theme().load_theme("theme_light_pink.json")
             ui_manager_overlay.get_theme().load_theme("theme_light_pink.json")
         else:
             raise ValueError(f"Unknown theme: {global_vars.theme}")
         
+        ui_manager_lower.rebuild_all_from_changed_theme_data()
         ui_manager.rebuild_all_from_changed_theme_data()
+        ui_manager_overlay.rebuild_all_from_changed_theme_data()
         swap_language()
 
 
@@ -1828,6 +1820,8 @@ if __name__ == "__main__":
                 button_auto_battle.set_tooltip("Automatically proceed to the next turn when the progress bar is full. Rewards are earned when the battle is over.", delay=0.1, wrap_width=300)
                 cheap_inventory_sort_filter_button.set_text("Sort & Filter")
                 cheap_inventory_sort_filter_button.set_tooltip("Open sort and filter window for inventory.", delay=0.1, wrap_width=300)
+                chart_selection_label.set_text("Show Chart:")
+                chart_selection_label.set_tooltip("Select the chart to display: Damage dealt, Damage received, Healing.", delay=0.1, wrap_width=300)
             case "日本語":
                 settings_button.set_text("設定")
                 settings_button.set_tooltip("設定ウィンドウを開く。", delay=0.1, wrap_width=300)
@@ -1848,6 +1842,8 @@ if __name__ == "__main__":
                 button_auto_battle.set_tooltip("進行状況バーが埋まると自動的に次のターンに進む。戦闘終了時に報酬を獲得できる。", delay=0.1, wrap_width=300)
                 cheap_inventory_sort_filter_button.set_text("ソートとフィルタ")
                 cheap_inventory_sort_filter_button.set_tooltip("インベントリの並び替えと絞り込みウィンドウを開く。", delay=0.1, wrap_width=300)
+                chart_selection_label.set_text("チャート表示:")
+                chart_selection_label.set_tooltip("表示するチャートを選択する：与えるダメージ、受けるダメージ、回復量。", delay=0.1, wrap_width=300)
 
 
 
@@ -1947,7 +1943,7 @@ if __name__ == "__main__":
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
         
-        cheap_inventory_filter_owned_by_char_selection_menu = pygame_gui.elements.UIDropDownMenu(["Not Specified"] + all_characters_names,
+        cheap_inventory_filter_owned_by_char_selection_menu = pygame_gui.elements.UIDropDownMenu(["Not Specified", "Currently Selected"] + all_characters_names,
                                                                 global_vars.cheap_inventory_filter_owned_by_char,
                                                                 pygame.Rect((180, 170), (200, 35)),
                                                                 ui_manager,
@@ -1975,9 +1971,6 @@ if __name__ == "__main__":
                                   global_vars.cheap_inventory_sort_b,
                                   global_vars.cheap_inventory_sort_c)
 
-    # cheap_inventory_cheap_label = pygame_gui.elements.UILabel(pygame.Rect((1372, 100), (72, 35)),
-    #                                                           "Inventory",
-    #                                                           ui_manager)
 
     cheap_inventory_page_label = pygame_gui.elements.UILabel(pygame.Rect((1372, 140), (72, 35)),
                                         "1/1",
@@ -2056,7 +2049,150 @@ if __name__ == "__main__":
     # =====================================
     # End of Cheap Inventory Section
     # =====================================
+    # Cheems Section
+    # =====================================
 
+
+    cheems_window = None
+    party1_member_a_selection_menu = None
+    party1_member_b_selection_menu = None
+    party1_member_c_selection_menu = None
+    party1_member_d_selection_menu = None
+    party1_member_e_selection_menu = None
+    party2_member_a_selection_menu = None
+    party2_member_b_selection_menu = None
+    party2_member_c_selection_menu = None
+    party2_member_d_selection_menu = None
+    party2_member_e_selection_menu = None
+    cheems_update_party_members_button = None
+
+    def build_cheems_window():
+        global cheems_window, party1, party2
+        global party1_member_a_selection_menu, party1_member_b_selection_menu, party1_member_c_selection_menu, party1_member_d_selection_menu, party1_member_e_selection_menu
+        global party2_member_a_selection_menu, party2_member_b_selection_menu, party2_member_c_selection_menu, party2_member_d_selection_menu, party2_member_e_selection_menu
+        global cheems_update_party_members_button
+        try:
+            cheems_window.kill()
+        except Exception as e:
+            print(f"Error: {e}")
+        cheems_window = pygame_gui.elements.UIWindow(pygame.Rect((200, 200), (900, 500)),
+                                            ui_manager,
+                                            window_display_title="Cheems",
+                                            object_id="#cheems_window",
+                                            resizable=False)
+
+        # cheems (teams) window allows editing characters from party 1 and party 2
+        # on the left side, label party 1, then 5 selection menus for party 1, on middle, label party 2, then 5 selection menus for party 2
+        # right side is reserved for later use
+
+        party1_label = pygame_gui.elements.UILabel(pygame.Rect((0, 10), (200, 35)),
+                                            "Party 1:",
+                                            ui_manager,
+                                            container=cheems_window)
+        
+        party2_label = pygame_gui.elements.UILabel(pygame.Rect((200, 10), (200, 35)),
+                                            "Party 2:",
+                                            ui_manager,
+                                            container=cheems_window)
+        
+        party1_member_a_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                party1[0].name,
+                                                                pygame.Rect((10, 50), (180, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        
+        party1_member_b_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                party1[1].name,
+                                                                pygame.Rect((10, 90), (180, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        
+        party1_member_c_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                party1[2].name,
+                                                                pygame.Rect((10, 130), (180, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        
+        party1_member_d_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                party1[3].name,
+                                                                pygame.Rect((10, 170), (180, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        
+        party1_member_e_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                party1[4].name,
+                                                                pygame.Rect((10, 210), (180, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+
+        list_of_names_for_p2 = None
+        match current_game_mode:
+            case "Adventure Mode":
+                list_of_names_for_p2 = all_monsters_names
+            case "Training Mode":
+                list_of_names_for_p2 = all_characters_names
+            case _:
+                raise ValueError(f"Unknown game mode: {current_game_mode}")
+
+        party2_member_a_selection_menu = pygame_gui.elements.UIDropDownMenu(list_of_names_for_p2,
+                                                                party2[0].name,
+                                                                pygame.Rect((210, 50), (180, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        
+        party2_member_b_selection_menu = pygame_gui.elements.UIDropDownMenu(list_of_names_for_p2,
+                                                                party2[1].name,
+                                                                pygame.Rect((210, 90), (180, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        
+        party2_member_c_selection_menu = pygame_gui.elements.UIDropDownMenu(list_of_names_for_p2,
+                                                                party2[2].name,
+                                                                pygame.Rect((210, 130), (180, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        
+        party2_member_d_selection_menu = pygame_gui.elements.UIDropDownMenu(list_of_names_for_p2,
+                                                                party2[3].name,
+                                                                pygame.Rect((210, 170), (180, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        
+        party2_member_e_selection_menu = pygame_gui.elements.UIDropDownMenu(list_of_names_for_p2,
+                                                                party2[4].name,
+                                                                pygame.Rect((210, 210), (180, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+
+        cheems_update_party_members_button = pygame_gui.elements.UIButton(pygame.Rect((10, 260), (380, 50)),
+                                            "Update Party Members",
+                                            ui_manager,
+                                            container=cheems_window)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # =====================================
+    # End of Cheems Section
+    # =====================================
+    # Core Battle System
+    # =====================================
 
     def next_turn(party1: list[Character], party2: list[Character]):
         global turn, text_box, current_game_mode, player, adventure_mode_current_stage
@@ -2583,20 +2719,20 @@ if __name__ == "__main__":
         remaining_characters_show_in_menu: Can be None, if so, it is not being rebuilt
         di: Default option index
         """
-        global character_selection_menu, reserve_character_selection_menu, ui_manager
+        global character_selection_menu, ui_manager
 
         character_selection_menu.kill()
         character_selection_menu = pygame_gui.elements.UIDropDownMenu(party_show_in_menu,
                                                                 party_show_in_menu[di],
-                                                                pygame.Rect((900, 360), (156, 35)),
+                                                                character_selection_menu_pos,
                                                                 ui_manager)
 
-        if remaining_characters_show_in_menu:
-            reserve_character_selection_menu.kill()
-            reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(remaining_characters_show_in_menu,
-                                                                    remaining_characters_show_in_menu[0],
-                                                                    pygame.Rect((900, 400), (156, 35)),
-                                                                    ui_manager)
+        # if remaining_characters_show_in_menu:
+        #     reserve_character_selection_menu.kill()
+        #     reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(remaining_characters_show_in_menu,
+        #                                                             remaining_characters_show_in_menu[0],
+        #                                                             pygame.Rect((900, 400), (156, 35)),
+        #                                                             ui_manager)
 
     def set_up_characters(is_start_of_app=False, reset_party1: bool = True, reset_party2: bool = True):
         global character_selection_menu, reserve_character_selection_menu, all_characters, party2, party1, text_box
@@ -2671,39 +2807,80 @@ if __name__ == "__main__":
         return party1, party2
 
 
-    def replace_character_with_reserve_member(character_name, new_character_name):
-        global party1, party2, all_characters, character_selection_menu, reserve_character_selection_menu, current_game_mode
-        def replace_in_party(party):
-            for i, character in enumerate(party):
-                if character.name == character_name:
-                    new_character = next((char for char in all_characters if char.name == new_character_name), None)
-                    if new_character:
-                        party[i] = new_character
-                        return True, new_character, i
-            return False, None, 0
-        replaced, new_character, nci = replace_in_party(party1)
-        if not replaced:
-            replaced, new_character, nci = replace_in_party(party2)
-            nci += len(party1) # New character index
-        if current_game_mode == "Adventure Mode":
-            remaining_characters = [character for character in all_characters if character not in party1]
-            remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
-            party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-            remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
+    # def replace_character_with_reserve_member(character_name, new_character_name):
+    #     global party1, party2, all_characters, character_selection_menu, reserve_character_selection_menu, current_game_mode
+    #     def replace_in_party(party):
+    #         for i, character in enumerate(party):
+    #             if character.name == character_name:
+    #                 new_character = next((char for char in all_characters if char.name == new_character_name), None)
+    #                 if new_character:
+    #                     party[i] = new_character
+    #                     return True, new_character, i
+    #         return False, None, 0
+    #     replaced, new_character, nci = replace_in_party(party1)
+    #     if not replaced:
+    #         replaced, new_character, nci = replace_in_party(party2)
+    #         nci += len(party1) # New character index
+    #     if current_game_mode == "Adventure Mode":
+    #         remaining_characters = [character for character in all_characters if character not in party1]
+    #         remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
+    #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+    #         remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
 
-            handle_UIDropDownMenu(party1_show_in_menu, remaining_characters_show_in_menu, nci)
-        elif current_game_mode == "Training Mode":
-            remaining_characters = [character for character in all_characters if character not in itertools.chain(party1, party2)]
-            remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
-            party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-            remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
-            handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu, nci)
-        else:
-            raise Exception(f"Unknown game mode: {current_game_mode} in replace_character_with_reserve_member()")
+    #         handle_UIDropDownMenu(party1_show_in_menu, remaining_characters_show_in_menu, nci)
+    #     elif current_game_mode == "Training Mode":
+    #         remaining_characters = [character for character in all_characters if character not in itertools.chain(party1, party2)]
+    #         remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
+    #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+    #         remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
+    #         handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu, nci)
+    #     else:
+    #         raise Exception(f"Unknown game mode: {current_game_mode} in replace_character_with_reserve_member()")
+    #     text_box.set_text("=====================================\n")
+    #     text_box.append_html_text(f"{character_name} has been replaced with {new_character_name}.\n")
+    #     restart_battle()
+    #     redraw_ui(party1, party2)
+
+    def cheems_edit_party():
+        # selection menus in cheems_window gives the user the ability to edit the party
+        assert party1_member_a_selection_menu is not None
+        # this likely wont happen as the button triggers this function is in the cheems_window
+        # when cheems_window opens, the selection menus are created
+        party1_edited: list[str] = [party1_member_a_selection_menu.selected_option[0], party1_member_b_selection_menu.selected_option[0],
+                                    party1_member_c_selection_menu.selected_option[0], party1_member_d_selection_menu.selected_option[0],
+                                    party1_member_e_selection_menu.selected_option[0]]
+        party2_edited: list[str] = [party2_member_a_selection_menu.selected_option[0], party2_member_b_selection_menu.selected_option[0],
+                                    party2_member_c_selection_menu.selected_option[0], party2_member_d_selection_menu.selected_option[0],
+                                    party2_member_e_selection_menu.selected_option[0]]
+        # party1_edited and party2_edited are list of character names
+
+        # guardrail: same character cannot appear twice on the field
+        if len(set(party1_edited + party2_edited)) != 10:
+            text_box.set_text("=====================================\n")
+            text_box.append_html_text("Same character cannot appear twice!\n")
+            return
+
+        for i, n in enumerate(party1_edited):
+            party1[i] = next((c for c in all_characters if c.name == n), None)
+        for i, n in enumerate(party2_edited):
+            party2[i] = next((c for c in all_characters + all_monsters if c.name == n), None)
+
         text_box.set_text("=====================================\n")
-        text_box.append_html_text(f"{character_name} has been replaced with {new_character_name}.\n")
         restart_battle()
         redraw_ui(party1, party2)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def add_outline_to_image(surface, outline_color, outline_thickness):
         """
@@ -2891,96 +3068,96 @@ if __name__ == "__main__":
     # each healthbar is divided into 3 parts, a overlay is created on top of it.
     # this overlay will be used to show status effects tooltips,
     # we create 3 pages because often, status effects have too much text to be shown in one page
-    character_healthbar_slot_top1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 220), (58, 55)),
+    character_healthbar_slot_top1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 220), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 220), (59, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 220), (59, 65)),
                                         pygame.Surface((59, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 220), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 220), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 220), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 220), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 220), (59, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 220), (59, 65)),
                                         pygame.Surface((59, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 220), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 220), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 220), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 220), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 220), (59, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 220), (59, 65)),
                                         pygame.Surface((59, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 220), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 220), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 220), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 220), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 220), (59, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 220), (59, 65)),
                                         pygame.Surface((59, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 220), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 220), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 220), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 220), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 220), (59, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 220), (59, 65)),
                                         pygame.Surface((59, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_top5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 220), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_top5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 220), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 825), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 825), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 825), (59, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 825), (59, 65)),
                                         pygame.Surface((59, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 825), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 825), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 825), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 825), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 825), (59, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 825), (59, 65)),
                                         pygame.Surface((59, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 825), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 825), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 825), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 825), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 825), (59, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 825), (59, 65)),
                                         pygame.Surface((59, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 825), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 825), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 825), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 825), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 825), (59, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 825), (59, 65)),
                                         pygame.Surface((59, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 825), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 825), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 825), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 825), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 825), (59, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 825), (59, 65)),
                                         pygame.Surface((59, 30)),
-                                        ui_manager_overlay)
-    character_healthbar_slot_buttom5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 825), (58, 55)),
+                                        ui_manager)
+    character_healthbar_slot_buttom5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 825), (58, 65)),
                                         pygame.Surface((58, 30)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     health_bar_party1_overlay = [[character_healthbar_slot_top1_o1, character_healthbar_slot_top1_o2, character_healthbar_slot_top1_o3],
                                 [character_healthbar_slot_top2_o1, character_healthbar_slot_top2_o2, character_healthbar_slot_top2_o3],
                                 [character_healthbar_slot_top3_o1, character_healthbar_slot_top3_o2, character_healthbar_slot_top3_o3],
@@ -2989,6 +3166,7 @@ if __name__ == "__main__":
     for t in health_bar_party1_overlay:
         for overlay in t:
             overlay.set_image((images_item["405"]))
+            overlay.change_layer(1)
     
     health_bar_party2_overlay = [[character_healthbar_slot_buttom1_o1, character_healthbar_slot_buttom1_o2, character_healthbar_slot_buttom1_o3],
                                 [character_healthbar_slot_buttom2_o1, character_healthbar_slot_buttom2_o2, character_healthbar_slot_buttom2_o3],
@@ -2998,13 +3176,14 @@ if __name__ == "__main__":
     for t in health_bar_party2_overlay:
         for overlay in t:
             overlay.set_image((images_item["405"]))
+            overlay.change_layer(1)
 
 
 
 
 
-    damage_graph_slot = pygame_gui.elements.UIImage(pygame.Rect((1080, 655), (500, 225)),
-                                        pygame.Surface((500, 225)),
+    damage_graph_slot = pygame_gui.elements.UIImage(pygame.Rect((1080, 650), (500, 230)),
+                                        pygame.Surface((500, 230)),
                                         ui_manager)
     # ./tmp/damage_dealt.png
     damage_graph_slot.set_image((images_item["405"]))
@@ -3118,13 +3297,13 @@ if __name__ == "__main__":
                 healthbar_overlays_c = healthbar_overlays[i][2].image
                 sp_count, buff_count, debuff_count = character.get_the_amount_of_effect()
                 if sp_count:
-                    create_yellow_text(healthbar_overlays_a, str(sp_count), 25, (186, 186, 255), 0)
+                    create_yellow_text(healthbar_overlays_a, str(sp_count), 25, (186, 186, 255), 10)
                     healthbar_overlays[i][0].set_image(healthbar_overlays_a)
                 if buff_count:
-                    create_yellow_text(healthbar_overlays_b, str(buff_count), 25, (0, 255, 0), 0)
+                    create_yellow_text(healthbar_overlays_b, str(buff_count), 25, (0, 255, 0), 10)
                     healthbar_overlays[i][1].set_image(healthbar_overlays_b)
                 if debuff_count:
-                    create_yellow_text(healthbar_overlays_c, str(debuff_count), 25, (255, 0, 0), 0)
+                    create_yellow_text(healthbar_overlays_c, str(debuff_count), 25, (255, 0, 0), 10)
                     healthbar_overlays[i][2].set_image(healthbar_overlays_c)
 
 
@@ -3663,62 +3842,64 @@ if __name__ == "__main__":
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 # print(event.pos)
-                if image_slot1.get_abs_rect().collidepoint(event.pos):
-                    if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                        handle_UIDropDownMenu(party_show_in_menu, None, 0)
-                    elif current_game_mode == "Adventure Mode":
-                        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                        handle_UIDropDownMenu(party1_show_in_menu, None, 0)
-                if image_slot2.get_abs_rect().collidepoint(event.pos):
-                    if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                        handle_UIDropDownMenu(party_show_in_menu, None, 1)
-                    elif current_game_mode == "Adventure Mode":
-                        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                        handle_UIDropDownMenu(party1_show_in_menu, None, 1)
-                if image_slot3.get_abs_rect().collidepoint(event.pos):
-                    if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                        handle_UIDropDownMenu(party_show_in_menu, None, 2)
-                    elif current_game_mode == "Adventure Mode":
-                        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                        handle_UIDropDownMenu(party1_show_in_menu, None, 2)
-                if image_slot4.get_abs_rect().collidepoint(event.pos):
-                    if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                        handle_UIDropDownMenu(party_show_in_menu, None, 3)
-                    elif current_game_mode == "Adventure Mode":
-                        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                        handle_UIDropDownMenu(party1_show_in_menu, None, 3)
-                if image_slot5.get_abs_rect().collidepoint(event.pos):
-                    if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                        handle_UIDropDownMenu(party_show_in_menu, None, 4)
-                    elif current_game_mode == "Adventure Mode":
-                        party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                        handle_UIDropDownMenu(party1_show_in_menu, None, 4)
-                if image_slot6.get_abs_rect().collidepoint(event.pos):
-                    if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                        handle_UIDropDownMenu(party_show_in_menu, None, 5)
-                if image_slot7.get_abs_rect().collidepoint(event.pos):
-                    if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                        handle_UIDropDownMenu(party_show_in_menu, None, 6)
-                if image_slot8.get_abs_rect().collidepoint(event.pos):
-                    if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                        handle_UIDropDownMenu(party_show_in_menu, None, 7)
-                if image_slot9.get_abs_rect().collidepoint(event.pos):
-                    if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                        handle_UIDropDownMenu(party_show_in_menu, None, 8)
-                # This is only a temporary solution, we should consider changing layering of UI elements
-                if image_slot10.get_abs_rect().collidepoint(event.pos) and not reserve_character_selection_menu.are_contents_hovered():
-                    if current_game_mode == "Training Mode":
-                        party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                        handle_UIDropDownMenu(party_show_in_menu, None, 9)
+                # This is problematic because it will cause unnecessary behavior if we are in windows, like settings windows, cheems window, etc.
+                # if image_slot1.get_abs_rect().collidepoint(event.pos):
+                #     if current_game_mode == "Training Mode":
+                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+                #         handle_UIDropDownMenu(party_show_in_menu, None, 0)
+                #     elif current_game_mode == "Adventure Mode":
+                #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+                #         handle_UIDropDownMenu(party1_show_in_menu, None, 0)
+                # if image_slot2.get_abs_rect().collidepoint(event.pos):
+                #     if current_game_mode == "Training Mode":
+                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+                #         handle_UIDropDownMenu(party_show_in_menu, None, 1)
+                #     elif current_game_mode == "Adventure Mode":
+                #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+                #         handle_UIDropDownMenu(party1_show_in_menu, None, 1)
+                # if image_slot3.get_abs_rect().collidepoint(event.pos):
+                #     if current_game_mode == "Training Mode":
+                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+                #         handle_UIDropDownMenu(party_show_in_menu, None, 2)
+                #     elif current_game_mode == "Adventure Mode":
+                #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+                #         handle_UIDropDownMenu(party1_show_in_menu, None, 2)
+                # if image_slot4.get_abs_rect().collidepoint(event.pos):
+                #     if current_game_mode == "Training Mode":
+                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+                #         handle_UIDropDownMenu(party_show_in_menu, None, 3)
+                #     elif current_game_mode == "Adventure Mode":
+                #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+                #         handle_UIDropDownMenu(party1_show_in_menu, None, 3)
+                # if image_slot5.get_abs_rect().collidepoint(event.pos):
+                #     if current_game_mode == "Training Mode":
+                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+                #         handle_UIDropDownMenu(party_show_in_menu, None, 4)
+                #     elif current_game_mode == "Adventure Mode":
+                #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+                #         handle_UIDropDownMenu(party1_show_in_menu, None, 4)
+                # if image_slot6.get_abs_rect().collidepoint(event.pos):
+                #     if current_game_mode == "Training Mode":
+                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+                #         handle_UIDropDownMenu(party_show_in_menu, None, 5)
+                # if image_slot7.get_abs_rect().collidepoint(event.pos):
+                #     if current_game_mode == "Training Mode":
+                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+                #         handle_UIDropDownMenu(party_show_in_menu, None, 6)
+                # if image_slot8.get_abs_rect().collidepoint(event.pos):
+                #     if current_game_mode == "Training Mode":
+                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+                #         handle_UIDropDownMenu(party_show_in_menu, None, 7)
+                # if image_slot9.get_abs_rect().collidepoint(event.pos):
+                #     if current_game_mode == "Training Mode":
+                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+                #         handle_UIDropDownMenu(party_show_in_menu, None, 8)
+                # # This is only a temporary solution, we should consider changing layering of UI elements
+                # # if image_slot10.get_abs_rect().collidepoint(event.pos) and not reserve_character_selection_menu.are_contents_hovered():
+                # if image_slot10.get_abs_rect().collidepoint(event.pos):
+                #     if current_game_mode == "Training Mode":
+                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+                #         handle_UIDropDownMenu(party_show_in_menu, None, 9)
 
                 for ui_image, rect in player.dict_image_slots_rects.items():
                     if rect.collidepoint(event.pos):
@@ -3736,47 +3917,14 @@ if __name__ == "__main__":
 
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == button1: # Shuffle party
+                    if cheems_window is not None:
+                        cheems_window.kill()
                     text_box.set_text("==============================\n")
                     if current_game_mode == "Training Mode":
                         party1, party2 = set_up_characters()
                     elif current_game_mode == "Adventure Mode":
                         party1, party2 = set_up_characters_adventure_mode(True)
                     turn = 1
-                if event.ui_element == switch_game_mode_button:
-                    if current_game_mode == "Training Mode":
-                        current_game_mode = "Adventure Mode"
-                        party1, party2 = set_up_characters_adventure_mode()
-                        turn = 1
-                        switch_game_mode_button.set_text("Training Mode")
-                        text_box.set_dimensions((556, 255))
-                        box_submenu_previous_stage_button.show()
-                        box_submenu_next_stage_button.show()
-                        box_submenu_refresh_stage_button.show()
-                        box_submenu_stage_info_label.show()
-                        box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
-                        box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
-                        box_submenu_enter_shop_button.show()
-                        box_submenu_exit_shop_button.show()
-                        # box_submenu_explore_button.show()
-                        # box_submenu_explore_funds_selection.show()
-                    elif current_game_mode == "Adventure Mode":
-                        current_game_mode = "Training Mode"
-                        party1, party2 = set_up_characters(reset_party1=False)
-                        turn = 1
-                        switch_game_mode_button.set_text("Adventure Mode")
-                        text_box.set_dimensions((556, 295))
-                        box_submenu_previous_stage_button.hide()
-                        box_submenu_next_stage_button.hide()
-                        box_submenu_refresh_stage_button.hide()
-                        box_submenu_stage_info_label.hide()
-                        box_submenu_enter_shop_button.hide()
-                        box_submenu_exit_shop_button.hide()
-                        for m in all_shop_ui_modules:
-                            m.hide()
-                        text_box.show()
-                        global_vars.player_is_in_shop = False
-                        # box_submenu_explore_button.hide()
-                        # box_submenu_explore_funds_selection.hide()
                 if event.ui_element == next_turn_button:
                     if next_turn(party1, party2):
                         turn += 1
@@ -3792,8 +3940,8 @@ if __name__ == "__main__":
                     all_turns_simulate_current_battle(party1, party2, selection_simulate_current_battle.selected_option[0])
                 if event.ui_element == eq_stars_upgrade_button:
                     eq_stars_upgrade(True)
-                if event.ui_element == character_replace_button:
-                    replace_character_with_reserve_member(character_selection_menu.selected_option[0].split()[-1], reserve_character_selection_menu.selected_option[0].split()[-1])
+                # if event.ui_element == character_replace_button:
+                #     replace_character_with_reserve_member(character_selection_menu.selected_option[0].split()[-1], reserve_character_selection_menu.selected_option[0].split()[-1])
                 if event.ui_element == eq_levelup_button:
                     eq_level_up(amount_to_level=1)
                 if event.ui_element == eq_levelup_buttonx10:
@@ -3887,10 +4035,44 @@ if __name__ == "__main__":
                     build_cheap_inventory_sort_filter_window()
                 if event.ui_element == cheap_inventory_sort_filter_confirm_button:
                     cheap_inventory_sort()
+                if event.ui_element == button_cheems:
+                    build_cheems_window()
+                if event.ui_element == cheems_update_party_members_button:
+                    cheems_edit_party()
 
 
             if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
-                # auto_battle_speed_selection_menu
+                if event.ui_element == game_mode_selection_menu:
+                    if cheems_window is not None:
+                        cheems_window.kill()
+                    if game_mode_selection_menu.selected_option[0] == "Training Mode":
+                        current_game_mode = "Training Mode"
+                        party1, party2 = set_up_characters(reset_party1=False)
+                        turn = 1
+                        text_box.set_dimensions((556, 295))
+                        box_submenu_previous_stage_button.hide()
+                        box_submenu_next_stage_button.hide()
+                        box_submenu_refresh_stage_button.hide()
+                        box_submenu_stage_info_label.hide()
+                        box_submenu_enter_shop_button.hide()
+                        box_submenu_exit_shop_button.hide()
+                        for m in all_shop_ui_modules:
+                            m.hide()
+                        text_box.show()
+                        global_vars.player_is_in_shop = False
+                    elif game_mode_selection_menu.selected_option[0] == "Adventure Mode":
+                        current_game_mode = "Adventure Mode"
+                        party1, party2 = set_up_characters_adventure_mode()
+                        turn = 1
+                        text_box.set_dimensions((556, 255))
+                        box_submenu_previous_stage_button.show()
+                        box_submenu_next_stage_button.show()
+                        box_submenu_refresh_stage_button.show()
+                        box_submenu_stage_info_label.show()
+                        box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
+                        box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
+                        box_submenu_enter_shop_button.show()
+                        box_submenu_exit_shop_button.show()
                 if event.ui_element == auto_battle_speed_selection_menu:
                     global_vars.autobattle_speed = auto_battle_speed_selection_menu.selected_option[0]
                 if event.ui_element == after_auto_battle_selection_menu:
@@ -3901,7 +4083,6 @@ if __name__ == "__main__":
                     global_vars.cheap_inventory_sort_b = cheap_inventory_sort_b_selection_menu.selected_option[0]
                 if event.ui_element == cheap_inventory_sort_c_selection_menu:
                     global_vars.cheap_inventory_sort_c = cheap_inventory_sort_c_selection_menu.selected_option[0]
-                #  cheap_inventory_filter_have_owner_selection_menu
                 if event.ui_element == cheap_inventory_filter_have_owner_selection_menu:
                     global_vars.cheap_inventory_filter_have_owner = cheap_inventory_filter_have_owner_selection_menu.selected_option[0]
                 if event.ui_element == cheap_inventory_filter_owned_by_char_selection_menu:
@@ -3914,8 +4095,8 @@ if __name__ == "__main__":
                     the_shop = redraw_ui_shop_edition()
                 if event.ui_element == theme_selection_menu:
                     change_theme()
-                if event.ui_element == button_left_change_chart_selection:
-                    match button_left_change_chart_selection.selected_option[0]:
+                if event.ui_element == button_change_chart_selection:
+                    match button_change_chart_selection.selected_option[0]:
                         # ["Damage Dealt", "Damage Received", "Healing"]
                         case "Damage Dealt":
                             current_display_chart = "Damage Dealt Chart"
@@ -3930,7 +4111,7 @@ if __name__ == "__main__":
                             create_plot_healing_chart()
                             draw_chart()
                         case _:
-                            raise Exception("Unknown option selected in button_left_change_chart_selection")
+                            raise Exception("Unknown option selected in button_change_chart_selection")
                 if event.ui_element == cheap_inventory_what_to_show_selection_menu:
                     match cheap_inventory_what_to_show_selection_menu.selected_option[0]:
                         case "Equip":
@@ -3998,10 +4179,11 @@ if __name__ == "__main__":
                             raise Exception("Unknown option selected in cheap_inventory_what_to_show_selection_menu")                                
 
 
-
+            ui_manager_lower.process_events(event)
             ui_manager.process_events(event)
             ui_manager_overlay.process_events(event)
 
+        ui_manager_lower.update(time_delta)
         ui_manager.update(time_delta)
         ui_manager_overlay.update(time_delta)
         if global_vars.theme == "Yellow Theme":
@@ -4016,6 +4198,7 @@ if __name__ == "__main__":
             display_surface.fill(light_blue)
         elif global_vars.theme == "Pink Theme":
             display_surface.fill(light_pink)
+        ui_manager_lower.draw_ui(display_surface)
         ui_manager.draw_ui(display_surface)
         ui_manager_overlay.draw_ui(display_surface)
         # debug_ui_manager.update(time_delta)
