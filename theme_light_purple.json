@@ -7,7 +7,7 @@
             "hovered_bg":"#D2B4DE",
             "disabled_bg":"#F5EEF8",
             "selected_bg":"#BB8FCE",
-            "dark_bg":"#fdfbff",
+            "dark_bg":"#f3e7ff",
             "normal_text":"#000000",
             "hovered_text":"#FFFFFF",
             "selected_text":"#FFFFFF",
@@ -22,7 +22,8 @@
             "selected_border": "#8E44AD",
             "active_border": "#8E44AD",
             "filled_bar":"#9B59B6",
-            "unfilled_bar":"#D2B4DE"
+            "unfilled_bar":"#D2B4DE",
+            "text_cursor": "#9b37ff"
         }
     },
     "progress_bar":

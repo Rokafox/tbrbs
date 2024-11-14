@@ -22,7 +22,8 @@
             "selected_border": "#FF1493",
             "active_border": "#FF1493",
             "filled_bar":"#FF69B4",
-            "unfilled_bar":"#FFC0CB"
+            "unfilled_bar":"#FFC0CB",
+            "text_cursor": "#ff4531"
         }
     },
     "progress_bar":

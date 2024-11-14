@@ -22,7 +22,8 @@
             "selected_border": "#FFA000",
             "active_border": "#FFA000",
             "filled_bar":"#FFC107",
-            "unfilled_bar":"#FFEEBA"
+            "unfilled_bar":"#FFEEBA",
+            "text_cursor": "#ffd417"
         },
         "font":
         {

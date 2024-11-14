@@ -2065,17 +2065,35 @@ if __name__ == "__main__":
     party2_member_d_selection_menu = None
     party2_member_e_selection_menu = None
     cheems_update_party_members_button = None
+    cheems_create_new_team_name_entry = None
+    cheems_save_party1_button = None
+    cheems_save_party2_button = None
+    cheems_response_label = None
+    cheems_show_player_cheems_selection_menu = None
+    cheems_player_cheems_char_img_slot_a = None
+    cheems_player_cheems_char_img_slot_b = None
+    cheems_player_cheems_char_img_slot_c = None
+    cheems_player_cheems_char_img_slot_d = None
+    cheems_player_cheems_char_img_slot_e = None
+    cheems_apply_to_party1_button = None
+    cheems_apply_to_party2_button = None
+    cheems_delete_team_button = None
 
     def build_cheems_window():
         global cheems_window, party1, party2
         global party1_member_a_selection_menu, party1_member_b_selection_menu, party1_member_c_selection_menu, party1_member_d_selection_menu, party1_member_e_selection_menu
         global party2_member_a_selection_menu, party2_member_b_selection_menu, party2_member_c_selection_menu, party2_member_d_selection_menu, party2_member_e_selection_menu
-        global cheems_update_party_members_button
+        global cheems_update_party_members_button, cheems_create_new_team_name_entry
+        global cheems_save_party1_button, cheems_save_party2_button, cheems_response_label
+        global cheems_show_player_cheems_selection_menu, cheems_player_cheems_member_label
+        global cheems_player_cheems_char_img_slot_a, cheems_player_cheems_char_img_slot_b, cheems_player_cheems_char_img_slot_c, cheems_player_cheems_char_img_slot_d, cheems_player_cheems_char_img_slot_e
+        global cheems_apply_to_party1_button, cheems_apply_to_party2_button, cheems_delete_team_button
+
         try:
             cheems_window.kill()
         except Exception as e:
             print(f"Error: {e}")
-        cheems_window = pygame_gui.elements.UIWindow(pygame.Rect((200, 200), (900, 500)),
+        cheems_window = pygame_gui.elements.UIWindow(pygame.Rect((200, 200), (810, 500)),
                                             ui_manager,
                                             window_display_title="Cheems",
                                             object_id="#cheems_window",
@@ -2169,16 +2187,208 @@ if __name__ == "__main__":
                                             ui_manager,
                                             container=cheems_window)
 
+        cheems_create_new_team_name_entry = pygame_gui.elements.UITextEntryLine(pygame.Rect((10, 320), (380, 35)),
+                                            ui_manager,
+                                            container=cheems_window,
+                                            placeholder_text="Enter a team name:")
+        # cheems_create_new_team_name_entry.get_text()
+
+        cheems_save_party1_button = pygame_gui.elements.UIButton(pygame.Rect((10, 365), (180, 50)),
+                                            text="Save Party 1",
+                                            manager=ui_manager,
+                                            container=cheems_window)
+
+        cheems_save_party2_button = pygame_gui.elements.UIButton(pygame.Rect((210, 365), (180, 50)),
+                                            text="Save Party 2",
+                                            manager=ui_manager,
+                                            container=cheems_window)
+
+        cheems_response_label = pygame_gui.elements.UILabel(pygame.Rect((10, 420), (810, 35)),
+                                            text="",
+                                            manager=ui_manager,
+                                            container=cheems_window)
+
+        # x 400 ~ 800: show the teams that player has saved here, the player can choose a team, apply it to either
+        # party 1 or party 2, or delete the team
+
+        cheems_show_player_cheems_label = pygame_gui.elements.UILabel(pygame.Rect((400, 10), (400, 35)),
+                                            "Cheems:",
+                                            ui_manager,
+                                            container=cheems_window)
+        
+        cheems_show_player_cheems_selection_menu = pygame_gui.elements.UIDropDownMenu(["None"] + get_player_cheems_team_names(player),
+                                                                "None",
+                                                                pygame.Rect((400, 50), (400, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        
+        cheems_player_cheems_member_label = pygame_gui.elements.UILabel(pygame.Rect((400, 90), (400, 35)),
+                                            "",
+                                            ui_manager,
+                                            container=cheems_window)
+
+        # image are shown for these 5 characters
+        cheems_player_cheems_char_img_slot_a = pygame_gui.elements.UIImage(pygame.Rect((420, 130), (64, 64)), pygame.Surface((64, 64)), ui_manager, container=cheems_window)
+        cheems_player_cheems_char_img_slot_b = pygame_gui.elements.UIImage(pygame.Rect((490, 130), (64, 64)), pygame.Surface((64, 64)), ui_manager, container=cheems_window)
+        cheems_player_cheems_char_img_slot_c = pygame_gui.elements.UIImage(pygame.Rect((560, 130), (64, 64)), pygame.Surface((64, 64)), ui_manager, container=cheems_window)
+        cheems_player_cheems_char_img_slot_d = pygame_gui.elements.UIImage(pygame.Rect((630, 130), (64, 64)), pygame.Surface((64, 64)), ui_manager, container=cheems_window)
+        cheems_player_cheems_char_img_slot_e = pygame_gui.elements.UIImage(pygame.Rect((700, 130), (64, 64)), pygame.Surface((64, 64)), ui_manager, container=cheems_window)
+        cheems_player_cheems_char_img_slot_a.set_image(images_item["405"])
+        cheems_player_cheems_char_img_slot_b.set_image(images_item["405"])
+        cheems_player_cheems_char_img_slot_c.set_image(images_item["405"])
+        cheems_player_cheems_char_img_slot_d.set_image(images_item["405"])
+        cheems_player_cheems_char_img_slot_e.set_image(images_item["405"])
+
+        # Button to apply the selected team to party 1 or party 2
+        cheems_apply_to_party1_button = pygame_gui.elements.UIButton(pygame.Rect((400, 210), (190, 35)),
+                                            text="Apply to Party 1",
+                                            manager=ui_manager,
+                                            container=cheems_window)
+        cheems_apply_to_party1_button.hide()
+
+        cheems_apply_to_party2_button = pygame_gui.elements.UIButton(pygame.Rect((600, 210), (190, 35)),
+                                            text="Apply to Party 2",
+                                            manager=ui_manager,
+                                            container=cheems_window)
+        cheems_apply_to_party2_button.hide()
+
+        # Button to delete the selected team
+        cheems_delete_team_button = pygame_gui.elements.UIButton(pygame.Rect((400, 260), (390, 50)),
+                                            text="Delete Team",
+                                            manager=ui_manager,
+                                            container=cheems_window)
+        cheems_delete_team_button.hide()
 
 
 
+    def apply_cheems_to_party(party: int):
+        """
+        We can simply add names get from player.cheems to
+        party1_member_a_selection_menu and so on.
+        """
+        global player
+        global party1_member_a_selection_menu, party1_member_b_selection_menu, party1_member_c_selection_menu, party1_member_d_selection_menu, party1_member_e_selection_menu
+        global party2_member_a_selection_menu, party2_member_b_selection_menu, party2_member_c_selection_menu, party2_member_d_selection_menu, party2_member_e_selection_menu
+        if party not in [1, 2]:
+            raise ValueError(f"party must be 1 or 2, but got {party}")
+        names = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]]
+        if party == 1:
+            # This is extremely stupid, maybe there is a better implementation
+            party1_member_a_selection_menu.kill()
+            party1_member_a_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                    names[0],
+                                                                    pygame.Rect((10, 50), (180, 35)),
+                                                                    ui_manager,
+                                                                    container=cheems_window)
+            party1_member_b_selection_menu.kill()
+            party1_member_b_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                    names[1],
+                                                                    pygame.Rect((10, 90), (180, 35)),
+                                                                    ui_manager,
+                                                                    container=cheems_window)
+            party1_member_c_selection_menu.kill()
+            party1_member_c_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                    names[2],
+                                                                    pygame.Rect((10, 130), (180, 35)),
+                                                                    ui_manager,
+                                                                    container=cheems_window)
+            party1_member_d_selection_menu.kill()
+            party1_member_d_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                    names[3],
+                                                                    pygame.Rect((10, 170), (180, 35)),
+                                                                    ui_manager,
+                                                                    container=cheems_window)
+            party1_member_e_selection_menu.kill()
+            party1_member_e_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                    names[4],
+                                                                    pygame.Rect((10, 210), (180, 35)),
+                                                                    ui_manager,
+                                                                    container=cheems_window)
+        else:
+            if current_game_mode == "Adventure Mode":
+                cheems_response_label.set_text("Party 2 is reserved for monsters in adventure mode.")
+                return None
+            party2_member_a_selection_menu.kill()
+            party2_member_a_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                    names[0],
+                                                                    pygame.Rect((210, 50), (180, 35)),
+                                                                    ui_manager,
+                                                                    container=cheems_window)
+            party2_member_b_selection_menu.kill()
+            party2_member_b_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                    names[1],
+                                                                    pygame.Rect((210, 90), (180, 35)),
+                                                                    ui_manager,
+                                                                    container=cheems_window)
+            party2_member_c_selection_menu.kill()
+            party2_member_c_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                    names[2],
+                                                                    pygame.Rect((210, 130), (180, 35)),
+                                                                    ui_manager,
+                                                                    container=cheems_window)
+            party2_member_d_selection_menu.kill()
+            party2_member_d_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                    names[3],
+                                                                    pygame.Rect((210, 170), (180, 35)),
+                                                                    ui_manager,
+                                                                    container=cheems_window)
+            party2_member_e_selection_menu.kill()
+            party2_member_e_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+                                                                    names[4],
+                                                                    pygame.Rect((210, 210), (180, 35)),
+                                                                    ui_manager,
+                                                                    container=cheems_window)
+            
+
+    def save_cheems_team(team_name: str | None, party: list[str]):
+        """
+        Save a team to player.cheems.
+        player.cheems is dict[str, list[str]]  with default {}, team_name as key, and list of character names as value.
+        """
+        global player, text_box, cheems_show_player_cheems_selection_menu
+        # player must be a subclass of Nine
+        assert player is not None
+        assert isinstance(player, Nine)
+        assert cheems_response_label is not None
+
+        if team_name is None:
+            team_name = cheems_create_new_team_name_entry.get_text()
+
+        if team_name == "":
+            cheems_response_label.set_text("Team name cannot be empty.")
+            return None
+
+        if team_name in player.cheems:
+            cheems_response_label.set_text(f"Team name {team_name} already exists.")
+            return None
+
+        # Saving a team that contains any character that is in all_monsters_names is not allowed
+        for character_name in party:
+            if character_name in all_monsters_names:
+                cheems_response_label.set_text(f"Monsters are not allowed in teams.")
+                return None
+
+        player.cheems[team_name] = party
+        cheems_response_label.set_text(f"Team saved.")
+        print(player.cheems)
+
+        # Update the cheems selection menu
+        cheems_show_player_cheems_selection_menu.kill()
+        cheems_show_player_cheems_selection_menu = pygame_gui.elements.UIDropDownMenu(["None"] + get_player_cheems_team_names(player),
+                                                                "None",
+                                                                pygame.Rect((400, 50), (400, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
 
 
 
-
-
-
-
+    def get_player_cheems_team_names(player: Nine) -> list[str]:
+        """
+        Get a list of team names from player.cheems.
+        """
+        assert player is not None
+        assert isinstance(player, Nine)
+        return list(player.cheems.keys())
 
 
 
@@ -2842,6 +3052,7 @@ if __name__ == "__main__":
     #     redraw_ui(party1, party2)
 
     def cheems_edit_party():
+        global cheems_response_label
         # selection menus in cheems_window gives the user the ability to edit the party
         assert party1_member_a_selection_menu is not None
         # this likely wont happen as the button triggers this function is in the cheems_window
@@ -2856,8 +3067,7 @@ if __name__ == "__main__":
 
         # guardrail: same character cannot appear twice on the field
         if len(set(party1_edited + party2_edited)) != 10:
-            text_box.set_text("=====================================\n")
-            text_box.append_html_text("Same character cannot appear twice!\n")
+            cheems_response_label.set_text("Same character cannot appear twice!")
             return
 
         for i, n in enumerate(party1_edited):
@@ -2865,6 +3075,7 @@ if __name__ == "__main__":
         for i, n in enumerate(party2_edited):
             party2[i] = next((c for c in all_characters + all_monsters if c.name == n), None)
 
+        cheems_response_label.set_text("Party members updated.")
         text_box.set_text("=====================================\n")
         restart_battle()
         redraw_ui(party1, party2)
@@ -4039,6 +4250,14 @@ if __name__ == "__main__":
                     build_cheems_window()
                 if event.ui_element == cheems_update_party_members_button:
                     cheems_edit_party()
+                if event.ui_element == cheems_save_party1_button:
+                    save_cheems_team(None, [c.name for c in party1])
+                if event.ui_element == cheems_save_party2_button:
+                    save_cheems_team(None, [c.name for c in party2])
+                if event.ui_element == cheems_apply_to_party1_button:
+                    apply_cheems_to_party(1)
+                if event.ui_element == cheems_apply_to_party2_button:
+                    apply_cheems_to_party(2)
 
 
             if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
@@ -4176,7 +4395,39 @@ if __name__ == "__main__":
                             use_random_consumable_label.show()
                             use_random_consumable_selection_menu.show()
                         case _:
-                            raise Exception("Unknown option selected in cheap_inventory_what_to_show_selection_menu")                                
+                            raise Exception("Unknown option selected in cheap_inventory_what_to_show_selection_menu")  
+                if event.ui_element == cheems_show_player_cheems_selection_menu:
+                    img_slots = [cheems_player_cheems_char_img_slot_a,
+                                    cheems_player_cheems_char_img_slot_b,
+                                cheems_player_cheems_char_img_slot_c,
+                                cheems_player_cheems_char_img_slot_d,
+                                cheems_player_cheems_char_img_slot_e,]
+                    if cheems_show_player_cheems_selection_menu.selected_option[0] != "None":
+                        member_list = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]]
+                        text = ""
+                        for i, m in enumerate(member_list):
+                            text += f"{m}    "
+                            actual_character = None
+                            for c in all_characters:
+                                if c.name == m:
+                                    actual_character = c
+                                    break
+                            try:
+                                img_slots[i].set_image(character.featured_image)
+                            except Exception:
+                                img_slots[i].set_image(images_item["404"])
+
+                        cheems_player_cheems_member_label.set_text(text)
+                        cheems_apply_to_party1_button.show()
+                        cheems_apply_to_party2_button.show()
+                        cheems_delete_team_button.show()
+                    else:
+                        cheems_player_cheems_member_label.set_text("")
+                        for i in img_slots:
+                            i.set_image(images_item["405"])
+                        cheems_apply_to_party1_button.hide()
+                        cheems_apply_to_party2_button.hide()
+                        cheems_delete_team_button.hide()                              
 
 
             ui_manager_lower.process_events(event)
