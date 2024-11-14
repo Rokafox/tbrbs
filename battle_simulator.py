@@ -51,7 +51,7 @@ def load_player(filename="player_data.json"):
         data = json.load(file)
     player = Nine(0)
     # player.attribute = data["attribute"]
-    player.cash = data["cash"]
+    cash_in_data = data["cash"]
 
     dict_character_name_lvl_exp_equip = {}
     for item_data in data["owned_characters"]:
@@ -113,8 +113,14 @@ def load_player(filename="player_data.json"):
                 continue
 
         player.inventory.append(item)
-        player.get_cash()
+
+    cash_actual = player.get_cash()
+    if cash_in_data != cash_actual:
+        print(f"Warning: Cash recorded does not match the actual Cash in inventory: {cash_in_data} != {cash_actual}, {cash_actual} is used.")
     player.cleared_stages = data["cleared_stages"]
+    player.cheems = data["cheems"]
+    player.settings_language = data["settings_language"]
+    player.settings_theme = data["settings_theme"]
     return player, dict_character_name_lvl_exp_equip
 
 
@@ -140,6 +146,8 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         # cheems: player can create custom teams for battle, each entry is a list of 5 character names: ["Cerberus", "Fenrir", "Clover", 'Ruby', 'Olive']
         # each team also has a name, like "Team AAA", "Team BBB"
         self.cheems: dict[str, list[str]] = {}
+        self.settings_language = "English"
+        self.settings_theme = "Yellow Theme"
 
         if cash > 0:
             self.add_cash(cash, False)
@@ -148,9 +156,11 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         return {
             "cash": self.cash,
             "owned_characters": [character.to_dict() for character in self.owned_characters],
+            "inventory": [item.to_dict() for item in self.inventory],
+            "settings_language": self.settings_language,
+            "settings_theme": self.settings_theme,
             "cleared_stages": self.cleared_stages,
             "cheems": self.cheems,
-            "inventory": [item.to_dict() for item in self.inventory],
         }
 
     def build_inventory_slots(self):
@@ -1105,23 +1115,6 @@ if __name__ == "__main__":
     use_random_consumable_selection_menu.hide()
 
 
-    # reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option1"],
-    #                                                         "Option1",
-    #                                                         pygame.Rect((900, 400), (156, 35)),
-    #                                                         ui_manager)
-
-    # 3.3.0: Deprecated
-    # label_reserve_character_selection_menu = pygame_gui.elements.UILabel(pygame.Rect((870, 400), (25, 35)),
-    #                                     "→",
-    #                                     ui_manager)
-    # label_reserve_character_selection_menu.set_tooltip("The reserve members, sorted by character level.", delay=0.1)
-
-    # character_replace_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 440), (156, 35)),
-    #                                     text='Replace',
-    #                                     manager=ui_manager,
-    #                                     tool_tip_text = "Replace selected character with reserve character")
-    # character_replace_button.set_tooltip("Replace the selected character with a reserve member.", delay=0.1, wrap_width=300)
-
     # =====================================
     # Game Mode Section
     # =====================================
@@ -1692,15 +1685,34 @@ if __name__ == "__main__":
         try:
             settings_window.kill()
         except Exception as e:
-            print(f"Error: {e}")
+            pass
+
+        def local_translate(s: str) -> str:
+            if global_vars.language == "English":
+                return s
+            elif global_vars.language == "日本語":
+                match s:
+                    case "Settings":
+                        return "設定"
+                    case "Theme:":
+                        return "主題色:"
+                    case "Language:":
+                        return "言語:"
+                    case "Autobattle Speed:":
+                        return "自動戦闘速度:"
+                    case "After Autobattle:":
+                        return "自動戦闘後の処理:"
+            else:
+                raise ValueError(f"Unknown language: {global_vars.language}")
+
         settings_window = pygame_gui.elements.UIWindow(pygame.Rect((500, 300), (400, 300)),
                                             ui_manager,
-                                            window_display_title="Settings",
+                                            window_display_title=local_translate("Settings"),
                                             object_id="#settings_window",
                                             resizable=False)
 
         theme_selection_label = pygame_gui.elements.UILabel(pygame.Rect((10, 10), (140, 35)),
-                                            "Theme:",
+                                            local_translate("Theme:"),
                                             ui_manager,
                                             container=settings_window)
 
@@ -1711,7 +1723,7 @@ if __name__ == "__main__":
                                                                 container=settings_window,)
 
         language_selection_label = pygame_gui.elements.UILabel(pygame.Rect((10, 50), (140, 35)),
-                                                               "Language:",
+                                                               local_translate("Language:"),
                                                                ui_manager,
                                                                 container=settings_window)
 
@@ -1723,7 +1735,7 @@ if __name__ == "__main__":
 
 
         auto_battle_speed_label = pygame_gui.elements.UILabel(pygame.Rect((10, 90), (140, 35)),
-                                            "Autobattle Speed: ",
+                                            local_translate("Autobattle Speed:"),
                                             ui_manager,
                                             container=settings_window)
         
@@ -1735,7 +1747,7 @@ if __name__ == "__main__":
 
 
         after_auto_battle_label = pygame_gui.elements.UILabel(pygame.Rect((10, 130), (140, 35)),
-                                            "After Autobattle: ",
+                                            local_translate("After Autobattle:"),
                                             ui_manager,
                                             container=settings_window)
 
@@ -1755,8 +1767,12 @@ if __name__ == "__main__":
 
 
 
-    def change_theme():
-        global_vars.theme = theme_selection_menu.selected_option[0]
+    def change_theme(theme=None, reload_language=True):
+        if theme:
+            global_vars.theme = theme
+        else:
+            global_vars.theme = theme_selection_menu.selected_option[0]
+            player.settings_theme = global_vars.theme
         if global_vars.theme == "Yellow Theme":
             ui_manager_lower.get_theme().load_theme("theme_light_yellow.json")
             ui_manager.get_theme().load_theme("theme_light_yellow.json")
@@ -1787,11 +1803,16 @@ if __name__ == "__main__":
         ui_manager_lower.rebuild_all_from_changed_theme_data()
         ui_manager.rebuild_all_from_changed_theme_data()
         ui_manager_overlay.rebuild_all_from_changed_theme_data()
-        swap_language()
+        if reload_language:
+            swap_language()
 
 
-    def swap_language():
-        global_vars.language = language_selection_menu.selected_option[0]
+    def swap_language(language=None):
+        if language:
+            global_vars.language = language
+        else:
+            global_vars.language = language_selection_menu.selected_option[0]
+            player.settings_language = global_vars.language
         redraw_ui(party1, party2)
         player.build_inventory_slots()
         if global_vars.player_is_in_shop:
@@ -1822,29 +1843,124 @@ if __name__ == "__main__":
                 cheap_inventory_sort_filter_button.set_tooltip("Open sort and filter window for inventory.", delay=0.1, wrap_width=300)
                 chart_selection_label.set_text("Show Chart:")
                 chart_selection_label.set_tooltip("Select the chart to display: Damage dealt, Damage received, Healing.", delay=0.1, wrap_width=300)
+                game_mode_selection_label.set_text("Game Mode:")
+                game_mode_selection_label.set_tooltip("Select the game mode: Training Mode, Adventure Mode.", delay=0.1, wrap_width=300)
+                label_character_selection_menu.set_text("Selected Character:")
+                label_character_selection_menu.set_tooltip("Selected character. Use items, equip, unequip and others use this character as target.", delay=0.1, wrap_width=300)
+                use_item_button.set_tooltip("The selected item is used on the selected character. If the selected item is an equipment item, equip it to the selected character. Multiple items may be equipped or used at one time.",
+                                            delay=0.1, wrap_width=300)
+                use_itemx10_button.set_tooltip("Use selected item 10 times, only effective on comsumables.", delay=0.1, wrap_width=300)
+                button_cheems.set_text("Cheems")
+                button_cheems.set_tooltip("Open team selection window.", delay=0.1, wrap_width=300)
+                button_characters.set_text("Characters")
+                button_characters.set_tooltip("Open character window.", delay=0.1, wrap_width=300)
+                button_about.set_text("About")
+                button_about.set_tooltip("Open about window.", delay=0.1, wrap_width=300)
+                character_eq_unequip_button.set_tooltip("Remove equipment from the selected character.", delay=0.1, wrap_width=300)
+                character_eq_unequip_all_button.set_tooltip("Remove all equipment from the selected character.", delay=0.1, wrap_width=300)
+                eq_levelup_button.set_text("Level Up")
+                eq_levelup_button.set_tooltip("Level up selected equipment in the inventory.", delay=0.1, wrap_width=300)
+                eq_levelup_buttonx10.set_tooltip("Level up for 10 levels for selected equipment in the inventory.", delay=0.1, wrap_width=300)
+                eq_level_up_to_max_button.set_text("Level Up To Max")
+                eq_level_up_to_max_button.set_tooltip("Level up selected equipment in the inventory to the maximum level.", delay=0.1, wrap_width=300)
+                eq_stars_upgrade_button.set_text("Star Enhancement")
+                eq_stars_upgrade_button.set_tooltip("Increase the star rank of selected equipment in inventory.", delay=0.1, wrap_width=300)
+                eq_sell_selected_button.set_text("Sell Selected")
+                eq_sell_selected_button.set_tooltip("Sell selected equipment in the inventory.", delay=0.1, wrap_width=300)
+                eq_sell_low_value_button.set_text("Sell Low Value")
+                eq_sell_low_value_button.set_tooltip("Sell equipment in inventory that is below market value.", delay=0.1, wrap_width=300)
+                item_sell_button.set_tooltip("Sell one selected item from your inventory.", delay=0.1, wrap_width=300)
+                item_sell_half_button.set_tooltip("Sell half a stack of selected items.", delay=0.1, wrap_width=300)
+                item_sell_all_button.set_tooltip("Sell all of selected items.", delay=0.1, wrap_width=300)
+                use_random_consumable_label.set_text("Random Use:")
+                use_random_consumable_label.set_tooltip("Use one appropriate consumable each turn during auto battles.", delay=0.1, wrap_width=300)
+                cheap_inventory_page_label.set_tooltip("page/max page", delay=0.1)
+                cheap_inventory_skip_to_first_page_button.set_tooltip("Jump to first page of inventory.", delay=0.1, wrap_width=300)
+                cheap_inventory_previous_page_button.set_tooltip("Previous page of inventory.", delay=0.1, wrap_width=300)
+                cheap_inventory_previous_n_button.set_tooltip("Previous 5th page of inventory.", delay=0.1, wrap_width=300)
+                cheap_inventory_skip_to_last_page_button.set_tooltip("Jump to last page of inventory.", delay=0.1, wrap_width=300)
+                cheap_inventory_next_n_button.set_tooltip("Next 5th page of inventory.", delay=0.1, wrap_width=300)
+                cheap_inventory_next_page_button.set_tooltip("Next page of inventory.", delay=0.1, wrap_width=300)
+                box_submenu_enter_shop_button.set_text("Enter Shop")
+                box_submenu_enter_shop_button.set_tooltip("Enter the shop to buy items.", delay=0.1)
+                box_submenu_exit_shop_button.set_text("Exit Shop")
+                box_submenu_exit_shop_button.set_tooltip("Exit the shop.", delay=0.1)
+                box_submenu_previous_stage_button.set_text("Prev")
+                box_submenu_previous_stage_button.set_tooltip("Go to previous stage.", delay=0.1)
+                box_submenu_next_stage_button.set_text("Next")
+                box_submenu_next_stage_button.set_tooltip("Advance to the next stage. You can proceed only if the current stage has been cleared.", delay=0.1)
+                box_submenu_refresh_stage_button.set_text("Refresh")
+                box_submenu_refresh_stage_button.set_tooltip("Refresh the current stage, get a new set of monsters.", delay=0.1)
             case "日本語":
-                settings_button.set_text("設定")
-                settings_button.set_tooltip("設定ウィンドウを開く。", delay=0.1, wrap_width=300)
-                button_quit_game.set_text("終了")
+                settings_button.set_text("心機一転")
+                settings_button.set_tooltip("設定画面を開く。", delay=0.1, wrap_width=300)
+                button_quit_game.set_text("曲終人散")
                 button_quit_game.set_tooltip("プレイヤーデータをplayer_data.jsonとして保存し、アプリを終了する。", delay=0.1, wrap_width=300)
-                button_left_simulate_current_battle.set_text("勝率計算")
+                button_left_simulate_current_battle.set_text("柳暗花明")
                 button_left_simulate_current_battle.set_tooltip("現在の戦闘をn回シミュレートし、結果を表示する。", delay=0.1, wrap_width=300)
-                button3.set_text("すべてのターン")
+                button3.set_text("夢幻泡影")
                 button3.set_tooltip("戦闘終了まで飛ばす。", delay=0.1, wrap_width=300)
-                button4.set_text("リスタート")
+                button4.set_text("東山再起")
                 button4.set_tooltip("戦闘再開。", delay=0.1, wrap_width=300)
-                button1.set_text('シャッフル')
+                button1.set_text('一期一会')
                 button1.set_tooltip("パーティメンバーをランダムに編成してバトルを再開する。冒険モードではパーティ1のみ入れ替わる。", delay=0.1, wrap_width=300)
-                next_turn_button.set_text("次のターン")
+                next_turn_button.set_text("花鳥風月")
                 next_turn_button_tooltip_str = "次のターン。冒険モードで勝利すると報酬を獲得できる。報酬の詳細は、ステージ番号のラベルにカーソルを合わせると表示される。"
                 next_turn_button.set_tooltip(next_turn_button_tooltip_str, delay=0.1, wrap_width=300)
-                button_auto_battle.set_text("自動戦闘")
+                button_auto_battle.set_text("一刻千金")
                 button_auto_battle.set_tooltip("進行状況バーが埋まると自動的に次のターンに進む。戦闘終了時に報酬を獲得できる。", delay=0.1, wrap_width=300)
                 cheap_inventory_sort_filter_button.set_text("ソートとフィルタ")
                 cheap_inventory_sort_filter_button.set_tooltip("インベントリの並び替えと絞り込みウィンドウを開く。", delay=0.1, wrap_width=300)
-                chart_selection_label.set_text("チャート表示:")
+                chart_selection_label.set_text("栄枯盛衰：")
                 chart_selection_label.set_tooltip("表示するチャートを選択する：与えるダメージ、受けるダメージ、回復量。", delay=0.1, wrap_width=300)
-
+                game_mode_selection_label.set_text("海闊天空：")
+                game_mode_selection_label.set_tooltip("ゲームモードを選択する：訓練モード、冒険モード。", delay=0.1, wrap_width=300)
+                label_character_selection_menu.set_text("天下無双：")
+                label_character_selection_menu.set_tooltip("キャラクターを選択する。アイテムの使用、装備の使用、装備の解除、その他がこのキャラクターを対象として行われる。", delay=0.1, wrap_width=300)
+                use_item_button.set_tooltip("選択したアイテムを選択したキャラクターに使用する。選択したアイテムが装備アイテムの場合、選択したキャラクターに装備する。一度に複数のアイテムを装備・使用することができる。",
+                                            delay=0.1, wrap_width=300)
+                use_itemx10_button.set_tooltip("選択したアイテムを10回使用し、消耗品にのみ有効である。", delay=0.1, wrap_width=300)
+                button_cheems.set_text("チームズ")
+                button_cheems.set_tooltip("チーム選択画面を開く。", delay=0.1, wrap_width=300)
+                button_characters.set_text("百花繚乱")
+                button_characters.set_tooltip("キャラクター画面を開く。", delay=0.1, wrap_width=300)
+                button_about.set_text("アプリ概要")
+                button_about.set_tooltip("アプリ概要画面を開く。", delay=0.1, wrap_width=300)
+                character_eq_unequip_button.set_tooltip("選択したキャラクターから装備を外す。", delay=0.1, wrap_width=300)
+                character_eq_unequip_all_button.set_tooltip("選択したキャラクターからすべての装備を外す。", delay=0.1, wrap_width=300)
+                eq_levelup_button.set_text("日進月歩")
+                eq_levelup_button.set_tooltip("インベントリで選択した装備をレベルアップさせる。", delay=0.1, wrap_width=300)
+                eq_levelup_buttonx10.set_tooltip("インベントリで選択した装備品を10レベル分レベルアップさせる。", delay=0.1, wrap_width=300)
+                eq_level_up_to_max_button.set_text("登峰造極")
+                eq_level_up_to_max_button.set_tooltip("インベントリ内の選択した装備を最大レベルまでレベルアップさせる。", delay=0.1, wrap_width=300)
+                eq_stars_upgrade_button.set_text("明星天外")
+                eq_stars_upgrade_button.set_tooltip("インベントリ内の選択した装備品のスターランクを上げる。", delay=0.1, wrap_width=300)
+                eq_sell_selected_button.set_text("指定販売")
+                eq_sell_selected_button.set_tooltip("インベントリーの中から選択した装備品を販売する。", delay=0.1, wrap_width=300)
+                eq_sell_low_value_button.set_text("一括処分")
+                eq_sell_low_value_button.set_tooltip("市場価格を下回る在庫装備品を売却する。", delay=0.1, wrap_width=300)
+                item_sell_button.set_tooltip("在庫の中から選んだアイテムを1つ売る。", delay=0.1, wrap_width=300)
+                item_sell_half_button.set_tooltip("選択したアイテムを半分ずつ売る。", delay=0.1, wrap_width=300)
+                item_sell_all_button.set_tooltip("選択したアイテムをすべて売る。", delay=0.1, wrap_width=300)
+                use_random_consumable_label.set_text("ランダム使用：")
+                use_random_consumable_label.set_tooltip("オートバトル中、毎ターン適切な消耗品を1つ使用する。", delay=0.1, wrap_width=300)
+                cheap_inventory_page_label.set_tooltip("ページ/最大ページ", delay=0.1)
+                cheap_inventory_skip_to_first_page_button.set_tooltip("インベントリーの最初のページに飛ぶ。", delay=0.1, wrap_width=300)
+                cheap_inventory_previous_page_button.set_tooltip("インベントリーの前のページ。", delay=0.1, wrap_width=300)
+                cheap_inventory_previous_n_button.set_tooltip("前の5ページ目のインベントリー。", delay=0.1, wrap_width=300)
+                cheap_inventory_skip_to_last_page_button.set_tooltip("インベントリーの最後のページに飛ぶ。", delay=0.1, wrap_width=300)
+                cheap_inventory_next_n_button.set_tooltip("次のインベントリの5ページ目。", delay=0.1, wrap_width=300)
+                cheap_inventory_next_page_button.set_tooltip("インベントリーの次のページ。", delay=0.1, wrap_width=300)
+                box_submenu_enter_shop_button.set_text("入店")
+                box_submenu_enter_shop_button.set_tooltip("ショップに入って商品を買う。", delay=0.1)
+                box_submenu_exit_shop_button.set_text("退店")
+                box_submenu_exit_shop_button.set_tooltip("店から出る。", delay=0.1)
+                box_submenu_previous_stage_button.set_text("過去")
+                box_submenu_previous_stage_button.set_tooltip("前のステージに戻る。", delay=0.1)
+                box_submenu_next_stage_button.set_text("未来")
+                box_submenu_next_stage_button.set_tooltip("次のステージに進む。現在のステージがクリアされている場合のみ進むことができる。", delay=0.1)
+                box_submenu_refresh_stage_button.set_text("捲土重来")
+                box_submenu_refresh_stage_button.set_tooltip("現在のステージを一新し、新しいモンスターの一族を調達する。", delay=0.1)
 
 
     # =====================================
@@ -2078,6 +2194,7 @@ if __name__ == "__main__":
     cheems_apply_to_party1_button = None
     cheems_apply_to_party2_button = None
     cheems_delete_team_button = None
+    cheems_meme_dog_image_slot = None
 
     def build_cheems_window():
         global cheems_window, party1, party2
@@ -2088,6 +2205,7 @@ if __name__ == "__main__":
         global cheems_show_player_cheems_selection_menu, cheems_player_cheems_member_label
         global cheems_player_cheems_char_img_slot_a, cheems_player_cheems_char_img_slot_b, cheems_player_cheems_char_img_slot_c, cheems_player_cheems_char_img_slot_d, cheems_player_cheems_char_img_slot_e
         global cheems_apply_to_party1_button, cheems_apply_to_party2_button, cheems_delete_team_button
+        global cheems_meme_dog_image_slot
 
         try:
             cheems_window.kill()
@@ -2259,6 +2377,13 @@ if __name__ == "__main__":
                                             container=cheems_window)
         cheems_delete_team_button.hide()
 
+        # When None is selected, the right side is empty and lack beauty. To fix this, we show the image of the 
+        # actual meme dog cheems
+
+        cheems_meme_dog_image_slot = pygame_gui.elements.UIImage(pygame.Rect((438, 90), (322, 322)), 
+                                                                 pygame.Surface((322, 322)), ui_manager, 
+                                                                 container=cheems_window)
+        cheems_meme_dog_image_slot.set_image(images_item["406cheems"])
 
 
     def apply_cheems_to_party(party: int):
@@ -2358,6 +2483,10 @@ if __name__ == "__main__":
             cheems_response_label.set_text("Team name cannot be empty.")
             return None
 
+        if team_name == "None":
+            cheems_response_label.set_text("Team name cannot be None.")
+            return None
+
         if team_name in player.cheems:
             cheems_response_label.set_text(f"Team name {team_name} already exists.")
             return None
@@ -2370,7 +2499,6 @@ if __name__ == "__main__":
 
         player.cheems[team_name] = party
         cheems_response_label.set_text(f"Team saved.")
-        print(player.cheems)
 
         # Update the cheems selection menu
         cheems_show_player_cheems_selection_menu.kill()
@@ -2379,7 +2507,54 @@ if __name__ == "__main__":
                                                                 pygame.Rect((400, 50), (400, 35)),
                                                                 ui_manager,
                                                                 container=cheems_window)
+        cheems_player_cheems_member_label.set_text("")
+        img_slots = [cheems_player_cheems_char_img_slot_a, cheems_player_cheems_char_img_slot_b, 
+        cheems_player_cheems_char_img_slot_c, cheems_player_cheems_char_img_slot_d, cheems_player_cheems_char_img_slot_e]
+        for i in img_slots:
+            i.set_image(images_item["405"])
+        cheems_apply_to_party1_button.hide()
+        cheems_apply_to_party2_button.hide()
+        cheems_delete_team_button.hide()
+        cheems_meme_dog_image_slot.show()         
 
+
+    def delete_cheems_team(team_name: str):
+        """
+        Delete a team from player.cheems.
+        """
+        global player, text_box, cheems_show_player_cheems_selection_menu
+        # player must be a subclass of Nine
+        assert player is not None
+        assert isinstance(player, Nine)
+        assert cheems_response_label is not None
+
+        if team_name == "None":
+            cheems_response_label.set_text("Select a team to delete.")
+            return None
+
+        if team_name not in player.cheems:
+            cheems_response_label.set_text(f"Team name {team_name} does not exist.")
+            return None
+
+        del player.cheems[team_name]
+        cheems_response_label.set_text(f"Team {team_name} deleted.")
+
+        # Update the cheems selection menu
+        cheems_show_player_cheems_selection_menu.kill()
+        cheems_show_player_cheems_selection_menu = pygame_gui.elements.UIDropDownMenu(["None"] + get_player_cheems_team_names(player),
+                                                                "None",
+                                                                pygame.Rect((400, 50), (400, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        cheems_player_cheems_member_label.set_text("")
+        img_slots = [cheems_player_cheems_char_img_slot_a, cheems_player_cheems_char_img_slot_b, 
+        cheems_player_cheems_char_img_slot_c, cheems_player_cheems_char_img_slot_d, cheems_player_cheems_char_img_slot_e]
+        for i in img_slots:
+            i.set_image(images_item["405"])
+        cheems_apply_to_party1_button.hide()
+        cheems_apply_to_party2_button.hide()
+        cheems_delete_team_button.hide()
+        cheems_meme_dog_image_slot.show()
 
 
     def get_player_cheems_team_names(player: Nine) -> list[str]:
@@ -2389,13 +2564,6 @@ if __name__ == "__main__":
         assert player is not None
         assert isinstance(player, Nine)
         return list(player.cheems.keys())
-
-
-
-
-
-
-
 
 
     # =====================================
@@ -3066,8 +3234,21 @@ if __name__ == "__main__":
         # party1_edited and party2_edited are list of character names
 
         # guardrail: same character cannot appear twice on the field
-        if len(set(party1_edited + party2_edited)) != 10:
-            cheems_response_label.set_text("Same character cannot appear twice!")
+        # if len(set(party1_edited + party2_edited)) != 10:
+        #     cheems_response_label.set_text("Same character cannot appear twice!")
+        #     return
+
+        character_counts = {}
+        for character in party1_edited + party2_edited:
+            if character in character_counts:
+                character_counts[character] += 1
+            else:
+                character_counts[character] = 1
+
+        duplicates = [character for character, count in character_counts.items() if count > 1]
+
+        if duplicates:
+            cheems_response_label.set_text(f"Same character cannot appear twice! Duplicates: {', '.join(duplicates)}")
             return
 
         for i, n in enumerate(party1_edited):
@@ -3687,7 +3868,7 @@ if __name__ == "__main__":
     text_box_introduction_text += "If lower cased item_name.jpg or png file is not found in ./image/item directory, 404.png will be used instead.\n"
     text_box_introduction_text += "If lower cased monster_original_name.jpg or png file is not found in ./image/monster directory, 404.png will be used instead.\n"
     text_box_introduction_text += "Hover over character image to show attributes.\n"
-    text_box_introduction_text += "Hover over character health bar to show status effects.\n"
+    text_box_introduction_text += "Hover over character status effect indicator to show status effects.\n"
     text_box.set_text(text_box_introduction_text)
 
     box_submenu_previous_stage_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((300, 560), (75, 35)),
@@ -3819,10 +4000,10 @@ if __name__ == "__main__":
     shop_select_a_shop.add_options(extra_shop_list)
 
 
-    shop_shop_introduction_sign = pygame_gui.elements.UIImage(pygame.Rect((815, 500), (35, 35)),
-                                        pygame.Surface((35, 35)),
-                                        ui_manager)
-    shop_shop_introduction_sign.set_image(images_item["info_sign"])
+    # shop_shop_introduction_sign = pygame_gui.elements.UIImage(pygame.Rect((815, 500), (35, 35)),
+    #                                     pygame.Surface((35, 35)),
+    #                                     ui_manager)
+    # shop_shop_introduction_sign.set_image(images_item["info_sign"])
     shop_refresh_items_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((524, 500), (100, 35)),
                                                                     text='Refresh',
                                                                     manager=ui_manager)
@@ -3838,12 +4019,31 @@ if __name__ == "__main__":
                             shop_image_slot_currency_icon, shop_price_labela, shop_price_labelb, shop_price_labelc, shop_price_labeld, shop_price_labele,
                             shop_price_discount_labela, shop_price_discount_labelb, shop_price_discount_labelc, shop_price_discount_labeld, shop_price_discount_labele,
                             shop_item_purchase_buttona, shop_item_purchase_buttonb, shop_item_purchase_buttonc, shop_item_purchase_buttond, shop_item_purchase_buttone,
-                            shop_select_a_shop, shop_shop_introduction_sign, shop_refresh_items_button, shop_player_owned_currency_icon,
+                            shop_select_a_shop, shop_refresh_items_button, shop_player_owned_currency_icon,
                             shop_player_owned_currency]
     for m in all_shop_ui_modules:
         m.hide()
 
     def redraw_ui_shop_edition(reload_shop: bool = True) -> shop.Shop:
+
+        # translate
+        if global_vars.language == "日本語":
+            shop_refresh_items_button.set_text("商品更新")
+            shop_player_owned_currency.set_tooltip("所有通貨。店によって使える通貨が異なる場合がある。", delay=0.1)
+            shop_item_purchase_buttona.set_text("購入")
+            shop_item_purchase_buttonb.set_text("購入")
+            shop_item_purchase_buttonc.set_text("購入")
+            shop_item_purchase_buttond.set_text("購入")
+            shop_item_purchase_buttone.set_text("購入")
+        elif global_vars.language == "English":
+            shop_refresh_items_button.set_text("Refresh")
+            shop_player_owned_currency.set_tooltip("Owned currency. Different shops may accept different currency.", delay=0.1)
+            shop_item_purchase_buttona.set_text("Purchase")
+            shop_item_purchase_buttonb.set_text("Purchase")
+            shop_item_purchase_buttonc.set_text("Purchase")
+            shop_item_purchase_buttond.set_text("Purchase")
+            shop_item_purchase_buttone.set_text("Purchase")
+
 
         if reload_shop:
             # we first need to get what shop it is
@@ -3888,7 +4088,7 @@ if __name__ == "__main__":
         # shop_player_owned_currency.set_text(str(player.get_cash()))
         set_currency_on_icon_and_label(player, shop_instance.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
 
-        shop_shop_introduction_sign.set_tooltip(shop_instance.description, delay=0.1, wrap_width=300)
+        # shop_shop_introduction_sign.set_tooltip(shop_instance.description, delay=0.1, wrap_width=300)
 
         image_slots = [shop_image_slota, shop_image_slotb, shop_image_slotc, shop_image_slotd, shop_image_slote]
         # Code here is copyed from Nine() class
@@ -4023,13 +4223,14 @@ if __name__ == "__main__":
         adventure_mode_current_stage = 1
     adventure_mode_generate_stage()
 
-
-    # party1 = []
     party1 : list[Character] = []
     party2 : list[Character] = []
     party1, party2 = set_up_characters(is_start_of_app=True)
     player.build_inventory_slots()
     turn = 1
+
+    change_theme(player.settings_theme, reload_language=False)
+    swap_language(player.settings_language)
 
     auto_battle_active = False
     auto_battle_bar_progress = 0
@@ -4258,6 +4459,8 @@ if __name__ == "__main__":
                     apply_cheems_to_party(1)
                 if event.ui_element == cheems_apply_to_party2_button:
                     apply_cheems_to_party(2)
+                if event.ui_element == cheems_delete_team_button:
+                    delete_cheems_team(cheems_show_player_cheems_selection_menu.selected_option[0])
 
 
             if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
@@ -4310,6 +4513,10 @@ if __name__ == "__main__":
                     global_vars.cheap_inventory_filter_eqset = cheap_inventory_filter_eqset_selection_menu.selected_option[0]
                 if event.ui_element == language_selection_menu:
                     swap_language()
+                    try:
+                        settings_window.kill()
+                    except Exception as e:
+                        pass
                 if event.ui_element == shop_select_a_shop:
                     the_shop = redraw_ui_shop_edition()
                 if event.ui_element == theme_selection_menu:
@@ -4413,7 +4620,7 @@ if __name__ == "__main__":
                                     actual_character = c
                                     break
                             try:
-                                img_slots[i].set_image(character.featured_image)
+                                img_slots[i].set_image(actual_character.featured_image)
                             except Exception:
                                 img_slots[i].set_image(images_item["404"])
 
@@ -4421,13 +4628,15 @@ if __name__ == "__main__":
                         cheems_apply_to_party1_button.show()
                         cheems_apply_to_party2_button.show()
                         cheems_delete_team_button.show()
+                        cheems_meme_dog_image_slot.hide()
                     else:
                         cheems_player_cheems_member_label.set_text("")
                         for i in img_slots:
                             i.set_image(images_item["405"])
                         cheems_apply_to_party1_button.hide()
                         cheems_apply_to_party2_button.hide()
-                        cheems_delete_team_button.hide()                              
+                        cheems_delete_team_button.hide()
+                        cheems_meme_dog_image_slot.show()                              
 
 
             ui_manager_lower.process_events(event)
