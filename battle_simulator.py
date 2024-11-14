@@ -1276,6 +1276,52 @@ if __name__ == "__main__":
     # Character Section
     # =====================================
 
+    character_window = None
+
+    def build_character_window():
+        global character_window
+        try:
+            character_window.kill()
+        except Exception as e:
+            pass
+
+        character_window = pygame_gui.elements.UIWindow(pygame.Rect((500, 300), (300, 100)),
+                                            ui_manager,
+                                            window_display_title="Characters",
+                                            object_id="#characters_window",
+                                            resizable=False)
+
+        # For now, simply show this feature is not planned yet.
+
+        cw_warning_label = pygame_gui.elements.UILabel(pygame.Rect((10, 10), (280, 35)),
+                                        "Implementation is not planned.",
+                                        ui_manager,
+                                        container=character_window)
+
+
+
+    app_about_window = None
+
+    def build_about_window():
+        global app_about_window
+        try:
+            app_about_window.kill()
+        except Exception as e:
+            pass
+
+        app_about_window = pygame_gui.elements.UIWindow(pygame.Rect((500, 300), (300, 100)),
+                                            ui_manager,
+                                            window_display_title="About",
+                                            object_id="#about_window",
+                                            resizable=False)
+
+
+        aw_warning_label = pygame_gui.elements.UILabel(pygame.Rect((10, 10), (280, 35)),
+                                        "App by Rokafox.",
+                                        ui_manager,
+                                        container=app_about_window)
+
+
     def use_item(how_many_times: int = 1):
         # Nine.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Equip|Consumable|Item)})}
         # get all selected items
@@ -2217,6 +2263,31 @@ if __name__ == "__main__":
                                             object_id="#cheems_window",
                                             resizable=False)
 
+        def local_translate(s: str) -> str:
+            if global_vars.language == "English":
+                return s
+            elif global_vars.language == "日本語":
+                match s:
+                    case "Update Party Members":
+                        return "パーティーメンバー更新"
+                    case "Save Party 1":
+                        return "パーティ1保存"
+                    case "Save Party 2":
+                        return "パーティ2保存"
+                    case "Enter a team name:":
+                        return "チーム名を入力:"
+                    case "Apply to Party 1":
+                        return "パーティ1適用"
+                    case "Apply to Party 2":
+                        return "パーティ2適用"
+                    case "Delete Team":
+                        return "チーム削除"
+                    case _:
+                        return s
+                    
+            else:
+                raise ValueError(f"Unknown language: {global_vars.language}")
+
         # cheems (teams) window allows editing characters from party 1 and party 2
         # on the left side, label party 1, then 5 selection menus for party 1, on middle, label party 2, then 5 selection menus for party 2
         # right side is reserved for later use
@@ -2301,23 +2372,23 @@ if __name__ == "__main__":
                                                                 container=cheems_window)
 
         cheems_update_party_members_button = pygame_gui.elements.UIButton(pygame.Rect((10, 260), (380, 50)),
-                                            "Update Party Members",
+                                            local_translate("Update Party Members"),
                                             ui_manager,
                                             container=cheems_window)
 
         cheems_create_new_team_name_entry = pygame_gui.elements.UITextEntryLine(pygame.Rect((10, 320), (380, 35)),
                                             ui_manager,
                                             container=cheems_window,
-                                            placeholder_text="Enter a team name:")
+                                            placeholder_text=local_translate("Enter a team name:"))
         # cheems_create_new_team_name_entry.get_text()
 
         cheems_save_party1_button = pygame_gui.elements.UIButton(pygame.Rect((10, 365), (180, 50)),
-                                            text="Save Party 1",
+                                            text=local_translate("Save Party 1"),
                                             manager=ui_manager,
                                             container=cheems_window)
 
         cheems_save_party2_button = pygame_gui.elements.UIButton(pygame.Rect((210, 365), (180, 50)),
-                                            text="Save Party 2",
+                                            text=local_translate("Save Party 2"),
                                             manager=ui_manager,
                                             container=cheems_window)
 
@@ -2359,20 +2430,20 @@ if __name__ == "__main__":
 
         # Button to apply the selected team to party 1 or party 2
         cheems_apply_to_party1_button = pygame_gui.elements.UIButton(pygame.Rect((400, 210), (190, 35)),
-                                            text="Apply to Party 1",
+                                            text=local_translate("Apply to Party 1"),
                                             manager=ui_manager,
                                             container=cheems_window)
         cheems_apply_to_party1_button.hide()
 
         cheems_apply_to_party2_button = pygame_gui.elements.UIButton(pygame.Rect((600, 210), (190, 35)),
-                                            text="Apply to Party 2",
+                                            text=local_translate("Apply to Party 2"),
                                             manager=ui_manager,
                                             container=cheems_window)
         cheems_apply_to_party2_button.hide()
 
         # Button to delete the selected team
         cheems_delete_team_button = pygame_gui.elements.UIButton(pygame.Rect((400, 260), (390, 50)),
-                                            text="Delete Team",
+                                            text=local_translate("Delete Team"),
                                             manager=ui_manager,
                                             container=cheems_window)
         cheems_delete_team_button.hide()
@@ -3063,7 +3134,7 @@ if __name__ == "__main__":
 
             
     def restart_battle():
-        global turn, auto_battle_active
+        global turn, auto_battle_active, plot_damage_d_chart, plot_damage_r_chart, plot_healing_chart
         global_vars.turn_info_string = ""
         for character in party1 + party2:
             character.reset_stats()
@@ -3105,12 +3176,6 @@ if __name__ == "__main__":
                                                                 character_selection_menu_pos,
                                                                 ui_manager)
 
-        # if remaining_characters_show_in_menu:
-        #     reserve_character_selection_menu.kill()
-        #     reserve_character_selection_menu = pygame_gui.elements.UIDropDownMenu(remaining_characters_show_in_menu,
-        #                                                             remaining_characters_show_in_menu[0],
-        #                                                             pygame.Rect((900, 400), (156, 35)),
-        #                                                             ui_manager)
 
     def set_up_characters(is_start_of_app=False, reset_party1: bool = True, reset_party2: bool = True):
         global character_selection_menu, reserve_character_selection_menu, all_characters, party2, party1, text_box
@@ -3185,40 +3250,6 @@ if __name__ == "__main__":
         return party1, party2
 
 
-    # def replace_character_with_reserve_member(character_name, new_character_name):
-    #     global party1, party2, all_characters, character_selection_menu, reserve_character_selection_menu, current_game_mode
-    #     def replace_in_party(party):
-    #         for i, character in enumerate(party):
-    #             if character.name == character_name:
-    #                 new_character = next((char for char in all_characters if char.name == new_character_name), None)
-    #                 if new_character:
-    #                     party[i] = new_character
-    #                     return True, new_character, i
-    #         return False, None, 0
-    #     replaced, new_character, nci = replace_in_party(party1)
-    #     if not replaced:
-    #         replaced, new_character, nci = replace_in_party(party2)
-    #         nci += len(party1) # New character index
-    #     if current_game_mode == "Adventure Mode":
-    #         remaining_characters = [character for character in all_characters if character not in party1]
-    #         remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
-    #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-    #         remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
-
-    #         handle_UIDropDownMenu(party1_show_in_menu, remaining_characters_show_in_menu, nci)
-    #     elif current_game_mode == "Training Mode":
-    #         remaining_characters = [character for character in all_characters if character not in itertools.chain(party1, party2)]
-    #         remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
-    #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-    #         remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
-    #         handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu, nci)
-    #     else:
-    #         raise Exception(f"Unknown game mode: {current_game_mode} in replace_character_with_reserve_member()")
-    #     text_box.set_text("=====================================\n")
-    #     text_box.append_html_text(f"{character_name} has been replaced with {new_character_name}.\n")
-    #     restart_battle()
-    #     redraw_ui(party1, party2)
-
     def cheems_edit_party():
         global cheems_response_label
         # selection menus in cheems_window gives the user the ability to edit the party
@@ -3260,18 +3291,6 @@ if __name__ == "__main__":
         text_box.set_text("=====================================\n")
         restart_battle()
         redraw_ui(party1, party2)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     def add_outline_to_image(surface, outline_color, outline_thickness):
@@ -4461,6 +4480,10 @@ if __name__ == "__main__":
                     apply_cheems_to_party(2)
                 if event.ui_element == cheems_delete_team_button:
                     delete_cheems_team(cheems_show_player_cheems_selection_menu.selected_option[0])
+                if event.ui_element == button_characters:
+                    build_character_window()
+                if event.ui_element == button_about:
+                    build_about_window()
 
 
             if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
