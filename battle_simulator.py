@@ -518,7 +518,7 @@ def get_all_characters():
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
                        "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
-                       "Clarence", "Jingke", "Shuijing", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY"]
+                       "Clarence", "Jingke", "Shuijing", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -2797,9 +2797,6 @@ if __name__ == "__main__":
         shield_value_after = {character.name: character.get_shield_value() for character in itertools.chain(party1, party2)}
         shield_value_diff = {k: shield_value_after[k] - shield_value_before[k] for k in shield_value_before.keys()}
 
-        # print(shield_value_diff)
-        # {'Seth': 0, 'Air': 0, 'Yuri': 0, 'Lillia': 0, 'Cocoa': 0, 'Freya': 0, 'Fox': 0, 'Gabe': 0, 'Chei': 0, 'Luna': 0}
-
         redraw_ui(party1, party2, refill_image=True, main_char=the_chosen_one, 
                   buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
                   shield_value_diff_dict=shield_value_diff, redraw_eq_slots=False, also_draw_chart=False,
@@ -3163,7 +3160,7 @@ if __name__ == "__main__":
         return False
 
 
-    def handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu, di=0):
+    def update_character_selection_menu(party_show_in_menu, di=0):
         """
         remaining_characters_show_in_menu: Can be None, if so, it is not being rebuilt
         di: Default option index
@@ -3209,7 +3206,7 @@ if __name__ == "__main__":
 
         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
         remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
-        handle_UIDropDownMenu(party_show_in_menu, remaining_characters_show_in_menu)
+        update_character_selection_menu(party_show_in_menu)
 
         global_vars.turn_info_string = ""
         reset_ally_enemy_attr(party1, party2)
@@ -3235,7 +3232,7 @@ if __name__ == "__main__":
         remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
         remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
-        handle_UIDropDownMenu(party1_show_in_menu, remaining_characters_show_in_menu)
+        update_character_selection_menu(party1_show_in_menu)
 
         global_vars.turn_info_string = ""
         reset_ally_enemy_attr(party1, party2)
@@ -3291,6 +3288,12 @@ if __name__ == "__main__":
         text_box.set_text("=====================================\n")
         restart_battle()
         redraw_ui(party1, party2)
+        if current_game_mode == "Adventure Mode":
+            party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+            update_character_selection_menu(party1_show_in_menu)
+        elif current_game_mode == "Training Mode":
+            party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+            update_character_selection_menu(party_show_in_menu)
 
 
     def add_outline_to_image(surface, outline_color, outline_thickness):
@@ -4277,60 +4280,60 @@ if __name__ == "__main__":
                 # if image_slot1.get_abs_rect().collidepoint(event.pos):
                 #     if current_game_mode == "Training Mode":
                 #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         handle_UIDropDownMenu(party_show_in_menu, None, 0)
+                #         update_character_selection_menu(party_show_in_menu, None, 0)
                 #     elif current_game_mode == "Adventure Mode":
                 #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                #         handle_UIDropDownMenu(party1_show_in_menu, None, 0)
+                #         update_character_selection_menu(party1_show_in_menu, None, 0)
                 # if image_slot2.get_abs_rect().collidepoint(event.pos):
                 #     if current_game_mode == "Training Mode":
                 #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         handle_UIDropDownMenu(party_show_in_menu, None, 1)
+                #         update_character_selection_menu(party_show_in_menu, None, 1)
                 #     elif current_game_mode == "Adventure Mode":
                 #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                #         handle_UIDropDownMenu(party1_show_in_menu, None, 1)
+                #         update_character_selection_menu(party1_show_in_menu, None, 1)
                 # if image_slot3.get_abs_rect().collidepoint(event.pos):
                 #     if current_game_mode == "Training Mode":
                 #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         handle_UIDropDownMenu(party_show_in_menu, None, 2)
+                #         update_character_selection_menu(party_show_in_menu, None, 2)
                 #     elif current_game_mode == "Adventure Mode":
                 #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                #         handle_UIDropDownMenu(party1_show_in_menu, None, 2)
+                #         update_character_selection_menu(party1_show_in_menu, None, 2)
                 # if image_slot4.get_abs_rect().collidepoint(event.pos):
                 #     if current_game_mode == "Training Mode":
                 #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         handle_UIDropDownMenu(party_show_in_menu, None, 3)
+                #         update_character_selection_menu(party_show_in_menu, None, 3)
                 #     elif current_game_mode == "Adventure Mode":
                 #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                #         handle_UIDropDownMenu(party1_show_in_menu, None, 3)
+                #         update_character_selection_menu(party1_show_in_menu, None, 3)
                 # if image_slot5.get_abs_rect().collidepoint(event.pos):
                 #     if current_game_mode == "Training Mode":
                 #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         handle_UIDropDownMenu(party_show_in_menu, None, 4)
+                #         update_character_selection_menu(party_show_in_menu, None, 4)
                 #     elif current_game_mode == "Adventure Mode":
                 #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                #         handle_UIDropDownMenu(party1_show_in_menu, None, 4)
+                #         update_character_selection_menu(party1_show_in_menu, None, 4)
                 # if image_slot6.get_abs_rect().collidepoint(event.pos):
                 #     if current_game_mode == "Training Mode":
                 #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         handle_UIDropDownMenu(party_show_in_menu, None, 5)
+                #         update_character_selection_menu(party_show_in_menu, None, 5)
                 # if image_slot7.get_abs_rect().collidepoint(event.pos):
                 #     if current_game_mode == "Training Mode":
                 #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         handle_UIDropDownMenu(party_show_in_menu, None, 6)
+                #         update_character_selection_menu(party_show_in_menu, None, 6)
                 # if image_slot8.get_abs_rect().collidepoint(event.pos):
                 #     if current_game_mode == "Training Mode":
                 #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         handle_UIDropDownMenu(party_show_in_menu, None, 7)
+                #         update_character_selection_menu(party_show_in_menu, None, 7)
                 # if image_slot9.get_abs_rect().collidepoint(event.pos):
                 #     if current_game_mode == "Training Mode":
                 #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         handle_UIDropDownMenu(party_show_in_menu, None, 8)
+                #         update_character_selection_menu(party_show_in_menu, None, 8)
                 # # This is only a temporary solution, we should consider changing layering of UI elements
                 # # if image_slot10.get_abs_rect().collidepoint(event.pos) and not reserve_character_selection_menu.are_contents_hovered():
                 # if image_slot10.get_abs_rect().collidepoint(event.pos):
                 #     if current_game_mode == "Training Mode":
                 #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         handle_UIDropDownMenu(party_show_in_menu, None, 9)
+                #         update_character_selection_menu(party_show_in_menu, None, 9)
 
                 for ui_image, rect in player.dict_image_slots_rects.items():
                     if rect.collidepoint(event.pos):

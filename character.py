@@ -6422,6 +6422,59 @@ class Joe(Character):
             self.skill3_used = True
 
 
+class Zyl(Character):
+    """
+    Higher dmg at low hp percentage
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Zyl"
+        self.skill1_description = "Attack enemy of highest hp with 285% atk 3 times."
+        self.skill2_description = "Attack 3 closest enemy with 230% atk 2 times, each attack has 50% chance to inflict Gravity Loss for 20 turns." \
+        " Gravity Loss: defense and critdef reduced by 20%."
+        self.skill3_description = "When attacking, damage dealt is increased by the percentage of hp lost."
+        self.skill1_description_jp = "HPが最も高い敵に攻撃力の285%で3回攻撃する。"
+        self.skill2_description_jp = "最も近い敵3体に攻撃力の230%で2回攻撃し、各攻撃には50%の確率で20ターンの間「重力喪失」を付与する。重力喪失：防御力とクリティカル防御が20%減少する。"
+        self.skill3_description_jp = "攻撃時、失ったHPの割合に応じて与えるダメージが増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        def dmg_amplify(char, target, dmg):
+            lost_hp_percentage = (char.maxhp - char.hp) / char.maxhp
+            global_vars.turn_info_string += f"Damage increased by {lost_hp_percentage * 100}% due to lost hp.\n"
+            return dmg * (1 + lost_hp_percentage)
+
+        damage_dealt = self.attack(multiplier=2.85, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy",
+                                   func_damage_step=dmg_amplify)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def dmg_amplify(char, target, dmg):
+            lost_hp_percentage = (char.maxhp - char.hp) / char.maxhp
+            global_vars.turn_info_string += f"Damage increased by {lost_hp_percentage * 100}% due to lost hp.\n"
+            return dmg * (1 + lost_hp_percentage)
+        
+        def gravity_loss_effect(self, target: Character):
+            if random.random() < 0.50:
+                target.apply_effect(StatsEffect("Gravity Loss", 20, False, {"defense": 0.80, "critdef": -0.20}))
+        damage_dealt = self.attack(multiplier=2.3, repeat=2, target_kw1="n_enemy_in_front", target_kw2="3",
+                                   func_damage_step=dmg_amplify, func_after_dmg=gravity_loss_effect)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def dmg_amplify(char, target, dmg):
+            lost_hp_percentage = (char.maxhp - char.hp) / char.maxhp
+            global_vars.turn_info_string += f"Damage increased by {lost_hp_percentage * 100}% due to lost hp.\n"
+            return dmg * (1 + lost_hp_percentage)
+        damage_dealt = self.attack(func_damage_step=dmg_amplify)
+        return damage_dealt
+
+
 class Jerry(Character):
     """
     Sleep
