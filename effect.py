@@ -31,6 +31,7 @@ class Effect:
         self.is_protected_effect = False
         self.original_duration = duration
         self.already_applied = False
+        self.is_reserved_effect = False
     
     def is_permanent(self):
         return self.duration == -1
@@ -215,6 +216,81 @@ class Effect:
         else:
             return "説明なし。"
 
+
+
+class ReservedEffect(Effect):
+    """
+    This effect utilizes apply_effect_on_expire() method to trigger a reserved effect or other events.
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, effect_applier ,effect_to_apply=None,
+                 heal_hp=0, take_damage=0, take_status_damage=0, heal_hp_percentage=0, take_bypass_damage=0,
+                 event_function=None, event_description=None, event_description_jp=None):
+        super().__init__(name, duration, is_buff, cc_immunity)
+        self.is_reserved_effect = True
+        self.effect_applier = effect_applier
+        self.effect_to_apply = effect_to_apply
+        self.heal_hp = heal_hp
+        self.take_damage = take_damage
+        self.take_status_damage = take_status_damage
+        self.heal_hp_percentage = heal_hp_percentage
+        self.take_bypass_damage = take_bypass_damage
+        self.event_function = event_function
+        self.event_description = event_description
+        self.event_description_jp = event_description_jp
+        
+    def apply_effect_on_expire(self, character):
+        if character.is_dead():
+            return
+        if self.effect_to_apply:
+            character.apply_effect(self.effect_to_apply)
+        if self.heal_hp > 0:
+            character.heal_hp(self.heal_hp, self.effect_applier)
+        if self.take_damage > 0:
+            character.take_damage(self.take_damage, None)
+        if self.take_status_damage > 0:
+            character.take_status_damage(self.take_status_damage, None)
+        if self.heal_hp_percentage > 0:
+            character.heal_hp(character.maxhp * self.heal_hp_percentage, self.effect_applier)
+        if self.take_bypass_damage > 0:
+            character.take_bypass_damage(self.take_bypass_damage, None)
+        if self.event_function:
+            self.event_function(character)
+
+    def tooltip_description(self):
+        s = "When this effect expires: "
+        if self.effect_to_apply:
+            s += f"Apply effect: {self.effect_to_apply.name}. "
+        if self.heal_hp > 0:
+            s += f"Heal {self.heal_hp} HP. "
+        if self.take_damage > 0:
+            s += f"Take {self.take_damage} damage. "
+        if self.take_status_damage > 0:
+            s += f"Take {self.take_status_damage} status damage. "
+        if self.heal_hp_percentage > 0:
+            s += f"Heal {self.heal_hp_percentage*100}% of max HP. "
+        if self.take_bypass_damage > 0:
+            s += f"Take {self.take_bypass_damage} bypass damage. "
+        if self.event_description:
+            s += self.event_description
+        return s
+
+    def tooltip_description_jp(self):
+        s = "この効果が終了すると:"
+        if self.effect_to_apply:
+            s += f"{self.effect_to_apply.name}効果を適用される。"
+        if self.heal_hp > 0:
+            s += f"{self.heal_hp}HPを回復される。"
+        if self.take_damage > 0:
+            s += f"{self.take_damage}ダメージを受ける。"
+        if self.take_status_damage > 0:
+            s += f"{self.take_status_damage}状態異常ダメージを受ける。"
+        if self.heal_hp_percentage > 0:
+            s += f"{self.heal_hp_percentage * 100}%HPを回復される。"
+        if self.take_bypass_damage > 0:
+            s += f"{self.take_bypass_damage}状態異常無視ダメージを受ける。"
+        if self.event_description_jp:
+            s += self.event_description_jp
+        return s
 
 
 # =========================================================

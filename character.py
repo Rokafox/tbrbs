@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -6647,8 +6647,63 @@ class QimonNY(Character):
             e.apply_effect(di)
 
 
+class Fred(Character):
+    """
+    Support nearby allies with shield, remove debuff, set at 30% hp
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Fred"
+        self.skill1_description = "Target 1 neighbor ally of highest atk, that ally takes status damage equal to 70% of their current hp," \
+        " apply a Shield that absorbs damage equal to 100% of the damage dealt. For 20 turns, that ally gains 30% atk and 30% speed," \
+        " 20 turns later, hp is recovered by the damage taken."
+        self.skill2_description = "Target 1 neighbor ally of highest atk, remove all active debuffs, apply a shield that absorbs damage equal to" \
+        " 10% of their lost hp. For each debuff removed, shield value increases by 10% of their lost hp."
+        self.skill3_description = "At start of battle, target the neighbor ally of highest atk, that ally gains 20% atk."
+        self.skill1_description_jp = "隣接する攻撃力が最も高い味方1人を対象とし、その味方に現在のHPの70%分の状態異常ダメージを与える。同時に、そのダメージ量の100%に相当するダメージを吸収するシールドを付与する。その味方は20ターンの間、攻撃力が30%増加し、速度が30%増加する。20ターン後、与えたダメージ分のHPが回復する。"
+        self.skill2_description_jp = "隣接する攻撃力が最も高い味方1人を対象とし、その味方の全てのアクティブなデバフを解除する。同時に、失ったHPの10%分のダメージを吸収するシールドを付与する。解除したデバフ1つにつき、シールド値が失ったHPの10%分増加する。"
+        self.skill3_description_jp = "戦闘開始時、隣接する攻撃力が最も高い味方1人を対象とし、その味方の攻撃力を20%増加させる。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
+    def skill1_logic(self):
+        neighbor = self.get_neighbor_allies_not_including_self()
+        if not neighbor:
+            return 0
+        target: Character = max(neighbor, key=lambda x: x.atk)
+        target_hp_prev = target.hp
+        target.take_status_damage(target.hp * 0.70, None)
+        target_hp_current = target.hp
+        if target_hp_prev - target_hp_current > 0 and target.is_alive():
+            shield = AbsorptionShield("Shield", -1, True, target_hp_prev - target_hp_current, False)
+            target.apply_effect(shield)
+            target.apply_effect(StatsEffect("Injected", 20, True, {"atk": 1.30, "spd": 1.30}))
+            target.apply_effect(ReservedEffect("Recovery", 20, True, False, self, heal_hp=target_hp_prev - target_hp_current))
+        return 0
 
+    def skill2_logic(self):
+        neighbor = self.get_neighbor_allies_not_including_self()
+        if not neighbor:
+            return 0
+        target: Character = max(neighbor, key=lambda x: x.atk)
+        removed_debuffs = target.remove_random_amount_of_debuffs(999, False)
+        target_lost_hp = target.maxhp - target.hp
+        shield_value = target_lost_hp * 0.10 + target_lost_hp * 0.10 * len(removed_debuffs)
+        if target.is_alive() and shield_value > 0:
+            shield = AbsorptionShield("Shield", -1, True, shield_value, False)
+            target.apply_effect(shield)
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        neighbor = self.get_neighbor_allies_not_including_self()
+        if not neighbor:
+            raise Exception("No neighbor found at start of battle?")
+        target: Character = max(neighbor, key=lambda x: x.atk)
+        target.apply_effect(StatsEffect("Boosted", -1, True, {"atk": 1.20}))
 
 
 

@@ -217,10 +217,10 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
             # Can help identifying debuffs mistakenly applied as buffs
             for character in itertools.chain(party1, party2):
                 if not character.debuffs:
-                    if character.heal_efficiency < 0.99:
-                        raise Exception(f"{character.name} has heal efficiency less than 60%: {character.heal_efficiency * 100:.2f}% but has no debuff, likely a bug.")
-                    if character.crit < 0:
-                        raise Exception(f"{character.name} has negative crit: {character.crit * 100:.2f}%, likely a bug.")
+                    assert character.atk >= character.lvl * 5 * 0.5, f"{character.name} has atk less than {character.lvl * 5}"
+                    # just nothing too crazy
+                    assert character.heal_efficiency >= 0.99, f"{character.name} has heal efficiency less than 0.99"
+                    assert character.crit >= 0, f"{character.name} has crit less than 0"
 
 
         turn += 1
