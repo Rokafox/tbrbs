@@ -1438,7 +1438,7 @@ class FearEffect(Effect):
             return
 
     def tooltip_description(self):
-        str = "Consumed by fear.\n"
+        str = "Consumed by fear."
         if not self.stats_dict:
             return str + "Currently have no effect."
         for key, value in self.stats_dict.items():
@@ -1452,7 +1452,7 @@ class FearEffect(Effect):
         return str
     
     def tooltip_description_jp(self):
-        str = "恐怖に取り憑かれた。\n"
+        str = "恐怖に取り憑かれた。"
         if not self.stats_dict:
             return str + "現在効果なし。"
         for key, value in self.stats_dict.items():

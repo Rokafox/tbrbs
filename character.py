@@ -6756,8 +6756,49 @@ class Waldo(Character):
                 a.apply_effect(StatsEffect("Dash", -1, True, main_stats_additive_dict={"spd": delta}, can_be_removed_by_skill=False))
 
 
+class Toby(Character):
+    """
+    Waldo makes characters viable with low speed build, Tody makes characters viable with high speed build
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Toby"
+        self.skill1_description = "Attack all enemies with 280% atk, apply Race! on them for 30 turns," \
+        " Race!: When taking damage from enemy with higher speed, damage is increased by 50%." \
+        " If same effect is applied, duration is refreshed."
+        self.skill2_description = "All nearby allies gain atk equal to 40% of their speed, for 20 turns."
+        self.skill3_description = "Apply Cheering Flag to all allies at start of battle." \
+        " Cheering Flag: Speed is increased by 10%."
+        self.skill1_description_jp = "全ての敵に攻撃力の280%で攻撃し、30ターンの間「レース！」を付与する。レース！：速度が高い敵からダメージを受けると、受けるダメージが50%増加する。同じ効果が再度付与された場合、持続時間が更新される。"
+        self.skill2_description_jp = "隣接する全ての味方の攻撃力を、自身の速度の40%分増加させる。この効果は20ターン持続する。"
+        self.skill3_description_jp = "戦闘開始時に全ての味方に「応援の旗」を付与する。応援の旗：速度が10%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
+    def skill1_logic(self):
+        def race_effect(self, target: Character):
+            race = ReductionShield("Race!", 30, False, 0.5, False, requirement=lambda char, attacker: char.spd < attacker.spd,
+                                                requirement_description="taking damage from enemy with higher speed", 
+                                                requirement_description_jp="速度が高い敵からダメージを受ける時。")
+            race.apply_rule = "stack"
+            race.additional_name = "Toby_Race!"
+            target.apply_effect(race)
+        damage_dealt = self.attack(multiplier=2.8, repeat=1, target_kw1="all_enemy", func_after_dmg=race_effect)
+        return damage_dealt
 
+    def skill2_logic(self):
+        neighbors = self.get_neighbor_allies_not_including_self()
+        for a in neighbors:
+            a.apply_effect(StatsEffect("Speedy", 20, True, main_stats_additive_dict={"atk": a.spd * 0.40}))
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        for a in self.ally:
+            a.apply_effect(StatsEffect("Cheering Flag", -1, True, {"spd": 1.10}, can_be_removed_by_skill=False))
 
 
 

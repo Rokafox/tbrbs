@@ -522,7 +522,7 @@ def get_all_characters():
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
                        "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
                        "Clarence", "Jingke", "Shuijing", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl", "Fred",
-                       "Waldo",]
+                       "Waldo", "Toby",]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
