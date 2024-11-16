@@ -207,7 +207,7 @@ class Equip(Block):
                 )
             case "Tigris":
                 return (
-                    "When targeting multiple enemies, for each enemy that is missing, damage is increased by 30% for that attack or skill."
+                    "When targeting multiple enemies, for each enemy that is missing, damage is increased by 40% for that attack or skill."
                 )
             case _:
                 return ""
@@ -311,7 +311,7 @@ class Equip(Block):
                 )
             case "Tigris":
                 return (
-                    "複数の敵をターゲットにした場合、敵が1体足りないごとに、その攻撃またはスキルのダメージが30％増加する。"
+                    "複数の敵をターゲットにした場合、敵が1体足りないごとに、その攻撃またはスキルのダメージが40％増加する。"
                 )
             case _:
                 return ""

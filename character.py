@@ -580,7 +580,7 @@ class Character:
                     elif self.get_equipment_set() == "Tigris":
                         # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
                         if self.multiple_target_selection_targets_missing > 0:
-                            labyrinth_effect_damage_bonus = self.multiple_target_selection_targets_missing * 0.30
+                            labyrinth_effect_damage_bonus = self.multiple_target_selection_targets_missing * 0.40
                             final_damage *= 1 + labyrinth_effect_damage_bonus
                             global_vars.turn_info_string += f"Damage increased by {labyrinth_effect_damage_bonus * 100:.2f}% due to Tigris Set effect.\n"
                     if final_damage < 0:
