@@ -384,6 +384,10 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                     return "market_value"
                 case "BOGO":
                     return "bogo"
+                case "Attacker":
+                    return "for_attacker_value"
+                case "Support":
+                    return "for_support_value"
                 case _:
                     return s
         first = convert_for_eval(first)
@@ -397,16 +401,15 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         for item in self.inventory:
             item.rarity_order = item.get_rarity_order()
 
-        # all_possible_types = ["Weapon", "Armor", "Accessory", "Boots", "None", "Food", "Eqpackage", "Foodpackage"]
-        # item_sample = Block("Foo", "")
-        # equip_sample = Equip("Moo", "Weapon", "Common")
-        # rarity_order = dict(mit.zip_equal(item_sample.rarity_list, range(len(item_sample.rarity_list))))
-        # type_order = dict(mit.zip_equal(all_possible_types, range(len(all_possible_types))))
-        # set_order = dict(mit.zip_equal(equip_sample.eq_set_list, range(len(item_sample.eq_set_list))))
-        # level_order: just the level
-        # market_value_order: just the market_value
-        # bogo: shuffle
-        # stats: sort by any of the stats, coming from Equip() class
+        if "for_attacker_value" in [first, second, third]:
+            for item in self.inventory:
+                if isinstance(item, Equip):
+                    item.for_attacker_value = item.estimate_value_for_attacker()
+
+        if "for_support_value" in [first, second, third]:
+            for item in self.inventory:
+                if isinstance(item, Equip):
+                    item.for_support_value = item.estimate_value_for_support()
 
         try:
             eval_string = f"self.inventory.sort(key=lambda x: (getattr(x, '{first}', 0), getattr(x, '{second}', 0), getattr(x, '{third}', 0)), reverse=True)"
@@ -518,7 +521,8 @@ def get_all_characters():
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
                        "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
-                       "Clarence", "Jingke", "Shuijing", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl", "Fred"]
+                       "Clarence", "Jingke", "Shuijing", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl", "Fred",
+                       "Waldo",]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -2087,7 +2091,7 @@ if __name__ == "__main__":
                                                                 container=cheap_inventory_sort_filter_window)
         
         for selection_menu in [cheap_inventory_sort_a_selection_menu, cheap_inventory_sort_b_selection_menu, cheap_inventory_sort_c_selection_menu]:
-            selection_menu.add_options(["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc", "crit", "critdmg", "critdef", "penetration", "heal_efficiency",
+            selection_menu.add_options(["Attacker", "Support", "maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc", "crit", "critdmg", "critdef", "penetration", "heal_efficiency",
                                         "maxhp_flat", "atk_flat", "def_flat", "spd_flat"])
 
         cheap_inventory_filter_have_owner_label = pygame_gui.elements.UILabel(pygame.Rect((10, 130), (140, 35)),

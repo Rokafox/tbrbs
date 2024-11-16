@@ -25,6 +25,8 @@ class Block:
         self.can_be_stacked = True
         self.current_stack = 1
         self.max_stack = 999999 # If too high, cannot be shown on icon.
+        self.for_attacker_value = 0
+        self.for_support_value = 0
 
     def __str__(self):
         return self.name

@@ -1619,26 +1619,45 @@ class StatsEffect(Effect):
             else:
                 string += " Every turn when active,"
         if self.stats_dict:
+            # Group stats by their percentage change
+            value_to_keys = {}
             for key, value in self.stats_dict.items():
+                percentage_value = value * 100
                 if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                    string += f"{key} is scaled to {value*100:.2f}%."
+                    # Scaling stats are handled differently
+                    scaling_key = ("scaled", percentage_value)
+                    value_to_keys.setdefault(scaling_key, []).append(key)
                 else:
                     processed_key = key.replace("_", " ")
                     if value > 0:
-                        string += f"{processed_key} is increased by {value*100:.2f}%."
+                        change_key = ("increased", percentage_value)
                     else:
-                        string += f"{processed_key} is decreased by {-value*100:.2f}%."
+                        change_key = ("decreased", -percentage_value)
+                    value_to_keys.setdefault(change_key, []).append(processed_key)
+            # Construct the description
+            for (change_type, percentage_value), keys in value_to_keys.items():
+                keys_string = ", ".join(keys)
+                if change_type == "scaled":
+                    string += f"{keys_string} is scaled to {percentage_value:.2f}%."
+                else:
+                    string += f"{keys_string} is {change_type} by {percentage_value:.2f}%."
             if self.stats_dict_value_increase_when_missing_attack > 0:
-                string += f"The above stats are increased by {self.stats_dict_value_increase_when_missing_attack*100:.2f}% when attack is missing."
+                string += f" The above stats are increased by {self.stats_dict_value_increase_when_missing_attack*100:.2f}% when attack is missing."
         if self.main_stats_additive_dict:
+            # Group additive stats
+            value_to_keys = {}
             for key, value in self.main_stats_additive_dict.items():
-                if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                    if value > 0:
-                        string += f"{key} is increased by {value:.2f}."
-                    else:
-                        string += f"{key} is decreased by {value:.2f}."
+                if value > 0:
+                    change_key = ("increased", value)
+                else:
+                    change_key = ("decreased", -value)
+                value_to_keys.setdefault(change_key, []).append(key)
+            # Construct the description
+            for (change_type, value), keys in value_to_keys.items():
+                keys_string = ", ".join(keys)
+                string += f"{keys_string} is {change_type} by {value:.2f}."
         return string
-    
+
     def tooltip_description_jp(self):
         string = ""
         if self.condition is not None:
@@ -1651,28 +1670,47 @@ class StatsEffect(Effect):
             else:
                 string += "各ターンで発動中は、"
         if self.stats_dict:
+            # Group stats by their percentage change
+            value_to_keys = {}
             for key, value in self.stats_dict.items():
+                percentage_value = value * 100
+                japanese_key = self.translate_key(key)
                 if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                    japanese_key = self.translate_key(key)
-                    string += f"{japanese_key}が{value*100:.2f}%に調整される。"
+                    scaling_key = ("scaled", percentage_value)
+                    value_to_keys.setdefault(scaling_key, []).append(japanese_key)
                 else:
                     processed_key = key.replace("_", " ")
                     processed_key = self.translate_key(processed_key)
                     if value > 0:
-                        string += f"{processed_key}が{value*100:.2f}%増加する。"
+                        change_key = ("増加する", percentage_value)
                     else:
-                        string += f"{processed_key}が{-value*100:.2f}%減少する。"
+                        change_key = ("減少する", -percentage_value)
+                    value_to_keys.setdefault(change_key, []).append(processed_key)
+            # Construct the description
+            for (change_type, percentage_value), keys in value_to_keys.items():
+                keys_string = "、".join(keys)
+                if change_type == "scaled":
+                    string += f"{keys_string}が{percentage_value:.2f}%に調整される。"
+                else:
+                    string += f"{keys_string}が{percentage_value:.2f}%{change_type}。"
             if self.stats_dict_value_increase_when_missing_attack > 0:
                 string += f"攻撃が外れた時、上記のステータスが{self.stats_dict_value_increase_when_missing_attack*100:.2f}%増加する。"
         if self.main_stats_additive_dict:
+            # Group additive stats
+            value_to_keys = {}
             for key, value in self.main_stats_additive_dict.items():
                 japanese_key = self.translate_key(key)
-                if key in ["maxhp", "hp", "atk", "defense", "spd"]:
-                    if value > 0:
-                        string += f"{japanese_key}が{value:.2f}増加する。"
-                    else:
-                        string += f"{japanese_key}が{value:.2f}減少する。"
+                if value > 0:
+                    change_key = ("増加する", value)
+                else:
+                    change_key = ("減少する", -value)
+                value_to_keys.setdefault(change_key, []).append(japanese_key)
+            # Construct the description
+            for (change_type, value), keys in value_to_keys.items():
+                keys_string = "、".join(keys)
+                string += f"{keys_string}が{value:.2f}{change_type}。"
         return string
+
 
 
 # =========================================================

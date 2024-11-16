@@ -61,6 +61,9 @@ class Equip(Block):
         self.four_set_effect_description_jp = self.assign_four_set_effect_description_jp()
 
         self.owner: str | None = None
+        self.for_attacker_value = 0
+        self.for_support_value = 0
+
 
     def to_dict(self):
         return {
@@ -606,6 +609,37 @@ class Equip(Block):
             self.market_value = (base_value + base_value_b + base_value_c) * rarity_multiplier * random_multiplier
             self.market_value *= level_multiplier 
             return self.market_value
+
+    def estimate_value_for_attacker(self):
+        """
+        How much does this equipment worth for an attacker?
+        An attacker would need atk_flat, atk_percent, crit, critdmg, penetration, spd_flat, spd, acc
+        Score is decided by trial and error
+        """
+        total_score = 0
+        atk_score = (5 + self.atk_flat) * (1 + self.atk_percent) + self.atk_extra
+        spd_score = (5 + self.spd_flat) * (1 + self.spd) + self.spd_extra
+        crit_score = self.crit * 20
+        critdmg_score = self.critdmg * 20
+        penetration_score = self.penetration * 20
+        acc_score = self.acc * 20
+        total_score = atk_score + spd_score + crit_score + critdmg_score + penetration_score + acc_score
+        return total_score 
+
+    def estimate_value_for_support(self):
+        """
+        A support would need maxhp_flat, maxhp_percent, def_flat, def_percent, critdef, eva, heal_efficiency, spd_flat, spd
+        Score is decided by trial and error
+        """
+        total_score = 0
+        maxhp_score = ((5 + self.maxhp_flat) * (1 + self.maxhp_percent) + self.maxhp_extra) / 20
+        def_score = (5 + self.def_flat) * (1 + self.def_percent) + self.def_extra
+        critdef_score = self.critdef * 20
+        eva_score = self.eva * 20
+        heal_score = self.heal_efficiency * 20 * 0.5 # heal efficiency is not important
+        spd_score = (5 + self.spd_flat) * (1 + self.spd) + self.spd_extra
+        total_score = maxhp_score + def_score + critdef_score + eva_score + heal_score + spd_score
+        return total_score
 
     def print_stats(self):
         def eq_set_str():

@@ -320,7 +320,7 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
     amount_of_error = 0
 
     pairs_dict = {
-        "Fenrir": ["Taily"],
+        "Fenrir": ["Taily", "Rubin", "RubinPF"],
     }
 
     for i in range(sample):
@@ -330,6 +330,7 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
             print("Too many errors, stopping the simulation.")
             break
 
+        random.shuffle(character_list)
         party1, party2 = build_parties_with_pairs(character_list, pairs_dict)
         # print([c.name for c in party1])
 

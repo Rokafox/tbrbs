@@ -6328,14 +6328,14 @@ class Martin(Character):
         self.name = "Martin"
         self.skill1_description = "Apply Fair Trade to enemies and allies." \
         " Each enemy of lowest atk, def, speed has their selected stats increased by 20% for 20 turns." \
-        " Each ally of highest atk, def, speed has their selected stats increased by 20% for 20 turns."
+        " Each ally of highest atk, def, speed has their selected stats increased by 24% for 20 turns."
         self.skill2_description = "Attack random enemy 4 times with 240% atk, inflict Defence Break for 20 turns." \
         " Defence Break: Defence is reduced by 10%."
         self.skill3_description = "Apply Maneki-neko to all allies." \
         " Maneki-neko: When taking friendly fire damage, heal hp by the amount of damage instead and reduce damage to 0." \
         " If at full hp, apply a shield that absorbs damage equal to the damage." \
         # " Maneki-neko cannot protect against self-harm damage."
-        self.skill1_description_jp = "敵と味方に「大儲け」を付与する。攻撃力、防御力、速度が最も低い各敵の該当ステータスが20ターンの間20%増加する。攻撃力、防御力、速度が最も高い各味方の該当ステータスが20ターンの間20%増加する。"
+        self.skill1_description_jp = "敵と味方に「大儲け」を付与する。攻撃力、防御力、速度が最も低い各敵の該当ステータスが20ターンの間20%増加する。攻撃力、防御力、速度が最も高い各味方の該当ステータスが20ターンの間24%増加する。"
         self.skill2_description_jp = "ランダムな敵に攻撃力の240%で4回攻撃し、20ターンの間「防御ダウン」を付与する。防御ダウン：防御力が10%減少する。"
         self.skill3_description_jp = "全ての味方に「招き猫」を付与する。招き猫：味方からのダメージを受けた際、ダメージ量分のHPを回復し、ダメージを0に軽減する。HPが満タンの場合、そのダメージ量と同じダメージを吸収するシールドを付与する。"
         self.skill1_cooldown_max = 4
@@ -6351,9 +6351,9 @@ class Martin(Character):
         high_atk = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
         high_def = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="defense", keyword4="ally"))
         high_spd = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="spd", keyword4="ally"))
-        high_atk.apply_effect(StatsEffect("Fair Trade", 20, True, {"atk": 1.20}))
-        high_def.apply_effect(StatsEffect("Fair Trade", 20, True, {"defense": 1.20}))
-        high_spd.apply_effect(StatsEffect("Fair Trade", 20, True, {"spd": 1.20}))
+        high_atk.apply_effect(StatsEffect("Fair Trade", 20, True, {"atk": 1.24}))
+        high_def.apply_effect(StatsEffect("Fair Trade", 20, True, {"defense": 1.24}))
+        high_spd.apply_effect(StatsEffect("Fair Trade", 20, True, {"spd": 1.24}))
         return 0
 
     def skill2_logic(self):
@@ -6382,13 +6382,13 @@ class Joe(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Joe"
-        self.skill1_description = "Attack closest enemy with 225% atk 5 times."
-        self.skill2_description = "Attack enemy of highest atk with 220% atk 4 times, 40% chance to inflict Blind for 20 turns each attack." \
+        self.skill1_description = "Attack closest enemy with 230% atk 5 times."
+        self.skill2_description = "Attack enemy of highest atk with 230% atk 4 times, 40% chance to inflict Blind for 20 turns each attack." \
         " Blind: acc reduced by 40%."
         self.skill3_description = "When the first time your hp is reaches below 50%, apply Berserk and Confuse to yourself for 40 turns at end of that turn." \
         " Berserk: atk increased by 100%, final damage taken increased by 50%. Confuse: attack random ally or enemy."
-        self.skill1_description_jp = "最も近い敵に攻撃力の225%で5回攻撃する。"
-        self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の220%で4回攻撃し、各攻撃には40%の確率で20ターンの間「暗闇」を付与する。暗闇：命中率が40%減少する。"
+        self.skill1_description_jp = "最も近い敵に攻撃力の230%で5回攻撃する。"
+        self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の230%で4回攻撃し、各攻撃には40%の確率で20ターンの間「暗闇」を付与する。暗闇：命中率が40%減少する。"
         self.skill3_description_jp = "自身のHPが初めて50%未満になった時、ターン終了の時に40ターンの間「暴走」と「混乱」を自分に付与する。暴走：攻撃力が100%増加し、受ける最終ダメージが50%増加する。混乱：ランダムな味方または敵を攻撃する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
@@ -6398,14 +6398,14 @@ class Joe(Character):
         self.skill3_used = False
 
     def skill1_logic(self):
-        damage_dealt = self.attack(multiplier=2.25, repeat=5, target_kw1="enemy_in_front")
+        damage_dealt = self.attack(multiplier=2.3, repeat=5, target_kw1="enemy_in_front")
         return damage_dealt
 
     def skill2_logic(self):
         def blind_effect(self, target: Character):
             if random.random() < 0.40:
                 target.apply_effect(StatsEffect("Blind", 20, False, {"acc": -0.40}))
-        damage_dealt = self.attack(multiplier=2.2, repeat=4, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
+        damage_dealt = self.attack(multiplier=2.3, repeat=4, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
                                    func_after_dmg=blind_effect)
         return damage_dealt
 
@@ -6660,10 +6660,10 @@ class Fred(Character):
         " 20 turns later, hp is recovered by the damage taken."
         self.skill2_description = "Target 1 neighbor ally of highest atk, remove all active debuffs, apply a shield that absorbs damage equal to" \
         " 10% of their lost hp. For each debuff removed, shield value increases by 10% of their lost hp."
-        self.skill3_description = "At start of battle, target the neighbor ally of highest atk, that ally gains 20% atk."
+        self.skill3_description = "At start of battle, target the neighbor ally of highest atk, that ally gains 30% atk."
         self.skill1_description_jp = "隣接する攻撃力が最も高い味方1人を対象とし、その味方に現在のHPの70%分の状態異常ダメージを与える。同時に、そのダメージ量の100%に相当するダメージを吸収するシールドを付与する。その味方は20ターンの間、攻撃力が30%増加し、速度が30%増加する。20ターン後、与えたダメージ分のHPが回復する。"
         self.skill2_description_jp = "隣接する攻撃力が最も高い味方1人を対象とし、その味方の全てのアクティブなデバフを解除する。同時に、失ったHPの10%分のダメージを吸収するシールドを付与する。解除したデバフ1つにつき、シールド値が失ったHPの10%分増加する。"
-        self.skill3_description_jp = "戦闘開始時、隣接する攻撃力が最も高い味方1人を対象とし、その味方の攻撃力を20%増加させる。"
+        self.skill3_description_jp = "戦闘開始時、隣接する攻撃力が最も高い味方1人を対象とし、その味方の攻撃力を30%増加させる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
@@ -6678,8 +6678,9 @@ class Fred(Character):
         if target_hp_prev - target_hp_current > 0 and target.is_alive():
             shield = AbsorptionShield("Shield", -1, True, target_hp_prev - target_hp_current, False)
             target.apply_effect(shield)
-            target.apply_effect(StatsEffect("Injected", 20, True, {"atk": 1.30, "spd": 1.30}))
             target.apply_effect(ReservedEffect("Recovery", 20, True, False, self, heal_hp=target_hp_prev - target_hp_current))
+        if target.is_alive():
+            target.apply_effect(StatsEffect("Injected", 20, True, {"atk": 1.30, "spd": 1.30}))
         return 0
 
     def skill2_logic(self):
@@ -6703,7 +6704,60 @@ class Fred(Character):
         if not neighbor:
             raise Exception("No neighbor found at start of battle?")
         target: Character = max(neighbor, key=lambda x: x.atk)
-        target.apply_effect(StatsEffect("Boosted", -1, True, {"atk": 1.20}))
+        target.apply_effect(StatsEffect("Boosted", -1, True, {"atk": 1.30}, can_be_removed_by_skill=False))
+
+
+class Waldo(Character):
+    """
+    Speed Supremacy
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Waldo"
+        self.skill1_description = "Attack enemy of highest speed with 260% atk 3 times, if target has lower speed than you, damage is increased by 50%."
+        self.skill2_description = "Focus attack on closest enemy with 260% atk 3 times, if target has lower speed than you, guaranteed critical hit."
+        self.skill3_description = "At start of battle, target one enemy of 2nd highest speed, apply Dash to allies that have speed lower than that enemy," \
+        " they have their speed increased to almost match that enemy."
+        self.skill1_description_jp = "速度が最も高い敵に攻撃力の260%で3回攻撃し、対象の速度が自分より低い場合、ダメージが50%増加する。"
+        self.skill2_description_jp = "最も近い敵に攻撃力の260%で3回集中攻撃し、対象の速度が自分より低い場合、必ずクリティカルヒットする。"
+        self.skill3_description_jp = "戦闘開始時、速度が2番目に高い敵を対象に選択し、その敵より速度が低い味方に「疾走」を付与する。疾走を付与された味方は、速度がその敵とほぼ同じになるまで増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        def dmg_amplify(char, target, dmg):
+            if char.spd > target.spd:
+                global_vars.turn_info_string += f"Damage increased by 50% due to higher speed.\n"
+                return dmg * 1.50
+            return dmg
+        damage_dealt = self.attack(multiplier=2.6, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="spd", target_kw4="enemy",
+                                   func_damage_step=dmg_amplify)
+        return damage_dealt
+
+    def skill2_logic(self):
+        target = mit.one(self.target_selection(keyword="enemy_in_front"))
+        if self.spd > target.spd:
+            crit = True
+        else:
+            crit = False
+        damage_dealt = self.attack(multiplier=2.6, repeat_seq=3, target_list=[target], always_crit=crit)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        enemy = list(self.target_selection(keyword="n_highest_attr", keyword2="2", keyword3="spd", keyword4="enemy"))[-1]
+        for a in self.ally:
+            if a.spd < enemy.spd:
+                delta = enemy.spd - a.spd
+                delta = delta * (1 + random.uniform(-0.05, 0.05))
+                a.apply_effect(StatsEffect("Dash", -1, True, main_stats_additive_dict={"spd": delta}, can_be_removed_by_skill=False))
+
+
+
+
 
 
 
