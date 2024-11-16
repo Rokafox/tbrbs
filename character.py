@@ -3,15 +3,11 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
 import global_vars
-
-
-# TODO: Add a attack healer, deal damage equal to the heal amount.
-# TODO: 状態異常効果の持続時間が短かすぎて戦闘への影響が少ないので、状態異常効果の持続時間を長くする。通常のRPG戦闘の1ターンはこちの10ターンに相当する。
 
 
 class Character:
@@ -100,6 +96,7 @@ class Character:
         self.battle_turns = 0 # counts how many turns the character has been in battle
         self.number_of_take_downs: int = 0 # counts how many enemies the character has taken down
         self.have_taken_action: bool = False # whether the character has taken action in the battle
+        self.multiple_target_selection_targets_missing = 0 
 
         if self.equip:
             for item in self.equip.values():
@@ -251,6 +248,7 @@ class Character:
     def skill2_logic(self):
         pass
 
+
     def target_selection(self, keyword: str = "Undefined", keyword2: str = "Undefined", keyword3: str = "Undefined", keyword4: str = "Undefined", target_list: list | None = None) -> Generator['Character', None, None]:
         # This function is a generator
         # default : random choice of a single enemy
@@ -278,10 +276,12 @@ class Character:
             case ("n_random_enemy", n, _, _):
                 n = int(n)
                 if n >= 5:
+                    self.multiple_target_selection_targets_missing = 5 - len(self.enemy)
                     yield from self.enemy
                 else:
                     if n > len(ts_available_enemy):
                         n = len(ts_available_enemy)
+                    self.multiple_target_selection_targets_missing = n - len(ts_available_enemy)
                     yield from random.sample(ts_available_enemy, n)
 
             case ("n_random_ally", n, _, _):
@@ -290,16 +290,11 @@ class Character:
                     n = len(self.ally)
                 yield from random.sample(self.ally, n)
 
-            case ("all_enemy", _, _, _):
-                yield from ts_available_enemy
+            case ("all_enemy", _, _, _) | ("all_enemies", _, _, _):
+                self.multiple_target_selection_targets_missing = 5 - len(self.enemy)
+                yield from self.enemy
 
-            case ("all_enemies", _, _, _):
-                yield from ts_available_enemy
-
-            case ("all_ally", _, _, _):
-                yield from self.ally
-
-            case ("all_allies", _, _, _):
+            case ("all_ally", _, _, _) | ("all_allies", _, _, _):
                 yield from self.ally
 
             case ("n_random_target", n, _, _):
@@ -319,6 +314,7 @@ class Character:
                 if party == "ally":
                     yield from sorted(self.ally, key=lambda x: getattr(x, attr))[:n]
                 elif party == "enemy":
+                    self.multiple_target_selection_targets_missing = n - len(ts_available_enemy)
                     yield from sorted(ts_available_enemy, key=lambda x: getattr(x, attr))[:n]
 
             case ("n_highest_attr", n, attr, party):
@@ -326,6 +322,7 @@ class Character:
                 if party == "ally":
                     yield from sorted(self.ally, key=lambda x: getattr(x, attr), reverse=True)[:n]
                 elif party == "enemy":
+                    self.multiple_target_selection_targets_missing = n - len(ts_available_enemy)
                     yield from sorted(ts_available_enemy, key=lambda x: getattr(x, attr), reverse=True)[:n]
 
             case ("enemy_that_must_have_effect", effect_name, _, _):
@@ -368,6 +365,7 @@ class Character:
 
             case ("n_enemy_with_most_buffs", n, _, _):
                 n = int(n)
+                self.multiple_target_selection_targets_missing = n - len(ts_available_enemy)
                 yield from sorted(ts_available_enemy, key=lambda x: len([e for e in x.buffs if not e.is_set_effect and not e.duration == -1]), reverse=True)[:n]
 
             case ("enemy_in_front", _, _, _):
@@ -384,6 +382,7 @@ class Character:
             case ("n_enemy_in_front", n, _, _):
                 n = int(n)
                 if len(ts_available_enemy) <= n:
+                    self.multiple_target_selection_targets_missing = n - len(ts_available_enemy)
                     yield from ts_available_enemy
                 else:
                     neif_t_d_t = [] # list of tuples (enemy, distance to self)
@@ -395,6 +394,7 @@ class Character:
             case ("n_enemy_in_middle", n, _, _):
                 n = int(n)
                 if len(ts_available_enemy) <= n:
+                    self.multiple_target_selection_targets_missing = n - len(ts_available_enemy)
                     yield from ts_available_enemy
                 else:
                     all_windows = list(mit.windowed(ts_available_enemy, n))
@@ -416,6 +416,7 @@ class Character:
 
             case ("n_lowest_hp_percentage_enemy", n, _, _):
                 n = int(n)
+                self.multiple_target_selection_targets_missing = n - len(ts_available_enemy)
                 yield from sorted(ts_available_enemy, key=lambda x: x.hp/x.maxhp)[:n]
 
             case ("n_highest_hp_percentage_ally", n, _, _):
@@ -424,6 +425,7 @@ class Character:
 
             case ("n_highest_hp_percentage_enemy", n, _, _):
                 n = int(n)
+                self.multiple_target_selection_targets_missing = n - len(ts_available_enemy)
                 yield from sorted(ts_available_enemy, key=lambda x: x.hp/x.maxhp, reverse=True)[:n]
 
             case ("n_dead_allies", n, _, _):
@@ -436,6 +438,7 @@ class Character:
 
             case ("random_enemy_pair", _, _, _):
                 if len(ts_available_enemy) < 2:
+                    self.multiple_target_selection_targets_missing = 2 - len(ts_available_enemy)
                     yield from ts_available_enemy
                 else:
                     yield from random.choice(list(mit.pairwise(ts_available_enemy)))
@@ -448,6 +451,7 @@ class Character:
 
             case ("random_enemy_triple", _, _, _):
                 if len(ts_available_enemy) < 3:
+                    self.multiple_target_selection_targets_missing = 3 - len(ts_available_enemy)
                     yield from ts_available_enemy
                 else:
                     yield from random.choice(list(mit.triplewise(ts_available_enemy)))
@@ -573,6 +577,12 @@ class Character:
                             newspaper_effect_maxhp_diff = (target.maxhp - self.maxhp) * 0.15
                             final_damage += newspaper_effect_maxhp_diff
                             global_vars.turn_info_string += f"Damage increased by {newspaper_effect_maxhp_diff} due to Newspaper Set effect.\n"
+                    elif self.get_equipment_set() == "Tigris":
+                        # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
+                        if self.multiple_target_selection_targets_missing > 0:
+                            labyrinth_effect_damage_bonus = self.multiple_target_selection_targets_missing * 0.30
+                            final_damage *= 1 + labyrinth_effect_damage_bonus
+                            global_vars.turn_info_string += f"Damage increased by {labyrinth_effect_damage_bonus * 100:.2f}% due to Tigris Set effect.\n"
                     if final_damage < 0:
                         final_damage = 0
                     if damage_type == "normal":
@@ -600,6 +610,7 @@ class Character:
                     for eff in self.buffs.copy() + self.debuffs.copy():
                         eff.apply_effect_when_missing_attack(self, target)
 
+        self.multiple_target_selection_targets_missing = 0
         return damage_dealt
 
 
@@ -1899,6 +1910,9 @@ class Character:
             # If you haven't taken action yet in current battle, speed is increased by 100%, final damage taken is decreased by 30%
             # EquipmentSetEffect_Grassland is a subclass of StatsEffect, removes it self when the character takes action.
             self.apply_effect(EquipmentSetEffect_Grassland("Grassland Set", -1, True, {"spd": 2.00, "final_damage_taken_multipler": -0.30}))
+        elif set_name == "Tigris":
+            # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
+            self.apply_effect(EquipmentSetEffect_Tigris("Tigris Set", -1, True))
         else:
             raise Exception("Effect not implemented.")
         
@@ -6800,6 +6814,47 @@ class Toby(Character):
         for a in self.ally:
             a.apply_effect(StatsEffect("Cheering Flag", -1, True, {"spd": 1.10}, can_be_removed_by_skill=False))
 
+
+class TobyRT(Character):
+    """
+    Enables low speed build
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "TobyRT"
+        self.skill1_description = "Attack all enemies with 240% atk, apply Jump! on them for 30 turns," \
+        " Jump!: When taking damage from enemy with lower speed, damage is increased by 75%." \
+        " If same effect is applied, duration is refreshed."
+        self.skill2_description = "Attack all enemies with 320% atk."
+        self.skill3_description = "Normal attack attack all enemies."
+        self.skill1_description_jp = "全ての敵に攻撃力の240%で攻撃し、30ターンの間「ジャンプ！」を付与する。ジャンプ！：速度が低い敵からダメージを受けると、そのダメージが75%増加する。同じ効果が再度付与された場合、持続時間が更新される。"
+        self.skill2_description_jp = "全ての敵に攻撃力の320%で攻撃する。"
+        self.skill3_description_jp = "通常攻撃が全ての敵を対象にする。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        def race_effect(self, target: Character):
+            race = ReductionShield("Jump!", 30, False, 0.75, False, requirement=lambda char, attacker: char.spd > attacker.spd,
+                                                requirement_description="taking damage from enemy with lower speed", 
+                                                requirement_description_jp="速度が低い敵からダメージを受ける時。")
+            race.apply_rule = "stack"
+            race.additional_name = "TobyRT_Jump!"
+            target.apply_effect(race)
+        damage_dealt = self.attack(multiplier=2.4, repeat=1, target_kw1="all_enemy", func_after_dmg=race_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=3.2, repeat=1, target_kw1="all_enemy")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        damage_dealt = self.attack(target_kw1="all_enemy")
+        return damage_dealt
 
 
 # class NC(Character):

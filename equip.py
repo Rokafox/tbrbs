@@ -17,7 +17,7 @@ class Equip(Block):
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
                             "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987", "7891", "Freight",
-                            "Runic", "Grassland"]
+                            "Runic", "Grassland", "Tigris"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -205,6 +205,10 @@ class Equip(Block):
                     "If you haven't taken action yet in current battle, speed is increased by 100%, final damage taken is reduced by 30%." \
                     " This effect is removed after taken action."
                 )
+            case "Tigris":
+                return (
+                    "When targeting multiple enemies, for each enemy that is missing, damage is increased by 30% for that attack or skill."
+                )
             case _:
                 return ""
 
@@ -304,6 +308,10 @@ class Equip(Block):
                 return (
                     "現在のバトルでまだ行動していない場合、速度が100%増加し、最終ダメージ倍率が30%減少する。" \
                     "この効果は行動を取った後に解除される。"
+                )
+            case "Tigris":
+                return (
+                    "複数の敵をターゲットにした場合、敵が1体足りないごとに、その攻撃またはスキルのダメージが30％増加する。"
                 )
             case _:
                 return ""

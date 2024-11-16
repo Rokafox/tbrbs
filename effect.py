@@ -2703,6 +2703,18 @@ class EquipmentSetEffect_Grassland(StatsEffect):
         return super().tooltip_description_jp() + "行動を取った後、この効果が解除される。"
 
 
+# ---------------------------------------------------------
+# Tigris
+# See character.py for implementation.
+class EquipmentSetEffect_Tigris(Effect):
+    """
+    When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
+    """
+    def __init__(self, name, duration, is_buff):
+        super().__init__(name, duration, is_buff)
+        self.is_set_effect = True
+        self.sort_priority = 2000
+
 
 #---------------------------------------------------------
 # End of Equipment set effects

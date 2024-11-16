@@ -522,7 +522,7 @@ def get_all_characters():
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
                        "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
                        "Clarence", "Jingke", "Shuijing", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl", "Fred",
-                       "Waldo", "Toby",]
+                       "Waldo", "Toby", "TobyRT"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -1974,7 +1974,7 @@ if __name__ == "__main__":
                 button_cheems.set_tooltip("チーム選択画面を開く。", delay=0.1, wrap_width=300)
                 button_characters.set_text("百花繚乱")
                 button_characters.set_tooltip("キャラクター画面を開く。", delay=0.1, wrap_width=300)
-                button_about.set_text("アプリ概要")
+                button_about.set_text("洞若觀火")
                 button_about.set_tooltip("アプリ概要画面を開く。", delay=0.1, wrap_width=300)
                 character_eq_unequip_button.set_tooltip("選択したキャラクターから装備を外す。", delay=0.1, wrap_width=300)
                 character_eq_unequip_all_button.set_tooltip("選択したキャラクターからすべての装備を外す。", delay=0.1, wrap_width=300)
