@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -465,6 +465,9 @@ class Character:
             case ("Undefined_ally", _, _, _):
                 yield random.choice(self.ally)
 
+            case ("Undefined_target", _, _, _):
+                yield random.choice(self.ally + ts_available_enemy)
+
             case (_, _, _, _):
                 raise Exception(f"Keyword not found. Keyword: {keyword}, Keyword2: {keyword2}, Keyword3: {keyword3}, Keyword4: {keyword4}")
 
@@ -581,7 +584,7 @@ class Character:
                     elif self.get_equipment_set() == "Tigris":
                         # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
                         if self.multiple_target_selection_targets_missing > 0:
-                            tigris_effect_damage_bonus = self.multiple_target_selection_targets_missing * 0.80
+                            tigris_effect_damage_bonus = self.multiple_target_selection_targets_missing * 0.90
                             final_damage *= 1 + tigris_effect_damage_bonus
                             global_vars.turn_info_string += f"Damage increased by {tigris_effect_damage_bonus * 100:.2f}% due to Tigris Set effect.\n"
                     if final_damage < 0:
@@ -1910,7 +1913,7 @@ class Character:
         elif set_name == "Grassland":
             # If you haven't taken action yet in current battle, speed is increased by 100%, final damage taken is decreased by 30%
             # EquipmentSetEffect_Grassland is a subclass of StatsEffect, removes it self when the character takes action.
-            self.apply_effect(EquipmentSetEffect_Grassland("Grassland Set", -1, True, {"spd": 2.23, "final_damage_taken_multipler": -0.30}))
+            self.apply_effect(EquipmentSetEffect_Grassland("Grassland Set", -1, True, {"spd": 2.40, "final_damage_taken_multipler": -0.30}))
         elif set_name == "Tigris":
             # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
             self.apply_effect(EquipmentSetEffect_Tigris("Tigris Set", -1, True))
@@ -6397,13 +6400,13 @@ class Joe(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Joe"
-        self.skill1_description = "Attack closest enemy with 230% atk 5 times."
-        self.skill2_description = "Attack enemy of highest atk with 230% atk 4 times, 40% chance to inflict Blind for 20 turns each attack." \
+        self.skill1_description = "Attack random enemies with 230% atk 5 times."
+        self.skill2_description = "Attack random enemies with 230% atk 4 times, 40% chance to inflict Blind for 20 turns each attack." \
         " Blind: acc reduced by 40%."
         self.skill3_description = "When the first time your hp is reaches below 50%, apply Berserk and Confuse to yourself for 40 turns at end of that turn." \
         " Berserk: atk increased by 100%, final damage taken increased by 50%. Confuse: attack random ally or enemy."
-        self.skill1_description_jp = "最も近い敵に攻撃力の230%で5回攻撃する。"
-        self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の230%で4回攻撃し、各攻撃には40%の確率で20ターンの間「暗闇」を付与する。暗闇：命中率が40%減少する。"
+        self.skill1_description_jp = "ランダムな敵に攻撃力の230%で5回攻撃する。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力の230%で4回攻撃し、各攻撃には40%の確率で20ターンの間「暗闇」を付与する。暗闇：命中率が40%減少する。"
         self.skill3_description_jp = "自身のHPが初めて50%未満になった時、ターン終了の時に40ターンの間「暴走」と「混乱」を自分に付与する。暴走：攻撃力が100%増加し、受ける最終ダメージが50%増加する。混乱：ランダムな味方または敵を攻撃する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
@@ -6413,15 +6416,14 @@ class Joe(Character):
         self.skill3_used = False
 
     def skill1_logic(self):
-        damage_dealt = self.attack(multiplier=2.3, repeat=5, target_kw1="enemy_in_front")
+        damage_dealt = self.attack(multiplier=2.3, repeat=5)
         return damage_dealt
 
     def skill2_logic(self):
         def blind_effect(self, target: Character):
             if random.random() < 0.40:
                 target.apply_effect(StatsEffect("Blind", 20, False, {"acc": -0.40}))
-        damage_dealt = self.attack(multiplier=2.3, repeat=4, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
-                                   func_after_dmg=blind_effect)
+        damage_dealt = self.attack(multiplier=2.3, repeat=4, func_after_dmg=blind_effect)
         return damage_dealt
 
     def skill3(self):
@@ -6435,6 +6437,52 @@ class Joe(Character):
             self.apply_effect(berserk)
             self.apply_effect(confuse)
             self.skill3_used = True
+
+
+class Cory(Character):
+    """
+    Berserk(Increase atk but attack random ally or enemy)
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Cory"
+        self.skill1_description = "For 20 turns, apply Berserk to yourself, attack random targets with 220% atk 9 times." \
+        " Berserk: atk increased by 100%, final damage taken increased by 50%."
+        self.skill2_description = "Target yourself and neighbor allies, recover hp by 200% of your atk if not at full hp, apply a shield that absorbs" \
+        " damage equal to 200% of your atk. Afterwards, attack random targets with 220% atk 5 times."
+        self.skill3_description = "At start of battle, apply Resolve to yourself for 20 turns," \
+        " when taking normal damage that exceed your hp, damage is reduced so that it is equal to your hp minus 1."
+        self.skill1_description_jp = "20ターンの間、自身に「バーサーク」を付与し、ランダムな対象に攻撃力の220%で9回攻撃する。バーサーク：攻撃力が100%増加し、受ける最終ダメージが50%増加する。"
+        self.skill2_description_jp = "自分と隣接する味方を対象に、HPが満タンでない場合、攻撃力の200%分のHPを回復し、攻撃力の200%分のダメージを吸収するシールドを付与する。その後、ランダムな対象に攻撃力の220%で5回攻撃する。"
+        self.skill3_description_jp = "戦闘開始時、自身に20ターンの間「覚悟」を付与する。覚悟：通常ダメージが自身のHPを超えた場合、ダメージがHP-1となるように軽減される。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        berserk = StatsEffect("Berserk", 20, True, {"atk": 2.00, "final_damage_taken_multipler": 0.50})
+        berserk.additional_name = "Cory_Berserk"
+        berserk.apply_rule = "stack"
+        self.apply_effect(berserk)
+        damage_dealt = self.attack(multiplier=2.2, repeat=9, target_kw1="Undefined_target")
+        return damage_dealt
+
+    def skill2_logic(self):
+        neighbors: list[Character] = self.get_neighbor_allies_including_self()
+        for a in neighbors:
+            if a.hp < a.maxhp:
+                a.heal_hp(self.atk * 2.0, self)
+            a.apply_effect(AbsorptionShield("Shield", -1, True, self.atk * 2.0, False))
+        damage_dealt = self.attack(multiplier=2.2, repeat=5, target_kw1="Undefined_target")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        e = ResolveEffect("Resolve", 20, True, False)
+        self.apply_effect(e)
+
 
 
 class Zyl(Character):
