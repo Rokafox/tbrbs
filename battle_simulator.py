@@ -1732,6 +1732,7 @@ if __name__ == "__main__":
 
     def build_settings_window():
         global theme_selection_menu, settings_window, language_selection_menu, auto_battle_speed_selection_menu, after_auto_battle_selection_menu
+        global settings_show_battle_chart_selection_menu
         try:
             settings_window.kill()
         except Exception as e:
@@ -1752,6 +1753,8 @@ if __name__ == "__main__":
                         return "自動戦闘速度:"
                     case "After Autobattle:":
                         return "自動戦闘後の処理:"
+                    case "Draw Chart:":
+                        return "戦闘チャートの描画:"
                     case _:
                         return s
             else:
@@ -1809,6 +1812,17 @@ if __name__ == "__main__":
                                                                 ui_manager,
                                                                 container=settings_window)
 
+        settings_show_battle_graph_label = pygame_gui.elements.UILabel(pygame.Rect((10, 170), (140, 35)),
+                                            local_translate("Draw Chart:"),
+                                            ui_manager,
+                                            container=settings_window)
+        
+        settings_show_battle_chart_selection_menu = pygame_gui.elements.UIDropDownMenu(["True", "False"],
+                                                                global_vars.draw_battle_chart,
+                                                                pygame.Rect((180, 170), (156, 35)),
+                                                                ui_manager,
+                                                                container=settings_window)
+
 
 
     settings_window = None
@@ -1816,6 +1830,7 @@ if __name__ == "__main__":
     language_selection_menu = None
     auto_battle_speed_selection_menu = None
     after_auto_battle_selection_menu = None
+    settings_show_battle_chart_selection_menu = None
 
 
 
@@ -2804,9 +2819,10 @@ if __name__ == "__main__":
                 character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
                 character.record_healing_received()
 
-            create_tmp_damage_data_csv(party1, party2)
-            create_healing_data_csv(party1, party2)
-            draw_chart()
+            if global_vars.draw_battle_chart == "True":
+                create_tmp_damage_data_csv(party1, party2)
+                create_healing_data_csv(party1, party2)
+                draw_chart()
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
@@ -2864,9 +2880,10 @@ if __name__ == "__main__":
                 character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
                 character.record_healing_received() 
 
-            create_tmp_damage_data_csv(party1, party2)
-            create_healing_data_csv(party1, party2)
-            draw_chart()
+            if global_vars.draw_battle_chart == "True":
+                create_tmp_damage_data_csv(party1, party2)
+                create_healing_data_csv(party1, party2)
+                draw_chart()
 
             if not is_someone_alive(party1):
                 if current_game_mode == "Adventure Mode":
@@ -2929,18 +2946,19 @@ if __name__ == "__main__":
         for character in itertools.chain(party1, party2):
             character.status_effects_after_damage_record()
 
-        if does_anyone_taken_any_damage:
-            create_tmp_damage_data_csv(party1, party2)
-            if current_display_chart == "Damage Dealt Chart":
-                create_plot_damage_d_chart()
-            elif current_display_chart == "Damage Taken Chart":
-                create_plot_damage_r_chart()
-        if does_anyone_recieved_any_healing:
-            create_healing_data_csv(party1, party2)
-            if current_display_chart == "Healing Chart":
-                create_plot_healing_chart()
-        if does_anyone_taken_any_damage or does_anyone_recieved_any_healing:
-            draw_chart()
+        if global_vars.draw_battle_chart == "True":
+            if does_anyone_taken_any_damage:
+                create_tmp_damage_data_csv(party1, party2)
+                if current_display_chart == "Damage Dealt Chart":
+                    create_plot_damage_d_chart()
+                elif current_display_chart == "Damage Taken Chart":
+                    create_plot_damage_r_chart()
+            if does_anyone_recieved_any_healing:
+                create_healing_data_csv(party1, party2)
+                if current_display_chart == "Healing Chart":
+                    create_plot_healing_chart()
+            if does_anyone_taken_any_damage or does_anyone_recieved_any_healing:
+                draw_chart()
 
         if not is_someone_alive(party1) or not is_someone_alive(party2) or turn > 300:
             if not is_someone_alive(party1) and not is_someone_alive(party2):
@@ -3254,6 +3272,9 @@ if __name__ == "__main__":
         global_vars.turn_info_string += "Battle entry effects:\n"
         for character in party1 + party2:
             character.battle_entry_effects_activate()
+        plot_damage_d_chart = None
+        plot_damage_r_chart = None
+        plot_healing_chart = None
         redraw_ui(party1, party2, redraw_eq_slots=False)
         turn = 1
         text_box.append_html_text(global_vars.turn_info_string)
@@ -3943,7 +3964,7 @@ if __name__ == "__main__":
 
 
     def draw_chart():
-        global current_display_chart, df_damage_summary
+        global current_display_chart, df_damage_summary, plot_damage_d_chart, plot_damage_r_chart, plot_healing_chart
         match current_display_chart:
             case "Damage Dealt Chart":
                 if plot_damage_d_chart:
@@ -4642,6 +4663,11 @@ if __name__ == "__main__":
                     global_vars.autobattle_speed = auto_battle_speed_selection_menu.selected_option[0]
                 if event.ui_element == after_auto_battle_selection_menu:
                     global_vars.after_autobattle = after_auto_battle_selection_menu.selected_option[0]
+                # settings_show_battle_chart_selection_menu
+                if event.ui_element == settings_show_battle_chart_selection_menu:
+                    global_vars.draw_battle_chart = settings_show_battle_chart_selection_menu.selected_option[0]
+                    text_box.set_text("==============================\n")
+                    restart_battle()
                 if event.ui_element == cheap_inventory_sort_a_selection_menu:
                     global_vars.cheap_inventory_sort_a = cheap_inventory_sort_a_selection_menu.selected_option[0]
                 if event.ui_element == cheap_inventory_sort_b_selection_menu:

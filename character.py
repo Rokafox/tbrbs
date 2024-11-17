@@ -23,7 +23,6 @@ class Character:
         self.equip = equip
         self.image = [] if image is None else image # list of pygame.Surface
         self.initialize_stats()
-        self.calculate_equip_effect()
         self.skill1_cooldown_max = 5 
         self.skill2_cooldown_max = 5
         self.effect_immunity = [] # list of str effect names
@@ -165,22 +164,16 @@ class Character:
                 
     def calculate_equip_effect(self, resethp=True):
         if self.equip:
+            # print(self.equip)
+            # {'Weapon': <equip.Equip object at 0x79335ff22360>, 
+            # 'Armor': <equip.Equip object at 0x79331fb83e90>, 
+            # 'Accessory': <equip.Equip object at 0x79331f132030>, 
+            # 'Boots': <equip.Equip object at 0x79331f132120>}
             for item in self.equip.values():
                 self.maxhp += item.maxhp_flat
                 self.atk += item.atk_flat
                 self.defense += item.def_flat
                 self.spd += item.spd_flat
-
-                self.maxhp *= 1 + item.maxhp_percent
-                self.maxhp = int(self.maxhp)
-                self.atk *= 1 + item.atk_percent
-                self.defense *= 1 + item.def_percent
-                self.spd *= 1 + item.spd
-
-                self.maxhp += int(item.maxhp_extra)
-                self.atk += item.atk_extra
-                self.defense += item.def_extra
-                self.spd += item.spd_extra
 
                 self.eva += item.eva
                 self.acc += item.acc
@@ -189,6 +182,21 @@ class Character:
                 self.critdef += item.critdef
                 self.penetration += item.penetration
                 self.heal_efficiency += item.heal_efficiency
+
+            for item in self.equip.values():
+                self.maxhp *= 1 + item.maxhp_percent
+                self.maxhp = int(self.maxhp)
+                self.atk *= 1 + item.atk_percent
+                self.defense *= 1 + item.def_percent
+                self.spd *= 1 + item.spd
+
+            for item in self.equip.values():
+                self.maxhp += int(item.maxhp_extra)
+                self.atk += item.atk_extra
+                self.defense += item.def_extra
+                self.spd += item.spd_extra
+
+
             if resethp and self.hp < self.maxhp:
                 self.hp = self.maxhp
             if self.hp > self.maxhp:
@@ -1167,7 +1175,10 @@ class Character:
         prev = {}
         new = {}
         delta = {}
+        # print(f"Stats: {stats}")
+        # print(f"Start reversing additive stats:")
         hp_removed = self.update_main_stats_additive(reversed=True)
+        # print(f"Reversed additive stats.")
         for attr, value in stats.items():
             if attr in ["maxhp", "hp", "atk", "defense", "spd"]:
                 if reversed:
@@ -1191,7 +1202,9 @@ class Character:
             setattr(self, attr, new_value)
             new[attr] = new_value
             delta[attr] = new_value - prev[attr]
+        # print(f"Multiplive stats updated, start updating additive stats.")
         self.update_main_stats_additive()
+        # print(f"Additive stats updated.")
         self.hp = min(self.maxhp, self.hp + hp_removed)
         return prev, new, delta
 
@@ -1201,6 +1214,7 @@ class Character:
         # effect_pointer: A Effect object. If it is None, update with every records, otherwise, only update with the certain matched record.
         if not self.additive_main_stats: # No dict records
             return 0
+        hp_illegally_removed_by_this_operation = 0
         for dict_record in self.additive_main_stats:
             if effect_pointer is not None and dict_record.get('effect_pointer') != effect_pointer:
                 continue
@@ -1220,15 +1234,19 @@ class Character:
                     new_value = max(new_value, 1)
                 assert new_value >= 0, f"New value is negative: {new_value}"
                 maxhp_prev = self.maxhp
+                # print(f"maxhp_prev: {maxhp_prev}")
                 hp_prev = self.hp
+                # print(f"hp_prev: {hp_prev}")
                 setattr(self, attr, new_value)
                 self.hp = min(self.hp, self.maxhp)
+                # print(f"self.hp: {self.hp}")
                 maxhp_curr = self.maxhp
                 hp_curr = self.hp
+                # print(f"maxhp_curr: {maxhp_curr}")
                 if maxhp_curr < maxhp_prev:
-                    hp_illegally_removed_by_this_operation = hp_prev - hp_curr
+                    hp_illegally_removed_by_this_operation += hp_prev - hp_curr
                 else:
-                    hp_illegally_removed_by_this_operation = 0
+                    pass
         return hp_illegally_removed_by_this_operation
 
     def heal_hp(self, value, healer, ignore_death=False):
@@ -6904,6 +6922,17 @@ class TobyRT(Character):
     def normal_attack(self):
         damage_dealt = self.attack(target_kw1="all_enemy")
         return damage_dealt
+
+
+# TODO: penetration support character, target neighbor ally of highest atk, his penetration is increased by n%.
+
+
+
+
+
+
+
+
 
 
 # class NC(Character):

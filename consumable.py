@@ -170,7 +170,7 @@ class EquipPackage6(Consumable):
 
 
 class EquipPackageBrandSpecific(Consumable):
-    def __init__(self, stack: int, brand: str):
+    def __init__(self, stack: int, brand: str=""):
         super().__init__(f"{brand} Chest", f"Obtain 100 random {brand} equipment.")
         self.brand = brand
         self.image = "special_chest"
@@ -377,6 +377,7 @@ class Strawberry(Consumable):
         # random 0.8-1.2
         heal_amount = 150000 * random.uniform(0.8, 1.2)
         user.heal_hp(heal_amount, self)
+        # user.apply_effect(StatsEffect("Strawberry", 10, True, {"atk": 1.1}))
         return f"{user.name} healed {heal_amount} hp by {self.name}."
     
     def auto_E_condition(self, user, player):

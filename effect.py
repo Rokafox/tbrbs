@@ -1507,13 +1507,16 @@ class StatsEffect(Effect):
         self.stats_dict_value_increase_when_missing_attack = stats_dict_value_increase_when_missing_attack
 
     def apply_effect_on_apply(self, character):
+        # print(f"Applying effect {self.name} on {character.name}")
         if self.condition is None or self.condition(character):
             if self.main_stats_additive_dict:
+                # print(f"Adding main stats {self.main_stats_additive_dict} to {character.name}")
                 new_dict = {**self.main_stats_additive_dict, **{'effect_pointer': self}}
                 character.additive_main_stats.append(new_dict)
                 character.update_main_stats_additive(effect_pointer=self)
 
             if self.stats_dict:
+                # print(f"Adding stats {self.stats_dict} to {character.name}")
                 character.update_stats(self.stats_dict, reversed=False)
             self.flag_is_active = True
 
