@@ -511,6 +511,7 @@ class Character:
             raise Exception("Invalid damage_is_based_on.")
 
         damage_dealt = 0
+        self.multiple_target_selection_targets_missing = 0
         for i in range(repeat):
             if repeat > 1 and i > 0:
                 self.update_ally_and_enemy()
@@ -580,9 +581,9 @@ class Character:
                     elif self.get_equipment_set() == "Tigris":
                         # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
                         if self.multiple_target_selection_targets_missing > 0:
-                            labyrinth_effect_damage_bonus = self.multiple_target_selection_targets_missing * 0.40
-                            final_damage *= 1 + labyrinth_effect_damage_bonus
-                            global_vars.turn_info_string += f"Damage increased by {labyrinth_effect_damage_bonus * 100:.2f}% due to Tigris Set effect.\n"
+                            tigris_effect_damage_bonus = self.multiple_target_selection_targets_missing * 0.80
+                            final_damage *= 1 + tigris_effect_damage_bonus
+                            global_vars.turn_info_string += f"Damage increased by {tigris_effect_damage_bonus * 100:.2f}% due to Tigris Set effect.\n"
                     if final_damage < 0:
                         final_damage = 0
                     if damage_type == "normal":
@@ -1909,7 +1910,7 @@ class Character:
         elif set_name == "Grassland":
             # If you haven't taken action yet in current battle, speed is increased by 100%, final damage taken is decreased by 30%
             # EquipmentSetEffect_Grassland is a subclass of StatsEffect, removes it self when the character takes action.
-            self.apply_effect(EquipmentSetEffect_Grassland("Grassland Set", -1, True, {"spd": 2.00, "final_damage_taken_multipler": -0.30}))
+            self.apply_effect(EquipmentSetEffect_Grassland("Grassland Set", -1, True, {"spd": 2.23, "final_damage_taken_multipler": -0.30}))
         elif set_name == "Tigris":
             # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
             self.apply_effect(EquipmentSetEffect_Tigris("Tigris Set", -1, True))

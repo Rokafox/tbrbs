@@ -1752,6 +1752,8 @@ if __name__ == "__main__":
                         return "自動戦闘速度:"
                     case "After Autobattle:":
                         return "自動戦闘後の処理:"
+                    case _:
+                        return s
             else:
                 raise ValueError(f"Unknown language: {global_vars.language}")
 
@@ -2052,7 +2054,33 @@ if __name__ == "__main__":
         try:
             cheap_inventory_sort_filter_window.kill()
         except Exception as e:
-            print(f"Error: {e}")
+            pass
+
+        def local_translate(s: str) -> str:
+            if global_vars.language == "English":
+                return s
+            elif global_vars.language == "日本語":
+                match s:
+                    case "Confirm":
+                        return "確認"
+                    case "Sort A:":
+                        return "ソート A:"
+                    case "Sort B:":
+                        return "ソート B:"
+                    case "Sort C:":
+                        return "ソート C:"
+                    case "Has Owner:":
+                        return "所有者あり:"
+                    case "Owned By:":
+                        return "所有者:"
+                    case "Equipment Set:":
+                        return "装備セット:"
+                    case _:
+                        return s
+                    
+            else:
+                raise ValueError(f"Unknown language: {global_vars.language}")
+
         cheap_inventory_sort_filter_window = pygame_gui.elements.UIWindow(pygame.Rect((500, 300), (450, 400)),
                                                 ui_manager,
                                                 window_display_title="Sort & Filter",
@@ -2061,7 +2089,7 @@ if __name__ == "__main__":
 
         # sort has 3 selection menus, for sorting further
         cheap_inventory_sort_a_label = pygame_gui.elements.UILabel(pygame.Rect((10, 10), (140, 35)),
-                                            "Sort A:",
+                                            local_translate("Sort A:"),
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
         cheap_inventory_sort_a_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
@@ -2071,7 +2099,7 @@ if __name__ == "__main__":
                                                                 container=cheap_inventory_sort_filter_window)
 
         cheap_inventory_sort_b_label = pygame_gui.elements.UILabel(pygame.Rect((10, 50), (140, 35)),
-                                            "Sort B:",
+                                            local_translate("Sort B:"),
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
         cheap_inventory_sort_b_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
@@ -2081,7 +2109,7 @@ if __name__ == "__main__":
                                                                 container=cheap_inventory_sort_filter_window)
 
         cheap_inventory_sort_c_label = pygame_gui.elements.UILabel(pygame.Rect((10, 90), (140, 35)),
-                                            "Sort C:",
+                                            local_translate("Sort C:"),
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
         cheap_inventory_sort_c_selection_menu = pygame_gui.elements.UIDropDownMenu(["Rarity", "Type", "Set", "Level", "Market Value", "BOGO"],
@@ -2095,7 +2123,7 @@ if __name__ == "__main__":
                                         "maxhp_flat", "atk_flat", "def_flat", "spd_flat"])
 
         cheap_inventory_filter_have_owner_label = pygame_gui.elements.UILabel(pygame.Rect((10, 130), (140, 35)),
-                                            "Has Owner:",
+                                            local_translate("Has Owner:"),
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
         cheap_inventory_filter_have_owner_selection_menu = pygame_gui.elements.UIDropDownMenu(["Not Specified", "No Owner", "Has Owner"],
@@ -2105,7 +2133,7 @@ if __name__ == "__main__":
                                                                 container=cheap_inventory_sort_filter_window)
 
         cheap_inventory_filter_owned_by_char_label = pygame_gui.elements.UILabel(pygame.Rect((10, 170), (140, 35)),
-                                            "Owned By:",
+                                            local_translate("Owned By:"),
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
         
@@ -2116,7 +2144,7 @@ if __name__ == "__main__":
                                                                 container=cheap_inventory_sort_filter_window)
 
         cheap_inventory_filter_eqset_label = pygame_gui.elements.UILabel(pygame.Rect((10, 210), (140, 35)),
-                                            "Equipment Set:",
+                                            local_translate("Equipment Set:"),
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
 
@@ -2127,7 +2155,7 @@ if __name__ == "__main__":
                                                                 container=cheap_inventory_sort_filter_window)
 
         cheap_inventory_sort_filter_confirm_button = pygame_gui.elements.UIButton(pygame.Rect((10, 300), (200, 50)),
-                                            "Confirm",
+                                            local_translate("Confirm"),
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
         return None      
@@ -2565,6 +2593,12 @@ if __name__ == "__main__":
         if team_name in player.cheems:
             cheems_response_label.set_text(f"Team name {team_name} already exists.")
             return None
+
+        # if the same team combination already exists, do not save
+        for k, v in player.cheems.items():
+            if v == party:
+                cheems_response_label.set_text(f"Team {k} already has the exact same members.")
+                return None
 
         # Saving a team that contains any character that is in all_monsters_names is not allowed
         for character_name in party:

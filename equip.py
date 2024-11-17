@@ -202,12 +202,12 @@ class Equip(Block):
                 )
             case "Grassland":
                 return (
-                    "If you haven't taken action yet in current battle, speed is increased by 100%, final damage taken is reduced by 30%." \
+                    "If you haven't taken action yet in current battle, speed is increased by 123%, final damage taken is reduced by 30%." \
                     " This effect is removed after taken action."
                 )
             case "Tigris":
                 return (
-                    "When targeting multiple enemies, for each enemy that is missing, damage is increased by 40% for that attack or skill."
+                    "When targeting multiple enemies, for each enemy that is missing, damage is increased by 80% for that attack or skill."
                 )
             case _:
                 return ""
@@ -306,12 +306,12 @@ class Equip(Block):
                 )
             case "Grassland":
                 return (
-                    "現在のバトルでまだ行動していない場合、速度が100%増加し、最終ダメージ倍率が30%減少する。" \
+                    "現在のバトルでまだ行動していない場合、速度が123%増加し、最終ダメージ倍率が30%減少する。" \
                     "この効果は行動を取った後に解除される。"
                 )
             case "Tigris":
                 return (
-                    "複数の敵をターゲットにした場合、敵が1体足りないごとに、その攻撃またはスキルのダメージが40％増加する。"
+                    "複数の敵をターゲットにした場合、敵が1体足りないごとに、その攻撃またはスキルのダメージが80％増加する。"
                 )
             case _:
                 return ""
