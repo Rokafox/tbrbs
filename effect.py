@@ -2249,6 +2249,40 @@ class TauntEffect(Effect):
         return f"敵を対象とするとき、{self.marked_character.name}のみを対象とする。"
 
 
+class OverhealEffect(Effect):
+    """ 
+    trigger effect when overheal
+    """
+    def __init__(self, name, duration, is_buff, buff_applier, overheal_bonus, cc_immunity=False, 
+                        absorption_shield_ratio=0):
+        super().__init__(name, duration, is_buff)
+        self.buff_applier = buff_applier
+        self.overheal_bonus = overheal_bonus
+        self.cc_immunity = cc_immunity
+        self.absorption_shield_ratio = absorption_shield_ratio
+
+    def apply_effect_after_heal_step(self, character, heal_value, overheal_value):
+        bonus = 0
+        if overheal_value > 0:
+            bonus = overheal_value * self.overheal_bonus
+        if bonus <= 0:
+            return
+        if self.absorption_shield_ratio > 0:
+            shield_value = bonus * self.absorption_shield_ratio
+            shield_effect = AbsorptionShield("Shield", -1, True, shield_value, False)
+            character.apply_effect(shield_effect)
+
+    def tooltip_description(self):
+        s = f"When overhealing, a bonus score is calculated by {self.overheal_bonus*100:.2f}% of the overheal."
+        if self.absorption_shield_ratio > 0:
+            s += f" Gain a shield that absorbs damage equal to {self.absorption_shield_ratio*100:.2f}% of the bonus." 
+        return s
+
+    def tooltip_description_jp(self):
+        s = f"過剰回復時、ボーナススコアは過剰回復量の{self.overheal_bonus*100:.2f}%で計算される。"
+        if self.absorption_shield_ratio > 0:
+            s += f"ボーナスの{self.absorption_shield_ratio*100:.2f}%分のダメージを吸収するシールドを獲得する。"
+        return s
 
 
 # =========================================================

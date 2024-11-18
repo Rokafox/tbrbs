@@ -400,9 +400,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 50000
+        sample = 5000
     # "default", "file", "suppress"
-    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress", run_tests=False)
+    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress", run_tests=True)
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze

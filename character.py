@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -260,7 +260,6 @@ class Character:
     def target_selection(self, keyword: str = "Undefined", keyword2: str = "Undefined", keyword3: str = "Undefined", keyword4: str = "Undefined", target_list: list | None = None) -> Generator['Character', None, None]:
         # This function is a generator
         # default : random choice of a single enemy
-        # NOTE: currently, target_selection is used for all attack skills, but it should also be used for healing and others
 
         # get rid of hidden enemies
         ts_available_enemy = [enemy for enemy in self.enemy if not enemy.is_hidden()]
@@ -469,6 +468,25 @@ class Character:
                     yield from self.ally
                 else:
                     yield from random.choice(list(mit.triplewise(self.ally)))
+
+            case ("furthest_ally", _, _, _):
+                if self.ally:
+                    fat_d_t = []  # list of tuples (ally, distance to self)
+                    for fat_a in self.ally:
+                        fat_d_t.append((fat_a, abs(self.get_self_index() - fat_a.get_self_index())))
+                    fat_d_t = sorted(fat_d_t, key=lambda x: x[1], reverse=True)
+                    yield fat_d_t[0][0]
+
+            case ("n_furthest_ally", n, _, _):
+                n = int(n)
+                if self.ally:
+                    if n > len(self.ally):
+                        n = len(self.ally)
+                    nfat_d_t = []  # list of tuples (ally, distance to self)
+                    for nfat_a in self.ally:
+                        nfat_d_t.append((nfat_a, abs(self.get_self_index() - nfat_a.get_self_index())))
+                    nfat_d_t = sorted(nfat_d_t, key=lambda x: x[1], reverse=True)
+                    yield from [nfat_d_t[i][0] for i in range(n)]
 
             case ("Undefined_ally", _, _, _):
                 yield random.choice(self.ally)
@@ -6924,10 +6942,63 @@ class TobyRT(Character):
         return damage_dealt
 
 
-# TODO: penetration support character, target neighbor ally of highest atk, his penetration is increased by n%.
+class Imada(Character):
+    """
+    Far close ally support, overheal support    
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Imada"
+        self.skill1_description = "Target 1 furthest ally, that ally gains 30% atk and 60% penetration for 20 turns.," \
+        " Target 1 closest ally of highest defense, that ally gains 20% defense and 40% critdef for 20 turns." \
+        " Before applying effects, remove 2 active debuffs from the target."
+        self.skill2_description = "Apply Clear Spring to 1 furthest ally and 2 closest allies for 20 turns." \
+        " Clear Spring: Overhealing becomes absorption shield, shield value is equal to 60% of overhealing. When the same effect is applied, duration is refreshed." \
+        " After applying effects, heal the affected allies by 200% of your defense."
+        self.skill3_description = "Apply Gift of Lake to the furthest ally at start of battle." \
+        " Gift of Lake: accuracy, penetration, critrate, critdamage increased by 10%."
+        self.skill1_description_jp = "最も遠い味方1人を対象に、その味方の攻撃力を30%と貫通力を60%20ターンの間増加させる。防御力が最も高い最も近い味方1人を対象に、その味方の防御力とクリティカル防御を20ターンの間40%増加させる。効果を適用する前に、対象からアクティブなデバフを2つ解除する。"
+        self.skill2_description_jp = "最も遠い味方1人と最も近い味方2人に20ターンの間「澄んだ泉」を付与する。澄んだ泉：過剰回復分が吸収シールドとなり、そのシールドの値は過剰回復量の60%に相当する。同じ効果を適用した際、持続時間を更新される。効果を適用した後、その味方たちを防御力の200%分治療する。"
+        self.skill3_description_jp = "戦闘開始時、最も遠い味方1人に「湖の贈り物」を付与する。湖の贈り物：命中率、貫通力、クリティカル率、クリティカルダメージが10%増加する。"
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 4
 
+    def skill1_logic(self):
+        fur_ally = mit.one(self.target_selection(keyword="furthest_ally"))
+        fur_ally.remove_random_amount_of_debuffs(2, False)
+        fur_ally.apply_effect(StatsEffect("Red Wave", 20, True, {"atk": 1.30, "penetration": 0.60}))
+        neighbors: list[Character] = self.get_neighbor_allies_not_including_self()
+        if not neighbors:
+            return 0
+        neighbor_def = max(neighbors, key=lambda x: x.defense)
+        neighbor_def.remove_random_amount_of_debuffs(2, False)
+        neighbor_def.apply_effect(StatsEffect("Blue Wave", 20, True, {"defense": 1.20, "critdef": 0.40}))
+        return 0
 
+    def skill2_logic(self):
+        fur_ally = mit.one(self.target_selection(keyword="furthest_ally"))
+        neighbors = self.get_neighbor_allies_not_including_self()
+        def apply_clear_spring(char):
+            cs = OverhealEffect("Clear Spring", 20, True, self, overheal_bonus=0.60, absorption_shield_ratio=1.0)
+            cs.additional_name = "Imada_Clear_Spring"
+            cs.apply_rule = "stack"
+            char.apply_effect(cs)
+        apply_clear_spring(fur_ally)
+        self.heal(value=self.defense * 2.0, target_list=[fur_ally])
+        if not neighbors:
+            return 0
+        for a in neighbors:
+            apply_clear_spring(a)
+            self.heal(value=self.defense * 2.0, target_list=[a])
+        return 0
 
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        fur_ally = mit.one(self.target_selection(keyword="furthest_ally"))
+        fur_ally.apply_effect(StatsEffect("Gift of Lake", -1, True, {"acc": 0.10, "penetration": 0.10, "crit": 0.10, "critdmg": 0.10}, can_be_removed_by_skill=False))
 
 
 
