@@ -18,6 +18,8 @@ class Equip(Block):
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
                             "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987", "7891", "Freight",
                             "Runic", "Grassland", "Tigris"]
+        # self.eq_set_list = ["None", "Void", "Statstestatk", "Statstestdef", "Statstestspd", "Statstestmaxhp", "Statstestcrit",
+        #                     "Statstestcritdmg", "Statstesthe", "Statstestpen", "Statstesteva", "Statstestacc", "Statstestcritdef"]
         self.level = level
         self.level_max = 1000
         self.type = type
@@ -348,6 +350,8 @@ class Equip(Block):
                 # print(f"Enhancing {attr} by {multiplier}, old value: {getattr(self, attr)}, new value: {getattr(self, attr) * multiplier}")
                 setattr(self, attr, getattr(self, attr) * multiplier)
         self.estimate_market_price()
+        self.for_attacker_value = self.estimate_value_for_attacker()
+        self.for_support_value = self.estimate_value_for_support()
 
     def upgrade_stars_func(self, is_upgrade=True):
         # stars will clamp between 0 and 15
@@ -624,30 +628,89 @@ class Equip(Block):
         An attacker would need atk_flat, atk_percent, crit, critdmg, penetration, spd_flat, spd, acc
         Score is decided by trial and error
         """
+        rarity_values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.50]
+        rarity_multipliers = {rarity: value for rarity, value in zip(self.rarity_list, rarity_values)}
+        rarity_multiplier = rarity_multipliers.get(self.rarity)
+
         total_score = 0
-        atk_score = (5 + self.atk_flat) * (1 + self.atk_percent) + self.atk_extra
-        spd_score = (5 + self.spd_flat) * (1 + self.spd) + self.spd_extra
-        crit_score = self.crit * 20
-        critdmg_score = self.critdmg * 20
-        penetration_score = self.penetration * 20
-        acc_score = self.acc * 20
-        total_score = atk_score + spd_score + crit_score + critdmg_score + penetration_score + acc_score
+        atk_score = (5 + self.atk_flat * rarity_multiplier / self.level) * (1 + self.atk_percent)
+        spd_score = (5 + self.spd_flat * rarity_multiplier / self.level) * (1 + self.spd)
+        # after some testing, 100% crit is roughly worth 2.5 points of attack_score
+        # so 1% crit is worth 2.5 / 100 points = 0.025 points
+        crit_score = self.crit * 100 * 0.025
+        # 150% critdmg is worth 2.5 points of attack_score
+        # so 1% critdmg is worth 2.5 / 150 points = 0.016666666666666666 points
+        critdmg_score = self.critdmg * 100 * 0.016666666666666666
+        # penetration: 50% for 2.5
+        # so 1% penetration is worth 2.5 / 50 points = 0.05 points
+        penetration_score = self.penetration * 100 * 0.05
+        # acc: 75% for 2.5
+        # so 1% acc is worth 2.5 / 75 points = 0.03333333333333333 points
+        acc_score = self.acc * 100 * 0.03333333333333333
+        # The stats below are not important for an attacker, but still need to be calculated
+        def_score = (5 + self.def_flat * rarity_multiplier / self.level) * (1 + self.def_percent)
+        maxhp_score = (5 + self.maxhp_flat * rarity_multiplier / self.level) * (1 + self.maxhp_percent) / 20
+        # eva: 50% for 2.5
+        # so 1% eva is worth 2.5 / 50 points = 0.05 points
+        eva_score = self.eva * 100 * 0.05
+        # critdef: 150% for 2.5
+        # so 1% critdef is worth 2.5 / 150 points = 0.016666666666666666 points
+        critdef_score = self.critdef * 100 * 0.016666666666666666
+        # heal_efficiency: 150% for 2.5
+        he_score = self.heal_efficiency * 100 * 0.016666666666666666
+
+
+        attack_total_score = atk_score + spd_score + crit_score + critdmg_score + penetration_score + acc_score
+        support_total_score = def_score + maxhp_score + eva_score + critdef_score + he_score
+
+        total_score = attack_total_score + support_total_score * 0.33
+
         return total_score 
+
 
     def estimate_value_for_support(self):
         """
         A support would need maxhp_flat, maxhp_percent, def_flat, def_percent, critdef, eva, heal_efficiency, spd_flat, spd
         Score is decided by trial and error
         """
+        rarity_values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.50]
+        rarity_multipliers = {rarity: value for rarity, value in zip(self.rarity_list, rarity_values)}
+        rarity_multiplier = rarity_multipliers.get(self.rarity)
+
         total_score = 0
-        maxhp_score = ((5 + self.maxhp_flat) * (1 + self.maxhp_percent) + self.maxhp_extra) / 20
-        def_score = (5 + self.def_flat) * (1 + self.def_percent) + self.def_extra
-        critdef_score = self.critdef * 20
-        eva_score = self.eva * 20
-        heal_score = self.heal_efficiency * 20 * 0.5 # heal efficiency is not important
-        spd_score = (5 + self.spd_flat) * (1 + self.spd) + self.spd_extra
-        total_score = maxhp_score + def_score + critdef_score + eva_score + heal_score + spd_score
-        return total_score
+        atk_score = (5 + self.atk_flat * rarity_multiplier / self.level) * (1 + self.atk_percent)
+        spd_score = (5 + self.spd_flat * rarity_multiplier / self.level) * (1 + self.spd)
+        # after some testing, 100% crit is roughly worth 2.5 points of attack_score
+        # so 1% crit is worth 2.5 / 100 points = 0.025 points
+        crit_score = self.crit * 100 * 0.025
+        # 150% critdmg is worth 2.5 points of attack_score
+        # so 1% critdmg is worth 2.5 / 150 points = 0.016666666666666666 points
+        critdmg_score = self.critdmg * 100 * 0.016666666666666666
+        # penetration: 50% for 2.5
+        # so 1% penetration is worth 2.5 / 50 points = 0.05 points
+        penetration_score = self.penetration * 100 * 0.05
+        # acc: 75% for 2.5
+        # so 1% acc is worth 2.5 / 75 points = 0.03333333333333333 points
+        acc_score = self.acc * 100 * 0.03333333333333333
+        # The stats below are not important for an attacker, but still need to be calculated
+        def_score = (5 + self.def_flat * rarity_multiplier / self.level) * (1 + self.def_percent)
+        maxhp_score = (5 + self.maxhp_flat * rarity_multiplier / self.level) * (1 + self.maxhp_percent) / 20
+        # eva: 50% for 2.5
+        # so 1% eva is worth 2.5 / 50 points = 0.05 points
+        eva_score = self.eva * 100 * 0.05
+        # critdef: 150% for 2.5
+        # so 1% critdef is worth 2.5 / 150 points = 0.016666666666666666 points
+        critdef_score = self.critdef * 100 * 0.016666666666666666
+        # heal_efficiency: 150% for 2.5
+        he_score = self.heal_efficiency * 100 * 0.016666666666666666
+
+        attack_total_score = atk_score + spd_score + crit_score + critdmg_score + penetration_score + acc_score
+        support_total_score = def_score + maxhp_score + spd_score + eva_score + critdef_score + he_score
+
+        total_score = attack_total_score * 0.33 + support_total_score
+
+        return total_score 
+    
 
     def print_stats(self):
         def eq_set_str():
@@ -708,6 +771,8 @@ class Equip(Block):
         star_color = "#3746A7" # blue
         market_color = "#202d82" # blue
         owner_color = "#0e492a"
+        attacker_value_color = "#ffa500"
+        support_value_color = "#00cc84"
         star_color_purple = "#9B30FF" # purple
         star_color_red = "#FF0000" # red
         star_color_gold = "#FFD700" # gold
@@ -776,6 +841,10 @@ class Equip(Block):
             return stats
         if self.owner:
             stats += f"<font color={owner_color}>Owner: {self.owner}</font>\n"
+        if self.for_attacker_value > 0:
+            stats += f"<font color={attacker_value_color}>Attack Value: {self.for_attacker_value:.3f}</font>\n"
+        if self.for_support_value > 0:
+            stats += f"<font color={support_value_color}>Support Value: {self.for_support_value:.3f}</font>\n"
         if self.stars_rating < self.stars_rating_max:
             stats += f"<font color=#AF6E4D>Stars Enhancement Cost: {self.star_enhence_cost} </font>\n"
         else:
@@ -818,6 +887,8 @@ class Equip(Block):
         star_color = "#3746A7"  # 青
         market_color = "#202d82"  # 青
         owner_color = "#0e492a"
+        attacker_value_color = "#ffa500"
+        support_value_color = "#00cc84"
         star_color_purple = "#9B30FF"  # 紫
         star_color_red = "#FF0000"  # 赤
         star_color_gold = "#FFD700"  # 金色
@@ -891,6 +962,10 @@ class Equip(Block):
             return stats
         if self.owner:
             stats += f"<font color={owner_color}>所有: {self.owner}</font>\n"
+        if self.for_attacker_value > 0:
+            stats += f"<font color={attacker_value_color}>攻撃相性: {self.for_attacker_value:.3f}</font>\n"
+        if self.for_support_value > 0:
+            stats += f"<font color={support_value_color}>防御相性: {self.for_support_value:.3f}</font>\n"
         if self.stars_rating < self.stars_rating_max:
             stats += f"<font color=#AF6E4D>スター強化コスト: {self.star_enhence_cost} </font>\n"
         else:

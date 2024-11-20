@@ -75,6 +75,8 @@ def load_player(filename="player_data.json"):
                 item.estimate_market_price()
                 item.four_set_effect_description = item.assign_four_set_effect_description()
                 item.four_set_effect_description_jp = item.assign_four_set_effect_description_jp()
+                item.for_attacker_value = item.estimate_value_for_attacker()
+                item.for_support_value = item.estimate_value_for_support()
             case (_, "Food"): 
                 item_class = globals().get(item_data['name'])
                 if item_class:
@@ -173,6 +175,23 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         match only_include:
             case "Equip":
                 filtered_inventory = [x for x in self.inventory if isinstance(x, Equip)]
+                if global_vars.cheap_inventory_filter_have_owner == "Has Owner":
+                    filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
+                elif global_vars.cheap_inventory_filter_have_owner == "No Owner":
+                    filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
+
+                if global_vars.cheap_inventory_filter_owned_by_char not in ["Not Specified", "Currently Selected"]:
+                    filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == global_vars.cheap_inventory_filter_owned_by_char]
+                elif global_vars.cheap_inventory_filter_owned_by_char == "Currently Selected":
+                    s = character_selection_menu.selected_option[0].split(" ")[-1]
+                    filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == s]
+
+                if global_vars.cheap_inventory_filter_eqset != "Not Specified":
+                    filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == global_vars.cheap_inventory_filter_eqset]
+
+                if global_vars.cheap_inventory_filter_type != "Not Specified":
+                    filtered_inventory = [x for x in filtered_inventory if isinstance(x, Equip) and x.type == global_vars.cheap_inventory_filter_type]
+
             case "Consumable":
                 filtered_inventory = [x for x in self.inventory if isinstance(x, Consumable)]
                 # check if item have flag mark_for_removal, if so, remove it from inventory
@@ -187,19 +206,6 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         # cheap_inventory_filter_owned_by_char = "Not Specified" | "Character Name"
         # cheap_inventory_filter_eqset = "Not Specified" | "Equipment Set Name"
 
-        if global_vars.cheap_inventory_filter_have_owner == "Has Owner":
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
-        elif global_vars.cheap_inventory_filter_have_owner == "No Owner":
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
-
-        if global_vars.cheap_inventory_filter_owned_by_char not in ["Not Specified", "Currently Selected"]:
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == global_vars.cheap_inventory_filter_owned_by_char]
-        elif global_vars.cheap_inventory_filter_owned_by_char == "Currently Selected":
-            s = character_selection_menu.selected_option[0].split(" ")[-1]
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == s]
-
-        if global_vars.cheap_inventory_filter_eqset != "Not Specified":
-            filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == global_vars.cheap_inventory_filter_eqset]
 
         chunked_inventory = list(mit.chunked(filtered_inventory, 24)) # The value must equal to n argument of create_inventory_image_slots()
         max_pages = max(0, len(chunked_inventory) - 1)
@@ -254,9 +260,9 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                                 print(f"Warning: Unknown item type: {item.type} in Nine.build_inventory_slots()")
                                 ui_image.set_image(images_item["404"])
             if global_vars.language == "日本語" and hasattr(item, "print_stats_html_jp"):
-                ui_image.set_tooltip(item.print_stats_html_jp(), delay=0.1, wrap_width=300)
+                ui_image.set_tooltip(item.print_stats_html_jp(), delay=0.1, wrap_width=400)
             else:
-                ui_image.set_tooltip(item.print_stats_html(), delay=0.1, wrap_width=300)
+                ui_image.set_tooltip(item.print_stats_html(), delay=0.1, wrap_width=400)
         update_inventory_section(self)
 
     def add_to_inventory(self, item, rebuild_inventory_slots=True):
@@ -401,15 +407,15 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         for item in self.inventory:
             item.rarity_order = item.get_rarity_order()
 
-        if "for_attacker_value" in [first, second, third]:
-            for item in self.inventory:
-                if isinstance(item, Equip):
-                    item.for_attacker_value = item.estimate_value_for_attacker()
+        # if "for_attacker_value" in [first, second, third]:
+        #     for item in self.inventory:
+        #         if isinstance(item, Equip):
+        #             item.for_attacker_value = item.estimate_value_for_attacker()
 
-        if "for_support_value" in [first, second, third]:
-            for item in self.inventory:
-                if isinstance(item, Equip):
-                    item.for_support_value = item.estimate_value_for_support()
+        # if "for_support_value" in [first, second, third]:
+        #     for item in self.inventory:
+        #         if isinstance(item, Equip):
+        #             item.for_support_value = item.estimate_value_for_support()
 
         try:
             eval_string = f"self.inventory.sort(key=lambda x: (getattr(x, '{first}', 0), getattr(x, '{second}', 0), getattr(x, '{third}', 0)), reverse=True)"
@@ -1071,20 +1077,11 @@ if __name__ == "__main__":
                                         tool_tip_text = "Sell selected item.")
     eq_sell_selected_button.set_tooltip("Sell selected equipment in the inventory.", delay=0.1, wrap_width=300)
 
-    eq_sell_low_value_selection_menu = pygame_gui.elements.UIDropDownMenu(["50", "60", "70", "80", "90", "100", "120",
-                                                                           "140", "160", "180", "200", "220", "240", "260", "280", "300",
-                                                                           "320", "340", "360", "380", "400"],
-                                                            "100",
-                                                            pygame.Rect((1080, 570), (156, 35)),
-                                                            ui_manager)
-
-
-    eq_sell_low_value_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 610), (156, 35)),
-                                        text='Sell Low Value',
+    eq_mass_sell_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 570), (156, 50)),
+                                        text='Mass Sell',
                                         manager=ui_manager,
-                                        tool_tip_text = "Sell all equipment that is below the selected market value.")
-    eq_sell_low_value_button.set_tooltip("Sell equipment in inventory that is below market value.", delay=0.1, wrap_width=300)
-
+                                        tool_tip_text = "Sell equipment based on some attributes.")
+    eq_mass_sell_button.set_tooltip("Sell equipment in inventory based on some attributes.", delay=0.1, wrap_width=300)
 
     # =====================================
     # Switches on when changing cheap_inventory_what_to_show to Consumables
@@ -1545,6 +1542,7 @@ if __name__ == "__main__":
                 text_box.append_html_text(f"Can only unequip items from alive characters.\n")
                 return
 
+
     def unequip_all_items():
         text_box.set_text("==============================\n")
         if not is_in_manipulatable_game_states():
@@ -1563,6 +1561,7 @@ if __name__ == "__main__":
             elif character.name == character_selection_menu.selected_option[0].split()[-1] and not character.is_alive():
                 text_box.append_html_text(f"Can only unequip items from alive characters.\n")
                 return
+
 
     def eq_stars_upgrade(is_upgrade: bool):
         text_box.set_text("==============================\n")
@@ -1656,6 +1655,100 @@ if __name__ == "__main__":
         text_box.append_html_text(text_box_text_to_append)
 
 
+    eq_sell_window = None
+    eq_sell_window_command_line = None
+    eq_sell_window_command_result_box = None
+    eq_sell_window_submit_button = None
+
+    def build_eq_sell_window():
+        global eq_sell_window, eq_sell_window_command_line, eq_sell_window_command_result_box, eq_sell_window_submit_button
+        try:
+            eq_sell_window.kill()
+        except Exception as e:
+            pass
+
+        def local_translate(s: str) -> str:
+            if global_vars.language == "English":
+                return s
+            elif global_vars.language == "日本語":
+                match s:
+                    case "Sell Equipment":
+                        return "装備品販売"
+                    case "Carefully enter the command to filter equipment.":
+                        return "フィルターコマンドを慎重に入力してください。"
+                    case "Submit":
+                        return "確定"
+                    case "Guide":
+                        return "指南"
+                    case _:
+                        return s
+            else:
+                raise ValueError(f"Unknown language: {global_vars.language}")
+
+
+        eq_sell_window = pygame_gui.elements.UIWindow(pygame.Rect((300, 200), (500, 510)),
+                                            ui_manager,
+                                            window_display_title=local_translate("Sell Equipment"),
+                                            object_id="#eq_sell_window",
+                                            resizable=False)
+
+        eq_sell_window_command_line = pygame_gui.elements.UITextEntryLine(pygame.Rect((10, 10), (480, 35)),
+                                            ui_manager,
+                                            container=eq_sell_window,
+                                            placeholder_text=local_translate("Carefully enter the command to filter equipment."))
+        
+        eq_sell_window_submit_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((10, 50), (240, 50)),
+                                        text=local_translate("Submit"),
+                                        manager=ui_manager,
+                                        container=eq_sell_window,)
+
+        def result_box_add_guide():
+            global eq_sell_window_command_result_box
+            if global_vars.language == "English":
+                result_box_guide = "The following python code will be excuted:\n" \
+                "[x for x in player.inventory if isinstance(x, Equip) and <font color=#663399>command</font>]\n" \
+                "Example input:\n" \
+                "roka is fox\n" \
+                "This will sell all equipment, because any string is evaluated as True.\n" \
+                "x.market_value <= 200\n" \
+                "This will sell all equipment with market value less than or equal to 200.\n" \
+                "x.rarity == 'Common'\n" \
+                "This will sell all equipment with rarity Common.\n" \
+                "(x.for_attacker_value < 15 and x.for_support_value < 15)\n" \
+                "This will sell all equipment with Attacker value and Support value less than 15.\n" \
+                "x.eq_set == 'Flute'\n" \
+                "This will sell all equipment with set Flute.\n"
+                eq_sell_window_command_result_box.set_text(html_text=result_box_guide)
+            elif global_vars.language == "日本語":
+                result_box_guide = "以下のPythonコードが実行される:\n" \
+                "[x for x in player.inventory if isinstance(x, Equip) and <font color=#663399>command</font>]\n" \
+                "入力例:\n" \
+                "蘆花は狐\n" \
+                "すべての装備品を売却する。これはすべての文字列がTrueと評価されるためです。\n" \
+                "x.market_value <= 200\n" \
+                "市場価値が200以下のすべての装備品を売却する。\n" \
+                "x.rarity == 'Common'\n" \
+                "レアリティが'Common'のすべての装備品を売却する。\n" \
+                "(x.for_attacker_value < 15 and x.for_support_value < 15)\n" \
+                "攻撃相性かつ防御相性が15未満のすべての装備品を売却する。\n" \
+                "x.eq_set == 'Flute'\n" \
+                "セットが'Flute'のすべての装備品を売却する。\n"
+                eq_sell_window_command_result_box.set_text(html_text=result_box_guide)
+
+
+        eq_sell_window_show_guide_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((260, 50), (230, 50)),
+                                        text=local_translate("Guide"),
+                                        manager=ui_manager,
+                                        container=eq_sell_window,
+                                        command=result_box_add_guide)
+
+        eq_sell_window_command_result_box = pygame_gui.elements.UITextBox(html_text="",
+                                        relative_rect=pygame.Rect((10, 110), (480, 350)),
+                                        manager=ui_manager,
+                                        container=eq_sell_window,)
+
+        result_box_add_guide()
+
 
     def eq_sell_selected():
         text_box.set_text("==============================\n")
@@ -1677,19 +1770,22 @@ if __name__ == "__main__":
         player.remove_selected_item_from_inventory(True)
 
 
-    def eq_sell_low_value(sell_value_below: int):
-        # sell half of all equipment, sorted by market value
-        text_box.set_text("==============================\n")
-        eq_to_sell = [x for x in player.inventory if isinstance(x, Equip) and x.market_value <= sell_value_below]
+    def eq_sell_advanced(command: str):
+        # sell equipment according to the given command
+        try:
+            eq_to_sell = eval(f"[x for x in player.inventory if isinstance(x, Equip) and {command}]")
+        except Exception as e:
+            eq_sell_window_command_result_box.set_text(f"{e}\n")
+            return
         total_income = 0
         if not eq_to_sell:
-            text_box.append_html_text(f"No equipment below market value {sell_value_below} to sell.\n")
+            eq_sell_window_command_result_box.set_text(f"No equipment with condition {command} to sell.\n")
             return
         for eq in eq_to_sell.copy():
             total_income += int(eq.market_value)
             player.inventory.remove(eq)
         player.add_cash(total_income, False)
-        text_box.append_html_text(f"Sold {len(eq_to_sell)} equipment for {total_income} cash.\n")
+        eq_sell_window_command_result_box.set_text(f"Sold {len(eq_to_sell)} equipment for {total_income} cash.\n")
         player.build_inventory_slots()
 
 
@@ -1934,8 +2030,8 @@ if __name__ == "__main__":
                 eq_stars_upgrade_button.set_tooltip("Increase the star rank of selected equipment in inventory.", delay=0.1, wrap_width=300)
                 eq_sell_selected_button.set_text("Sell Selected")
                 eq_sell_selected_button.set_tooltip("Sell selected equipment in the inventory.", delay=0.1, wrap_width=300)
-                eq_sell_low_value_button.set_text("Sell Low Value")
-                eq_sell_low_value_button.set_tooltip("Sell equipment in inventory that is below market value.", delay=0.1, wrap_width=300)
+                eq_mass_sell_button.set_text("Mass Sell")
+                eq_mass_sell_button.set_tooltip("Sell equipment in the inventory with a custom condition.", delay=0.1, wrap_width=300)
                 item_sell_button.set_tooltip("Sell one selected item from your inventory.", delay=0.1, wrap_width=300)
                 item_sell_half_button.set_tooltip("Sell half a stack of selected items.", delay=0.1, wrap_width=300)
                 item_sell_all_button.set_tooltip("Sell all of selected items.", delay=0.1, wrap_width=300)
@@ -2004,8 +2100,8 @@ if __name__ == "__main__":
                 eq_stars_upgrade_button.set_tooltip("インベントリ内の選択した装備品のスターランクを上げる。", delay=0.1, wrap_width=300)
                 eq_sell_selected_button.set_text("指定販売")
                 eq_sell_selected_button.set_tooltip("インベントリーの中から選択した装備品を販売する。", delay=0.1, wrap_width=300)
-                eq_sell_low_value_button.set_text("一括処分")
-                eq_sell_low_value_button.set_tooltip("市場価格を下回る在庫装備品を売却する。", delay=0.1, wrap_width=300)
+                eq_mass_sell_button.set_text("一括処分")
+                eq_mass_sell_button.set_tooltip("特別な条件で装備品を大量販売する。", delay=0.1, wrap_width=300)
                 item_sell_button.set_tooltip("在庫の中から選んだアイテムを1つ売る。", delay=0.1, wrap_width=300)
                 item_sell_half_button.set_tooltip("選択したアイテムを半分ずつ売る。", delay=0.1, wrap_width=300)
                 item_sell_all_button.set_tooltip("選択したアイテムをすべて売る。", delay=0.1, wrap_width=300)
@@ -2047,6 +2143,7 @@ if __name__ == "__main__":
     cheap_inventory_filter_have_owner_selection_menu = None
     cheap_inventory_filter_owned_by_char_selection_menu = None
     cheap_inventory_filter_eqset_selection_menu = None
+    cheap_inventory_filter_type_selection_menu = None
     cheap_inventory_sort_filter_confirm_button = None
 
 
@@ -2065,6 +2162,7 @@ if __name__ == "__main__":
     def build_cheap_inventory_sort_filter_window():
         global cheap_inventory_sort_filter_window, cheap_inventory_sort_a_selection_menu, cheap_inventory_sort_b_selection_menu, cheap_inventory_sort_c_selection_menu
         global cheap_inventory_filter_have_owner_selection_menu, cheap_inventory_filter_owned_by_char_selection_menu, cheap_inventory_filter_eqset_selection_menu
+        global cheap_inventory_filter_type_selection_menu
         global cheap_inventory_sort_filter_confirm_button
         try:
             cheap_inventory_sort_filter_window.kill()
@@ -2084,19 +2182,21 @@ if __name__ == "__main__":
                         return "ソート B:"
                     case "Sort C:":
                         return "ソート C:"
-                    case "Has Owner:":
-                        return "所有:"
-                    case "Owned By:":
-                        return "所有者:"
+                    case "Equipment Has Owner:":
+                        return "装備所有:"
+                    case "Equipment Owned By:":
+                        return "装備所有者:"
                     case "Equipment Set:":
                         return "装備セット:"
+                    case "Equipment Type:":
+                        return "装備種類:"
                     case _:
                         return s
                     
             else:
                 raise ValueError(f"Unknown language: {global_vars.language}")
 
-        cheap_inventory_sort_filter_window = pygame_gui.elements.UIWindow(pygame.Rect((500, 300), (450, 400)),
+        cheap_inventory_sort_filter_window = pygame_gui.elements.UIWindow(pygame.Rect((400, 200), (450, 500)),
                                                 ui_manager,
                                                 window_display_title="Sort & Filter",
                                                 object_id="#cheap_inventory_sort_filter_window",
@@ -2138,7 +2238,7 @@ if __name__ == "__main__":
                                         "maxhp_flat", "atk_flat", "def_flat", "spd_flat"])
 
         cheap_inventory_filter_have_owner_label = pygame_gui.elements.UILabel(pygame.Rect((10, 130), (140, 35)),
-                                            local_translate("Has Owner:"),
+                                            local_translate("Equipment Has Owner:"),
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
         cheap_inventory_filter_have_owner_selection_menu = pygame_gui.elements.UIDropDownMenu(["Not Specified", "No Owner", "Has Owner"],
@@ -2148,7 +2248,7 @@ if __name__ == "__main__":
                                                                 container=cheap_inventory_sort_filter_window)
 
         cheap_inventory_filter_owned_by_char_label = pygame_gui.elements.UILabel(pygame.Rect((10, 170), (140, 35)),
-                                            local_translate("Owned By:"),
+                                            local_translate("Equipment Owned By:"),
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
         
@@ -2169,7 +2269,18 @@ if __name__ == "__main__":
                                                                 ui_manager,
                                                                 container=cheap_inventory_sort_filter_window)
 
-        cheap_inventory_sort_filter_confirm_button = pygame_gui.elements.UIButton(pygame.Rect((10, 300), (200, 50)),
+        cheap_inventory_filter_type_selection_label = pygame_gui.elements.UILabel(pygame.Rect((10, 250), (140, 35)),
+                                            local_translate("Equipment Type:"),
+                                            ui_manager,
+                                            container=cheap_inventory_sort_filter_window)
+
+        cheap_inventory_filter_type_selection_menu = pygame_gui.elements.UIDropDownMenu(["Not Specified", "Weapon", "Armor", "Accessory", "Boots"],
+                                                                global_vars.cheap_inventory_filter_type,
+                                                                pygame.Rect((180, 250), (200, 35)),
+                                                                ui_manager,
+                                                                container=cheap_inventory_sort_filter_window)
+
+        cheap_inventory_sort_filter_confirm_button = pygame_gui.elements.UIButton(pygame.Rect((10, 400), (200, 50)),
                                             local_translate("Confirm"),
                                             ui_manager,
                                             container=cheap_inventory_sort_filter_window)
@@ -2643,6 +2754,8 @@ if __name__ == "__main__":
                 return None
 
         player.cheems[team_name] = party
+        # sort by key
+        player.cheems = dict(sorted(player.cheems.items()))
         cheems_response_label.set_text(f"Team saved.")
 
         # Update the cheems selection menu
@@ -2684,6 +2797,7 @@ if __name__ == "__main__":
             return None
 
         del player.cheems[team_name]
+        player.cheems = dict(sorted(player.cheems.items()))
         cheems_response_label.set_text(f"Team {team_name} deleted.")
 
         # Update the cheems selection menu
@@ -2734,6 +2848,7 @@ if __name__ == "__main__":
             return None
 
         player.cheems[new_team_name] = player.cheems.pop(old_team_name)
+        player.cheems = dict(sorted(player.cheems.items()))
         cheems_response_label.set_text(f"Team {old_team_name} renamed to {new_team_name}.")
 
         # Update the cheems selection menu
@@ -3732,8 +3847,8 @@ if __name__ == "__main__":
 
 
 
-    damage_graph_slot = pygame_gui.elements.UIImage(pygame.Rect((1080, 650), (500, 230)),
-                                        pygame.Surface((500, 230)),
+    damage_graph_slot = pygame_gui.elements.UIImage(pygame.Rect((1080, 645), (500, 235)),
+                                        pygame.Surface((500, 235)),
                                         ui_manager)
     # ./tmp/damage_dealt.png
     damage_graph_slot.set_image((images_item["405"]))
@@ -3791,22 +3906,22 @@ if __name__ == "__main__":
 
                     if global_vars.language == "日本語":
                         if not ignore_draw_weapon:
-                            equip_slots_weapon[i].set_tooltip(character.equip["Weapon"].print_stats_html_jp(), delay=0.1, wrap_width=300)
+                            equip_slots_weapon[i].set_tooltip(character.equip["Weapon"].print_stats_html_jp(), delay=0.1, wrap_width=400)
                         if not ignore_draw_armor:
-                            equip_slots_armor[i].set_tooltip(character.equip["Armor"].print_stats_html_jp(), delay=0.1, wrap_width=300)
+                            equip_slots_armor[i].set_tooltip(character.equip["Armor"].print_stats_html_jp(), delay=0.1, wrap_width=400)
                         if not ignore_draw_accessory:
-                            equip_slots_accessory[i].set_tooltip(character.equip["Accessory"].print_stats_html_jp(), delay=0.1, wrap_width=300)
+                            equip_slots_accessory[i].set_tooltip(character.equip["Accessory"].print_stats_html_jp(), delay=0.1, wrap_width=400)
                         if not ignore_draw_boots:
-                            equip_stats_boots[i].set_tooltip(character.equip["Boots"].print_stats_html_jp(), delay=0.1, wrap_width=300)
+                            equip_stats_boots[i].set_tooltip(character.equip["Boots"].print_stats_html_jp(), delay=0.1, wrap_width=400)
                     elif global_vars.language == "English":
                         if not ignore_draw_weapon:
-                            equip_slots_weapon[i].set_tooltip(character.equip["Weapon"].print_stats_html(), delay=0.1, wrap_width=300)
+                            equip_slots_weapon[i].set_tooltip(character.equip["Weapon"].print_stats_html(), delay=0.1, wrap_width=400)
                         if not ignore_draw_armor:
-                            equip_slots_armor[i].set_tooltip(character.equip["Armor"].print_stats_html(), delay=0.1, wrap_width=300)
+                            equip_slots_armor[i].set_tooltip(character.equip["Armor"].print_stats_html(), delay=0.1, wrap_width=400)
                         if not ignore_draw_accessory:
-                            equip_slots_accessory[i].set_tooltip(character.equip["Accessory"].print_stats_html(), delay=0.1, wrap_width=300)
+                            equip_slots_accessory[i].set_tooltip(character.equip["Accessory"].print_stats_html(), delay=0.1, wrap_width=400)
                         if not ignore_draw_boots:
-                            equip_stats_boots[i].set_tooltip(character.equip["Boots"].print_stats_html(), delay=0.1, wrap_width=300)
+                            equip_stats_boots[i].set_tooltip(character.equip["Boots"].print_stats_html(), delay=0.1, wrap_width=400)
 
 
                 # This should always be redrawn
@@ -4283,9 +4398,9 @@ if __name__ == "__main__":
                                 print(f"Warning: Unknown item type: {item.type} in redraw_ui_shop_edition()")
                                 ui_image.set_image(images_item["404"])
             if global_vars.language == "日本語" and hasattr(item, "print_stats_html_jp"):
-                ui_image.set_tooltip(item.print_stats_html_jp(), delay=0.1, wrap_width=300)
+                ui_image.set_tooltip(item.print_stats_html_jp(), delay=0.1, wrap_width=400)
             else:
-                ui_image.set_tooltip(item.print_stats_html(), delay=0.1, wrap_width=300)
+                ui_image.set_tooltip(item.print_stats_html(), delay=0.1, wrap_width=400)
         # set up prices
         price_labels = [shop_price_labela, shop_price_labelb, shop_price_labelc, shop_price_labeld, shop_price_labele]
         for price_label, (p, d, f) in mit.zip_equal(price_labels, list(shop_instance.inventory.values())): 
@@ -4365,6 +4480,8 @@ if __name__ == "__main__":
                             if hasattr(item, attr):
                                 setattr(item, attr, value)
                         item.estimate_market_price()
+                        item.for_attacker_value = item.estimate_value_for_attacker()
+                        item.for_support_value = item.estimate_value_for_support()
                         item.four_set_effect_description = item.assign_four_set_effect_description()
                         item.four_set_effect_description_jp = item.assign_four_set_effect_description_jp()
                         c.equip_item(item)
@@ -4520,8 +4637,10 @@ if __name__ == "__main__":
                     eq_level_up_to_max()
                 if event.ui_element == eq_sell_selected_button:
                     eq_sell_selected()
-                if event.ui_element == eq_sell_low_value_button:
-                    eq_sell_low_value(int(eq_sell_low_value_selection_menu.selected_option[0]))
+                if event.ui_element == eq_mass_sell_button:
+                    build_eq_sell_window()
+                if event.ui_element == eq_sell_window_submit_button:
+                    eq_sell_advanced(command=eq_sell_window_command_line.get_text())
                 if event.ui_element == button_auto_battle:
                     if auto_battle_active:
                         auto_battle_active = False
@@ -4680,6 +4799,8 @@ if __name__ == "__main__":
                     global_vars.cheap_inventory_filter_owned_by_char = cheap_inventory_filter_owned_by_char_selection_menu.selected_option[0]
                 if event.ui_element == cheap_inventory_filter_eqset_selection_menu:
                     global_vars.cheap_inventory_filter_eqset = cheap_inventory_filter_eqset_selection_menu.selected_option[0]
+                if event.ui_element == cheap_inventory_filter_type_selection_menu:
+                    global_vars.cheap_inventory_filter_type = cheap_inventory_filter_type_selection_menu.selected_option[0]
                 if event.ui_element == language_selection_menu:
                     swap_language()
                     try:
@@ -4723,8 +4844,7 @@ if __name__ == "__main__":
                             eq_level_up_to_max_button.show()
                             eq_stars_upgrade_button.show()
                             eq_sell_selected_button.show()
-                            eq_sell_low_value_selection_menu.show()
-                            eq_sell_low_value_button.show()
+                            eq_mass_sell_button.show()
                             item_sell_button.hide()
                             item_sell_half_button.hide()
                             item_sell_all_button.hide()
@@ -4743,8 +4863,7 @@ if __name__ == "__main__":
                             eq_level_up_to_max_button.hide()
                             eq_stars_upgrade_button.hide()
                             eq_sell_selected_button.hide()
-                            eq_sell_low_value_selection_menu.hide()
-                            eq_sell_low_value_button.hide()
+                            eq_mass_sell_button.hide()
                             item_sell_button.show()
                             item_sell_half_button.show()
                             item_sell_all_button.show()
@@ -4763,8 +4882,7 @@ if __name__ == "__main__":
                             eq_level_up_to_max_button.hide()
                             eq_stars_upgrade_button.hide()
                             eq_sell_selected_button.hide()
-                            eq_sell_low_value_selection_menu.hide()
-                            eq_sell_low_value_button.hide()
+                            eq_mass_sell_button.hide()
                             item_sell_button.show()
                             item_sell_half_button.show()
                             item_sell_all_button.show()

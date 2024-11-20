@@ -27,25 +27,36 @@ class FinePrinter:
             print(*args, **kwargs)
 
 
-def get_all_characters(test_mode: int):
+def get_all_characters(test_mode: int) -> tuple[list[character.Character], str]:
     all_characters = [cls(name, 40) for name, cls in character.__dict__.items() 
                     if inspect.isclass(cls) and issubclass(cls, character.Character) and cls != character.Character]
     all_monsters = [cls(name, 40) for name, cls in monsters.__dict__.items() 
                     if inspect.isclass(cls) and issubclass(cls, character.Character) and cls != character.Character and cls != monsters.Monster]
-    print(f"All characters: {[x.name for x in all_characters]}")
-    print(f"All monsters: {[x.name for x in all_monsters]}")
+    all_characters_names = [x.name for x in all_characters]
+    all_monsters_names = [x.name for x in all_monsters]
+    print(f"All characters: {all_characters_names}")
+    print(f"All monsters: {all_monsters_names}")
 
     match (test_mode, type(test_mode)):
         case (1, int):
-            return all_characters
+            return all_characters, None
         case (2, int):
-            return all_monsters
+            return all_monsters, None
         case (3, int):
-            return all_characters + all_monsters
+            return all_characters + all_monsters, None
         case (_, str):
-            # Case of must include of certain character
-            print(f"Testing all characters and {test_mode} only")
-            return [x for x in all_characters if x.name == test_mode] + all_monsters 
+            # Case of must include of certain character or monster
+            the_character = None
+            for char in all_characters:
+                if char.name == test_mode:
+                    the_character = char
+                    return all_characters, the_character
+
+            for mons in all_monsters:
+                if mons.name == test_mode:
+                    the_character = mons
+                    return all_monsters, the_character
+            raise ValueError("Character or monster not found.")
 
 def is_someone_alive(party: list[character.Character]):
     for character in party:
@@ -309,19 +320,21 @@ def build_parties_with_pairs(character_list, pairs_dict=None):
 
 
 def calculate_winrate_for_character(sample, character_list: list[character.Character], fineprint_mode="default",
-                                    run_tests=False):
+                                    run_tests=False, character_must_include=None):
     start_time = time.time()  
-    # win_counts = {c.name: 0 for c in character_list}
-    # total_games = {c.name: 0 for c in character_list}
     turns_total = 0
     character_and_eqset_wins = []
     character_and_eqset_losses = []
     printer = FinePrinter(mode=fineprint_mode)
     amount_of_error = 0
 
-    pairs_dict = {
-        "Fenrir": ["Taily", "Rubin", "RubinPF"],
-    }
+    # Commented out in 3.5.9
+    # Some characters are paired together as this will give a better representation of their performance,
+    # but is way too complicated.
+    # NOTE: Do not delete this commented code yet.
+    # pairs_dict = {
+    #     "Fenrir": ["Taily", "Rubin", "RubinPF"],
+    # }
 
     for i in range(sample):
         # If there are too many errors, we know it is not a hardware failure or cosmic rays bit flipping
@@ -331,11 +344,15 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
             break
 
         random.shuffle(character_list)
-        party1, party2 = build_parties_with_pairs(character_list, pairs_dict)
-        # print([c.name for c in party1])
+        # party1, party2 = build_parties_with_pairs(character_list, pairs_dict)
+        party1, party2 = character_list[:5], character_list[5:10]
+        if character_must_include:
+            if character_must_include not in itertools.chain(party1, party2):
+                # pop a random guy from party1 and replace with character_must_include
+                party1.pop(random.randint(0, 4))
+                party1.append(character_must_include)
 
         for character in itertools.chain(party1, party2):
-            # total_games[character.name] += 1
             character.fineprint_mode = fineprint_mode
             character.equip_item_from_list(generate_equips_list(4, random_full_eqset=True, locked_rarity="Legendary"))
             character.reset_stats()
@@ -358,7 +375,6 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
                 current_party_info += f"{character}\n"
             
             with open("logs/error.log", "a") as f:
-                # エラーの詳細なトレースバックを記録
                 f.write(global_vars.turn_info_string + "\n" + str(e) + "\n")
                 f.write(traceback.format_exc())  # トレースバックをログファイルに書き込み
                 f.write(current_party_info + "\n\n\n\n\n")
@@ -366,20 +382,18 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
         turns_total += turns
         if winner_party is not None:
             for character in winner_party:
-                # win_counts[character.name] += 1
                 character_and_eqset_wins.append((character.name, character.eq_set))
         if loser_party is not None:
             for character in loser_party:
                 character_and_eqset_losses.append((character.name, character.eq_set))
 
-        # A simple progress bar
         try:
             if i % (sample // 100) == 0:
                 print(f"{i / sample * 100:.2f}% done, {i} out of {sample}")
         except Exception:
             pass
 
-    elapsed_time = time.time() - start_time  # Calculate the elapsed time
+    elapsed_time = time.time() - start_time
     print("=====================================")
     print(f"Elapsed time: {elapsed_time} seconds")
     print("=====================================")
@@ -400,9 +414,10 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 5000
+        sample = 12000
+    character_list, character_must_include = get_all_characters(1)
     # "default", "file", "suppress"
-    a, b = calculate_winrate_for_character(sample, get_all_characters(1), "suppress", run_tests=True)
+    a, b = calculate_winrate_for_character(sample, character_list, "suppress", run_tests=False, character_must_include=character_must_include)
     c = calculate_win_loss_rate(a, b, write_csv=True)
     try:
         import analyze

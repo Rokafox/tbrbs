@@ -2065,6 +2065,7 @@ class StingEffect(Effect):
         else:
             damage_to_take = self.value
         if damage_to_take > 0 and character.is_alive():
+            global_vars.turn_info_string += f"{character.name} will take {damage_to_take:.2f} status damage from {self.name}.\n"
             character.take_status_damage(damage_to_take, self.imposter)
 
     def apply_effect_after_status_damage_step(self, character, damage, attacker):
@@ -2075,6 +2076,7 @@ class StingEffect(Effect):
         else:
             damage_to_take = self.value_s
         if damage_to_take > 0 and character.is_alive():
+            global_vars.turn_info_string += f"{character.name} will take {damage_to_take:.2f} bypass damage from {self.name}.\n"
             character.take_bypass_status_effect_damage(damage_to_take, self.imposter)
 
     def tooltip_description(self):

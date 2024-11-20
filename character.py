@@ -541,6 +541,8 @@ class Character:
 
         damage_dealt = 0
         self.multiple_target_selection_targets_missing = 0
+        attacker_eq_set = self.get_equipment_set()
+
         for i in range(repeat):
             if repeat > 1 and i > 0:
                 self.update_ally_and_enemy()
@@ -578,7 +580,7 @@ class Character:
                     if critical:
                         final_damage = damage * (self.critdmg - target.critdef)
                         global_vars.turn_info_string += f"Critical!\n"
-                        if self.get_equipment_set() == "Runic" and self.crit > 1.0:
+                        if attacker_eq_set == "Runic" and self.crit > 1.0:
                             crit_over = self.crit - 1.0
                             global_vars.turn_info_string += f"Damage increased by {crit_over * 100:.2f}% due to Runic Set effect.\n"
                             final_damage *= 1 + crit_over
@@ -591,23 +593,23 @@ class Character:
                         final_damage = func_damage_step(self, target, final_damage)
                     for eff in self.buffs.copy() + self.debuffs.copy():
                         final_damage = eff.apply_effect_in_attack_before_damage_step(self, target, final_damage)
-                    if self.get_equipment_set() == "Rainbow":
+                    if attacker_eq_set == "Rainbow":
                         rainbow_amplifier_dict = {0: 1.60, 1: 1.35, 2: 1.10, 3: 0.85, 4: 0.60}
                         self_target_index_diff = self.get_self_index() - target.get_self_index()
                         self_target_index_diff = abs(self_target_index_diff)
                         final_damage *= rainbow_amplifier_dict[self_target_index_diff]
-                    elif self.get_equipment_set() == "Dawn":
+                    elif attacker_eq_set == "Dawn":
                         if self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active:
                             final_damage *= 2.20
                             global_vars.turn_info_string += f"Damage increased by 120% due to Dawn Set effect.\n"
                             self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active = False
-                    elif self.get_equipment_set() == "Newspaper":
+                    elif attacker_eq_set == "Newspaper":
                         # if the enemy has more maxhp then self, damage is increased by 15% of the maxhp difference.
                         if target.maxhp > self.maxhp:
                             newspaper_effect_maxhp_diff = (target.maxhp - self.maxhp) * 0.15
                             final_damage += newspaper_effect_maxhp_diff
                             global_vars.turn_info_string += f"Damage increased by {newspaper_effect_maxhp_diff} due to Newspaper Set effect.\n"
-                    elif self.get_equipment_set() == "Tigris":
+                    elif attacker_eq_set == "Tigris":
                         # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
                         if self.multiple_target_selection_targets_missing > 0:
                             tigris_effect_damage_bonus = self.multiple_target_selection_targets_missing * 0.90
@@ -625,7 +627,7 @@ class Character:
                         raise Exception("Invalid damage type.")
                     damage_dealt += final_damage
                     if target.is_dead():
-                        if self.get_equipment_set() == "Bamboo":
+                        if attacker_eq_set == "Bamboo":
                             self.get_effect_that_named("Bamboo Set", None, "EquipmentSetEffect_Bamboo").apply_effect_custom(self)
                     self.add_number_of_attacks(1)
                     if func_after_dmg is not None and self.is_alive():
@@ -647,6 +649,7 @@ class Character:
     def add_number_of_attacks(self, n):
         self.number_of_attacks += n
         if self.get_equipment_set() == "Flute" and self.number_of_attacks % 4 == 0:
+            global_vars.turn_info_string += f"Flute activated from {self.name}, all opponent will take status damage.\n"
             for e in self.enemy:
                 if e.is_alive():
                     e.take_status_damage(self.atk * 1.30, self)
@@ -1953,6 +1956,35 @@ class Character:
         elif set_name == "Tigris":
             # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
             self.apply_effect(EquipmentSetEffect_Tigris("Tigris Set", -1, True))
+
+
+        # The following are for testing how valable a stat increase is, atk 50%, crit 100%, critdmg 100%....
+        elif set_name == "Statstestatk":
+            self.apply_effect(StatsEffect("Statstest_atk", -1, True, {"atk": 1.50}, is_set_effect=True))
+        elif set_name == "Statstestdef":
+            self.apply_effect(StatsEffect("Statstest_def", -1, True, {"defense": 1.50}, is_set_effect=True))
+        elif set_name == "Statstestspd":
+            self.apply_effect(StatsEffect("Statstest_spd", -1, True, {"spd": 1.50}, is_set_effect=True))
+        # maxhp
+        elif set_name == "Statstestmaxhp":
+            self.apply_effect(StatsEffect("Statstest_maxhp", -1, True, {"maxhp": 1.50}, is_set_effect=True))
+            self.hp = self.maxhp
+        elif set_name == "Statstestcrit":
+            self.apply_effect(StatsEffect("Statstest_crit", -1, True, {"crit": 1.00}, is_set_effect=True))
+        elif set_name == "Statstestcritdmg":
+            self.apply_effect(StatsEffect("Statstest_critdmg", -1, True, {"critdmg": 1.50}, is_set_effect=True))
+        elif set_name == "Statstesthe":
+            self.apply_effect(StatsEffect("Statstest_he", -1, True, {"heal_efficiency": 1.50}, is_set_effect=True))
+        elif set_name == "Statstestcritdef":
+            self.apply_effect(StatsEffect("Statstest_critdef", -1, True, {"critdef": 1.00}, is_set_effect=True))
+        # eva, acc, penetration
+        elif set_name == "Statstesteva":
+            self.apply_effect(StatsEffect("Statstest_eva", -1, True, {"eva": 0.50}, is_set_effect=True))
+        elif set_name == "Statstestacc":
+            self.apply_effect(StatsEffect("Statstest_acc", -1, True, {"acc": 0.50}, is_set_effect=True))
+        elif set_name == "Statstestpen":
+            self.apply_effect(StatsEffect("Statstest_pen", -1, True, {"penetration": 0.50}, is_set_effect=True))
+
         else:
             raise Exception("Effect not implemented.")
         
@@ -5359,13 +5391,13 @@ class Zhen(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Zhen"
         self.skill1_description = "Attack enemy of highest atk with 240% atk 3 times, each attack has a 40% chance to Stun the target for 12 turns."
-        self.skill2_description = "Attack enemy of highest atk with 280% atk, heal all allies by 50% of damage dealt." \
+        self.skill2_description = "Attack enemy of highest atk with 300% atk, heal all allies by 50% of damage dealt." \
         " If target hp percentage is lower than 20%, 80% chance to Stun the target for 12 turns."
         self.skill3_description = "Apply Dragon Cushion on yourself. When taking normal damage from the enemy who has a stunned ally, damage taken is reduced by 60%." \
         " At start of battle, apply Shadow of Great Bird on all enemies, when taking damage while being stunned," \
         " all damage taken is increased by 50%."
         self.skill1_description_jp = "攻撃力が最も高い敵に攻撃力の240%で3回攻撃する。各攻撃には40%の確率で対象を12ターンの間スタンさせる。"
-        self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の280%で攻撃し、与えたダメージの50%分、全ての味方を回復する。対象のHP割合が20%以下の場合、80%の確率で対象を12ターンの間スタンさせる。"
+        self.skill2_description_jp = "攻撃力が最も高い敵に攻撃力の300%で攻撃し、与えたダメージの50%分、全ての味方を回復する。対象のHP割合が20%以下の場合、80%の確率で対象を12ターンの間スタンさせる。"
         self.skill3_description_jp = "自身に「龍クッション」を付与する。スタンしている味方がいる敵から通常ダメージを受けた時、そのダメージが60%減少する。戦闘開始時に全ての敵に「鴻影」を付与する。スタン状態でダメージを受けた時、受ける全てのダメージが50%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -5387,7 +5419,7 @@ class Zhen(Character):
             dice = random.randint(1, 100)
             if dice <= 80 and target.hp / target.maxhp < 0.2:
                 target.apply_effect(StunEffect("Stun", 12, False, False))
-        damage_dealt = self.attack(multiplier=2.8, repeat=1, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
                                    func_after_dmg=stun_effect)
         if self.is_alive():
             self.heal(target_kw1="n_random_ally", target_kw2="5", value=damage_dealt * 0.5)
@@ -6383,14 +6415,14 @@ class Martin(Character):
         self.skill1_description = "Apply Fair Trade to enemies and allies." \
         " Each enemy of lowest atk, def, speed has their selected stats increased by 20% for 20 turns." \
         " Each ally of highest atk, def, speed has their selected stats increased by 24% for 20 turns."
-        self.skill2_description = "Attack random enemy 4 times with 240% atk, inflict Defence Break for 20 turns." \
-        " Defence Break: Defence is reduced by 10%."
+        self.skill2_description = "Attack random enemy 4 times with 240% atk, each attack inflict Defence Break for 20 turns with 30% chance." \
+        " Defence Break: Defence is reduced by 40%."
         self.skill3_description = "Apply Maneki-neko to all allies." \
         " Maneki-neko: When taking friendly fire damage, heal hp by the amount of damage instead and reduce damage to 0." \
         " If at full hp, apply a shield that absorbs damage equal to the damage." \
         # " Maneki-neko cannot protect against self-harm damage."
         self.skill1_description_jp = "敵と味方に「大儲け」を付与する。攻撃力、防御力、速度が最も低い各敵の該当ステータスが20ターンの間20%増加する。攻撃力、防御力、速度が最も高い各味方の該当ステータスが20ターンの間24%増加する。"
-        self.skill2_description_jp = "ランダムな敵に攻撃力の240%で4回攻撃し、20ターンの間「防御ダウン」を付与する。防御ダウン：防御力が10%減少する。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力の240%で4回攻撃し、30%確率で20ターンの間「防御ダウン」を付与する。防御ダウン：防御力が40%減少する。"
         self.skill3_description_jp = "全ての味方に「招き猫」を付与する。招き猫：味方からのダメージを受けた際、ダメージ量分のHPを回復し、ダメージを0に軽減する。HPが満タンの場合、そのダメージ量と同じダメージを吸収するシールドを付与する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 3
@@ -6412,7 +6444,8 @@ class Martin(Character):
 
     def skill2_logic(self):
         def after_dmg(self, target: Character):
-            target.apply_effect(StatsEffect("Defence Break", 20, False, {"defense": 0.90}))
+            if random.random() < 0.30:
+                target.apply_effect(StatsEffect("Defence Break", 20, False, {"defense": 0.60}))
         damage_dealt = self.attack(multiplier=2.4, repeat=4, func_after_dmg=after_dmg)
         return damage_dealt
 
@@ -6754,13 +6787,13 @@ class Fred(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Fred"
-        self.skill1_description = "Target 1 neighbor ally of highest atk, that ally takes status damage equal to 70% of their current hp," \
+        self.skill1_description = "Target 1 neighbor ally of highest atk, that ally takes status damage equal to 75% of their current hp," \
         " apply a Shield that absorbs damage equal to 100% of the damage dealt. For 20 turns, that ally gains 30% atk and 30% speed," \
         " 20 turns later, hp is recovered by the damage taken."
         self.skill2_description = "Target 1 neighbor ally of highest atk, remove all active debuffs, apply a shield that absorbs damage equal to" \
         " 10% of their lost hp. For each debuff removed, shield value increases by 10% of their lost hp."
         self.skill3_description = "At start of battle, target the neighbor ally of highest atk, that ally gains 30% atk."
-        self.skill1_description_jp = "隣接する攻撃力が最も高い味方1人を対象とし、その味方に現在のHPの70%分の状態異常ダメージを与える。同時に、そのダメージ量の100%に相当するダメージを吸収するシールドを付与する。その味方は20ターンの間、攻撃力が30%増加し、速度が30%増加する。20ターン後、与えたダメージ分のHPが回復する。"
+        self.skill1_description_jp = "隣接する攻撃力が最も高い味方1人を対象とし、その味方に現在のHPの75%分の状態異常ダメージを与える。同時に、そのダメージ量の100%に相当するダメージを吸収するシールドを付与する。その味方は20ターンの間、攻撃力が30%増加し、速度が30%増加する。20ターン後、与えたダメージ分のHPが回復する。"
         self.skill2_description_jp = "隣接する攻撃力が最も高い味方1人を対象とし、その味方の全てのアクティブなデバフを解除する。同時に、失ったHPの10%分のダメージを吸収するシールドを付与する。解除したデバフ1つにつき、シールド値が失ったHPの10%分増加する。"
         self.skill3_description_jp = "戦闘開始時、隣接する攻撃力が最も高い味方1人を対象とし、その味方の攻撃力を30%増加させる。"
         self.skill1_cooldown_max = 4
@@ -6772,7 +6805,7 @@ class Fred(Character):
             return 0
         target: Character = max(neighbor, key=lambda x: x.atk)
         target_hp_prev = target.hp
-        target.take_status_damage(target.hp * 0.70, None)
+        target.take_status_damage(target.hp * 0.75, None)
         target_hp_current = target.hp
         if target_hp_prev - target_hp_current > 0 and target.is_alive():
             shield = AbsorptionShield("Shield", -1, True, target_hp_prev - target_hp_current, False)
@@ -6957,10 +6990,10 @@ class Imada(Character):
         " Clear Spring: Overhealing becomes absorption shield, shield value is equal to 60% of overhealing. When the same effect is applied, duration is refreshed." \
         " After applying effects, heal the affected allies by 200% of your defense."
         self.skill3_description = "Apply Gift of Lake to the furthest ally at start of battle." \
-        " Gift of Lake: accuracy, penetration, critrate, critdamage increased by 10%."
-        self.skill1_description_jp = "最も遠い味方1人を対象に、その味方の攻撃力を30%と貫通力を60%20ターンの間増加させる。防御力が最も高い最も近い味方1人を対象に、その味方の防御力とクリティカル防御を20ターンの間40%増加させる。効果を適用する前に、対象からアクティブなデバフを2つ解除する。"
+        " Gift of Lake: accuracy, penetration, critrate, critdamage increased by 12%."
+        self.skill1_description_jp = "最も遠い味方1人を対象に、その味方の攻撃力を30%と貫通力を60%20ターンの間増加させる。防御力が最も高い最も近い味方1人を対象に、その味方の防御力20%とクリティカル防御40%を20ターンの間増加させる。効果を適用する前に、対象からアクティブなデバフを2つ解除する。"
         self.skill2_description_jp = "最も遠い味方1人と最も近い味方2人に20ターンの間「澄んだ泉」を付与する。澄んだ泉：過剰回復分が吸収シールドとなり、そのシールドの値は過剰回復量の60%に相当する。同じ効果を適用した際、持続時間を更新される。効果を適用した後、その味方たちを防御力の200%分治療する。"
-        self.skill3_description_jp = "戦闘開始時、最も遠い味方1人に「湖の贈り物」を付与する。湖の贈り物：命中率、貫通力、クリティカル率、クリティカルダメージが10%増加する。"
+        self.skill3_description_jp = "戦闘開始時、最も遠い味方1人に「湖の贈り物」を付与する。湖の贈り物：命中率、貫通力、クリティカル率、クリティカルダメージが12%増加する。"
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
 
@@ -6998,7 +7031,7 @@ class Imada(Character):
 
     def battle_entry_effects(self):
         fur_ally = mit.one(self.target_selection(keyword="furthest_ally"))
-        fur_ally.apply_effect(StatsEffect("Gift of Lake", -1, True, {"acc": 0.10, "penetration": 0.10, "crit": 0.10, "critdmg": 0.10}, can_be_removed_by_skill=False))
+        fur_ally.apply_effect(StatsEffect("Gift of Lake", -1, True, {"acc": 0.12, "penetration": 0.12, "crit": 0.12, "critdmg": 0.12}, can_be_removed_by_skill=False))
 
 
 

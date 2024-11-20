@@ -13,6 +13,7 @@ cheap_inventory_sort_c = "Rarity"
 cheap_inventory_filter_have_owner = "Not Specified"
 cheap_inventory_filter_owned_by_char = "Not Specified"
 cheap_inventory_filter_eqset = "Not Specified"
+cheap_inventory_filter_type = "Not Specified"
 # autobattle
 autobattle_speed = "Normal"
 after_autobattle = "Do Nothing"
