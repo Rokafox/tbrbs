@@ -1323,6 +1323,65 @@ if __name__ == "__main__":
                                         container=app_about_window)
 
 
+    quit_game_window = None
+
+    def build_quit_game_window():
+        global quit_game_window, running
+        try:
+            quit_game_window.kill()
+        except Exception as e:
+            pass
+
+        def local_translate(s: str) -> str:
+            if global_vars.language == "English":
+                return s
+            elif global_vars.language == "日本語":
+                match s:
+                    case "Quit Game":
+                        return "アプリ終了"
+                    case "Save and Quit":
+                        return "保存して終了"
+                    case "Force Quit":
+                        return "強制終了"
+                    case _:
+                        return s
+            else:
+                raise ValueError(f"Unknown language: {global_vars.language}")
+
+        quit_game_window = pygame_gui.elements.UIWindow(
+            pygame.Rect((500, 300), (300, 160)),
+            ui_manager,
+            window_display_title=local_translate("Quit Game"),
+            object_id="#quit_game_window",
+            resizable=False
+        )
+
+        def set_running_false():
+            global running
+            running = False
+
+        def set_running_false_and_save():
+            global running, player
+            save_player(player)
+            running = False
+
+        quit_game_sq_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect((10, 10), (280, 50)),
+            text=local_translate("Save and Quit"),
+            manager=ui_manager,
+            container=quit_game_window,
+            command=set_running_false_and_save
+        )
+
+        quit_game_fq_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect((10, 70), (280, 50)),
+            text=local_translate("Force Quit"),
+            manager=ui_manager,
+            container=quit_game_window,
+            command=set_running_false
+        )
+
+
     def use_item(how_many_times: int = 1):
         # Nine.selected_item = {} # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Equip|Consumable|Item)})}
         # get all selected items
@@ -4525,8 +4584,7 @@ if __name__ == "__main__":
         time_delta = clock.tick(60)/1000.0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                save_player(player)
-                running = False
+                build_quit_game_window()
             # right click to deselect from inventory
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
                 for ui_image, rect in player.dict_image_slots_rects.items():
