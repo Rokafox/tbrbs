@@ -6404,6 +6404,79 @@ class Shuijing(Character):
         return damage_dealt
 
 
+class ShuijingAL(Character):
+    """
+    Support 
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "ShuijingAL"
+        self.skill1_description = "Apply Matsu on all enemies for 30 turns." \
+        " Matsu: When taking damage, take status damage equal to 60% of the damage taken. If the same effect is applied, duration is refreshed."
+        self.skill2_description = "Apply Tsuru on all enemies for 30 turns." \
+        " Tsuru: When taking status damage, take bypass damage equal to 60% of the status damage taken. If the same effect is applied, duration is refreshed."
+        self.skill3_description = "At start of battle, apply Delay on a neighbor ally of highest atk for 30 turns. Delay: speed and final damage taken reduced" \
+        " by 50%. Apply Ready on yourself for 30 turns. Ready: Increase speed by 100%. After using skill 2 the first time, The above 2 effects are removed, then" \
+        " target a neighbor ally of highest atk, apply Ready on that ally for 15 turns."
+        # 松 鶴
+        self.skill1_description_jp = "全ての敵に30ターンの間「松」を付与する。松：ダメージを受けた際、受けたダメージの60%に相当する状態異常ダメージを受ける。同じ効果が再度付与された場合、持続時間が更新される。"
+        self.skill2_description_jp = "全ての敵に30ターンの間「鶴」を付与する。鶴：状態異常ダメージを受けた際、受けた状態異常ダメージの60%に相当する状態異常無視ダメージを受ける。同じ効果が再度付与された場合、持続時間が更新される。"
+        self.skill3_description_jp = "戦闘開始時、隣接する攻撃力が最も高い味方1人に30ターンの間「遅延」を付与する。遅延：速度と受ける最終ダメージが50%減少する。自身に30ターンの間「準備万端」を付与する。準備万端：速度が100%増加する。スキル2を初めて使用した後、上記の2つの効果が解除され、その後隣接する攻撃力が最も高い味方を対象に15ターンの間「準備万端」を付与する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.shuijingal_marked_ally: Character | None = None
+        self.skill2_first_use = True
+
+    def clear_others(self):
+        self.shuijingal_marked_ally = None
+        self.skill2_first_use = True
+
+    def skill1_logic(self):
+        for e in self.enemy:
+            def value_func(char, dmg, attacker, effect_applier):
+                return dmg * 0.60
+            matsu = StingEffect("Matsu", 30, False, 0, self, value_function_normal_damage_step=value_func)
+            matsu.additional_name = "ShuijingAL_Matsu"
+            matsu.apply_rule = "stack"
+            e.apply_effect(matsu)
+        return 0
+
+    def skill2_logic(self):
+        for e in self.enemy:
+            def value_func(char, dmg, attacker, effect_applier):
+                return dmg * 0.60
+            tsuru = StingEffect("Tsuru", 30, False, 0, self, value_function_status_damage_step=value_func)
+            tsuru.additional_name = "ShuijingAL_Tsuru"
+            tsuru.apply_rule = "stack"
+            e.apply_effect(tsuru)
+        if self.skill2_first_use:
+            assert self.shuijingal_marked_ally is not None
+            self.shuijingal_marked_ally.try_remove_effect_with_name("Delay")
+            self.try_remove_effect_with_name("Ready")
+            if self.shuijingal_marked_ally.is_alive():
+                ready = StatsEffect("Ready", 15, True, {"spd": 2.00})
+                ready.additional_name = "ShuijingAL_Ready"
+                self.shuijingal_marked_ally.apply_effect(ready)
+            self.skill2_first_use = False
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        neighbors = self.get_neighbor_allies_not_including_self()
+        t = max(neighbors, key=lambda x: x.atk)
+        # apply delay effect
+        delay = StatsEffect("Delay", 30, True, {"spd": 0.50, "final_damage_taken_multipler": -0.50})
+        delay.additional_name = "ShuijingAL_Delay"
+        t.apply_effect(delay)
+        self.shuijingal_marked_ally = t
+        ready = StatsEffect("Ready", 30, True, {"spd": 2.00})
+        ready.additional_name = "ShuijingAL_Ready"
+        self.apply_effect(ready)
+
+
 class Martin(Character):
     """
 
@@ -7032,6 +7105,46 @@ class Imada(Character):
     def battle_entry_effects(self):
         fur_ally = mit.one(self.target_selection(keyword="furthest_ally"))
         fur_ally.apply_effect(StatsEffect("Gift of Lake", -1, True, {"acc": 0.12, "penetration": 0.12, "crit": 0.12, "critdmg": 0.12}, can_be_removed_by_skill=False))
+
+
+class Lancelot(Character):
+    """
+    Good against high maxhp enemies and absorption shield
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Lancelot"
+        self.skill1_description = "Attack all enemies with 220% atk."
+        self.skill2_description = "Attack random enemies 5 times with 220% atk."
+        self.skill3_description = "When attacking with a skill, damage is increased by 8% of enemy's max hp." \
+        " If enemy has absorption shield, damage is increased by 80%."
+        self.skill1_description_jp = "全ての敵に攻撃力の220%で攻撃する。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力の220%で5回攻撃する。"
+        self.skill3_description_jp = "スキルで攻撃する際、ダメージが敵の最大HPの8%分増加する。敵が吸収シールドを持っている場合、ダメージが80%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        def damage_amplify(char, target: Character, dmg):
+            new_dmg = dmg + target.maxhp * 0.08
+            if target.has_effect_that_named(None, None, "AbsorptionShield"):
+                new_dmg *= 1.80
+            return new_dmg
+        damage_dealt = self.attack(multiplier=2.20, repeat=1, target_kw1="all_enemy", func_damage_step=damage_amplify)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def damage_amplify(char, target: Character, dmg):
+            new_dmg = dmg + target.maxhp * 0.08
+            if target.has_effect_that_named(None, None, "AbsorptionShield"):
+                new_dmg *= 1.80
+            return new_dmg
+        damage_dealt = self.attack(multiplier=2.20, repeat=5, func_damage_step=damage_amplify)
+        return damage_dealt
+
+    def skill3(self):
+        pass
 
 
 

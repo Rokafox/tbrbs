@@ -527,8 +527,8 @@ def get_all_characters():
                        "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
                        "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
-                       "Clarence", "Jingke", "Shuijing", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl", "Fred",
-                       "Waldo", "Toby", "TobyRT", "Cory", "Imada"]
+                       "Clarence", "Jingke", "Shuijing", "ShuijingAL", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl", "Fred",
+                       "Waldo", "Toby", "TobyRT", "Cory", "Imada", "Lancelot"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -2032,9 +2032,12 @@ if __name__ == "__main__":
                 eq_sell_selected_button.set_tooltip("Sell selected equipment in the inventory.", delay=0.1, wrap_width=300)
                 eq_mass_sell_button.set_text("Mass Sell")
                 eq_mass_sell_button.set_tooltip("Sell equipment in the inventory with a custom condition.", delay=0.1, wrap_width=300)
+                item_sell_button.set_text("Sell Item")
                 item_sell_button.set_tooltip("Sell one selected item from your inventory.", delay=0.1, wrap_width=300)
+                item_sell_half_button.set_text("Sell Half")
                 item_sell_half_button.set_tooltip("Sell half a stack of selected items.", delay=0.1, wrap_width=300)
-                item_sell_all_button.set_tooltip("Sell all of selected items.", delay=0.1, wrap_width=300)
+                item_sell_all_button.set_text("All")
+                item_sell_all_button.set_tooltip("Sell full stack of selected items.", delay=0.1, wrap_width=300)
                 use_random_consumable_label.set_text("Random Use:")
                 use_random_consumable_label.set_tooltip("Use one appropriate consumable each turn during auto battles.", delay=0.1, wrap_width=300)
                 cheap_inventory_page_label.set_tooltip("page/max page", delay=0.1)
@@ -2102,8 +2105,11 @@ if __name__ == "__main__":
                 eq_sell_selected_button.set_tooltip("インベントリーの中から選択した装備品を販売する。", delay=0.1, wrap_width=300)
                 eq_mass_sell_button.set_text("一括処分")
                 eq_mass_sell_button.set_tooltip("特別な条件で装備品を大量販売する。", delay=0.1, wrap_width=300)
+                item_sell_button.set_text("アイテム売却")
                 item_sell_button.set_tooltip("在庫の中から選んだアイテムを1つ売る。", delay=0.1, wrap_width=300)
+                item_sell_half_button.set_text("半分売却")
                 item_sell_half_button.set_tooltip("選択したアイテムを半分ずつ売る。", delay=0.1, wrap_width=300)
+                item_sell_all_button.set_text("全")
                 item_sell_all_button.set_tooltip("選択したアイテムをすべて売る。", delay=0.1, wrap_width=300)
                 use_random_consumable_label.set_text("ランダム使用：")
                 use_random_consumable_label.set_tooltip("オートバトル中、毎ターン適切な消耗品を1つ使用する。", delay=0.1, wrap_width=300)
@@ -2625,8 +2631,6 @@ if __name__ == "__main__":
                                             container=cheems_window)
         cheems_rename_team_button.hide()
 
-
-
         # When None is selected, the right side is empty and lack beauty. To fix this, we show the image of the 
         # actual meme dog cheems
 
@@ -3026,10 +3030,13 @@ if __name__ == "__main__":
             return False
         
         alive_characters = [x for x in itertools.chain(party1, party2) if x.is_alive()]
-        weight = [x.spd for x in alive_characters]
-        the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
-        global_vars.turn_info_string += f"{the_chosen_one.name}'s turn.\n"
-        the_chosen_one.action()
+        if alive_characters != []:
+            weight = [x.spd for x in alive_characters]
+            the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
+            global_vars.turn_info_string += f"{the_chosen_one.name}'s turn.\n"
+            the_chosen_one.action()
+        else:
+            global_vars.turn_info_string += "No one can be chosen to take action this turn.\n"
 
         for character in itertools.chain(party1, party2):
             character.status_effects_at_end_of_turn()
@@ -3145,9 +3152,12 @@ if __name__ == "__main__":
                 break
             
             alive_characters = [x for x in itertools.chain(party1, party2) if x.is_alive()]
-            weight = [x.spd for x in alive_characters]
-            the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
-            the_chosen_one.action()
+            if alive_characters != []:
+                weight = [x.spd for x in alive_characters]
+                the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
+                the_chosen_one.action()
+            else:
+                pass
 
             for character in itertools.chain(party1, party2):
                 character.status_effects_at_end_of_turn()

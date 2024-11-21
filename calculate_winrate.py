@@ -176,12 +176,9 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
 
         for character in party1:
             character.status_effects_midturn()
-            # if character.is_alive():
-            #     character.regen()
+
         for character in party2:
             character.status_effects_midturn()
-            # if character.is_alive():
-            #     character.regen()
 
         # This part may not be efficient
         reset_ally_enemy_attr(party1, party2)
@@ -197,10 +194,14 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
             printer.fine_print(global_vars.turn_info_string) 
             break
         alive_characters = [x for x in itertools.chain(party1, party2) if x.is_alive()]
-        weight = [x.spd for x in alive_characters]
-        the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
-        global_vars.turn_info_string += f"{the_chosen_one.name}'s turn.\n"
-        the_chosen_one.action()
+        if alive_characters != []:
+            weight = [x.spd for x in alive_characters]
+            the_chosen_one = random.choices(alive_characters, weights=weight, k=1)[0]
+            global_vars.turn_info_string += f"{the_chosen_one.name}'s turn.\n"
+            the_chosen_one.action()
+        else:
+            # This happens when 1 character in both side has Reborn, when makes is_someone_alive() of both sides True, but they are both dead this turn.
+            global_vars.turn_info_string += "No one can be chosen to take action this turn.\n"
 
         for character in itertools.chain(party1, party2):
             character.status_effects_at_end_of_turn()
@@ -414,7 +415,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 12000
+        sample = 7777
     character_list, character_must_include = get_all_characters(1)
     # "default", "file", "suppress"
     a, b = calculate_winrate_for_character(sample, character_list, "suppress", run_tests=False, character_must_include=character_must_include)
