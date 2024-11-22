@@ -1007,7 +1007,7 @@ class Character:
         return s1 or s2 
     
     def is_sleeping(self):
-        return self.has_effect_that_named("Sleep", class_name="SleepEffect")
+        return self.has_effect_that_named("Sleep")
     
     def is_frozed(self):
         return self.has_effect_that_named("Frozen", class_name="FrozenEffect")
@@ -3465,19 +3465,13 @@ class Chiffon(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Chiffon"
         self.skill1_description = "Increase def by 20%, atk by 10% for 30 turns for all allies. Apply a shield that absorbs damage up to 150% self atk for 20 turns."
-        self.skill2_description = "Select random 5 targets, when target is an ally, heal 200% atk, when target is an enemy, attack with 300% atk and apply Sleep with a 80% chance."
+        self.skill2_description = "Select random 5 targets, when target is an ally, heal 200% atk, when target is an enemy, attack with 300% atk and apply Sleep for 20 turns with a 80% chance."
         self.skill3_description = "When taking damage that would exceed 10% of maxhp, reduce damage above 10% of maxhp by 80%. For every turn passed, damage reduction effect is reduced by 2%."
         self.skill1_description_jp = "全ての味方の防御力を20%、攻撃力を10%増加させ、8ターンの間持続する。4ターンの間、味方に自身の攻撃力の150%までのダメージを吸収するシールドを付与する。"
-        self.skill2_description_jp = "ランダムに5体の対象を選択し、対象が味方の場合は200%の攻撃力で治療し、対象が敵の場合は300%の攻撃力で攻撃し、80%の確率で睡眠を付与する。"
+        self.skill2_description_jp = "ランダムに5体の対象を選択し、対象が味方の場合は200%の攻撃力で治療し、対象が敵の場合は300%の攻撃力で攻撃し、80%の確率で20ターン睡眠を付与する。"
         self.skill3_description_jp = "最大HPの10%を超えるダメージを受けた場合、最大HPの10%を超えるダメージを80%軽減する。ターンが経過するごとにダメージ軽減効果が2%ずつ減少する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def skill1_logic(self):
         for ally in self.ally:
@@ -3498,7 +3492,7 @@ class Chiffon(Character):
         def sleep_effect(self, target):
             dice = random.randint(1, 100)
             if dice <= 80:
-                target.apply_effect(SleepEffect('Sleep', duration=-1, is_buff=False))
+                target.apply_effect(SleepEffect('Sleep', duration=20, is_buff=False))
         damage_dealt = self.attack(target_list=enemy_list, multiplier=3.0, repeat=1, func_after_dmg=sleep_effect)
         return damage_dealt
         
@@ -4664,27 +4658,28 @@ class CheiHW(Character):
 class Cocoa(Character):
     """
     Weak on frequent status damage.
+    Burst damage
     Build: 
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Cocoa"
-        self.skill1_description = "Focus attack closest enemy with 380% atk 3 times, if you have Sweet Dreams, double the damage."
+        self.skill1_description = "Attack closest enemy with 380% atk 3 times, if you have Sweet Dreams, double the damage."
         self.skill2_description = "Select an ally of highest atk, reduce the allys skill cooldown by 2," \
         " and increase the allys speed by 200% for 2 turns. If the same effect is applied, duration is refreshed." \
         " if the selected ally is Cocoa, hp is also recovered by 300% atk."
-        self.skill3_description = "If haven't taken damage for 5 turns, fall asleep. This effect does not reduce evasion." \
-        " While asleep, recover 8% hp each turn. When this effect is removed, for 20 turns," \
-        " apply Sweet Dreams on yourself, atk and defense is increased by 30%."
-        self.skill1_description_jp = "最も近い敵に380%の集中攻撃を3回行う。幻夢効果がある場合、ダメージが2倍になる。"
+        self.skill3_description = "If haven't taken damage for 6 turns, fall asleep. This effect does not reduce evasion." \
+        " While asleep, recover 8% hp each turn. When this effect is removed, for 6 turns," \
+        " apply Sweet Dreams on yourself, atk, defense, speed is increased by 120%, gain immunity to CC."
+        self.skill1_description_jp = "最も近い敵に380%の攻撃を3回行う。幻夢効果がある場合、ダメージが2倍になる。"
         self.skill2_description_jp = "最も攻撃力が高い味方を選択し、その味方のスキルクールダウンを2減少させ、2ターンの間速度を200%増加させる。" \
                                     "同じ効果が適用された場合、持続時間が更新される。" \
                                     "選択された味方が自分である場合、さらに攻撃力の300%でHPが回復する。"
-        self.skill3_description_jp = "5ターンの間攻撃されていない場合、睡眠を付与する。この効果は回避率を減少させない。" \
-                                    "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、20ターンの間、" \
-                                    "自身に幻夢を付与し、攻撃力と防御力が30%増加する。"
+        self.skill3_description_jp = "6ターンの間攻撃されていない場合、睡眠を付与する。この効果は回避率を減少させない。" \
+                                    "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、6ターンの間、" \
+                                    "自身に幻夢を付与し、攻撃力、防御力、速度が120%増加し、CC耐性を得る。"
         self.skill1_cooldown_max = 4
-        self.skill2_cooldown_max = 5
+        self.skill2_cooldown_max = 4
 
 
     def skill1_logic(self):
@@ -4692,7 +4687,7 @@ class Cocoa(Character):
             if self.has_effect_that_named("Sweet Dreams", "Cocoa_Sweet_Dreams"):
                 final_damage *= 2.0
             return final_damage
-        damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=3.8, repeat_seq=3, func_damage_step=damage_amplify)
+        damage_dealt = self.attack(target_kw1="enemy_in_front", multiplier=3.8, repeat=3, func_damage_step=damage_amplify)
         return damage_dealt
 
     def skill2_logic(self):
@@ -4719,8 +4714,7 @@ class Cocoa(Character):
 
     def battle_entry_effects(self):
         cocoa_sleep = CocoaSleepEffect("Sleep", -1, True)
-        cocoa_sleep.can_be_removed_by_skill = False
-        shda = NotTakingDamageEffect("Shopping Date", -1, True, 5, cocoa_sleep)
+        shda = NotTakingDamageEffect("Shopping Date", -1, True, 6, cocoa_sleep)
         shda.can_be_removed_by_skill = False
         self.apply_effect(shda)
 
@@ -4734,23 +4728,23 @@ class CocoaRT(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "CocoaRT"
         self.skill1_description = "Focus attack closest enemy with 230% atk 3 times, if you have Sweet Dreams, attack 3 closest enemies 2 times." \
-        " If target is alive after the attack, apply Sleep on the target."
+        " If target is alive after the attack, apply Sleep on the target for 20 turns."
         self.skill2_description = "Select an ally of highest defense, reduce the allys skill cooldown by 3," \
         " and increase the allys speed by 300% for 2 turns. If the same effect is applied, duration is refreshed." \
         " if the selected ally is Cocoa, hp also is recovered by 300% atk."
-        self.skill3_description = "If haven't taken damage for 5 turns, fall asleep. This effect does not reduce evasion." \
-        " While asleep, recover 8% hp each turn. When this effect is removed, for 20 turns," \
-        " apply Sweet Dreams on yourself, atk and defense is increased by 30%."
+        self.skill3_description = "If haven't taken damage for 6 turns, fall asleep. This effect does not reduce evasion." \
+        " While asleep, recover 8% hp each turn. When this effect is removed, for 6 turns," \
+        " apply Sweet Dreams on yourself, atk, defense, speed is increased by 120%, gain immunity to CC."
         self.skill1_description_jp = "最も近い敵に230%の集中攻撃を3回行う。幻夢効果がある場合、最も近い敵3体を2回攻撃する。" \
-                                    "攻撃後、対象が生存している場合、対象に睡眠を付与する。"
+                                    "攻撃後、対象が生存している場合、対象に20ターン睡眠を付与する。"
         self.skill2_description_jp = "最も防御力が高い味方を選択し、その味方のスキルクールダウンを3減少させ、2ターンの間速度を300%増加させる。" \
                                     "同じ効果が適用された場合、持続時間が更新される。" \
                                     "選択された味方が自分である場合、さらに攻撃力の300%でHPが回復する。"
-        self.skill3_description_jp = "5ターンの間攻撃されていない場合、睡眠を付与する。この効果は回避率を減少させない。" \
-                                    "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、20ターンの間、" \
-                                    "自身に幻夢を付与し、攻撃力と防御力が30%増加する。"
+        self.skill3_description_jp = "6ターンの間攻撃されていない場合、睡眠を付与する。この効果は回避率を減少させない。" \
+                                    "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、6ターンの間、" \
+                                    "自身に幻夢を付与し、攻撃力、防御力、速度が120%増加し、CC耐性を得る。"
         self.skill1_cooldown_max = 4
-        self.skill2_cooldown_max = 5
+        self.skill2_cooldown_max = 4
 
     def skill1_logic(self):
         t = self.target_selection(keyword="enemy_in_front")
@@ -4762,11 +4756,11 @@ class CocoaRT(Character):
             if self.is_alive():
                 for t in t3:
                     if t.is_alive():
-                        t.apply_effect(SleepEffect("Sleep", -1, False))
+                        t.apply_effect(SleepEffect("Sleep", 20, False))
         else:
             damage_dealt = self.attack(multiplier=2.3, repeat_seq=3, target_list=[t])
             if t.is_alive() and self.is_alive():
-                t.apply_effect(SleepEffect("Sleep", -1, False))
+                t.apply_effect(SleepEffect("Sleep", 20, False))
         return damage_dealt
 
     def skill2_logic(self):
@@ -4792,8 +4786,7 @@ class CocoaRT(Character):
 
     def battle_entry_effects(self):
         cocoa_sleep = CocoaSleepEffect("Sleep", -1, True)
-        cocoa_sleep.can_be_removed_by_skill = False
-        shda = NotTakingDamageEffect("Resting Time", -1, True, 5, cocoa_sleep)
+        shda = NotTakingDamageEffect("Resting Time", -1, True, 6, cocoa_sleep)
         shda.can_be_removed_by_skill = False
         self.apply_effect(shda)
 
@@ -6689,11 +6682,11 @@ class Jerry(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Jerry"
         self.skill1_description = "Heal all allies by 200% of your defense, remove 2 debuffs from each ally. Each enemy has a 50% chance to" \
-        " fall asleep."
+        " fall asleep for 20 turns."
         self.skill2_description = "Attack all enemies with 200% atk, 20% chance to apply Sleep, 40% chance to apply Slow for 20 turns." \
         " Slow: spd reduced by 20%."
         self.skill3_description = "At start of battle, increase speed by 100% for 3 turns."
-        self.skill1_description_jp = "防御力の200%分、全ての味方を回復し、各味方からデバフを2つ解除する。全ての敵に50%の確率で睡眠状態を付与する。"
+        self.skill1_description_jp = "防御力の200%分、全ての味方を回復し、各味方からデバフを2つ解除する。全ての敵に50%の確率で20ターン睡眠状態を付与する。"
         self.skill2_description_jp = "攻撃力の200%で全ての敵に攻撃し、20%の確率で睡眠状態を、40%の確率で20ターンの間「和音」を付与する。和音：速度が20%減少する。"
         self.skill3_description_jp = "戦闘開始時に、3ターンの間速度が100%増加する。"
         self.skill1_cooldown_max = 4

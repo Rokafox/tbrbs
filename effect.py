@@ -3016,15 +3016,16 @@ class CocoaSleepEffect(SleepEffect):
         pass
 
     def apply_effect_on_remove(self, character):
-        sd = StatsEffect("Sweet Dreams", 20, True, {"atk": 1.3, "defense": 1.3})
+        sd = StatsEffect("Sweet Dreams", 6, True, {"atk": 2.2, "defense": 2.2, "spd": 2.2})
         sd.additional_name = "Cocoa_Sweet_Dreams"
+        sd.cc_immunity = True
         character.apply_effect(sd)
 
     def tooltip_description(self):
-        return "While asleep, recover 8% hp each turn. When this effect is removed, for 10 turns, atk and defense is increased by 30%."
+        return "While asleep, recover 8% hp each turn. Apply Sweet Dreams when removed."
 
     def tooltip_description_jp(self):
-        return "眠っている間、毎ターンHPを8%回復する。この効果が解除されると、12ターんの間、攻撃力と防御力が30%増加する。"
+        return "眠っている間、毎ターンHPを8%回復する。解除されると幻夢が適用される。"
 
 
 class RikaResolveEffect(ResolveEffectVariation1):
