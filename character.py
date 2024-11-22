@@ -2052,17 +2052,17 @@ class Character:
             selected_stat = max(the_stat_dict, key=the_stat_dict.get)
             if selected_stat == "atk":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.atk)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"atk": self.atk * (0.2555)})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"atk": self.atk * (0.2555)}, is_set_effect=True)
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "defense":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.defense)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"defense": self.defense * (0.2555)})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"defense": self.defense * (0.2555)}, is_set_effect=True)
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "spd":
                 ally_to_buff: Character = min(self.ally, key=lambda x: x.spd)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"spd": self.spd * (0.2555)})
+                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"spd": self.spd * (0.2555)}, is_set_effect=True)
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
         elif self.get_equipment_set() == "7891":
@@ -2072,17 +2072,17 @@ class Character:
             selected_stat = min(the_stat_dict, key=the_stat_dict.get)
             if selected_stat == "atk":
                 ally_to_buff: Character = max(self.ally, key=lambda x: x.atk)
-                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"atk": self.atk * 0.5555})
+                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"atk": self.atk * 0.5555}, is_set_effect=True)
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "defense":
                 ally_to_buff: Character = max(self.ally, key=lambda x: x.defense)
-                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"defense": self.defense * 0.5555})
+                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"defense": self.defense * 0.5555}, is_set_effect=True)
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
             elif selected_stat == "spd":
                 ally_to_buff: Character = max(self.ally, key=lambda x: x.spd)
-                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"spd": self.spd * 0.5555})
+                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"spd": self.spd * 0.5555}, is_set_effect=True)
                 e.can_be_removed_by_skill = False
                 ally_to_buff.apply_effect(e)
 
@@ -7139,6 +7139,65 @@ class Lancelot(Character):
     def skill3(self):
         pass
 
+
+
+class Glass(Character):
+    """
+    Cause low accuracy, attack low accuracy
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Glass"
+        self.skill1_description = "Target 3 closest enemies, attack with 300% atk and apply Old Eyes for 20 turns." \
+        " Old Eyes: Accuracy is reduced by 80%, when same effect is applied, duration is refreshed. Then target 2 neighbor allies, apply Old Eyes for 20 turns."
+        self.skill2_description = "Remove Old Eyes effect on neighbor allies. If their accuracy is more than 150%," \
+        " for 20 turns, their atk and defense is increased by the difference between their accuracy and 150%." \
+        " Attack 1 enemy who has lowest accuracy with 400% atk, if target has accuracy lower than 20%, Stun for 10 turns."
+        self.skill3_description = "When using skill2, if the ally has more than 200% accuracy, crit, critdmg, penetration is increased by the" \
+        " difference between their accuracy and 150%."
+        self.skill1_description_jp = "最も近い3人の敵を対象に、攻撃力の300%で攻撃し、20ターンの間「老眼」を付与する。老眼：命中率が80%減少し、同じ効果が再度付与された場合、持続時間が更新される。その後、隣接する2人の味方を対象に、20ターンの間「老眼」を付与する。"
+        self.skill2_description_jp = "隣接する味方の「老眼」効果を解除する。味方の命中率が150%以上の場合、20ターンの間、命中率と150%の差分に応じて攻撃力と防御力が増加する。命中率が最も低い敵1体を対象に、攻撃力の400%で攻撃し、対象の命中率が20%未満の場合、10ターンの間スタンさせる。"
+        self.skill3_description_jp = "スキル2を使用する際、味方の命中率が200%以上の場合、命中率と150%の差分に応じて、クリティカル率、クリティカルダメージ、貫通力が増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        def old_eyes(char, target: Character):
+            oe = StatsEffect("Old Eyes", 20, False, {"acc": -0.80})
+            oe.additional_name = "Glass_Old_Eyes"
+            oe.apply_rule = "stack"
+            target.apply_effect(oe)
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=old_eyes)
+        if self.is_alive():
+            neighbors = self.get_neighbor_allies_not_including_self()
+            if neighbors:
+                for a in neighbors:
+                    oe = StatsEffect("Old Eyes", 20, False, {"acc": -0.80})
+                    oe.additional_name = "Glass_Old_Eyes"
+                    oe.apply_rule = "stack"
+                    a.apply_effect(oe)
+        return damage_dealt
+
+    def skill2_logic(self):
+        neighbors: list[Character] = self.get_neighbor_allies_not_including_self()
+        if neighbors:
+            for a in neighbors:
+                a.try_remove_effect_with_name("Old Eyes", remove_all_found_effects=True)
+                if a.acc > 1.5:
+                    a.apply_effect(StatsEffect("Sharp Eyes", 20, True, {"atk": 1 + a.acc - 1.5, "defense": 1 + a.acc - 1.5}))
+                if a.acc > 2.0:
+                    a.apply_effect(StatsEffect("Sharp Eyes", 20, True, {"crit": a.acc - 1.5, "critdmg": a.acc - 1.5, "penetration": a.acc - 1.5}))
+        def stun_logic(char, target: Character):
+            if target.acc < 0.20:
+                target.apply_effect(StunEffect("Stun", 10, False))
+        # case ("n_lowest_attr", n, attr, party)
+        damage_dealt = self.attack(multiplier=4.0, repeat=1, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="acc", target_kw4="enemy",
+                                    func_after_dmg=stun_logic)
+        return damage_dealt
+
+    def skill3(self):
+        pass
 
 
 
