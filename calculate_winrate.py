@@ -415,8 +415,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 7777
-    character_list, character_must_include = get_all_characters(1)
+        sample = 6666
+    character_list, character_must_include = get_all_characters("Gawain")
     # "default", "file", "suppress"
     a, b = calculate_winrate_for_character(sample, character_list, "suppress", run_tests=False, character_must_include=character_must_include)
     c = calculate_win_loss_rate(a, b, write_csv=True)

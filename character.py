@@ -4691,12 +4691,6 @@ class Beacon(Character):
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
-
     def skill1_logic(self):
         # check if all allies has same hp percentage, if so, do nothing
         hp_percentages = [ally.hp / ally.maxhp for ally in self.ally]
@@ -7075,7 +7069,55 @@ class Glass(Character):
 
 
 
+class Gawain(Character):
+    """
 
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Gawain"
+        self.skill1_description = "Target enemy of lowest atk, defense and speed, attack with 250%|300%|350% atk," \
+        " after each attack, if your hp is lower than 10%, recover hp by 100% of damage dealt."
+        self.skill2_description = "Target enemy of lowest atk, attack with 200% atk 5 times, if you have Absorption Shield," \
+        " attack with 300% atk 5 times."
+        self.skill3_description = "At start of battle, apply Brilliance on yourself for 10 turns." \
+        " Brilliance: Damage taken is reduced by 60%, immune to CC effects."
+        self.skill1_description_jp = "攻撃力、防御力、速度が最も低い敵を対象に、それぞれ攻撃力の250%|300%|350%で攻撃する。各攻撃後、自分のHPが10%未満の場合、与えたダメージの100%分HPを回復する。"
+        self.skill2_description_jp = "攻撃力が最も低い敵を対象に、攻撃力の200%で5回攻撃する。自分が吸収シールドを持っている場合、攻撃力の300%で5回攻撃する。"
+        self.skill3_description_jp = "戦闘開始時に、自身に10ターンの間「輝光」を付与する。輝光：受けるダメージが60%減少し、CC効果を無効化する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=2.5, repeat=1, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy")
+        if self.hp < 0.10 and self.is_alive():
+            self.heal_hp(damage_dealt, healer=self)
+        if self.is_alive():
+            damage_dealt += self.attack(multiplier=3.0, repeat=1, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="defense", target_kw4="enemy")
+        if self.hp < 0.10 and self.is_alive():
+            self.heal_hp(damage_dealt, healer=self)
+        if self.is_alive():
+            damage_dealt += self.attack(multiplier=3.5, repeat=1, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="spd", target_kw4="enemy")
+        if self.hp < 0.10 and self.is_alive():
+            self.heal_hp(damage_dealt, healer=self)
+        return damage_dealt
+
+    def skill2_logic(self):
+        if self.has_effect_that_named(None, None, "AbsorptionShield"):
+            multiplier = 3.0
+        else:
+            multiplier = 2.0
+        damage_dealt = self.attack(multiplier=multiplier, repeat=5, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        bri = ReductionShield("Brilliance", 10, True, 0.60, cc_immunity=True)
+        bri.additional_name = "Gawain_Brilliance"
+        self.apply_effect(bri)
 
 
 # class NC(Character):
