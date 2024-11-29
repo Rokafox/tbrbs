@@ -1767,8 +1767,8 @@ if __name__ == "__main__":
                 result_box_guide = "The following python code will be excuted:\n" \
                 "[x for x in player.inventory if isinstance(x, Equip) and <font color=#663399>command</font>]\n" \
                 "Example input:\n" \
-                "roka is fox\n" \
-                "This will sell all equipment, because any string is evaluated as True.\n" \
+                "123\n" \
+                "This will sell all equipment, because any non zero number is evaluated as True.\n" \
                 "x.market_value <= 200\n" \
                 "This will sell all equipment with market value less than or equal to 200.\n" \
                 "x.rarity == 'Common'\n" \
@@ -1782,8 +1782,8 @@ if __name__ == "__main__":
                 result_box_guide = "以下のPythonコードが実行される:\n" \
                 "[x for x in player.inventory if isinstance(x, Equip) and <font color=#663399>command</font>]\n" \
                 "入力例:\n" \
-                "蘆花は狐\n" \
-                "すべての装備品を売却する。これはすべての文字列がTrueと評価されるためです。\n" \
+                "123\n" \
+                "すべての装備品を売却する。これはすべてのゼロ以外の数値は真と評価される。\n" \
                 "x.market_value <= 200\n" \
                 "市場価値が200以下のすべての装備品を売却する。\n" \
                 "x.rarity == 'Common'\n" \

@@ -1297,6 +1297,22 @@ class Angel(Monster):
 # ====================================
 # End of Counter Multistrike
 # ====================================
+# Counter Single Strike
+# ====================================
+
+
+
+
+
+
+
+
+
+
+
+# ====================================
+# End of Counter Single Strike
+# ====================================
 # Ignore Protected Effect
 # ====================================
 
@@ -1879,6 +1895,15 @@ class GargoyleB(Monster):
 # ====================================
 # End of CC: Freeze and Petrify
 # ====================================
+# Counter CC
+# ====================================
+
+#TODO: Add at least 2 monsters
+
+
+# ====================================
+# End of Counter CC
+# ====================================
 # hp　related
 # ====================================
 
@@ -2255,7 +2280,7 @@ class WizardB(Monster):
         self.skill3_description = "Normal attack deals additional damage by 1.5% of target maxhp."
         self.skill1_description_jp = "全ての敵に24ターンの間毒を付与。毒:失ったHPの1%を状態ダメージとして毎ターン受ける。" \
         "回避率を16ターンの間110%減少。"
-        self.skill2_description_jp = "全ての敵に攻撃力200%で5回攻撃し、ダメージは対象の最大HPの4%を追加する。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力200%で5回攻撃し、ダメージは対象の最大HPの4%を追加する。"
         self.skill3_description_jp = "通常攻撃ダメージは対象の最大HPの1.5%追加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 5
@@ -3208,17 +3233,22 @@ class Dragon(Monster):
 # For example, monsters that survives with 1 hp
 # ====================================
 
+# MinotaurB: self Resolve
+# CaptainB: full party Resolve with limited duration
+# DarklordB: full party Resolve
+# WerewolfC: Damage reduction is higher when hp is lower
+# GeneralB: Damage reduction is higher when hp is lower for neighbors
 
 class MinotaurB(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "MinotaurB"
-        self.skill1_description = "Recover hp by 30% of maxhp and apply Resolve on yourself, when taking normal damage that would exceed" \
+        self.skill1_description = "Recover hp by 30% of maxhp and apply Resolve on yourself for 30 turns, when taking normal damage that would exceed" \
         " current hp, reduce damage taken to your current hp minus 1, effect last for 30 turns. When the same effect is applied, duration" \
         " is refreshed."
         self.skill2_description = "Attack one closest enemy with 800% atk and Stun the target for 8 turns."
         self.skill3_description = "Normal attack deals 100% more damage to enemy if they have less speed than you."
-        self.skill1_description_jp = "最大HPの30%分のHPを回復し、自身に「決意」を付与する。通常ダメージを受けて現在のHPを超える場合、そのダメージを現在のHPから1を引いた値に減少させる。この効果は30ターン持続する。同じ効果が再度付与された場合、持続時間がリフレッシュされる。"
+        self.skill1_description_jp = "最大HPの30%分のHPを回復し、自身に30ターンの間で「決意」を付与する。通常ダメージを受けて現在のHPを超える場合、そのダメージを現在のHPから1を引いた値に減少させる。この効果は30ターン持続する。同じ効果が再度付与された場合、持続時間がリフレッシュされる。"
         self.skill2_description_jp = "最も近い敵1体に攻撃力の800%で攻撃し、8ターンの間スタンさせる。"
         self.skill3_description_jp = "通常攻撃時、敵の速度が自分より低い場合、与えるダメージが100%増加する。"
         # ResolveEffect
@@ -3344,6 +3374,92 @@ class DarklordB(Monster):
             ally.apply_effect(resolve)
 
 
+class WerewolfC(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "WerewolfC"
+        self.skill1_description = "Attack random enemies 9 times with 180% atk."
+        self.skill2_description = "Attack closest enemy 9 times with 180% atk, each attack has 20% chance to inflict Bleed for 20 turns." \
+        " Bleed: takes 20% of atk as status damage each turn."
+        self.skill3_description = "At start of battle, apply Active Defense on yourself, when taking damage, damage is reduced by the ratio of lost" \
+        " hp, however, damage cannot be reduced to 0 by this effect."
+        self.skill1_description_jp = "ランダムな敵に攻撃力の180%で9回攻撃する。"
+        self.skill2_description_jp = "最も近い敵に攻撃力の180%で9回攻撃し、各攻撃には20%の確率で20ターンの間「出血」を付与する。出血：毎ターン攻撃力の20%分の状態異常ダメージを受ける。"
+        self.skill3_description_jp = "戦闘開始時、自身に「アクティブ防御」を付与する。ダメージを受けた際、失ったHPの割合に応じてダメージが軽減される。ただし、ダメージは0に軽減されない。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=1.8, repeat=9)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def bleed_effect(self, target):
+            if random.randint(1, 100) <= 20:
+                target.apply_effect(ContinuousDamageEffect('Bleed', duration=20, is_buff=False, value=0.2 * self.atk, imposter=self))
+        damage_dealt = self.attack(multiplier=1.8, repeat=9, func_after_dmg=bleed_effect, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        def damage_func(char, attacker, damage):
+            lost_hp = char.maxhp - char.hp
+            damage *= (1 - lost_hp / char.maxhp)
+            damage = max(1, damage)
+            return damage
+        ad = ReductionShield("Active Defense", -1, True, 0, False, damage_function=damage_func)
+        ad.additional_name = "Werewolfc_Active_Defense"
+        ad.can_be_removed_by_skill = False
+        self.apply_effect(ad)
+
+
+class GeneralB(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "GeneralB"
+        self.skill1_description = "Attack 1 closest enemy with 200% atk 5 times, damage is increased by 5% of target's max hp."
+        self.skill2_description = "Attack 1 closest enemy with 300% atk 2 times, damage is increased by 10% of target's lost hp."
+        self.skill3_description = "At start of battle, apply Active Defense on 2 neighbor allies, when taking damage," \
+        " damage is reduced by the ratio of lost hp, however, damage cannot be reduced to 0 by this effect."
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の200%で5回攻撃し、ダメージが対象の最大HPの5%分増加する。"
+        self.skill2_description_jp = "最も近い敵1体に攻撃力の300%で2回攻撃し、ダメージが対象の失ったHPの10%分増加する。"
+        self.skill3_description_jp = "戦闘開始時、隣接する2体の味方に「アクティブ防御」を付与する。ダメージを受けた際、失ったHPの割合に応じてダメージが軽減される。ただし、ダメージは0に軽減されない。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+
+    def skill1_logic(self):
+        def damage_amplify(self, target, final_damage):
+            final_damage += target.maxhp * 0.05
+            return final_damage
+        damage_dealt = self.attack(multiplier=2.0, repeat=5, func_damage_step=damage_amplify, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def damage_amplify(self, target, final_damage):
+            final_damage += (target.maxhp - target.hp) * 0.10
+            return final_damage
+        damage_dealt = self.attack(multiplier=3.0, repeat=2, func_damage_step=damage_amplify, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = self.get_neighbor_allies_not_including_self()
+        for ally in allies:
+            def damage_func(char, attacker, damage):
+                lost_hp = char.maxhp - char.hp
+                damage *= (1 - lost_hp / char.maxhp)
+                damage = max(1, damage)
+                return damage
+            ad = ReductionShield("Active Defense", -1, True, 0, False, damage_function=damage_func)
+            ad.additional_name = "Werewolfc_Active_Defense"
+            ad.can_be_removed_by_skill = False
+            ally.apply_effect(ad)
 
 
 # ====================================
@@ -3625,7 +3741,43 @@ class PuppetB(Monster):
 # Evasion related
 # ====================================
 
-# TODO: Add a monster for full party evasion buff
+# Full party evasion up passive
+class WindspiritB(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "WindspiritB"
+        self.skill1_description = "Attack all enemies with 333% atk. Before attacking, apply Against the Wind on all enemies for 20 turns." \
+        " Against the Wind: evasion is reduced by 30%."
+        self.skill2_description = "Apply Cow Wind on all allies for 20 turns. Cow Wind: evasion is increased by 20%." \
+        " If target evasion is below 50%, effect is doubled."
+        self.skill3_description = "All allies gain 20% evasion."
+        self.skill1_description_jp = "全ての敵に攻撃力の333%で攻撃する。攻撃前に、全ての敵に20ターンの間「逆風」を付与する。逆風：回避率が30%減少する。"
+        self.skill2_description_jp = "全ての味方に20ターンの間「順風」を付与する。順風：回避率が20%増加する。対象の回避率が50%未満の場合、この効果は2倍になる。"
+        self.skill3_description_jp = "全ての味方の回避率が20%増加する。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = True
+    
+    def skill1_logic(self):
+        for e in self.enemy:
+            e.apply_effect(StatsEffect('Against the Wind', 20, False, {'eva' : -0.3}))
+        damage_dealt = self.attack(multiplier=3.33, repeat=1, target_kw1="all_enemy")
+        return damage_dealt
+
+    def skill2_logic(self):
+        for a in self.ally:
+            if a.eva < 0.5:
+                a.apply_effect(StatsEffect('Cow Wind', 20, True, {'eva' : 0.4}))
+            else:
+                a.apply_effect(StatsEffect('Cow Wind', 20, True, {'eva' : 0.2}))
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        for ally in self.ally:
+            ally.apply_effect(StatsEffect('Windy', -1, True, {'eva' : 0.2}, can_be_removed_by_skill=False))
 
 
 class Gryphon(Monster):
@@ -3997,7 +4149,6 @@ class Orklord(Monster):
         self.hp = self.maxhp
 
 
-# Poison instead of Burn
 class MageB(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
@@ -4041,9 +4192,84 @@ class MageB(Monster):
         self.apply_effect(StatsEffect('MageB Passive', -1, True, {'acc' : 0.7}, can_be_removed_by_skill=False))
 
 
-# TODO: Increase damage taken for debuffed target, always attack debuffed target
-# class SubjectA2(Monster):
-#     pass
+# Increase damage taken for debuffed target
+class Bandit(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Bandit"
+        self.skill1_description = "Attack 1 closest enemy with 300% atk 3 times."
+        self.skill2_description = "Attack 1 closest enemy with 270% atk 3 times, each attack has 33% chance to inflict Bleed and Cripple for 20 turns," \
+        " Bleed: takes 20% of atk as status damage per turn, Cripple: reduce atk and spd by 20%."
+        self.skill3_description = "When attacking with skill, for each debuff on target, damage increases by 25%."
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の300%で3回攻撃する。"
+        self.skill2_description_jp = "最も近い敵1体に攻撃力の270%で3回攻撃し、各攻撃に33%の確率で20ターンの間「出血」と「行動不能」を付与する。出血：毎ターン攻撃力の20%分の状態異常ダメージを受ける。行動不能：攻撃力と速度が20%減少する。"
+        self.skill3_description_jp = "スキルで攻撃する際、対象にあるデバフ1つにつき、ダメージが25%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill1_logic(self):
+        def damage_amplify(self, target, final_damage):
+            return final_damage * (1 + 0.25 * len(target.get_active_removable_effects(get_buffs=False, get_debuffs=True)))
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, target_kw1="enemy_in_front", func_damage_step=damage_amplify)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def bleed_cripple_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 33:
+                target.apply_effect(ContinuousDamageEffect('Bleed', duration=20, is_buff=False, value=0.2 * self.atk, imposter=self))
+                target.apply_effect(StatsEffect('Cripple', 20, False, {'atk' : 0.8, 'spd' : 0.8}))
+        def damage_amplify(self, target, final_damage):
+            return final_damage * (1 + 0.25 * len(target.get_active_removable_effects(get_buffs=False, get_debuffs=True)))
+        damage_dealt = self.attack(multiplier=2.7, repeat=3, func_after_dmg=bleed_cripple_effect, target_kw1="enemy_in_front", func_damage_step=damage_amplify)
+        return damage_dealt
+        
+    def skill3(self):
+        pass
+
+
+# Damage increases when debuffed
+class GargoyleC(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "GargoyleC"
+        self.skill1_description = "Attack 1 closest enemy with 300% atk 3 times. Each attack has 40% chance to inflict Bleed for 20 turns." \
+        " Bleed: takes 20% of atk as status damage per turn."
+        self.skill2_description = "Attack 1 closest enemy with 300% atk 3 times. Each attack has 40% chance to inflict Poison for 20 turns." \
+        " Poison: takes 4% of current hp as status damage per turn."
+        self.skill3_description = "When attacking, damage increases by 20% for each debuff on yourself."
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の300%で3回攻撃し、各攻撃に40%の確率で20ターンの間「出血」を付与する。出血：毎ターン攻撃力の20%分の状態異常ダメージを受ける。"
+        self.skill2_description_jp = "最も近い敵1体に攻撃力の300%で3回攻撃し、各攻撃に40%の確率で20ターンの間「毒」を付与する。毒：毎ターン現在のHPの4%分の状態異常ダメージを受ける。"
+        self.skill3_description_jp = "攻撃時、自身に付与されているデバフ1つにつきダメージが20%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill1_logic(self):
+        def damage_amplify(self, target, final_damage):
+            return final_damage * (1 + 0.2 * len(self.get_active_removable_effects(get_buffs=False, get_debuffs=True)))
+        def bleed_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 40:
+                target.apply_effect(ContinuousDamageEffect('Bleed', duration=20, is_buff=False, value=0.2 * self.atk, imposter=self))
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, func_after_dmg=bleed_effect, target_kw1="enemy_in_front",
+                                   func_damage_step=damage_amplify)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def damage_amplify(self, target, final_damage):
+            return final_damage * (1 + 0.2 * len(self.get_active_removable_effects(get_buffs=False, get_debuffs=True)))
+        def poison_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= 40:
+                target.apply_effect(ContinuousDamageEffect_Poison('Poison', duration=20, is_buff=False, ratio=0.04, imposter=self, base="hp"))
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, func_after_dmg=poison_effect, target_kw1="enemy_in_front",
+                                   func_damage_step=damage_amplify)
+        return damage_dealt
+        
+    def skill3(self):
+        pass
 
 
 # ====================================
@@ -4130,6 +4356,47 @@ class Goliath(Monster):
     def battle_entry_effects(self):
         self.apply_effect(StatsEffect('Goliath Passive', -1, True, {'atk' : 1.3, 'defense' : 1.3, 'maxhp' : 1.3}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
+
+
+# remove buffs
+class Behemoth(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "Behemoth"
+        self.skill1_description = "Attack 1 closest enemy with 300% atk 3 times. Each attack has a 80% chance to remove 1 active buff."
+        self.skill2_description = "Attack all enemies with 300% atk, each hit has a 80% chance to remove 1 active buff."
+        self.skill3_description = "All main stats except maxhp are increased by 10%."
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の300%で3回攻撃する。各攻撃には80%の確率で対象のアクティブなバフを1つ解除する。"
+        self.skill2_description_jp = "全ての敵に攻撃力の300%で攻撃し、各攻撃には80%の確率で対象のアクティブなバフを1つ解除する。"
+        self.skill3_description_jp = "最大HPを除く全ての主要ステータスが10%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill1_logic(self):
+        def buff_removal(self, target: character.Character):
+            if random.randint(1, 100) <= 80:
+                target.remove_random_amount_of_buffs(1, allow_infinite_duration=False)
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, func_after_dmg=buff_removal, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def buff_removal(self, target: character.Character):
+            if random.randint(1, 100) <= 80:
+                target.remove_random_amount_of_buffs(1, allow_infinite_duration=False)
+        damage_dealt = self.attack(multiplier=3.0, repeat=1, target_kw1="all_enemy", func_after_dmg=buff_removal)
+        return damage_dealt
+
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(StatsEffect('Behemoth Passive', -1, True, {'atk' : 1.1, 'defense' : 1.1, 'spd' : 1.1}, can_be_removed_by_skill=False))
+        self.hp = self.maxhp
+
+
+#TODO: damage increases when buffed
 
 
 # ====================================
@@ -5117,11 +5384,6 @@ class Darklord(Monster):
         pass
 
 
-
-
-
-
-
 # ====================================
 # End of Anti Heal
 # ====================================
@@ -5142,9 +5404,7 @@ class ClericB(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = False
-
     
-
     def skill1_logic(self):
         target = next(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="1"))
         target.apply_effect(AbsorptionShield('Shield', 20, True, 10 * self.atk, False))
@@ -5154,7 +5414,6 @@ class ClericB(Monster):
         target = next(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="ally"))
         target.apply_effect(AbsorptionShield('Shield', 20, True, 10 * self.atk, False))
         return 0
-
 
     def skill3(self):
         pass
@@ -5246,6 +5505,84 @@ class EarthSpirit(Monster):
             ally.apply_effect(AbsorptionShield('Shield', -1, True, 6.0 * self.atk + 8.0 * self.defense, False))
         self.apply_effect(StatsEffect('EarthSpirit Passive', -1, True, {'defense' : 1.3}, can_be_removed_by_skill=False))
 
+
+# Shield based on lost hp
+class MageC(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "MageC"
+        self.skill1_description = "Target 1 ally of lowest hp percentage, apply Absorption Shield that absorbs damage equal to 100% of target's" \
+        " lost hp."
+        self.skill2_description = "Attack all enemies with 234% atk, apply Absorption Shield for all allies, shield absorbs up to 100% of damage dealt."
+        self.skill3_description = "Normal attack attack random enemy pair, has 50% chance to inflict Burn for 20 turns." \
+        " Burn: deals 20% atk status damage each turn."
+        self.skill1_description_jp = "HP割合が最も低い味方1人を対象に選び、対象の失ったHPの100%に相当するダメージを吸収する「吸収シールド」を付与する。"
+        self.skill2_description_jp = "全ての敵に攻撃力の234%で攻撃し、全ての味方に「吸収シールド」を付与する。シールドは与えたダメージの100%分のダメージを吸収する。"
+        self.skill3_description_jp = "通常攻撃でランダムな敵ペアを攻撃し、50%の確率で20ターンの間「燃焼」を付与する。燃焼：毎ターン攻撃力の20%分の状態異常ダメージを与える。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = True
+    
+    def skill1_logic(self):
+        target = next(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="1"))
+        lost_hp = target.maxhp - target.hp
+        if lost_hp > 0:
+            target.apply_effect(AbsorptionShield('Shield', -1, True, target.maxhp - target.hp, False))
+        return 0
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=2.34, repeat=1, target_kw1="all_enemy")
+        if self.is_alive() and damage_dealt > 0:
+            for ally in self.ally:
+                ally.apply_effect(AbsorptionShield('Shield', -1, True, damage_dealt, False))
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def burn(self, target):
+            if random.random() < 0.5:
+                target.apply_effect(ContinuousDamageEffect('Burn', 20, False, 0.2 * self.atk, self))
+        damage_dealt = self.attack(func_after_dmg=burn, target_kw1="random_enemy_pair")
+        return damage_dealt
+
+
+# When shielded, damage increases
+class EarthSpiritB(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "EarthSpiritB"
+        self.skill1_description = "Attack 1 enemy of highest hp percentage with 600% atk and inflict Cripple for 20 turns." \
+        " Cripple: atk decreased by 20%, spd decreased by 30%."
+        self.skill2_description = "Attack random enemies 7 times with 200% atk. If you have Absorption Shield, damage is increased by 100%."
+        self.skill3_description = "At start of battle, apply Absorption Shield on yourself, shield absorbs damage up to 100% of maxhp."
+        self.skill1_description_jp = "HP割合が最も高い敵1体に攻撃力の600%で攻撃し、20ターンの間「衰弱」を付与する。衰弱：攻撃力が20%減少し、速度が30%減少する。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力の200%で7回攻撃する。自分が吸収シールドを持っている場合、ダメージが100%増加する。"
+        self.skill3_description_jp = "戦闘開始時、自身に吸収シールドを付与する。このシールドは最大HPの100%分のダメージを吸収する。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+
+    def skill1_logic(self):
+        def cripple(self, target):
+            target.apply_effect(StatsEffect('Cripple', 20, False, {'atk' : 0.8, 'spd' : 0.7}))
+        damage_dealt = self.attack(multiplier=6.0, repeat=1, func_after_dmg=cripple, target_kw1="n_highest_hp_percentage_enemy", target_kw2="1")
+        return damage_dealt
+
+    def skill2_logic(self):
+        def damage_increase(self: character.Character, target: character.Character, final_damage: float):
+            if self.has_effect_that_named(None, None, class_name="AbsorptionShield"):
+                return final_damage * 2
+            return final_damage
+        damage_dealt = self.attack(multiplier=2.0, repeat=7, func_damage_step=damage_increase)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        self.apply_effect(AbsorptionShield('Shield', -1, True, self.maxhp, False))
 
 
 # ====================================
