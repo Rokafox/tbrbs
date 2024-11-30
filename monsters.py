@@ -2994,10 +2994,10 @@ class FutureSoldier(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "FutureSoldier"
-        self.skill1_description = "Attack random enemies 5 times with 200% atk, each attack reduces target defense by 8% for 24 turns."
+        self.skill1_description = "Attack random enemies 5 times with 200% atk, each attack has 30% chance to reduces target defense by 24% for 24 turns."
         self.skill2_description = "Attack random enemies 7 times with 150% atk, if target has lower defense than self, increase damage by 100%."
         self.skill3_description = "Normal attack deals double damage if target has lower defense than self."
-        self.skill1_description_jp = "ランダムな敵に攻撃力200%で5回攻撃し、各攻撃で対象の防御力を24ターンで8%減少。"
+        self.skill1_description_jp = "ランダムな敵に攻撃力200%で5回攻撃し、各攻撃で30%の確率で対象の防御力を24ターンで24%減少。"
         self.skill2_description_jp = "ランダムな敵に攻撃力150%で7回攻撃し、対象の防御力が自分より低い場合、ダメージを100%増加。"
         self.skill3_description_jp = "通常攻撃は対象の防御力が自分より低い場合、ダメージが2倍になる。"
         self.skill1_cooldown_max = 4
@@ -3006,7 +3006,8 @@ class FutureSoldier(Monster):
 
     def skill1_logic(self):
         def defence_break(self, target):
-            target.apply_effect(StatsEffect('Defence Break', 24, False, {'defense' : 0.92}))
+            if random.random() < 0.3:
+                target.apply_effect(StatsEffect('Defence Break', 24, False, {'defense' : 0.76}))
         damage_dealt = self.attack(multiplier=2.0, repeat=5, func_after_dmg=defence_break)
         return damage_dealt
 

@@ -528,7 +528,7 @@ def get_all_characters():
                        "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
                        "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
                        "Clarence", "Jingke", "Shuijing", "ShuijingAL", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl", "Fred",
-                       "Waldo", "Toby", "TobyRT", "Cory", "Imada", "Lancelot", "Glass", "Gawain"]
+                       "Waldo", "Toby", "TobyRT", "Cory", "Imada", "Lancelot", "Glass", "Gawain", "Pinee", "Pine"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -1769,6 +1769,8 @@ if __name__ == "__main__":
                 "Example input:\n" \
                 "123\n" \
                 "This will sell all equipment, because any non zero number is evaluated as True.\n" \
+                "'roka is fox'\n" \
+                "This will sell all equipment, because any non empty string is evaluated as True.\n" \
                 "x.market_value <= 200\n" \
                 "This will sell all equipment with market value less than or equal to 200.\n" \
                 "x.rarity == 'Common'\n" \
@@ -1784,6 +1786,8 @@ if __name__ == "__main__":
                 "入力例:\n" \
                 "123\n" \
                 "すべての装備品を売却する。これはすべてのゼロ以外の数値は真と評価される。\n" \
+                "'roka is fox'\n" \
+                "すべての装備品を売却する。これはすべての空でない文字列は真と評価される。\n" \
                 "x.market_value <= 200\n" \
                 "市場価値が200以下のすべての装備品を売却する。\n" \
                 "x.rarity == 'Common'\n" \

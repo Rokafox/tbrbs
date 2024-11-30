@@ -3,7 +3,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -686,8 +686,6 @@ class Character:
     def action(self, skill_priority: int = 1) -> None:
         if self.get_equipment_set() == "Freight":
             skill_priority = 2
-            freight_effect = self.get_effect_that_named("Freight Set", None, "EquipmentSetEffect_Freight")
-            freight_effect.apply_effect_custom(self)
 
         for eff in self.buffs.copy() + self.debuffs.copy():
             eff.apply_effect_before_action(self)
@@ -733,19 +731,18 @@ class Character:
             global_vars.turn_info_string += f"{self.name} cannot act due to {reason}.\n"
 
         self.reset_number_of_attacks()
-        # Snowflake set effect
-        set_name = self.get_equipment_set()
-        if set_name == "Snowflake":
-            for buff in self.buffs:
-                if buff.name == "Snowflake Set":
-                    buff.apply_effect_custom()
+
+        for eff in self.buffs.copy() + self.debuffs.copy():
+            eff.apply_effect_after_action(self)
+
 
     # Print the character's stats
     def __str__(self):
         base_stats = "{:<20s} MaxHP: {:>5d} HP: {:>5d} ATK: {:>7.2f} DEF: {:>7.2f} Speed: {:>7.2f}".format(self.name, self.maxhp, self.hp, self.atk, self.defense, self.spd)
-        effects_buffs = [str(effect) for effect in self.buffs]
+        effect_eq_set = [str(effect) for effect in self.buffs + self.debuffs if effect.is_set_effect]
+        effects_buffs = [str(effect) for effect in self.buffs if not effect.is_set_effect]
         effects_debuffs = [str(effect) for effect in self.debuffs]
-        return base_stats + f" Buffs: {effects_buffs} Debuffs: {effects_debuffs}"
+        return base_stats + f" Buffs: {effects_buffs} Debuffs: {effects_debuffs} Set Effects: {effect_eq_set}"
 
     def tooltip_string(self):
         level = self.lvl if self.lvl < self.lvl_max else "MAX"
@@ -1154,7 +1151,7 @@ class Character:
         distances = [abs(self_index - mi) for mi in middle_indices]
         return min(distances)
 
-    def get_neighbors(self, party, char, include_self=True, distance=1) -> list:
+    def get_neighbors(self, party, char, include_self=True, distance=1) -> list['Character']:
         neighbors = []
         for is_adj, item in mit.adjacent(lambda x: x == char, party, distance):
             if is_adj and item != char:
@@ -1620,6 +1617,8 @@ class Character:
             # This prevents attempting to apply the same effect instance multiple times.
             for c in self.party + self.enemyparty:
                 if c.has_effect_that_is(effect):
+                    global_vars.turn_info_string += f"Warning: {effect.name}, which already applied to someone before, is attempting to apply on {self.name}.\n"
+                    global_vars.turn_info_string += f"Warning: {c.name} has the same effect instance.\n"
                     print(f"Warning: {effect.name}, which already applied to someone before, is attempting to apply on {self.name}.")
                     print(f"Warning: {c.name} has the same effect instance.")
 
@@ -1729,12 +1728,12 @@ class Character:
                 total += effect.shield_value
         return total
 
-    def get_active_removable_effects(self, get_buffs=True, get_debuffs=True) -> list:
+    def get_active_removable_effects(self, get_buffs=True, get_debuffs=True) -> list[Effect]:
         active_effects = []
         if get_buffs:
-            active_effects += [effect for effect in self.buffs if effect.can_be_removed_by_skill and effect.duration > 0]
+            active_effects += [effect for effect in self.buffs if effect.can_be_removed_by_skill and effect.duration > 0 and not effect.is_set_effect]
         if get_debuffs:
-            active_effects += [effect for effect in self.debuffs if effect.can_be_removed_by_skill and effect.duration > 0]
+            active_effects += [effect for effect in self.debuffs if effect.can_be_removed_by_skill and effect.duration > 0 and not effect.is_set_effect]
         return active_effects
 
 
@@ -1947,7 +1946,6 @@ class Character:
         elif set_name == "Runic":
             # Critical rate is increased by 100%, critical damage is decreased by 50%. 
             # When dealing damage, any critical rate over 100% is converted to critical damage
-            self.apply_effect(EquipmentSetEffect_Runic("Runic Set", -1, True))
             self.apply_effect(StatsEffect("Runic Set", -1, True, {"crit": 1.00, "critdmg": -0.50}, is_set_effect=True))
         elif set_name == "Grassland":
             # If you haven't taken action yet in current battle, speed is increased by 100%, final damage taken is decreased by 30%
@@ -7118,6 +7116,115 @@ class Gawain(Character):
         bri = ReductionShield("Brilliance", 10, True, 0.60, cc_immunity=True)
         bri.additional_name = "Gawain_Brilliance"
         self.apply_effect(bri)
+
+
+class Pinee(Character):
+    """
+
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Pinee"
+        self.skill1_description = "Select the ally on the right, apply QG for 20 turns and heal the ally by 300% atk." \
+        " Then choose 2 allies of lowest hp percentage, apply Smitten for 20 turns." \
+        " QG: Normal damage taken is reduced by 50%, after action, copy random 2 buffs, apply them to allies who has QC effect." \
+        " If the selected buff is QG or QC, its duration is set to the original duration." \
+        " When same effect is applied, duration is refreshed." \
+        " Smitten: After action, recover hp by 300% atk of the effect applier."
+        self.skill2_description = "Target 1 ally with highest atk, apply QG for 20 turns, heal the ally by 300% atk and apply Crit Up for 20 turns." \
+        " Crit Up: Critrate is increased by 80%."
+        self.skill3_description = "Normal attack multiplier is increased by 120% atk."
+        self.skill1_description_jp = "右側の味方を選択し、20ターンの間「傾国」を付与し、攻撃力の300%分その味方を治療する。その後、HP割合が最も低い味方2人に20ターンの間「傾心」を付与する。" \
+        "傾国：通常ダメージを50%軽減し、行動後、ランダムなバフ2つをコピーして、傾城効果を持つ味方に付与する。選択されたバフが傾国または傾城の場合、その持続時間は元の持続時間に設定される。同じ効果が再度付与された場合、持続時間が更新される。" \
+        "傾心：行動後、効果を付与したキャラクターの攻撃力の300%分HPを回復する。"
+        self.skill2_description_jp = "攻撃力が最も高い味方1人を対象に、20ターンの間「傾国」を付与し、攻撃力の300%分その味方を治療し、20ターンの間「クリティカル率アップ」を付与する。" \
+        "クリティカル率アップ：クリティカル率が80%増加する。"
+        self.skill3_description_jp = "通常攻撃の倍率が攻撃力の120%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        # test
+
+    def skill1_logic(self):
+        target_ally: Character = self.get_neighbor_ally_right()
+        if not target_ally:
+            return 0
+        # PineQGEffect
+        target_ally.apply_effect(PineQGEffect("QG", 20, True, 0.5, False, cover_normal_damage=True, 
+                                              cover_status_damage=False))
+        self.heal(value=self.atk * 3.0, target_list=[target_ally])
+        two_lowest_hp = self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="2")
+        two_lowest_hp = list(two_lowest_hp)
+        for a in two_lowest_hp:
+            a.apply_effect(SmittenEffect("Smitten", 20, True, False, heal_value=self.atk * 3.0, effect_applier=self))
+        return 0
+
+    def skill2_logic(self):
+        target_ally: Character = max(self.ally, key=lambda x: x.atk)
+        self.heal(value=self.atk * 3.0, target_list=[target_ally])
+        target_ally.apply_effect(PineQGEffect("QG", 20, True, 0.5, False, cover_normal_damage=True, 
+                                              cover_status_damage=False))
+        target_ally.apply_effect(StatsEffect("Crit Up", 20, True, {"crit": 0.80}))
+        return 0
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        return self.attack(multiplier=3.2)
+
+
+class Pine(Character):
+    """
+
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Pine"
+        self.skill1_description = "Select the ally on the left, apply QC for 20 turns and heal the ally by 300% atk." \
+        " Then choose 2 allies of lowest hp percentage, apply Grace for 20 turns." \
+        " QC: Status damage taken is reduced by 50%, after action, copy random 2 buffs, apply them to allies who has QG effect." \
+        " If the selected buff is QG or QC, its duration is set to the original duration." \
+        " When same effect is applied, duration is refreshed." \
+        " Grace: Atk and defense is increased by 30%."
+        self.skill2_description = "Target 1 ally with highest atk, apply QC for 20 turns, heal the ally by 300% atk and apply Critdmg Up for 20 turns." \
+        " Critdmg Up: Critdmg is increased by 100%."
+        self.skill3_description = "Normal attack multiplier is increased by 120% atk."
+        self.skill1_description_jp = "左側の味方を選択し、20ターンの間「傾城」を付与して攻撃力の300%分その味方を治療する。その後、HP割合が最も低い味方2人を選び、20ターンの間「恩寵」を付与する。傾城：受ける状態異常ダメージが50%減少し、行動後、ランダムなバフを2つコピーして「傾国」効果を持つ味方に適用する。選択されたバフが傾国または傾城の場合、その持続時間は元の持続時間に設定される。同じ効果が再度付与された場合、持続時間が更新される。恩寵：攻撃力と防御力が30%増加する。"
+        self.skill2_description_jp = "攻撃力が最も高い味方1人を対象に、20ターンの間「傾城」を付与し、攻撃力の300%分その味方を治療し、20ターンの間「クリティカルダメージアップ」を付与する。クリティカルダメージアップ：クリティカルダメージが100%増加する。"
+        self.skill3_description_jp = "通常攻撃の倍率が攻撃力の120%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        # test
+
+    def skill1_logic(self):
+        target_ally: Character = self.get_neighbor_ally_left()
+        if not target_ally:
+            return 0
+        # PineQCEffect
+        target_ally.apply_effect(PineQCEffect("QC", 20, True, 0.5, False, cover_normal_damage=False, 
+                                              cover_status_damage=True))
+        self.heal(value=self.atk * 3.0, target_list=[target_ally])
+        two_lowest_hp = self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="2")
+        two_lowest_hp = list(two_lowest_hp)
+        for a in two_lowest_hp:
+            a.apply_effect(StatsEffect("Grace", 20, True, {"atk": 1.30, "defense": 1.30}))
+        return 0
+
+    def skill2_logic(self):
+        target_ally: Character = max(self.ally, key=lambda x: x.atk)
+        self.heal(value=self.atk * 3.0, target_list=[target_ally])
+        target_ally.apply_effect(PineQCEffect("QC", 20, True, 0.5, False, cover_normal_damage=False, 
+                                              cover_status_damage=True))
+        target_ally.apply_effect(StatsEffect("Critdmg Up", 20, True, {"critdmg": 1.00}))
+        return 0
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        return self.attack(multiplier=3.2)
 
 
 # class NC(Character):

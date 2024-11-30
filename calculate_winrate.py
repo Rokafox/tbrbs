@@ -254,7 +254,7 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
         return None, turn, None
 
 
-def build_parties_with_pairs(character_list, pairs_dict=None):
+def build_parties_with_pairs(character_list, pairs_dict=None, character_must_include=None):
     # If pairs_dict is None or empty, treat all characters as individual units
     if not pairs_dict:
         pairs_dict = {}
@@ -292,6 +292,25 @@ def build_parties_with_pairs(character_list, pairs_dict=None):
     party2 = []
 
     units_to_assign = units.copy()
+
+    # Find the unit that contains character_must_include
+    unit_must_include = None
+    if character_must_include:
+        for unit in units:
+            if character_must_include in unit:
+                unit_must_include = unit
+                break
+        if not unit_must_include:
+            # character_must_include is not in units, possibly not in character_list
+            pass
+
+    # pop the unit from units_to_assign that is unit_must_include, if unit_must_include is not None
+    # then we move it to fairly end of units_to_assign, index > -10, so it will have a much greater chance to be assigned.
+    if unit_must_include and unit_must_include in units_to_assign:
+        units_to_assign.remove(unit_must_include)
+        insertion_index = random.randint(-10, -1)
+        units_to_assign.insert(insertion_index, unit_must_include)
+
 
     # Try to fill parties
     while len(party1) < 5 or len(party2) < 5:
@@ -332,10 +351,11 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
     # Commented out in 3.5.9
     # Some characters are paired together as this will give a better representation of their performance,
     # but is way too complicated.
-    # NOTE: Do not delete this commented code yet.
-    # pairs_dict = {
-    #     "Fenrir": ["Taily", "Rubin", "RubinPF"],
-    # }
+    # Reused in 3.7.2
+    pairs_dict = {
+        "Fenrir": ["Taily", "Rubin", "RubinPF"],
+        "Pinee": ["Pine"],
+    }
 
     for i in range(sample):
         # If there are too many errors, we know it is not a hardware failure or cosmic rays bit flipping
@@ -345,13 +365,13 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
             break
 
         random.shuffle(character_list)
-        # party1, party2 = build_parties_with_pairs(character_list, pairs_dict)
-        party1, party2 = character_list[:5], character_list[5:10]
-        if character_must_include:
-            if character_must_include not in itertools.chain(party1, party2):
-                # pop a random guy from party1 and replace with character_must_include
-                party1.pop(random.randint(0, 4))
-                party1.append(character_must_include)
+        party1, party2 = build_parties_with_pairs(character_list, pairs_dict, character_must_include)
+        # party1, party2 = character_list[:5], character_list[5:10]
+        # if character_must_include:
+        #     if character_must_include not in itertools.chain(party1, party2):
+        #         # pop a random guy from party1 and replace with character_must_include
+        #         party1.pop(random.randint(0, 4))
+        #         party1.append(character_must_include)
 
         for character in itertools.chain(party1, party2):
             character.fineprint_mode = fineprint_mode
@@ -416,7 +436,7 @@ if __name__ == "__main__":
         sample = int(sys.argv[1])
     else:
         sample = 6666
-    character_list, character_must_include = get_all_characters("Gawain")
+    character_list, character_must_include = get_all_characters(1)
     # "default", "file", "suppress"
     a, b = calculate_winrate_for_character(sample, character_list, "suppress", run_tests=False, character_must_include=character_must_include)
     c = calculate_win_loss_rate(a, b, write_csv=True)

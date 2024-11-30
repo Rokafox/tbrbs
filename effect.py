@@ -110,6 +110,9 @@ class Effect:
     def apply_effect_before_action(self, character):
         pass
 
+    def apply_effect_after_action(self, character):
+        pass
+
     def apply_effect_when_taking_friendly_fire(self, character, damage, attacker):
         return damage
 
@@ -2287,6 +2290,31 @@ class OverhealEffect(Effect):
         return s
 
 
+class SmittenEffect(Effect):
+    """
+    After action, heal hp by [heal_value]
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, heal_value, effect_applier):
+        super().__init__(name, duration, is_buff)
+        self.cc_immunity = cc_immunity
+        self.heal_value = heal_value
+        self.effect_applier = effect_applier
+
+    def apply_effect_after_action(self, character):
+        if character.is_dead():
+            return
+        character.heal_hp(self.heal_value, self.effect_applier)
+
+    def tooltip_description(self):
+        return f"After action, heal {self.heal_value} hp."
+    
+    def tooltip_description_jp(self):
+        return f"行動後、{self.heal_value}HP回復する。"
+
+
+
+
+
 # =========================================================
 # End of Special effects
 # Effects in the above section need special handling.
@@ -2513,7 +2541,7 @@ class EquipmentSetEffect_Snowflake(Effect):
             new_bonus_dict[key] = value + self.activation_count * 0.25
         return new_bonus_dict
 
-    def apply_effect_custom(self):
+    def apply_effect_after_action(self, character):
         self.collected_pieces += 1
         self.collected_pieces = min(self.collected_pieces, 6)
 
@@ -2702,7 +2730,7 @@ class EquipmentSetEffect_Freight(Effect):
         self.is_set_effect = True
         self.sort_priority = 2000
 
-    def apply_effect_custom(self, character):
+    def apply_effect_before_action(self, character):
         character.heal_hp(character.spd * 0.50, character)
         # for x turns, increase spd by 30%.
         spd_buff = StatsEffect("Freight", 4, True, {"spd": 1.30}, is_set_effect=True)
@@ -3120,6 +3148,75 @@ class ShintouEffect(Effect):
     def tooltip_description_jp(self):
         return f"神稲のカウンター数:{self.current_counters}。"
     
+
+class PineQGEffect(ReductionShield):
+    def __init__(self, name, duration, is_buff, effect_value, cc_immunity, *, requirement=None, 
+                 requirement_description=None, requirement_description_jp=None, 
+                 damage_function=None, cover_status_damage=True, 
+                 cover_normal_damage=True):
+        super().__init__(name, duration, is_buff, effect_value, cc_immunity, 
+                         requirement=requirement, requirement_description=requirement_description, 
+                         requirement_description_jp=requirement_description_jp, damage_function=damage_function, 
+                         cover_status_damage=cover_status_damage, cover_normal_damage=cover_normal_damage)
+        self.apply_rule = "stack"
+        self.max_time_of_buff_copy = 10 # Not used
+
+    def apply_effect_after_action(self, character):
+        if character.is_dead():
+            return
+        # copy random 2 buffs, apply them to allies who has QC effect
+        all_buffs: list[Effect] = character.get_active_removable_effects(get_buffs=True)
+        if len(all_buffs) < 2:
+            selected_buffs = all_buffs
+        else:
+            selected_buffs = random.sample(all_buffs, 2)
+        for buff in selected_buffs:
+            # if the buff is PineQGEffect or PineQCEffect, its duration is set to original duration.
+            if buff.__class__.__name__ == "PineQGEffect" or buff.__class__.__name__ == "PineQCEffect":
+                buff.duration = buff.original_duration
+        # find all allies who has QC effect
+        allies_with_qc = character.target_selection(keyword="ally_that_must_have_effect_full", keyword2="QC", keyword3="None", keyword4="PineQCEffect")
+        allies_with_qc = list(allies_with_qc)
+        if not allies_with_qc:
+            return
+        for a in allies_with_qc:
+            for sb in selected_buffs:
+                a.apply_effect(copy.copy(sb))
+
+
+class PineQCEffect(ReductionShield):
+    def __init__(self, name, duration, is_buff, effect_value, cc_immunity, *, requirement=None, 
+                 requirement_description=None, requirement_description_jp=None, 
+                 damage_function=None, cover_status_damage=True, 
+                 cover_normal_damage=True):
+        super().__init__(name, duration, is_buff, effect_value, cc_immunity, 
+                         requirement=requirement, requirement_description=requirement_description, 
+                         requirement_description_jp=requirement_description_jp, damage_function=damage_function, 
+                         cover_status_damage=cover_status_damage, cover_normal_damage=cover_normal_damage)
+        self.apply_rule = "stack"
+        self.max_time_of_buff_copy = 10 # Not used
+
+    def apply_effect_after_action(self, character):
+        if character.is_dead():
+            return
+        # copy random 2 buffs, apply them to allies who has QG effect
+        all_buffs: list[Effect] = character.get_active_removable_effects(get_buffs=True)
+        if len(all_buffs) < 2:
+            selected_buffs = all_buffs
+        else:
+            selected_buffs = random.sample(all_buffs, 2)
+        # find all allies who has QG effect
+        allies_with_qg = character.target_selection(keyword="ally_that_must_have_effect_full", keyword2="QG", keyword3="None", keyword4="PineQGEffect")
+        allies_with_qg = list(allies_with_qg)
+        if not allies_with_qg:
+            return
+        for a in allies_with_qg:
+            for sb in selected_buffs:
+                a.apply_effect(copy.copy(sb))
+
+
+
+
 
 class BubbleWorldEffect(Effect):
     """
