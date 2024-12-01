@@ -1677,6 +1677,7 @@ class Character:
 
         # if effect is CancellationShield and they have the same following attributes, we can stack them.
         # self.name = name
+        # self.duration = duration
         # self.is_buff = is_buff
         # self.threshold = threshold
         # self.cc_immunity = cc_immunity
@@ -1690,7 +1691,7 @@ class Character:
 
         if isinstance(effect, CancellationShield):
             for e in itertools.chain(self.buffs, self.debuffs):
-                if isinstance(e, CancellationShield) and e.name == effect.name and e.is_buff == effect.is_buff and \
+                if isinstance(e, CancellationShield) and e.name == effect.name and e.is_buff == effect.is_buff and effect.duration == e.duration and \
                 e.threshold == effect.threshold and e.cc_immunity == effect.cc_immunity and e.uses == effect.uses and \
                 e.cancel_excessive_instead == effect.cancel_excessive_instead and e.cancel_below_instead == effect.cancel_below_instead and \
                 e.remove_this_effect_when_use_is_zero == effect.remove_this_effect_when_use_is_zero and \
