@@ -446,5 +446,7 @@ if __name__ == "__main__":
         print("Report generated and saved to ./reports/performance.txt")
         analyze.report_generate_heatmap(data)
         print("Heatmap generated and saved to ./reports/heatmap.png")
+        analyze.report_export_pivot_table(data)
+        print("Pivot table generated and saved to ./reports/pivot_table.csv")
     except Exception as e:
         print(e)

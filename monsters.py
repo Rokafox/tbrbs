@@ -3639,10 +3639,11 @@ class HeroB(Monster):
 
 
     def skill2_logic(self):
-        allies = self.get_neighbor_allies_including_self()
-        for ally in allies:
-            shield = AbsorptionShield('Heroic Shield', 12, True, int((self.maxhp - self.hp) * 1.0), False)
-            ally.apply_effect(shield)
+        if self.hp < self.maxhp:
+            allies = self.get_neighbor_allies_including_self()
+            for ally in allies:
+                shield = AbsorptionShield('Heroic Shield', 12, True, int((self.maxhp - self.hp) * 1.0), False)
+                ally.apply_effect(shield)
         return 0
 
 

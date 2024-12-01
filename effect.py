@@ -363,6 +363,7 @@ class AbsorptionShield(Effect):
     def __init__(self, name, duration, is_buff, shield_value, cc_immunity):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.shield_value = shield_value
+        assert self.shield_value > 0 
         self.is_buff = is_buff
         self.cc_immunity = cc_immunity
         self.sort_priority = 299
@@ -835,7 +836,8 @@ class FriendlyFireShield(Effect):
     def apply_effect_when_taking_friendly_fire(self, character, damage, attacker):
         if self.apply_shield_on_full_hp and character.hp == character.maxhp:
             shield_value = damage * 1.00
-            character.apply_effect(AbsorptionShield("Shield", -1, True, shield_value, False))
+            if shield_value > 0:
+                character.apply_effect(AbsorptionShield("Shield", -1, True, shield_value, False))
         if self.heal_by_damage > 0:
             character.heal_hp(damage * self.heal_by_damage, self.effect_applier)
         final_dmg = damage * (1 - self.damage_reduction)
@@ -1025,6 +1027,7 @@ class DecayEffect(Effect):
 
 #---------------------------------------------------------
 class CancellationShield(Effect):
+    # NOTE: apply_effect() method on Character class has a apply rule for this effect.
     """
     Cancel the damage to 0 if damage exceed character maxhp * [threshold], 
     provide [uses] times of uses,
@@ -2306,10 +2309,10 @@ class SmittenEffect(Effect):
         character.heal_hp(self.heal_value, self.effect_applier)
 
     def tooltip_description(self):
-        return f"After action, heal {self.heal_value} hp."
+        return f"After action, heal {self.heal_value:.2f} hp."
     
     def tooltip_description_jp(self):
-        return f"行動後、{self.heal_value}HP回復する。"
+        return f"行動後、{self.heal_value:.2f}HP回復する。"
 
 
 

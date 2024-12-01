@@ -1,3 +1,4 @@
+import bisect
 from collections.abc import Callable
 import copy, random
 import re
@@ -1197,6 +1198,7 @@ class Character:
         # print(f"Start reversing additive stats:")
         hp_removed = self.update_main_stats_additive(reversed=True)
         # print(f"Reversed additive stats.")
+        # {'atk': 1.2, 'defense': 1.2, 'spd': 1.2, 'crit': 0.2, 'critdmg': 0.2}
         for attr, value in stats.items():
             if attr in ["maxhp", "hp", "atk", "defense", "spd"]:
                 if reversed:
@@ -1663,21 +1665,52 @@ class Character:
                     global_vars.turn_info_string += f"{e.name} on {self.name} has been replaced by {effect.name}.\n"
                     break
         # if effect is AbsorptionShield and they have the same name and duration and cc_immunity, we can stack them.
+        shield_value_prev = self.get_shield_value()
         if isinstance(effect, AbsorptionShield):
-            for e in self.buffs.copy() + self.debuffs.copy():
+            for e in itertools.chain(self.buffs, self.debuffs):
                 if isinstance(e, AbsorptionShield) and e.name == effect.name and e.duration == effect.duration and e.cc_immunity == effect.cc_immunity:
                     e.shield_value += effect.shield_value
                     global_vars.turn_info_string += f"{effect.name} on {self.name} has been stacked.\n"
-                    # print(f"Warning: AbsorptionShield is stacked. {self.name}, {effect.name}")
+                    shield_value_curr = self.get_shield_value()
+                    assert shield_value_curr > shield_value_prev, f"AbsorptionShield is stacked, but shield value is not increased when trying to stack {effect.name} on {self.name}."
+                    return
+
+        # if effect is CancellationShield and they have the same following attributes, we can stack them.
+        # self.name = name
+        # self.is_buff = is_buff
+        # self.threshold = threshold
+        # self.cc_immunity = cc_immunity
+        # self.sort_priority = 250
+        # self.uses = uses
+        # self.cancel_excessive_instead = cancel_excessive_instead
+        # self.cancel_below_instead = cancel_below_instead
+        # self.remove_this_effect_when_use_is_zero = remove_this_effect_when_use_is_zero
+        # self.cover_status_damage = cover_status_damage
+        # self.cover_normal_damage = cover_normal_damage
+
+        if isinstance(effect, CancellationShield):
+            for e in itertools.chain(self.buffs, self.debuffs):
+                if isinstance(e, CancellationShield) and e.name == effect.name and e.is_buff == effect.is_buff and \
+                e.threshold == effect.threshold and e.cc_immunity == effect.cc_immunity and e.uses == effect.uses and \
+                e.cancel_excessive_instead == effect.cancel_excessive_instead and e.cancel_below_instead == effect.cancel_below_instead and \
+                e.remove_this_effect_when_use_is_zero == effect.remove_this_effect_when_use_is_zero and \
+                e.cover_status_damage == effect.cover_status_damage and e.cover_normal_damage == effect.cover_normal_damage:
+                    e.uses += effect.uses
+                    global_vars.turn_info_string += f"{effect.name} on {self.name} has been stacked. Uses: {e.uses}.\n"
                     return
 
         # Do we allow applying effect on dead character? Yes, for some effects.
+        # if effect.is_buff:
+        #     self.buffs.append(effect)
+        #     self.buffs.sort(key=lambda x: x.sort_priority)
+        # else:
+        #     self.debuffs.append(effect)
+        #     self.debuffs.sort(key=lambda x: x.sort_priority)
+        # insert the effect in the correct position based on sort_priority
         if effect.is_buff:
-            self.buffs.append(effect)
-            self.buffs.sort(key=lambda x: x.sort_priority)
+            bisect.insort(self.buffs, effect, key=lambda x: x.sort_priority)
         else:
-            self.debuffs.append(effect)
-            self.debuffs.sort(key=lambda x: x.sort_priority)
+            bisect.insort(self.debuffs, effect, key=lambda x: x.sort_priority)
         effect.already_applied = True
         if not effect.is_set_effect:
             global_vars.turn_info_string += f"{effect.name} has been applied on {self.name}.\n"
@@ -1686,13 +1719,14 @@ class Character:
     def remove_effect(self, effect: Effect, purge=False, strict=False):
         # purge: effect is removed without triggering apply_effect_on_remove
         # Attention: Character Ophelia does not use this function, but directly temper with self.buffs and self.debuffs
-        if effect in self.buffs:
-            self.buffs.remove(effect)
-        elif effect in self.debuffs:
-            self.debuffs.remove(effect)
-        else:
+        try:
+            if effect.is_buff:
+                self.buffs.remove(effect)
+            else:
+                self.debuffs.remove(effect)
+        except ValueError:
             if strict:
-                raise Exception("Effect not found.")
+                raise Exception(f"Effect not found. Effect: {effect}")
             else:
                 print(f"Warning: Effect not found. Effect: {effect}")
         global_vars.turn_info_string += f"{effect.name} on {self.name} has been removed.\n"
@@ -2961,10 +2995,10 @@ class Bell(Character):
         self.name = "Bell"
         self.skill1_description = "Attack 1 closest enemy with 220% atk 5 times."
         self.skill2_description = "Attack 1 closest enemy with 180% atk 6 times. This attack never misses. For each target fallen, trigger an additional attack. Maximum attacks: 8"
-        self.skill3_description = "Once per battle, after taking damage, if hp is below 50%, apply absorption shield, absorb damage up to 400% of damage just taken. For 20 turns, damage taken cannot exceed 20% of maxhp."
+        self.skill3_description = "Once per battle, after taking damage that is higher than 0, if hp is below 50%, apply absorption shield, absorb damage up to 400% of damage just taken. For 20 turns, damage taken cannot exceed 20% of maxhp."
         self.skill1_description_jp = "最も近い1体の敵に220%の攻撃を5回行う。"
         self.skill2_description_jp = "最も近い1体の敵に180%の攻撃を6回行う。この攻撃はMISSにならない。敵が倒れるたびに追加攻撃を発動する。最大攻撃回数:8"
-        self.skill3_description_jp = "戦闘中1回のみ、ダメージを受けた後、HPが50%以下の場合、吸収シールドを適用し、受けたダメージの440%までを吸収する。20ターンの間、受けるダメージは最大HPの20%を超えない。"
+        self.skill3_description_jp = "戦闘中1回のみ、0以上のダメージを受けた後、HPが50%以下の場合、吸収シールドを適用し、受けたダメージの440%までを吸収する。20ターンの間、受けるダメージは最大HPの20%を超えない。"
         self.skill3_used = False
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -2993,14 +3027,15 @@ class Bell(Character):
         pass
 
     def take_damage_aftermath(self, damage, attacker):
+        if not damage > 0:
+            return
         if self.skill3_used:
-            pass
-        else:
-            if self.hp < self.maxhp * 0.5:
-                self.apply_effect(CancellationShield("Cancellation Shield", 20, True, 0.2, False, cancel_excessive_instead=True, uses=100))
-                self.apply_effect(AbsorptionShield("Absorption Shield", -1, True, damage * 4.4, cc_immunity=False))
-                self.skill3_used = True
-            return damage
+            return
+        if self.hp < self.maxhp * 0.5:
+            self.apply_effect(CancellationShield("Cancellation Shield", 20, True, 0.2, False, cancel_excessive_instead=True, uses=100))
+            self.apply_effect(AbsorptionShield("Absorption Shield", -1, True, damage * 4.4, cc_immunity=False))
+            self.skill3_used = True
+
 
 
 class Roseiri(Character):
@@ -3445,7 +3480,7 @@ class Don(Character):
         for target in targets:
             target.remove_random_amount_of_buffs(1)
         damage_dealt = self.attack(target_list=targets, multiplier=2.80, repeat=1)
-        if self.is_alive():
+        if self.is_alive() and damage_dealt > 0:
             lowest_hp_ally = min(self.ally, key=lambda x: x.hp)
             lowest_hp_ally.apply_effect(AbsorptionShield("Shield", 20, True, damage_dealt * 0.5, cc_immunity=False))
         return damage_dealt
@@ -3579,11 +3614,12 @@ class Raven(Character):
         self.raven_skill2_damage_dealt += damage_dealt
         self.raven_skill2_counter += 1
         if self.raven_skill2_counter == 2:
-            neighbors:list[Character] = self.get_neighbor_allies_not_including_self()
-            for ally in neighbors:
-                shield = AbsorptionShield("Shield", -1, True, self.raven_skill2_damage_dealt * 0.8, cc_immunity=False)
-                shield.additional_name = "Raven_Shield"
-                ally.apply_effect(shield)
+            if self.raven_skill2_damage_dealt > 0:
+                neighbors:list[Character] = self.get_neighbor_allies_not_including_self()
+                for ally in neighbors:
+                    shield = AbsorptionShield("Shield", -1, True, self.raven_skill2_damage_dealt * 0.8, cc_immunity=False)
+                    shield.additional_name = "Raven_Shield"
+                    ally.apply_effect(shield)
             self.raven_skill2_counter = 0
         return damage_dealt
 
@@ -3655,10 +3691,11 @@ class RavenWB(Character):
         self.raven_skill2_damage_dealt += damage_dealt
         self.raven_skill2_counter += 1
         if self.raven_skill2_counter == 2:
-            neighbors = self.get_neighbor_allies_not_including_self()
-            for ally in neighbors:
-                shield = AbsorptionShield("Shield", -1, True, self.raven_skill2_damage_dealt * 0.5, cc_immunity=False)
-                ally.apply_effect(shield)
+            if self.raven_skill2_damage_dealt > 0:
+                neighbors = self.get_neighbor_allies_not_including_self()
+                for ally in neighbors:
+                    shield = AbsorptionShield("Shield", -1, True, self.raven_skill2_damage_dealt * 0.5, cc_immunity=False)
+                    ally.apply_effect(shield)
             self.raven_skill2_counter = 0
         return damage_dealt
 
@@ -6064,13 +6101,10 @@ class Xunyu(Character):
 
     def skill1_logic(self):
         for a in self.ally:
-            chord_mixing_p1 = StatsEffect("Chord Mixing", 18, True, {"atk": 1.10, "defense": 1.10, "spd": 1.10})
-            chord_mixing_p2 = StatsEffect("Chord Mixing", 18, True, {"crit": 0.10, "critdmg": 0.10})
+            chord_mixing_p1 = StatsEffect("Chord Mixing", 18, True, {"atk": 1.10, "defense": 1.10, "spd": 1.10, "crit": 0.10, "critdmg": 0.10})
             if not a.is_protected():
-                chord_mixing_p1 = StatsEffect("Chord Mixing", 18, True, {"atk": 1.20, "defense": 1.20, "spd": 1.20})
-                chord_mixing_p2 = StatsEffect("Chord Mixing", 18, True, {"crit": 0.20, "critdmg": 0.20})
+                chord_mixing_p1 = StatsEffect("Chord Mixing", 18, True, {"atk": 1.20, "defense": 1.20, "spd": 1.20, "crit": 0.20, "critdmg": 0.20})
             a.apply_effect(chord_mixing_p1)
-            a.apply_effect(chord_mixing_p2)
         return 0
 
     def skill2_logic(self):
