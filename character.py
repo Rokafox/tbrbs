@@ -661,6 +661,10 @@ class Character:
     def heal(self, target_kw1="Undefined_ally", target_kw2="Undefined", target_kw3="Undefined", target_kw4="Undefined", 
              value=0, repeat=1, func_after_each_heal=None, target_list=None, func_before_heal=None) -> int:
         # -> healing done
+        """
+        Heal the target(s) for [value] amount of hp.
+        [function_after_each_heal]: function that takes in (healer, target, healing, overhealing) -> None
+        """
         self.update_ally_and_enemy()
         healing_done = 0
         try:
@@ -3273,7 +3277,7 @@ class Rubin(Character):
         " Minimum accuracy bonus is 10%."
         self.skill2_description = "Focus attack on closest enemy 3 times with 240% atk."
         self.skill3_description = "At start of battle, apply Unnamed Blessing to all allies." \
-        " Before the ally is about to take damage, damage taken is reduced by 30%, then 30% of the damage is taken by you." \
+        " When the ally is about to take damage, damage taken is reduced by 30%, then 30% of the damage is taken by you." \
         " Cannot protect against status effect and status damage."
         self.skill1_description_jp = "30ターンの間、全ての味方の命中率を自分の回避率の100%増加させる。" \
                                     "最低命中率ボーナスは10%。"
@@ -3322,7 +3326,7 @@ class RubinPF(Character):
         self.skill2_description = "Focus attack on closest enemy 6 times with 170% atk." \
         " Each attack has a 30% chance to apply Disputed Space for 20 turns, increasing damage taken by 20%."
         self.skill3_description = "At start of battle, apply Peach Flip to all allies." \
-        " Before the ally is about to take damage, damage taken is reduced by 20%, then 30% of the damage is taken by you." \
+        " When the ally is about to take damage, damage taken is reduced by 20%, then 30% of the damage is taken by you." \
         " Cannot protect against status effect and status damage. At start of battle, apply Peach Blossoms to an ally of highest defense." \
         " Peach Blossoms: Revive with 40% hp the next turn after defeated."
         # 論外空間 桃返し 桃華満開
@@ -7260,6 +7264,112 @@ class Pine(Character):
 
     def normal_attack(self):
         return self.attack(multiplier=3.2)
+
+
+class Percival(Character):
+    """
+    More damage when having absorption shield
+    Apply buff to allies that have absorption shield
+    Protect all allies
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Percival"
+        self.skill1_description = "Attack 1 enemy of highest atk with 250% atk 3 times. If you have Absorption Shield, damage is increased by 100%."
+        self.skill2_description = "Heal all allies by 200% atk, if the ally has Absorption Shield, apply Atk Up to that ally for 24 turns. Atk Up: Atk is increased by 30%."
+        self.skill3_description = "At start of battle, apply Dawn Armor to all allies." \
+        " When the ally is about to take damage, damage taken is reduced by 25%, then 60% of the damage is taken by you." \
+        " Cannot protect against status effect and status damage."
+        self.skill1_description_jp = "攻撃力が最も高い敵1体に攻撃力の250%で3回攻撃する。自身に吸収シールドがある場合、ダメージが100%増加する。"
+        self.skill2_description_jp = "全ての味方のHPを攻撃力の200%分回復する。味方に吸収シールドがある場合、その味方に24ターンの間「攻撃力アップ」を付与する。攻撃力アップ：攻撃力が30%増加する。"
+        self.skill3_description_jp = "戦闘開始時、全ての味方に「黎明の鎧」を付与する。味方がダメージを受ける際、受けるダメージが25%減少し、その後、ダメージの60%を自分が引き受ける。状態異常および状態異常ダメージに対しては保護できない。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        def damage_amplify(char, target: Character, dmg):
+            if char.has_effect_that_named(None, None, "AbsorptionShield"):
+                return dmg * 2
+            return dmg 
+        damage_dealt = self.attack(multiplier=2.5, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
+                                   func_damage_step=damage_amplify)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def func_aeh(healer, target, healing, overhealing):
+            if target.has_effect_that_named(None, None, "AbsorptionShield"):
+                target.apply_effect(StatsEffect("Atk Up", 24, True, {"atk": 1.30}))
+        self.heal(value=self.atk * 2.0, target_kw1="all_ally", func_after_each_heal=func_aeh)
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Dawn Armor", -1, True, False, self, 0.75, 0.6)
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
+
+
+class Gareth(Character):
+    """
+    great with Inaba
+    Against high heal efficiency
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Gareth"
+        self.skill1_description = "Attack 3 close enemies 2 times with 250% atk, if the enemy has more than 150% heal efficiency," \
+        " damage is increased by the difference between their heal efficiency and 150%. If the enemy has more than 300% heal efficiency," \
+        " Stun the target for 12 turns and damage is further increased by 30%."
+        self.skill2_description = "Target 2 allies of highest atk, they gain atk by the difference between their heal efficiency and 150% for 20 turns," \
+        " if they have more than 150% heal efficiency."
+        self.skill3_description = "After using a skill, heal hp by 200% of defense. At start of battle, apply Very Food to all allies." \
+        " When the ally is about to take damage, damage taken is reduced by 25%, then 60% of the damage is taken by you." \
+        " Cannot protect against status effect and status damage."
+        self.skill1_description_jp = "最も近い敵3体に攻撃力の250%で2回攻撃する。敵の回復効率が150%以上の場合、その回復効率と150%の差分だけダメージが増加する。さらに、敵の回復効率が300%以上の場合、対象を12ターンの間スタンさせ、ダメージがさらに30%増加する。"
+        self.skill2_description_jp = "攻撃力が最も高い味方2人を対象とし、その回復効率が150%以上の場合、20ターンの間、その回復効率と150%の差分だけ攻撃力を増加させる。"
+        self.skill3_description_jp = "スキル使用後、防御力の200%分HPを回復する。戦闘開始時、全ての味方に「非常食」を付与する。味方がダメージを受ける際、そのダメージが25%減少し、その後のダメージの60%を自分が引き受ける。ただし、状態異常効果および状態異常ダメージからは保護されない。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        def damage_amplify(char, target: Character, dmg):
+            if target.heal_efficiency > 1.5:
+                dmg *= (target.heal_efficiency - 1.5)
+            if target.heal_efficiency > 3.0:
+                dmg *= 1.30
+            return dmg
+        def stun_logic(char, target: Character):
+            if target.heal_efficiency > 3.0:
+                target.apply_effect(StunEffect("Stun", 12, False))
+        damage_dealt = self.attack(multiplier=2.5, repeat=2, target_kw1="n_enemy_in_front", target_kw2="3", func_damage_step=damage_amplify, func_after_dmg=stun_logic)
+        if self.is_alive():
+            self.heal(target_list=[self], value=self.defense * 2.0)
+        return damage_dealt
+
+    def skill2_logic(self):
+        targets = list(self.target_selection(keyword="n_highest_attr", keyword2="2", keyword3="atk", keyword4="ally"))
+        for a in targets:
+            if a.heal_efficiency > 1.5:
+                a.apply_effect(StatsEffect("Atk Up", 20, True, {"atk": 1 + a.heal_efficiency - 1.5}))
+        if self.is_alive():
+            self.heal(target_list=[self], value=self.defense * 2.0)
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Very Food", -1, True, False, self, 0.75, 0.6)
+            e.can_be_removed_by_skill = False
+            ally.apply_effect(e)
 
 
 # class NC(Character):
