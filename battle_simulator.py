@@ -529,7 +529,7 @@ def get_all_characters():
                        "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
                        "Clarence", "Jingke", "Shuijing", "ShuijingAL", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl", "Fred",
                        "Waldo", "Toby", "TobyRT", "Cory", "Imada", "Lancelot", "Glass", "Gawain", "Pinee", "Pine", "Percival", "Gareth",
-                       "Eddie"]
+                       "Eddie", "Brandon"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -4981,6 +4981,10 @@ if __name__ == "__main__":
                                     break
                             try:
                                 img_slots[i].set_image(actual_character.featured_image)
+                                if global_vars.language == "日本語":
+                                    img_slots[i].set_tooltip(actual_character.skill_tooltip_jp(), delay=0.1, wrap_width=600)
+                                elif global_vars.language == "English":
+                                    img_slots[i].set_tooltip(actual_character.skill_tooltip(), delay=0.1, wrap_width=600)
                             except Exception:
                                 img_slots[i].set_image(images_item["404"])
 

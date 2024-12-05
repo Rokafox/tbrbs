@@ -112,7 +112,7 @@ class Equip(Block):
                 )
             case "KangTao":
                 return (
-                    "Compare atk and def, apply the higher value * 999% as absorption shield on self at start of battle."
+                    "Compare atk and def, apply the higher value * 999% as shield on self at start of battle."
                 )
             case "Militech":
                 return (
@@ -223,7 +223,7 @@ class Equip(Block):
                 )
             case "KangTao":
                 return (
-                    "攻撃力と防御力を比較し、より高い方の値の999%の分を吸収シールドとしてバトル開始時に自身に付与する。"
+                    "攻撃力と防御力を比較し、より高い方の値の999%の分をシールドとしてバトル開始時に自身に付与する。"
                 )
             case "Militech":
                 return (
