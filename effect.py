@@ -2378,10 +2378,10 @@ class EquipmentSetEffect_KangTao(Effect):
             return 0
         
     def tooltip_description(self):
-        return f"Shield that absorbs up to {self.shield_value} damage."
+        return f"Shield that absorbs up to {self.shield_value} damage. This effect does not treat as Absorption Shield."
     
     def tooltip_description_jp(self):
-        return f"{self.shield_value}ダメージを吸収する。"
+        return f"{self.shield_value}ダメージを吸収する。この効果は吸収シールドとして扱われない。"
     
 
 #---------------------------------------------------------
@@ -3111,7 +3111,7 @@ class ShintouEffect(Effect):
             heal_value = self.buff_applier.atk * 3
             character.heal_hp(heal_value, self.buff_applier)
             # Heal efficiency increased by 30%, evasion rate increased by 30%.
-            blessing_effect = StatsEffect("Blessing", 20, True, {"heal_efficiency": 0.3})
+            blessing_effect = StatsEffect("Blessing", 20, True, {"heal_efficiency": 0.4})
             if character is self.buff_applier:
                 bae = len(self.buff_applier.get_all_effect_that_named("Blessing"))
                 if bae >= 4:
@@ -3123,7 +3123,7 @@ class ShintouEffect(Effect):
                             r1, r2, r3 = a.heal_hp(heal_value, self.buff_applier)
                             # print(f"{r1} {r3}")
                     for e in self.buff_applier.enemy:
-                        e.take_status_damage(self.buff_applier.atk * 4.0, self.buff_applier)
+                        e.take_status_damage(self.buff_applier.atk * 5.0, self.buff_applier)
             # if character in self.buff_applier.party:
             #     global_vars.shintou_applied_on_ally += 1
             # else:

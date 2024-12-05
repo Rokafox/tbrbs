@@ -1671,6 +1671,13 @@ class Character:
         # if effect is AbsorptionShield and they have the same name and duration and cc_immunity, we can stack them.
         shield_value_prev = self.get_shield_value()
         if isinstance(effect, AbsorptionShield):
+            if self.has_effect_that_named("Dating Innovations", "Eddie_Dating_innovations", "Effect"):
+                # shield effect scaled heal efficiency
+                # print(f"Shield value before scaling: {effect.shield_value}")
+                effect.shield_value = effect.shield_value * self.heal_efficiency
+                # print(f"Shield value is scaled by heal efficiency: {effect.shield_value}")
+                if effect.shield_value <= 0:
+                    return
             for e in itertools.chain(self.buffs, self.debuffs):
                 if isinstance(e, AbsorptionShield) and e.name == effect.name and e.duration == effect.duration and e.cc_immunity == effect.cc_immunity:
                     e.shield_value += effect.shield_value
@@ -3421,7 +3428,7 @@ class Chiffon(Character):
         self.skill1_description = "Increase def by 20%, atk by 10% for 30 turns for all allies. Apply a shield that absorbs damage up to 150% self atk for 20 turns."
         self.skill2_description = "Select random 5 targets, when target is an ally, heal 200% atk, when target is an enemy, attack with 300% atk and apply Sleep for 20 turns with a 80% chance."
         self.skill3_description = "When taking damage that would exceed 10% of maxhp, reduce damage above 10% of maxhp by 80%. For every turn passed, damage reduction effect is reduced by 2%."
-        self.skill1_description_jp = "全ての味方の防御力を20%、攻撃力を10%増加させ、8ターンの間持続する。4ターンの間、味方に自身の攻撃力の150%までのダメージを吸収するシールドを付与する。"
+        self.skill1_description_jp = "全ての味方の防御力を20%、攻撃力を10%増加させ、30ターンの間持続する。20ターンの間、味方に自身の攻撃力の150%までのダメージを吸収するシールドを付与する。"
         self.skill2_description_jp = "ランダムに5体の対象を選択し、対象が味方の場合は200%の攻撃力で治療し、対象が敵の場合は300%の攻撃力で攻撃し、80%の確率で20ターン睡眠を付与する。"
         self.skill3_description_jp = "最大HPの10%を超えるダメージを受けた場合、最大HPの10%を超えるダメージを80%軽減する。ターンが経過するごとにダメージ軽減効果が2%ずつ減少する。"
         self.skill1_cooldown_max = 5
@@ -4003,13 +4010,13 @@ class Inaba(Character):
         " each turn, throw a dice, counter decreases by the dice number." \
         " When counter reaches 0, heal by 300% of applier atk and apply Blessing for 20 turns." \
         " At the end of the turn, this effect is applied to a random enemy." \
-        " Blessing: Heal efficiency increased by 30%."
+        " Blessing: Heal efficiency increased by 40%."
         self.skill3_description = "When a Blessing effect by Shintou is about to be applied on yourself while you have 4 or more Blessing effects," \
-        " Revive all allies with 100% hp, all enemies takes status damage equal to 400% of your atk, the allies alive are healed by 300% atk."
+        " Revive all allies with 100% hp, all enemies takes status damage equal to 500% of your atk, the allies alive are healed by 300% atk."
         # 神稲
         self.skill1_description_jp = "ランダムな味方を攻撃力の480%で3回治療し、その後ランダムな敵を攻撃力の240%で5回攻撃する。"
-        self.skill2_description_jp = "9回分の「神稲（イネ）」を準備する。自身に9回分の神稲を適用し、神稲には9つのカウンターがある。各ターン、サイコロを振り、カウンターはその目の数だけ減少する。カウンターが0になると、適用者の攻撃力の300%分を回復し、20ターンの間「祝福」を付与する。ターン終了時、この効果はランダムな敵にも適用される。祝福：回復効果が30%増加する。"
-        self.skill3_description_jp = "神稲による祝福効果が自身に適用されようとする際、既に4つ以上の祝福効果を持っている場合、全ての味方をHP100%で復活させ、全ての敵に攻撃力の400%分の状態異常ダメージを与える。生存している味方は攻撃力の300%で回復する。"
+        self.skill2_description_jp = "9回分の「神稲（イネ）」を準備する。自身に9回分の神稲を適用し、神稲には9つのカウンターがある。各ターン、サイコロを振り、カウンターはその目の数だけ減少する。カウンターが0になると、適用者の攻撃力の300%分を回復し、20ターンの間「祝福」を付与する。ターン終了時、この効果はランダムな敵にも適用される。祝福：回復効果が40%増加する。"
+        self.skill3_description_jp = "神稲による祝福効果が自身に適用されようとする際、既に4つ以上の祝福効果を持っている場合、全ての味方をHP100%で復活させ、全ての敵に攻撃力の500%分の状態異常ダメージを与える。生存している味方は攻撃力の300%で回復する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
         
@@ -7123,8 +7130,8 @@ class Gawain(Character):
         self.skill1_description_jp = "攻撃力、防御力、速度が最も低い敵を対象に、それぞれ攻撃力の250%|300%|350%で攻撃する。各攻撃後、自分のHPが10%未満の場合、与えたダメージの100%分HPを回復する。"
         self.skill2_description_jp = "攻撃力が最も低い敵を対象に、攻撃力の200%で5回攻撃する。自分が吸収シールドを持っている場合、攻撃力の300%で5回攻撃する。"
         self.skill3_description_jp = "戦闘開始時に、自身に10ターンの間「輝光」を付与する。輝光：受けるダメージが60%減少し、CC効果を無効化する。"
-        self.skill1_cooldown_max = 4
-        self.skill2_cooldown_max = 4
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 3
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.5, repeat=1, target_kw1="n_lowest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy")
@@ -7276,31 +7283,32 @@ class Percival(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Percival"
-        self.skill1_description = "Attack 1 enemy of highest atk with 250% atk 3 times. If you have Absorption Shield, damage is increased by 100%."
-        self.skill2_description = "Heal all allies by 200% atk, if the ally has Absorption Shield, apply Atk Up to that ally for 24 turns. Atk Up: Atk is increased by 30%."
+        self.skill1_description = "Attack 1 enemy of highest atk with 280% atk 3 times. If you have Absorption Shield, every attack has a 50% chance to" \
+        " inflict vulnerability for 20 turns. Vulnerability: final damage taken is increased by 50%."
+        self.skill2_description = "Heal all allies by 240% atk, if the ally has Absorption Shield, apply Atk Up to that ally for 24 turns. Atk Up: Atk and Accuracy is increased by 30%."
         self.skill3_description = "At start of battle, apply Dawn Armor to all allies." \
         " When the ally is about to take damage, damage taken is reduced by 25%, then 60% of the damage is taken by you." \
         " Cannot protect against status effect and status damage."
-        self.skill1_description_jp = "攻撃力が最も高い敵1体に攻撃力の250%で3回攻撃する。自身に吸収シールドがある場合、ダメージが100%増加する。"
-        self.skill2_description_jp = "全ての味方のHPを攻撃力の200%分回復する。味方に吸収シールドがある場合、その味方に24ターンの間「攻撃力アップ」を付与する。攻撃力アップ：攻撃力が30%増加する。"
+        self.skill1_description_jp = "攻撃力が最も高い敵1体に攻撃力の280%で3回攻撃する。自身に吸収シールドがある場合、各攻撃に50%の確率で対象に20ターンの間「脆弱」を付与する。脆弱：最終ダメージ倍率が50%増加する。"
+        self.skill2_description_jp = "全ての味方のHPを攻撃力の240%分回復する。味方に吸収シールドがある場合、その味方に24ターンの間「攻撃力アップ」を付与する。攻撃力アップ：攻撃力と命中が30%増加する。"
         self.skill3_description_jp = "戦闘開始時、全ての味方に「黎明の鎧」を付与する。味方がダメージを受ける際、受けるダメージが25%減少し、その後、ダメージの60%を自分が引き受ける。状態異常および状態異常ダメージに対しては保護できない。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
     def skill1_logic(self):
-        def damage_amplify(char, target: Character, dmg):
+        def vulnerability_logic(char, target: Character):
             if char.has_effect_that_named(None, None, "AbsorptionShield"):
-                return dmg * 2
-            return dmg 
-        damage_dealt = self.attack(multiplier=2.5, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
-                                   func_damage_step=damage_amplify)
+                if random.random() < 0.50:
+                    target.apply_effect(StatsEffect("Vulnerability", 20, False, {"final_damage_taken_multipler": 0.50}))
+        damage_dealt = self.attack(multiplier=2.8, repeat=3, target_kw1="n_highest_attr", target_kw2="1", target_kw3="atk", target_kw4="enemy",
+                                   func_after_dmg=vulnerability_logic)
         return damage_dealt
 
     def skill2_logic(self):
         def func_aeh(healer, target, healing, overhealing):
             if target.has_effect_that_named(None, None, "AbsorptionShield"):
-                target.apply_effect(StatsEffect("Atk Up", 24, True, {"atk": 1.30}))
-        self.heal(value=self.atk * 2.0, target_kw1="all_ally", func_after_each_heal=func_aeh)
+                target.apply_effect(StatsEffect("Atk Up", 24, True, {"atk": 1.30, 'acc': 0.30}))
+        self.heal(value=self.atk * 2.4, target_kw1="all_ally", func_after_each_heal=func_aeh)
         return 0
 
     def skill3(self):
@@ -7324,30 +7332,28 @@ class Gareth(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Gareth"
         self.skill1_description = "Attack 3 close enemies 2 times with 250% atk, if the enemy has more than 150% heal efficiency," \
-        " damage is increased by the difference between their heal efficiency and 150%. If the enemy has more than 300% heal efficiency," \
-        " Stun the target for 12 turns and damage is further increased by 30%."
-        self.skill2_description = "Target 2 allies of highest atk, they gain atk by the difference between their heal efficiency and 150% for 20 turns," \
-        " if they have more than 150% heal efficiency."
+        " inflict Vulnerability for 20 turns, Vulnerability:" \
+        " final damage taken is increased by the difference between their heal efficiency and 150%, the value does not update overtime. If the enemy has more than 300% heal efficiency," \
+        " Stun the target for 12 turns and final damage taken is further increased by 50%."
+        self.skill2_description = "Target 2 allies of highest atk, if they have more than 150% heal efficiency,"  \
+        " their atk is scaled by their heal efficiency for 22 turns, if heal efficiency is more than 300%, defense and speed is also scaled by 50% of heal efficiency."
         self.skill3_description = "After using a skill, heal hp by 200% of defense. At start of battle, apply Very Food to all allies." \
         " When the ally is about to take damage, damage taken is reduced by 25%, then 60% of the damage is taken by you." \
         " Cannot protect against status effect and status damage."
-        self.skill1_description_jp = "最も近い敵3体に攻撃力の250%で2回攻撃する。敵の回復効率が150%以上の場合、その回復効率と150%の差分だけダメージが増加する。さらに、敵の回復効率が300%以上の場合、対象を12ターンの間スタンさせ、ダメージがさらに30%増加する。"
-        self.skill2_description_jp = "攻撃力が最も高い味方2人を対象とし、その回復効率が150%以上の場合、20ターンの間、その回復効率と150%の差分だけ攻撃力を増加させる。"
+        self.skill1_description_jp = "最も近い敵3体に攻撃力の250%で2回攻撃する。敵の回復効率が150%以上の場合、20ターンの間「脆弱」を付与し、回復効率と150%の差分で最終ダメージ倍率が増加する。この値はターンごとに変化しない。さらに、敵の回復効率が300%以上の場合、対象を12ターンの間スタンさせ、最終ダメージ倍率がさらに50%増加する。"
+        self.skill2_description_jp = "攻撃力が最も高い味方2人を対象とし、その回復効率が150%以上の場合、22ターンの間、その攻撃力が回復効率に基づいて比例する。回復効率が300%以上の場合、防御力と速度も回復効率の50%に基づいて比例する。"
         self.skill3_description_jp = "スキル使用後、防御力の200%分HPを回復する。戦闘開始時、全ての味方に「非常食」を付与する。味方がダメージを受ける際、そのダメージが25%減少し、その後のダメージの60%を自分が引き受ける。ただし、状態異常効果および状態異常ダメージからは保護されない。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
     def skill1_logic(self):
-        def damage_amplify(char, target: Character, dmg):
-            if target.heal_efficiency > 1.5:
-                dmg *= (target.heal_efficiency - 1.5)
-            if target.heal_efficiency > 3.0:
-                dmg *= 1.30
-            return dmg
         def stun_logic(char, target: Character):
+            if target.heal_efficiency > 1.5 and target.heal_efficiency <= 3.0:
+                target.apply_effect(StatsEffect("Vulnerability", 20, False, {"final_damage_taken_multipler": target.heal_efficiency - 1.5}))
             if target.heal_efficiency > 3.0:
+                target.apply_effect(StatsEffect("Vulnerability", 20, False, {"final_damage_taken_multipler": target.heal_efficiency - 1.0}))
                 target.apply_effect(StunEffect("Stun", 12, False))
-        damage_dealt = self.attack(multiplier=2.5, repeat=2, target_kw1="n_enemy_in_front", target_kw2="3", func_damage_step=damage_amplify, func_after_dmg=stun_logic)
+        damage_dealt = self.attack(multiplier=2.5, repeat=2, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=stun_logic)
         if self.is_alive():
             self.heal(target_list=[self], value=self.defense * 2.0)
         return damage_dealt
@@ -7356,7 +7362,11 @@ class Gareth(Character):
         targets = list(self.target_selection(keyword="n_highest_attr", keyword2="2", keyword3="atk", keyword4="ally"))
         for a in targets:
             if a.heal_efficiency > 1.5:
-                a.apply_effect(StatsEffect("Atk Up", 20, True, {"atk": 1 + a.heal_efficiency - 1.5}))
+                a.apply_effect(StatsEffect("Atk Up", 22, True, {"atk": a.heal_efficiency}))
+            if a.heal_efficiency > 3.0:
+                # 300% heal efficiency: 50% def and spd buff
+                a.apply_effect(StatsEffect("Extra Stats Up", 22, True, {"defense": a.heal_efficiency * 0.5, "spd": a.heal_efficiency * 0.5}))
+
         if self.is_alive():
             self.heal(target_list=[self], value=self.defense * 2.0)
         return 0
@@ -7370,6 +7380,65 @@ class Gareth(Character):
             e = ProtectedEffect("Very Food", -1, True, False, self, 0.75, 0.6)
             e.can_be_removed_by_skill = False
             ally.apply_effect(e)
+
+
+class Eddie(Character):
+    """
+    Support ally: when shield apllied, shield value increases by heal efficiency
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Eddie"
+        self.skill1_description = "Attack 3 closest enemies with 300% atk and inflict Defense Down for 20 turns." \
+        " Defense Down: Defense is reduced by 30%."
+        self.skill2_description = "Apply a Shield on neighbor allies and an ally of highest atk." \
+        " Shield absorbs damage up to 280% of your atk, shield value is scaled 2 times by the percentage of hp lost by the target."
+        self.skill3_description = "At start of battle, apply Dating Innovations on all allies." \
+        " Dating Innovations: When Absorption Shield is applied on yourself, shield value scales by heal efficiency."
+        self.skill1_description_jp = "最も近い3匹の敵に攻撃力の300%で攻撃し、20ターンの間「防御ダウン」を付与する。防御ダウン：防御力が30%減少する。"
+        self.skill2_description_jp = "隣接する味方と攻撃力が最も高い味方に「シールド」を付与する。シールドは攻撃力の280%分までのダメージを吸収する。シールドの値は、ターゲットが失ったHPの割合で2回調整される。"
+        self.skill3_description_jp = "戦闘開始時、すべての味方に「デートの工夫」を付与する。デートの工夫：自身に吸収シールドが適用される際、シールドの値が回復効率に基づいて増加する。"
+        self.skill1_cooldown_max = 3
+        self.skill2_cooldown_max = 3
+
+    def skill1_logic(self):
+        def defense_down(char, target: Character):
+            target.apply_effect(StatsEffect("Defense Down", 20, False, {"defense": 0.70}))
+        damage_dealt = self.attack(multiplier=3.00, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=defense_down)
+        return damage_dealt
+
+    def skill2_logic(self):
+        neighbors = self.get_neighbor_allies_not_including_self()
+        if not neighbors:
+            return 0
+        ally_high_atk = max(self.ally, key=lambda x: x.atk)
+        for a in itertools.chain(neighbors, [ally_high_atk]):
+            shield_value = self.atk * 2.80
+            for i in range(2):
+                shield_value *= 1 + (1 - a.hp/a.maxhp)
+            a.apply_effect(AbsorptionShield("Shield", -1, True, shield_value, cc_immunity=False))
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        for a in self.ally:
+            di = Effect("Dating Innovations", -1, True, False)
+            di.tooltip_str = "When Absorption Shield is applied on yourself, shield value scales by heal efficiency."
+            di.tooltip_str_jp = "自分に吸収シールドが付与された場合、シールドの値が回復効率によって比例する。"
+            di.can_be_removed_by_skill = False
+            di.additional_name = "Eddie_Dating_innovations"
+            a.apply_effect(di)
+
+
+
+
+
+
+
+
 
 
 # class NC(Character):
