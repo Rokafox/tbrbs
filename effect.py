@@ -999,16 +999,19 @@ class DecayEffect(Effect):
     """
     when healing hp, take damage in the next turn instead.
     """
-    def __init__(self, name, duration, is_buff, effect_applier):
+    def __init__(self, name, duration, is_buff, effect_applier, damage_transfer_rate=1):
         super().__init__(name, duration, is_buff)
         self.effect_applier = effect_applier
         self.apply_rule = "stack" # Make no sense to have 2 decay effect on the same character.
         self.healing_accumulated = 0
+        self.damage_transfer_rate = damage_transfer_rate
 
     def apply_effect_on_trigger(self, character):
-        damage_value = self.healing_accumulated
-        global_vars.turn_info_string += f"Decay strikes! {character.name} suffers {damage_value} damage.\n"
-        character.take_status_damage(damage_value, self.effect_applier)
+        if self.healing_accumulated > 0:
+            damage_value = self.healing_accumulated * self.damage_transfer_rate
+            assert damage_value > 0, f"Logic Error: {self.name} damage value is negative."
+            global_vars.turn_info_string += f"{self.name} strikes! {character.name} is about to take {damage_value} damage.\n"
+            character.take_status_damage(damage_value, self.effect_applier)
         self.healing_accumulated = 0
 
     def apply_effect_during_heal_step(self, character, heal_value, healer, overheal_value):
@@ -1016,10 +1019,10 @@ class DecayEffect(Effect):
         return 0
         
     def tooltip_description(self):
-        return "When being healed, take the healing amount as status damage in the next turn."
+        return f"When being healed, heal amount is reduced to 0, take the {self.damage_transfer_rate*100:.1f}% of the healing amount as status damage in the next turn."
     
     def tooltip_description_jp(self):
-        return "回復を受けると、回復を無効し、次のターンに回復量の状態異常ダメージを受ける。"
+        return f"回復を受けると、回復量が0になり、次のターンに受けた治療量の{self.damage_transfer_rate*100:.1f}%の状態異常ダメージを受ける。"
 
 
 
@@ -1578,8 +1581,7 @@ class StatsEffect(Effect):
             return
 
     def apply_effect_when_replacing_old_same_effect(self, old_effect: Effect):
-        if self.apply_rule != "replace":
-            raise Exception(f"This rule is not supported: {self.apply_rule}")
+        assert self.apply_rule == "replace", f"This rule is not supported: {self.apply_rule}"
         # for main_stats_additive_dict, we simply add the old dict to the new dict.
 
         if self.main_stats_additive_dict and old_effect.main_stats_additive_dict:

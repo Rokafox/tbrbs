@@ -160,6 +160,7 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
         printer.fine_print("=====================================")
         printer.fine_print(f"Turn {turn}")
         global_vars.turn_info_string = ""
+        global_vars.turn_info_string += f"Turn {turn}\n"
 
         reset_ally_enemy_attr(party1, party2)
         for character in itertools.chain(party1, party2):

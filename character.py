@@ -4,7 +4,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DecayEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -96,7 +96,8 @@ class Character:
         self.battle_turns = 0 # counts how many turns the character has been in battle
         self.number_of_take_downs: int = 0 # counts how many enemies the character has taken down
         self.have_taken_action: bool = False # whether the character has taken action in the battle
-        self.multiple_target_selection_targets_missing = 0 
+        self.multiple_target_selection_targets_missing = 0
+        self.is_in_iteration_of_status_effects_midturn = False 
 
         if self.equip:
             for item in self.equip.values():
@@ -526,6 +527,7 @@ class Character:
         WARNING: DO NOT MESS WITH [repeat] AND [repeat_seq] TOGETHER, otherwise the result will be confusing.
         use [repeat] for attacking [repeat] times, use [repeat_seq] for focusing on one target for [repeat_seq] times.
         If [func_for_multiplier] is not None, [multiplier] will be overwritten by the return value of [func_for_multiplier].
+        [func_for_multiplier] takes in (attacker, target, number_of_attacks, current_repeat) -> float
         """
         if damage_is_based_on is None:
             damage_is_based_on = self.atk
@@ -1664,7 +1666,13 @@ class Character:
                     if (hasattr(e, "additional_name") and not hasattr(effect, "additional_name")) or \
                         (hasattr(effect, "additional_name") and not hasattr(e, "additional_name")):
                         continue
-                    self.remove_effect(e)
+                    # NOTE: directly remove effect will cause error. Reason: the only effect that use replace is Lester exciting time, who adds atk when being healed.
+                    # if heal is during status_effects_midturn method, the list of effect is not being updated constantly.
+                    # patched in 3.7.7
+                    if self.is_in_iteration_of_status_effects_midturn:
+                        e.remove_this_effect_as_it_is_replaced = True
+                    else:
+                        self.remove_effect(e)
                     effect.apply_effect_when_replacing_old_same_effect(e)
                     global_vars.turn_info_string += f"{e.name} on {self.name} has been replaced by {effect.name}.\n"
                     break
@@ -1738,9 +1746,9 @@ class Character:
                 self.debuffs.remove(effect)
         except ValueError:
             if strict:
-                raise Exception(f"Effect not found. Effect: {effect}")
+                raise Exception(f"Effect not found when attempting to remove effect: {effect}")
             else:
-                print(f"Warning: Effect not found. Effect: {effect}")
+                print(f"Warning: Effect not found when attempting to remove effect: {effect}")
         global_vars.turn_info_string += f"{effect.name} on {self.name} has been removed.\n"
         if not purge:
             effect.apply_effect_on_remove(self)
@@ -1840,8 +1848,15 @@ class Character:
     def status_effects_midturn(self):
         buffs_copy = self.buffs.copy()
         debuffs_copy = self.debuffs.copy()
+        self.is_in_iteration_of_status_effects_midturn = True
         for effect in buffs_copy + debuffs_copy:
             effect.apply_effect_on_turn(self)
+        self.is_in_iteration_of_status_effects_midturn = False
+        # then remove effect that is marked as remove_this_effect_as_it_is_replaced is True
+        for effect in self.buffs.copy() + self.debuffs.copy():
+            if hasattr(effect, "remove_this_effect_as_it_is_replaced") and effect.remove_this_effect_as_it_is_replaced:
+                self.remove_effect(effect)
+                # print(f"{effect.name} on {self.name} is removed as it is replaced.")
 
     def character_specific_at_end_of_turn(self):
         """
@@ -7433,7 +7448,52 @@ class Eddie(Character):
             a.apply_effect(di)
 
 
+class Brandon(Character):
+    """
+    Anti heal
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Brandon"
+        self.skill1_description = "Apply Cat's Gaze on 3 closest enemies for 10 turns," \
+        " Cat's Gaze: When healing is received, heal amount is reduced to 0, take damage equal to the 50% of amount of healing in the next turn." \
+        " Effect duration is refreshed when same effect is applied."
+        self.skill2_description = "Attack 3 closest enemies with 220% atk 2 times, if the enemy has Cat's Gaze, attack with 330% atk 2 times," \
+        " remove 1 random active buff and inflict Burn for 20 turns. Burn: Every turn, take damage equal to 30% of atk of effect applier."
+        self.skill3_description = "When applying Cat's Gaze, if target hp is above 50%, effect duration is increased by 2 turns."
+        self.skill1_description_jp = "最も近い3人の敵に10ターンの間「猫の視線」を付与する。猫の視線：回復を受けた際、回復量が0に減少し、次のターンに回復量の50%に相当するダメージを受ける。同じ効果が再度付与された場合、持続時間が更新される。"
+        self.skill2_description_jp = "最も近い3人の敵に攻撃力の220%で2回攻撃する。敵が「猫の視線」を持っている場合、攻撃力の330%で2回攻撃し、ランダムなアクティブバフを1つ解除し、20ターンの間「燃焼」を付与する。燃焼：毎ターン、効果を付与した者の攻撃力の30%に相当するダメージを受ける。"
+        self.skill3_description_jp = "「猫の視線」を付与する際、対象のHPが50%以上の場合、効果の持続時間が2ターン延長される。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
 
+    def skill1_logic(self):
+        # DecayEffect
+        targets = self.target_selection(keyword="n_enemy_in_front", keyword2="3")
+        for t in targets:
+            duration = 10
+            if t.hp / t.maxhp > 0.50:
+                duration += 2
+            t.apply_effect(DecayEffect("Cat's Gaze", duration, False, effect_applier=self, damage_transfer_rate=0.50))
+        return 0
+
+    def skill2_logic(self):
+        def cat_gaze_effect(char, target: Character):
+            if target.has_effect_that_named("Cat's Gaze", None, "DecayEffect"):
+                target.remove_random_amount_of_buffs(1, allow_infinite_duration=False)
+                target.apply_effect(ContinuousDamageEffect("Burn", 20, False, self.atk * 0.30, imposter=self))
+        def attack_multiplier_function(attacker, target, number_of_attacks, current_repeat):
+            if target.has_effect_that_named("Cat's Gaze", None, "DecayEffect"):
+                return 3.30
+            return 2.20
+        damage_dealt = self.attack(repeat=2, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=cat_gaze_effect,
+                                   func_for_multiplier=attack_multiplier_function)
+        return damage_dealt
+
+
+    def skill3(self):
+        pass
 
 
 
