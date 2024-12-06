@@ -4,7 +4,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DecayEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DecayEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -7496,9 +7496,74 @@ class Brandon(Character):
         pass
 
 
+class Snow(Character):
+    """
 
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Snow"
+        self.skill1_description = "Attack closest enemy with 300% atk 3 times, if the enemy has Burn, damage is increased by 100%,"
+        " otherwise, each attack has a 50% chance to inflict Frozen for 10 turns."
+        self.skill2_description = "Attack enemy of highest hp with 200% atk 6 times, each attack has a 25% to freeze the target" \
+        " for 10 turns, if the target is already frozen, inflict Weaken for 20 turns and damage is increased by 15% of target's current hp." \
+        " Weaken: Atk is reduced by 40%. After the attack, heal yourself by the extra damage dealt."
+        self.skill3_description = "Apply Reborn on yourself, when defeated, revive with 100% hp the next turn." \
+        " When revived, apply Frozen on yourself for 10 turns."
+        self.skill1_description_jp = "最も近い敵に攻撃力の300%で3回攻撃し、対象が「燃焼」を持っている場合、ダメージが100%増加する。それ以外の場合、各攻撃に50%の確率で対象に10ターンの間「氷結」を付与する。"
+        self.skill2_description_jp = "HPが最も高い敵に攻撃力の200%で6回攻撃し、各攻撃に25%の確率で対象を10ターンの間「氷結」状態にする。対象が既に氷結状態の場合、20ターンの間「弱化」を付与し、ダメージが対象の現在HPの15%分増加する。弱化：攻撃力が40%減少する。攻撃後、追加ダメージ分のHPを自分が回復する。"
+        self.skill3_description_jp = "自身に「新生」を付与する。倒された際、次のターンにHP100%で復活する。復活時、自分に10ターンの間「氷結」を付与する。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.skill2_extra_damage = 0
 
+    def clear_others(self):
+        self.skill2_extra_damage = 0
 
+    def skill1_logic(self):
+        def damage_amplify(char, target: Character, damage):
+            if target.has_effect_that_named("Burn", None, "ContinuousDamageEffect"):
+                return damage * 2.0
+            return damage
+        def frozen_logic(char, target: Character):
+            if random.random() < 0.50:
+                target.apply_effect(FrozenEffect("Frozen", 10, False, imposter=self))
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, target_kw1="enemy_in_front", func_after_dmg=frozen_logic,
+                                   func_damage_step=damage_amplify)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def damage_amplify(char, target: Character, damage):
+            if target.has_effect_that_named("Frozen", None, "FrozenEffect"):
+                damage += target.hp * 0.15
+                self.skill2_extra_damage += target.hp * 0.15
+            return damage
+        def freeze_logic(char, target: Character):
+            if target.has_effect_that_named("Frozen", None, "FrozenEffect"):
+                target.apply_effect(StatsEffect("Weaken", 20, False, {"atk": 0.60}))
+            if random.random() < 0.25:
+                target.apply_effect(FrozenEffect("Frozen", 10, False, imposter=self))
+        damage_dealt = self.attack(multiplier=2.0, repeat=6, func_after_dmg=freeze_logic,
+                                   func_damage_step=damage_amplify, target_kw1="n_highest_attr", target_kw2="1", target_kw3="hp", target_kw4="enemy")
+        if self.is_alive() and self.skill2_extra_damage > 0:
+            self.heal(value=self.skill2_extra_damage, target_list=[self])
+            # print(f"Extra damage dealt: {self.skill2_extra_damage}")
+        self.skill2_extra_damage = 0
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        for i in range(1):
+            reborn_eff = RebornEffect("Reborn", -1, True, 1, cc_immunity=False, buff_applier=self)
+            reborn_eff.additional_name = "Snow_Reborn"
+            reborn_eff.can_be_removed_by_skill = False
+            self.apply_effect(reborn_eff)
+
+    def after_revive(self):
+        self.apply_effect(FrozenEffect("Frozen", 10, False, self))
 
 
 # class NC(Character):

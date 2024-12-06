@@ -529,7 +529,7 @@ def get_all_characters():
                        "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
                        "Clarence", "Jingke", "Shuijing", "ShuijingAL", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl", "Fred",
                        "Waldo", "Toby", "TobyRT", "Cory", "Imada", "Lancelot", "Glass", "Gawain", "Pinee", "Pine", "Percival", "Gareth",
-                       "Eddie", "Brandon"]
+                       "Eddie", "Brandon", "Snow"]
     character_names.sort()
     if start_with_max_level:
         all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
@@ -2676,7 +2676,6 @@ if __name__ == "__main__":
                                             container=cheems_window)
         cheems_apply_to_party2_button.hide()
 
-        # Button to delete the selected team
         cheems_delete_team_button = pygame_gui.elements.UIButton(pygame.Rect((400, 260), (390, 50)),
                                             text=local_translate("Delete Team"),
                                             manager=ui_manager,
