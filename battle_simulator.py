@@ -58,64 +58,50 @@ def load_player(filename="player_data.json"):
     for item_data in data["owned_characters"]:
         dict_character_name_lvl_exp_equip[item_data["name"]] = (item_data["lvl"], item_data["exp"], item_data["equip"])
 
-    for item_data in data["inventory"]:
-        match (item_data["object"], item_data["type"]):
-            case ("<class 'item.Cash'>", _):
-                item = Cash(item_data["current_stack"])
-            case ("<class 'item.SliverIngot'>", _):
-                item = SliverIngot(item_data["current_stack"])
-            case ("<class 'item.GoldIngot'>", _):
-                item = GoldIngot(item_data["current_stack"])
-            case ("<class 'item.DiamondIngot'>", _):
-                item = DiamondIngot(item_data["current_stack"])
-            case ("<class 'equip.Equip'>", _):
-                item = Equip("foo", "Weapon", "Common")
-                for attr, value in item_data.items():
-                    if hasattr(item, attr):
-                        setattr(item, attr, value)
-                item.estimate_market_price()
-                item.four_set_effect_description = item.assign_four_set_effect_description()
-                item.four_set_effect_description_jp = item.assign_four_set_effect_description_jp()
-                item.for_attacker_value = item.estimate_value_for_attacker()
-                item.for_support_value = item.estimate_value_for_support()
-            case (_, "Food"): 
-                item_class = globals().get(item_data['name'])
-                if item_class:
-                    item = item_class(item_data['current_stack'])
-                else:
-                    raise ValueError(f"Unknown item type: {item_data['name']}")
-            case ("<class 'consumable.EquipPackage'>", _):
-                # "object": "<class 'consumable.EquipPackage'>",
-                item = EquipPackage(item_data["current_stack"])
-            case ("<class 'consumable.EquipPackage2'>", _):
-                # "object": "<class 'consumable.EquipPackage'>",
-                item = EquipPackage2(item_data["current_stack"])
-            case ("<class 'consumable.EquipPackage3'>", _):
-                # "object": "<class 'consumable.EquipPackage'>",
-                item = EquipPackage3(item_data["current_stack"])
-            case ("<class 'consumable.EquipPackage4'>", _):
-                # "object": "<class 'consumable.EquipPackage'>",
-                item = EquipPackage4(item_data["current_stack"])
-            case ("<class 'consumable.EquipPackage5'>", _):
-                # "object": "<class 'consumable.EquipPackage'>",
-                item = EquipPackage5(item_data["current_stack"])
-            case ("<class 'consumable.EquipPackage6'>", _):
-                # "object": "<class 'consumable.EquipPackage'>",
-                item = EquipPackage6(item_data["current_stack"])
-            case ("<class 'consumable.EquipPackageBrandSpecific'>", _):
-                # "object": "<class 'consumable.EquipPackage'>",
-                item = EquipPackageBrandSpecific(item_data["current_stack"], item_data["eq_set"])
-            # FoodPackage
-            case ("<class 'consumable.FoodPackage'>", _):
-                item = FoodPackage(item_data["current_stack"])
-            case ("<class 'consumable.FoodPackage2'>", _):
-                item = FoodPackage2(item_data["current_stack"])
-            case ("<class 'consumable.FoodPackage3'>", _):
-                item = FoodPackage3(item_data["current_stack"])
-            case _:
-                continue
+    for item_data in data["inventory_equip"]:
+        item = Equip("foo", "Weapon", "Common")
+        for attr, value in item_data.items():
+            if hasattr(item, attr):
+                setattr(item, attr, value)
+        item.estimate_market_price()
+        item.four_set_effect_description = item.assign_four_set_effect_description()
+        item.four_set_effect_description_jp = item.assign_four_set_effect_description_jp()
+        item.for_attacker_value = item.estimate_value_for_attacker()
+        item.for_support_value = item.estimate_value_for_support()
+        player.inventory_equip.append(item)
 
-        player.inventory.append(item)
+    for item_data in data["inventory_consumable"]:
+        class_name = item_data['object'].split("'")[1].split('.')[-1]
+        item_class = globals().get(class_name)
+        # print(item_class)
+        # <class 'consumable.FoodPackage3'>
+        # <class 'consumable.EquipPackage6'>
+        # <class 'consumable.EquipPackage5'>
+        # <class 'consumable.Mantou'>
+        # <class 'consumable.Orange'>
+        # <class 'consumable.FoodPackage2'>
+        # <class 'consumable.EquipPackage4'>
+        # <class 'consumable.Pancake'>
+        # <class 'consumable.EquipPackage3'>
+        # <class 'consumable.Strawberry'>
+        # <class 'consumable.FoodPackage'>
+        # <class 'consumable.EquipPackage2'>
+        # <class 'consumable.EquipPackage'>
+        if item_class is None:
+            raise ValueError(f"Unknown item type: {item_data['name']}")
+        if class_name == "EquipPackageBrandSpecific":
+            item = item_class(item_data['current_stack'], item_data['eq_set'])
+        else:
+            item = item_class(item_data['current_stack'])
+        player.inventory_consumable.append(item)
+
+    for item_data in data["inventory_item"]:
+        class_name = item_data['object'].split("'")[1].split('.')[-1]
+        item_class = globals().get(class_name)
+        if item_class is None:
+            raise ValueError(f"Unknown item type: {item_data['name']}")
+        item = item_class(item_data['current_stack'])
+        player.inventory_item.append(item)
 
     cash_actual = player.get_cash()
     if cash_in_data != cash_actual:
@@ -138,7 +124,9 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         self.cash = cash 
         self.owned_characters = []
         # We could have multiple types of items in inventory, Equip, Consumable, Item.
-        self.inventory = inventory if inventory is not None else []
+        self.inventory_equip = []
+        self.inventory_consumable = []
+        self.inventory_item = []
         self.current_page = 0
         self.max_pages = 0
         self.dict_image_slots_items = {}
@@ -152,14 +140,48 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         self.settings_language = "English"
         self.settings_theme = "Yellow Theme"
 
+        # A dictionary to keep track of partially filled stackable items:
+        # Key: (ItemClass, brand or None)
+        # Value: list of references to items in the inventory that are not full
+        self.non_full_stacks = {}
+
         if cash > 0:
             self.add_cash(cash, False)
+
+
+    def _get_stack_key(self, item):
+        """Return the key used to store stacks of this item in non_full_stacks."""
+        brand = getattr(item, 'brand', None)
+        return (item.__class__, brand)
+
+    def _add_non_full_stack(self, item):
+        """Add an item to the non_full_stacks dictionary if it's stackable and not full."""
+        if item.can_be_stacked and not item.is_full():
+            key = self._get_stack_key(item)
+            if key not in self.non_full_stacks:
+                self.non_full_stacks[key] = []
+            self.non_full_stacks[key].append(item)
+
+    def _remove_non_full_stack(self, item):
+        """Remove an item from the non_full_stacks dictionary if it is now full or removed."""
+        if item.can_be_stacked:
+            key = self._get_stack_key(item)
+            if key in self.non_full_stacks:
+                # Attempt to remove it if present
+                if item in self.non_full_stacks[key]:
+                    self.non_full_stacks[key].remove(item)
+                # If no more partial stacks remain under this key, remove the key
+                if not self.non_full_stacks[key]:
+                    del self.non_full_stacks[key]
+
 
     def to_dict(self):
         return {
             "cash": self.cash,
             "owned_characters": [character.to_dict() for character in self.owned_characters],
-            "inventory": [item.to_dict() for item in self.inventory],
+            "inventory_equip": [item.to_dict() for item in self.inventory_equip],
+            "inventory_consumable": [item.to_dict() for item in self.inventory_consumable],
+            "inventory_item": [item.to_dict() for item in self.inventory_item],
             "settings_language": self.settings_language,
             "settings_theme": self.settings_theme,
             "cleared_stages": self.cleared_stages,
@@ -175,7 +197,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         #     only_include = "Equip"
         match only_include:
             case "Equip":
-                filtered_inventory = [x for x in self.inventory if isinstance(x, Equip)]
+                filtered_inventory = self.inventory_equip
                 if global_vars.cheap_inventory_filter_have_owner == "Has Owner":
                     filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
                 elif global_vars.cheap_inventory_filter_have_owner == "No Owner":
@@ -194,13 +216,13 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                     filtered_inventory = [x for x in filtered_inventory if isinstance(x, Equip) and x.type == global_vars.cheap_inventory_filter_type]
 
             case "Consumable":
-                filtered_inventory = [x for x in self.inventory if isinstance(x, Consumable)]
+                filtered_inventory = self.inventory_consumable
                 # check if item have flag mark_for_removal, if so, remove it from inventory
                 # filtered_inventory = [x for x in filtered_inventory if not x.mark_for_removal]
             case "Item":
-                filtered_inventory = [x for x in self.inventory if isinstance(x, Item)]
+                filtered_inventory = self.inventory_item
             case _:
-                filtered_inventory = self.inventory
+                filtered_inventory = self.inventory_equip + self.inventory_consumable + self.inventory_item
 
         # inventory filter, global_vars have the following 3 attributes:
         # cheap_inventory_filter_have_owner = "Not Specified" | "Has Owner" | "No Owner"
@@ -272,8 +294,10 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         # Check if the item type is already in the inventory
         # inv_item is item in inventory
         if item.can_be_stacked:
+            what_is_this = item.__class__.__bases__[0].__name__
+            assert what_is_this in ["Consumable", "Item"]
             item_added = False
-            for inv_item in self.inventory:
+            for inv_item in eval(f"self.inventory_{what_is_this.lower()}"):
                 if isinstance(inv_item, type(item)) and not inv_item.is_full():
                     # if they both has attr 'brand' but does not match, skip
                     if hasattr(inv_item, "brand") and hasattr(item, "brand") and inv_item.brand != item.brand:
@@ -289,9 +313,17 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                         break
             # If item still has stack and wasn't added to an existing stack, add it as a new item
             if not item_added and item.current_stack > 0:
-                self.inventory.append(item)
+                eval(f"self.inventory_{what_is_this.lower()}").append(item)
         else:
-            self.inventory.append(item)
+            match (item.__class__.__name__, item.__class__.__bases__[0].__name__):
+                case ("Equip", "Block"):
+                    self.inventory_equip.append(item)
+                case (_, "Consumable"):
+                    self.inventory_consumable.append(item)
+                case (_, "Item"):
+                    self.inventory_item.append(item)
+                case _:
+                    raise ValueError(f"Unknown item type: {type(item)}")
         if rebuild_inventory_slots:
             self.build_inventory_slots()
 
@@ -301,7 +333,12 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
 
         removed_count = 0
         # print(f"Removing {amount_to_remove} {item_type.__name__} from inventory...")
-        for inv_item in self.inventory.copy():
+        assert item_type.__name__ != "Equip"
+        # print(item_type) # <class 'consumable.Orange'>
+        create_instance = item_type(1)
+        what_is_this = create_instance.__class__.__bases__[0].__name__
+        # print(what_is_this) # Consumable
+        for inv_item in eval(f"self.inventory_{what_is_this.lower()}").copy():
             if isinstance(inv_item, item_type):
                 if inv_item.can_be_stacked:
                     if hasattr(inv_item, "brand") and inv_item.brand != item_brand:
@@ -315,10 +352,10 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
 
                     # Remove the item from inventory if the stack is empty
                     if inv_item.current_stack == 0:
-                        self.inventory.remove(inv_item)
+                        eval(f"self.inventory_{what_is_this.lower()}").remove(inv_item)
 
                 else:
-                    self.inventory.remove(inv_item)
+                    eval(f"self.inventory_{what_is_this.lower()}").remove(inv_item)
                     removed_count += 1
 
                 if removed_count >= amount_to_remove:
@@ -339,7 +376,16 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         amount_to_remove = len(self.selected_item)
         for a, b, item in self.selected_item.values():
             if b: # is_highlighted
-                self.inventory.remove(item)
+                assert not item.can_be_stacked
+                match (item.__class__.__name__, item.__class__.__bases__[0].__name__):
+                    case ("Equip", "Block"):
+                        self.inventory_equip.remove(item)
+                    case (_, "Consumable"):
+                        self.inventory_consumable.remove(item)
+                    case (_, "Item"):
+                        self.inventory_item.remove(item)
+                    case _:
+                        raise ValueError(f"Unknown item type: {type(item)}")
         if rebuild_inventory_slots:
             self.build_inventory_slots()
         return amount_to_remove 
@@ -401,15 +447,17 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         second = convert_for_eval(second)
         third = convert_for_eval(third)
 
+        sort_what = global_vars.cheap_inventory_show_current_option
+
         if "bogo" in [first, second, third]:
             # we have to generate a bogo value for each item
-            for item in self.inventory:
+            for item in eval(f"self.inventory_{sort_what.lower()}"):
                 item.bogo = random.random()
-        for item in self.inventory:
+        for item in eval(f"self.inventory_{sort_what.lower()}"):
             item.rarity_order = item.get_rarity_order()
 
         try:
-            eval_string = f"self.inventory.sort(key=lambda x: (getattr(x, '{first}', 0), getattr(x, '{second}', 0), getattr(x, '{third}', 0)), reverse=True)"
+            eval_string = f"self.inventory_{sort_what.lower()}.sort(key=lambda x: (getattr(x, '{first}', 0), getattr(x, '{second}', 0), getattr(x, '{third}', 0)), reverse=True)"
             eval(eval_string)
         except Exception as e:
             print(f"Error sorting inventory: {e}")
@@ -461,7 +509,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
 
     def get_cash(self):
         self.cash = 0
-        for item in self.inventory:
+        for item in self.inventory_item:
             if isinstance(item, Cash):
                 self.cash += item.current_stack
         return self.cash
@@ -498,7 +546,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             return self.get_cash()
         else:
             c = 0
-            for item in self.inventory:
+            for item in self.inventory_item:
                 if item.__class__.__name__.lower() == currency or item.__class__.__name__ == currency:
                     c += item.current_stack
             return c
@@ -1456,7 +1504,7 @@ if __name__ == "__main__":
             characters_in_need = [x for x in itertools.chain(party1, party2)]
         random.shuffle(characters_in_need)
         for character in characters_in_need:
-            all_consumables = [x for x in player.inventory if isinstance(x, Consumable) and x.can_use_for_auto_battle]
+            all_consumables = [x for x in player.inventory_consumable if x.can_use_for_auto_battle]
             random.shuffle(all_consumables)
             if not all_consumables:
                 global_vars.turn_info_string += f"Random use failed: No consumable in inventory.\n"
@@ -1743,37 +1791,41 @@ if __name__ == "__main__":
             global eq_sell_window_command_result_box
             if global_vars.language == "English":
                 result_box_guide = "The following python code will be excuted:\n" \
-                "[x for x in player.inventory if isinstance(x, Equip) and <font color=#663399>command</font>]\n" \
+                "[x for x in player.inventory_equip if isinstance(x, Equip) and <font color=#FF69B4>command</font>]\n" \
                 "Example input:\n" \
-                "123\n" \
+                "<font color=#FF69B4>123</font>\n" \
                 "This will sell all equipment, because any non zero number is evaluated as True.\n" \
-                "'roka is fox'\n" \
+                "<font color=#FF69B4>'roka is fox'</font>\n" \
                 "This will sell all equipment, because any non empty string is evaluated as True.\n" \
-                "x.market_value <= 200\n" \
+                "<font color=#FF69B4>x.market_value <= 200</font>\n" \
                 "This will sell all equipment with market value less than or equal to 200.\n" \
-                "x.rarity == 'Common'\n" \
+                "<font color=#FF69B4>x.rarity == 'Common'</font>\n" \
                 "This will sell all equipment with rarity Common.\n" \
-                "(x.for_attacker_value < 15 and x.for_support_value < 15)\n" \
-                "This will sell all equipment with Attacker value and Support value less than 15.\n" \
-                "x.eq_set == 'Flute'\n" \
-                "This will sell all equipment with set Flute.\n"
+                "<font color=#FF69B4>(x.for_attacker_value < 18 and x.for_support_value < 18)</font>\n" \
+                "This will sell all equipment with Attacker value and Support value less than 18.\n" \
+                "<font color=#FF69B4>x.eq_set == 'Flute'</font>\n" \
+                "This will sell all equipment with set Flute.\n" \
+                "<font color=#FF69B4>x.type == 'Weapon'</font>\n" \
+                "This will sell all equipment with type Weapon.\n"
                 eq_sell_window_command_result_box.set_text(html_text=result_box_guide)
             elif global_vars.language == "日本語":
                 result_box_guide = "以下のPythonコードが実行される:\n" \
-                "[x for x in player.inventory if isinstance(x, Equip) and <font color=#663399>command</font>]\n" \
+                "[x for x in player.inventory_equip if isinstance(x, Equip) and <font color=#FF69B4>command</font>]\n" \
                 "入力例:\n" \
-                "123\n" \
+                "<font color=#FF69B4>123</font>\n" \
                 "すべての装備品を売却する。これはすべてのゼロ以外の数値は真と評価される。\n" \
-                "'roka is fox'\n" \
+                "<font color=#FF69B4>'roka is fox'</font>\n" \
                 "すべての装備品を売却する。これはすべての空でない文字列は真と評価される。\n" \
-                "x.market_value <= 200\n" \
+                "<font color=#FF69B4>x.market_value <= 200</font>\n" \
                 "市場価値が200以下のすべての装備品を売却する。\n" \
-                "x.rarity == 'Common'\n" \
+                "<font color=#FF69B4>x.rarity == 'Common'</font>\n" \
                 "レアリティが'Common'のすべての装備品を売却する。\n" \
-                "(x.for_attacker_value < 15 and x.for_support_value < 15)\n" \
-                "攻撃相性かつ防御相性が15未満のすべての装備品を売却する。\n" \
-                "x.eq_set == 'Flute'\n" \
-                "セットが'Flute'のすべての装備品を売却する。\n"
+                "<font color=#FF69B4>(x.for_attacker_value < 18 and x.for_support_value < 18)</font>\n" \
+                "攻撃相性かつ防御相性が18未満のすべての装備品を売却する。\n" \
+                "<font color=#FF69B4>x.eq_set == 'Flute'</font>\n" \
+                "セットが'Flute'のすべての装備品を売却する。\n" \
+                "<font color=#FF69B4>x.type == 'Weapon'</font>\n" \
+                "タイプが'Weapon'のすべての装備品を売却する。\n"
                 eq_sell_window_command_result_box.set_text(html_text=result_box_guide)
 
 
@@ -1814,7 +1866,7 @@ if __name__ == "__main__":
     def eq_sell_advanced(command: str):
         # sell equipment according to the given command
         try:
-            eq_to_sell = eval(f"[x for x in player.inventory if isinstance(x, Equip) and {command}]")
+            eq_to_sell = eval(f"[x for x in player.inventory_equip if isinstance(x, Equip) and {command}]")
         except Exception as e:
             eq_sell_window_command_result_box.set_text(f"{e}\n")
             return
@@ -1824,7 +1876,7 @@ if __name__ == "__main__":
             return
         for eq in eq_to_sell.copy():
             total_income += int(eq.market_value)
-            player.inventory.remove(eq)
+            player.inventory_equip.remove(eq)
         player.add_cash(total_income, False)
         eq_sell_window_command_result_box.set_text(f"Sold {len(eq_to_sell)} equipment for {total_income} cash.\n")
         player.build_inventory_slots()
