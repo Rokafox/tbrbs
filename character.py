@@ -7626,6 +7626,60 @@ class Wyatt(Character):
         return 0
 
 
+class Galahad(Character):
+    """
+    Character Template
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Galahad"
+        self.skill1_description = "Apply Dominion on all allies for 30 turns." \
+        " Dominion: If your index in party is even(0, 2, 4), atk is decreased by 50%, if your index is odd(1, 3), atk is increased by 50%."
+        self.skill2_description = "Attack all enemies whose index in party is odd(1, 3) with 600% atk and Stun the target for 6 turns," \
+        " enemies near the attacked targets have their defense reduced by 24% for 24 turns." \
+        " If there are no enemies whose index is odd, attack all enemies with 600% atk."
+        self.skill3_description = "When defeated, apply Shining Will on 2 allies of lowest hp percentage for 20 turns, damage taken is reduced by 50%."
+        self.skill1_description_jp = "全ての味方に30ターンの間「天下縦横」を付与する。天下縦横：自分がパーティ内のインデックスが偶数（0、2、4）の場合、攻撃力が50%減少し、奇数（1、3）の場合、攻撃力が50%増加する。"
+        self.skill2_description_jp = "パーティ内のインデックスが奇数（1、3）の全ての敵に攻撃力の600%で攻撃し、6ターンの間「スタン」を付与する。攻撃対象の近くにいる敵は24ターンの間、防御力が24%減少する。奇数インデックスの敵がいない場合、全ての敵に攻撃力の600%で攻撃する。"
+        self.skill3_description_jp = "撃破された時、HP割合が最も低い味方2人に20ターンの間「輝く神意」を付与する。輝く神意：受けるダメージが50%減少する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 3
+
+    def skill1_logic(self):
+        for a in self.ally:
+            if a.get_self_index() % 2 == 0:
+                a.apply_effect(StatsEffect("Dominion", 30, False, {"atk": 0.50}))
+            else:
+                a.apply_effect(StatsEffect("Dominion", 30, True, {"atk": 1.50}))
+        return 0
+
+    def skill2_logic(self):
+        def defense_down(char, target: Character):
+            target.apply_effect(StunEffect("Stun", 6, False))
+            neighor = target.get_neighbor_allies_not_including_self()
+            if not neighor:
+                return
+            for n in neighor:
+                n.apply_effect(StatsEffect("Defense Down", 24, False, {"defense": 0.76}))
+        target_list = [x for x in self.enemyparty if x.get_self_index() % 2 == 1]
+        final_list = list(set([enemy for enemy in self.enemy if not enemy.is_hidden()]).intersection(set(target_list)))
+        assert len(final_list) <= 2
+        if not final_list:
+            damage_dealt = self.attack(multiplier=6.0, repeat=1, target_kw1="all_enemy")
+            return damage_dealt
+        damage_dealt = self.attack(multiplier=6.0, repeat=1, func_after_dmg=defense_down, target_list=final_list)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def defeated_by_taken_damage(self, damage, attacker):
+        self.update_ally_and_enemy()
+        allies = list(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="2"))
+        if allies:
+            for a in allies:
+                a.apply_effect(ReductionShield("Shining Will", 20, True, 0.50, False))
 
 
 
