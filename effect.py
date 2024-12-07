@@ -2317,7 +2317,29 @@ class SmittenEffect(Effect):
         return f"行動後、{self.heal_value:.2f}HP回復する。"
 
 
+class DamageTypeConvertionEffect(Effect):
+    """
+    When attacking, convert damage type to [new_damage_type]
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, effect_applier, new_damage_type: str):
+        super().__init__(name, duration, is_buff)
+        self.cc_immunity = cc_immunity
+        self.effect_applier = effect_applier
+        assert new_damage_type in ["normal", "bypass", "status"], "Invalid new damage type."
+        self.new_damage_type = new_damage_type
+        self.apply_rule = "stack"
 
+    def apply_effect_on_apply(self, character):
+        character.damage_type_during_attack_method = self.new_damage_type
+
+    def apply_effect_on_remove(self, character):
+        character.damage_type_during_attack_method = "undefined"
+
+    def tooltip_description(self):
+        return f"When attacking, convert damage type to {self.new_damage_type}."
+    
+    def tooltip_description_jp(self):
+        return f"攻撃時、ダメージタイプを{self.new_damage_type}に変換する。"
 
 
 # =========================================================

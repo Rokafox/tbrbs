@@ -4,7 +4,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DecayEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DamageTypeConvertionEffect, DecayEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -97,7 +97,8 @@ class Character:
         self.number_of_take_downs: int = 0 # counts how many enemies the character has taken down
         self.have_taken_action: bool = False # whether the character has taken action in the battle
         self.multiple_target_selection_targets_missing = 0
-        self.is_in_iteration_of_status_effects_midturn = False 
+        self.is_in_iteration_of_status_effects_midturn = False
+        self.damage_type_during_attack_method: str = "undefined" # "normal", "status", "bypass", "undefined"
 
         if self.equip:
             for item in self.equip.values():
@@ -620,14 +621,25 @@ class Character:
                             global_vars.turn_info_string += f"Damage increased by {tigris_effect_damage_bonus * 100:.2f}% due to Tigris Set effect.\n"
                     if final_damage < 0:
                         final_damage = 0
-                    if damage_type == "normal":
+
+                    if self.damage_type_during_attack_method == "undefined":
+                        if damage_type == "normal":
+                            target.take_damage(final_damage, self, is_crit=critical, disable_protected_effect=ignore_protected_effect)
+                        elif damage_type == "status":
+                            target.take_status_damage(final_damage, self)
+                        elif damage_type == "bypass":
+                            target.take_bypass_status_effect_damage(final_damage, self)
+                        else:
+                            raise Exception("Invalid damage type.")
+                    elif self.damage_type_during_attack_method == "normal":
                         target.take_damage(final_damage, self, is_crit=critical, disable_protected_effect=ignore_protected_effect)
-                    elif damage_type == "status":
+                    elif self.damage_type_during_attack_method == "status":
                         target.take_status_damage(final_damage, self)
-                    elif damage_type == "bypass":
+                    elif self.damage_type_during_attack_method == "bypass":
                         target.take_bypass_status_effect_damage(final_damage, self)
                     else:
                         raise Exception("Invalid damage type.")
+                    
                     damage_dealt += final_damage
                     if target.is_dead():
                         if attacker_eq_set == "Bamboo":
@@ -7564,6 +7576,57 @@ class Snow(Character):
 
     def after_revive(self):
         self.apply_effect(FrozenEffect("Frozen", 10, False, self))
+
+
+class Wyatt(Character):
+    """
+    Target nearby ally of high atk, when attacking, convert the damage to status damage, atk and acc increased
+    Heal ally of low hp 2 times.
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Wyatt"
+        self.skill1_description = "Select a neighbor ally of highest atk, apply Atk Up and Perfect Disguise for 30 turns." \
+        " Atk Up: Atk and Accuracy is increased by 40%." \
+        " Perfect Disguise: When attacking and dealing damage with normal damage, convert the damage to status damage. When the same effect is applied, duration is refreshed."
+        self.skill2_description = "Target 2 allies of lowest hp percentage, heal the ally with 240% atk 2 times."
+        self.skill3_description = "Before normal attack, target a random neighbor ally, reduce all skill cooldown by 1 turn for that ally."
+        self.skill1_description_jp = "隣接する味方のうち攻撃力が最も高い1人を選択し、30ターンの間「攻撃アップ」と「完璧な変装」を付与する。攻撃アップ：攻撃力と命中率が40%増加する。完璧な変装：通常ダメージで攻撃し、ダメージを与える際、そのダメージを状態異常ダメージに変換する。同じ効果が再度付与された場合、持続時間が更新される。"
+        self.skill2_description_jp = "HP割合が最も低い味方2人を対象にし、攻撃力の240%分でHPを2回回復する。"
+        self.skill3_description_jp = "通常攻撃の前に、ランダムな隣接する味方1人を対象にし、その味方の全てのスキルのクールダウンを1ターン短縮する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        neighbor = self.get_neighbor_allies_not_including_self()
+        if not neighbor:
+            return 0
+        ally_high_atk = max(neighbor, key=lambda x: x.atk)
+        ally_high_atk.apply_effect(StatsEffect("Atk Up", 30, True, {"atk": 1.40, "acc": 0.40}))
+        pd = DamageTypeConvertionEffect("Perfect Disguise", 30, True, False, effect_applier=self, new_damage_type="status")
+        pd.additional_name = "Wyatt_Perfect_Disguise"
+        ally_high_atk.apply_effect(pd)
+        return 0
+
+    def skill2_logic(self):
+        self.heal(value=self.atk * 2.4, target_kw1="n_lowest_hp_percentage_ally", target_kw2="2", repeat=2)
+        return 0
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        neigbor = self.get_neighbor_allies_not_including_self()
+        if neigbor:
+            target = random.choice(neigbor)
+            target.update_cooldown()
+            global_vars.turn_info_string += f"{self.name} reduced skill cooldown of {target.name} by 1 turn.\n"
+        super().normal_attack()
+        return 0
+
+
+
 
 
 # class NC(Character):

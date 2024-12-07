@@ -1,6 +1,7 @@
 import inspect
 import os, json
 import statistics
+import sys
 
 import pandas as pd
 import analyze
@@ -407,16 +408,6 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         for item in self.inventory:
             item.rarity_order = item.get_rarity_order()
 
-        # if "for_attacker_value" in [first, second, third]:
-        #     for item in self.inventory:
-        #         if isinstance(item, Equip):
-        #             item.for_attacker_value = item.estimate_value_for_attacker()
-
-        # if "for_support_value" in [first, second, third]:
-        #     for item in self.inventory:
-        #         if isinstance(item, Equip):
-        #             item.for_support_value = item.estimate_value_for_support()
-
         try:
             eval_string = f"self.inventory.sort(key=lambda x: (getattr(x, '{first}', 0), getattr(x, '{second}', 0), getattr(x, '{third}', 0)), reverse=True)"
             eval(eval_string)
@@ -519,38 +510,24 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
 # Character Creation Section
 # =====================================
 
-def get_all_characters():
-    global start_with_max_level
-    character_names = ["Cerberus", "Fenrir", "Clover", "Ruby", "Olive", "Luna", "Freya", "Poppy", "Lillia", "Iris",
-                       "Pepper", "Cliffe", "Pheonix", "Bell", "Taily", "Seth", "Ophelia", "Chiffon", "Requina", "Gabe", 
-                       "Yuri", "Dophine", "Tian", "Don", "Cate", "Roseiri", "Fox", "Season", "Rubin", "RubinPF", "Raven", "April",
-                       "Nata", "Chei", "Cocoa", "Beacon", "Timber", "Scout", "Kyle", "Moe", "Mitsuki", "CheiHW", "Wenyuan",
-                       "Zhen", "Cupid", "East", "Lenpo", "George", "Heracles", "Sunny", "Sasaki", "Lester", "Zed", "Lu",
-                       "Ulric", "FreyaSK", "ZedAN", "FreyaBP", "Taiyi", "RavenWB", "Xunmu", "Xunyu", "CocoaRT", "Cattee", "Rika",
-                       "Clarence", "Jingke", "Shuijing", "ShuijingAL", "Martin", "Inaba", "Joe", "Jerry", "Qimon", "QimonNY", "Zyl", "Fred",
-                       "Waldo", "Toby", "TobyRT", "Cory", "Imada", "Lancelot", "Glass", "Gawain", "Pinee", "Pine", "Percival", "Gareth",
-                       "Eddie", "Brandon", "Snow"]
-    character_names.sort()
-    if start_with_max_level:
-        all_characters = [eval(f"{name}('{name}', 1000)") for name in character_names]
-    else:
-        all_characters = [eval(f"{name}('{name}', 1)") for name in character_names]
-    print(f"Loaded {len(all_characters)} characters.")
-    return all_characters, character_names
+all_characters = [
+    obj for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass)
+    if issubclass(obj, Character) and obj is not Character
+]
+# create instance of each character
+if start_with_max_level:
+    all_characters: list[Character] = [c("", 1000) for c in all_characters]
+else:
+    all_characters: list[Character] = [c("", 1) for c in all_characters]
+all_characters_names: list[str] = [c.name for c in all_characters]
+print(f"Loaded {len(all_characters)} characters.")
 
-all_characters, all_characters_names = get_all_characters()
-all_characters: list[Character]
-all_characters_names: list[str]
-all_monsters = [cls(name, 1) for name, cls in monsters.__dict__.items() 
+
+all_monsters: list[Character] = [cls(name, 1) for name, cls in monsters.__dict__.items() 
                 if inspect.isclass(cls) and issubclass(cls, Character) and cls != Character and cls != monsters.Monster]
-all_monsters: list[Character]
-all_monsters_names = [m.name for m in all_monsters]
+all_monsters_names: list[str] = [m.name for m in all_monsters]
 all_monsters_names.sort()
-all_characters_names: list[str]
 print(f"Loaded {len(all_monsters)} monsters.")
-
-
-
 
 
 # ---------------------------------------------------------
