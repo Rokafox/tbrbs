@@ -93,6 +93,8 @@ def load_player(filename="player_data.json"):
             item = item_class(item_data['current_stack'], item_data['eq_set'])
         else:
             item = item_class(item_data['current_stack'])
+        if not item.is_full():
+            player._add_non_full_stack(item)
         player.inventory_consumable.append(item)
 
     for item_data in data["inventory_item"]:
@@ -101,9 +103,11 @@ def load_player(filename="player_data.json"):
         if item_class is None:
             raise ValueError(f"Unknown item type: {item_data['name']}")
         item = item_class(item_data['current_stack'])
+        if not item.is_full():
+            player._add_non_full_stack(item)
         player.inventory_item.append(item)
 
-    cash_actual = player.get_cash()
+    cash_actual = player.refresh_cash()
     if cash_in_data != cash_actual:
         print(f"Warning: Cash recorded does not match the actual Cash in inventory: {cash_in_data} != {cash_actual}, {cash_actual} is used.")
     player.cleared_stages = data["cleared_stages"]
@@ -121,7 +125,8 @@ def load_player(filename="player_data.json"):
 
 class Nine(): # A reference to 9Nine, Nine is just the player's name
     def __init__(self, cash: int, inventory: list=None):
-        self.cash = cash 
+        self.cash_initial = cash
+        self.cash = 0 
         self.owned_characters = []
         # We could have multiple types of items in inventory, Equip, Consumable, Item.
         self.inventory_equip = []
@@ -145,7 +150,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         # Value: list of references to items in the inventory that are not full
         self.non_full_stacks = {}
 
-        if cash > 0:
+        if self.cash_initial > 0:
             self.add_cash(cash, False)
 
 
@@ -291,30 +296,54 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
     def add_to_inventory(self, item, rebuild_inventory_slots=True):
         if not item:
             raise ValueError("Item is None")
-        # Check if the item type is already in the inventory
-        # inv_item is item in inventory
-        if item.can_be_stacked:
-            what_is_this = item.__class__.__bases__[0].__name__
-            assert what_is_this in ["Consumable", "Item"]
-            item_added = False
-            for inv_item in eval(f"self.inventory_{what_is_this.lower()}"):
-                if isinstance(inv_item, type(item)) and not inv_item.is_full():
-                    # if they both has attr 'brand' but does not match, skip
-                    if hasattr(inv_item, "brand") and hasattr(item, "brand") and inv_item.brand != item.brand:
-                        continue
 
-                    # print(f"Adding {item.current_stack} {item.name} to existing stack...")
-                    # Add to the existing stack
-                    added_stack = min(item.current_stack, inv_item.max_stack - inv_item.current_stack)
-                    inv_item.current_stack += added_stack
-                    item.current_stack -= added_stack
-                    if item.current_stack == 0:
-                        item_added = True
-                        break
-            # If item still has stack and wasn't added to an existing stack, add it as a new item
-            if not item_added and item.current_stack > 0:
-                eval(f"self.inventory_{what_is_this.lower()}").append(item)
+        if item.can_be_stacked:
+            base_class = item.__class__.__bases__[0].__name__.lower()  # "consumable" or "item"
+            inv_ref = eval(f"self.inventory_{base_class}")
+
+            # First, try to fill from the non_full_stacks dictionary
+            key = self._get_stack_key(item)
+            amount_to_add = item.current_stack
+
+            # If we have partially filled stacks of this type, fill them first
+            if key in self.non_full_stacks:
+                stacks = self.non_full_stacks[key]
+                # Use a while loop or for loop to distribute the stack among partially filled stacks
+                i = 0
+                while amount_to_add > 0 and i < len(stacks):
+                    stack_item = stacks[i]
+                    space_left = stack_item.max_stack - stack_item.current_stack
+                    to_fill = min(space_left, amount_to_add)
+                    stack_item.current_stack += to_fill
+                    amount_to_add -= to_fill
+                    if stack_item.is_full():
+                        self._remove_non_full_stack(stack_item)
+                    else:
+                        # Still not full, so leave it in the dictionary
+                        pass
+                    i += 1
+
+                # Clean out empty lists if needed
+                if key in self.non_full_stacks and not self.non_full_stacks[key]:
+                    del self.non_full_stacks[key]
+
+            # If there's still some amount left, create a new stack
+            while amount_to_add > 0:
+                # Decide how much to put in a new stack
+                stack_size = min(amount_to_add, item.max_stack)
+                new_item = type(item)(stack_size)
+                # If the item has brand, copy that as well
+                if hasattr(item, 'brand'):
+                    new_item.brand = item.brand
+
+                inv_ref.append(new_item)
+                amount_to_add -= stack_size
+
+                if not new_item.is_full():
+                    self._add_non_full_stack(new_item)
+
         else:
+            # Non-stackable items are straightforward
             match (item.__class__.__name__, item.__class__.__bases__[0].__name__):
                 case ("Equip", "Block"):
                     self.inventory_equip.append(item)
@@ -324,6 +353,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                     self.inventory_item.append(item)
                 case _:
                     raise ValueError(f"Unknown item type: {type(item)}")
+
         if rebuild_inventory_slots:
             self.build_inventory_slots()
 
@@ -331,38 +361,53 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         if amount_to_remove <= 0:
             raise ValueError("Amount to remove must be positive")
 
-        removed_count = 0
-        # print(f"Removing {amount_to_remove} {item_type.__name__} from inventory...")
-        assert item_type.__name__ != "Equip"
-        # print(item_type) # <class 'consumable.Orange'>
+        # Non-stackable items still require a linear search, but these should be relatively rare
+        # For stackable items:
         create_instance = item_type(1)
-        what_is_this = create_instance.__class__.__bases__[0].__name__
-        # print(what_is_this) # Consumable
-        for inv_item in eval(f"self.inventory_{what_is_this.lower()}").copy():
+        what_is_this = create_instance.__class__.__bases__[0].__name__.lower()
+        inv_ref = eval(f"self.inventory_{what_is_this}")
+
+        removed_count = 0
+        i = 0
+        while i < len(inv_ref) and removed_count < amount_to_remove:
+            inv_item = inv_ref[i]
             if isinstance(inv_item, item_type):
-                if inv_item.can_be_stacked:
-                    if hasattr(inv_item, "brand") and inv_item.brand != item_brand:
-                        # print(f"Brand mismatch: {inv_item.brand} != {item_brand}")
+                # Check brand if applicable
+                if hasattr(inv_item, 'brand') and item_brand is not None:
+                    if inv_item.brand != item_brand:
+                        i += 1
                         continue
+
+                if inv_item.can_be_stacked:
                     amount_removed = min(amount_to_remove - removed_count, inv_item.current_stack)
                     inv_item.current_stack -= amount_removed
                     removed_count += amount_removed
-                    # print(f"Removed {amount_removed} {item_type.__name__} from inventory...")
-                    # print(f"Total removed: {removed_count} {item_type.__name__} from inventory...")
 
-                    # Remove the item from inventory if the stack is empty
                     if inv_item.current_stack == 0:
-                        eval(f"self.inventory_{what_is_this.lower()}").remove(inv_item)
-
+                        # The stack is empty, remove it entirely
+                        self._remove_non_full_stack(inv_item)
+                        inv_ref.pop(i)
+                        # Don't increment i because we removed this item
+                    else:
+                        # It's partially filled now, ensure it's in non_full_stacks
+                        if inv_item.is_full():
+                            self._remove_non_full_stack(inv_item)
+                        else:
+                            # Make sure it's recorded as non-full
+                            if inv_item not in self.non_full_stacks.get(self._get_stack_key(inv_item), []):
+                                self._add_non_full_stack(inv_item)
+                        i += 1
                 else:
-                    eval(f"self.inventory_{what_is_this.lower()}").remove(inv_item)
+                    # Non-stackable, remove it entirely
+                    inv_ref.pop(i)
                     removed_count += 1
-
-                if removed_count >= amount_to_remove:
-                    break
+                    # Don't increment i due to removal
+            else:
+                i += 1
 
         if removed_count < amount_to_remove:
             raise ValueError("Not enough items in inventory to remove")
+
         if rebuild_inventory_slots:
             self.build_inventory_slots()
 
@@ -507,7 +552,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             self.current_page -= n
         self.build_inventory_slots()
 
-    def get_cash(self):
+    def refresh_cash(self):
         self.cash = 0
         for item in self.inventory_item:
             if isinstance(item, Cash):
@@ -528,6 +573,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             else:
                 self.add_to_inventory(Cash(999999), False)
                 amount -= 999999
+        self.cash += amount
         try:
             set_currency_on_icon_and_label(self, the_shop.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
         except NameError:
@@ -536,6 +582,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
 
     def lose_cash(self, amount: int, rebuild_inventory_slots: bool = True):
         self.remove_from_inventory(Cash, amount, rebuild_inventory_slots)
+        self.cash -= amount
         try:
             set_currency_on_icon_and_label(self, the_shop.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
         except NameError:
@@ -543,7 +590,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
 
     def get_currency(self, currency: str):
         if currency.lower() == "cash":
-            return self.get_cash()
+            return self.cash
         else:
             c = 0
             for item in self.inventory_item:
@@ -1583,7 +1630,7 @@ if __name__ == "__main__":
 
     def buy_one_item(player: Nine, item: Block, item_price: int, currency: str) -> None:
         if currency == "Cash":
-            if player.get_cash() < item_price:
+            if player.cash < item_price:
                 text_box.set_text(f"Not enough cash to buy {item.name}.")
                 return
             player.add_to_inventory(item, False)
@@ -1666,7 +1713,7 @@ if __name__ == "__main__":
             return
         
         cost_total = int(sum([item_to_upgrade.star_enhence_cost for item_to_upgrade in selected_items]))
-        if player.get_cash() < cost_total:
+        if player.cash < cost_total:
             text_box_text_to_append += f"Not enough cash for star enhancement.\n"
             text_box.append_html_text(text_box_text_to_append)
             return
@@ -1713,7 +1760,7 @@ if __name__ == "__main__":
             return
 
         cost_total = int(sum([item_to_upgrade.level_up_cost_multilevel(amount_to_level) for item_to_upgrade in selected_items]))
-        if player.get_cash() < cost_total:
+        if player.cash < cost_total:
             text_box_text_to_append += "Not enough cash for leveling up equipment.\n"
             text_box.append_html_text(text_box_text_to_append)
             return
@@ -1896,7 +1943,7 @@ if __name__ == "__main__":
             return
 
         for item_to_level_up in selected_items:
-            available_cash = player.get_cash()
+            available_cash = player.cash
             remaining_funds, cost = item_to_level_up.level_up_as_possible(available_cash)
             if cost:
                 player.lose_cash(cost, False)
@@ -2103,7 +2150,12 @@ if __name__ == "__main__":
                 game_mode_selection_label.set_tooltip("Select the game mode: Training Mode, Adventure Mode.", delay=0.1, wrap_width=300)
                 label_character_selection_menu.set_text("Selected Character:")
                 label_character_selection_menu.set_tooltip("Selected character. Use items, equip, unequip and others use this character as target.", delay=0.1, wrap_width=300)
-                use_item_button.set_tooltip("The selected item is used on the selected character. If the selected item is an equipment item, equip it to the selected character. Multiple items may be equipped or used at one time.",
+                use_item_button.set_text("Equip Item")
+                use_item_button.set_tooltip("The selected item is used on the selected character. If the selected item is an equipment item, equip it to the selected character." \
+                                            " Multiple items may be equipped or used at one time." \
+                                            " Selection: left click to select an item, right click to deselect an item." \
+                                            " Shift + left click to select multiple items."
+                                            ,
                                             delay=0.1, wrap_width=300)
                 use_itemx10_button.set_tooltip("Use selected item 10 times, only effective on comsumables.", delay=0.1, wrap_width=300)
                 button_cheems.set_text("Cheems")
@@ -2176,7 +2228,11 @@ if __name__ == "__main__":
                 game_mode_selection_label.set_tooltip("ゲームモードを選択する：訓練モード、冒険モード。", delay=0.1, wrap_width=300)
                 label_character_selection_menu.set_text("天下無双：")
                 label_character_selection_menu.set_tooltip("キャラクターを選択する。アイテムの使用、装備の使用、装備の解除、その他がこのキャラクターを対象として行われる。", delay=0.1, wrap_width=300)
-                use_item_button.set_tooltip("選択したアイテムを選択したキャラクターに使用する。選択したアイテムが装備アイテムの場合、選択したキャラクターに装備する。一度に複数のアイテムを装備・使用することができる。",
+                use_item_button.set_text("鳳冠霞帔")
+                use_item_button.set_tooltip("選択したアイテムを選択したキャラクターに使用する。選択したアイテムが装備アイテムの場合、選択したキャラクターに装備する。一度に複数のアイテムを装備・使用することができる。" \
+                                            "選択方法：左クリックでアイテムを選択、右クリックでアイテムを選択解除。" \
+                                            "Shift+左クリックで複数のアイテムを選択する。"
+                                            ,
                                             delay=0.1, wrap_width=300)
                 use_itemx10_button.set_tooltip("選択したアイテムを10回使用し、消耗品にのみ有効である。", delay=0.1, wrap_width=300)
                 button_cheems.set_text("チームズ")
@@ -2185,7 +2241,9 @@ if __name__ == "__main__":
                 button_characters.set_tooltip("キャラクター画面を開く。", delay=0.1, wrap_width=300)
                 button_about.set_text("洞若觀火")
                 button_about.set_tooltip("アプリ概要画面を開く。", delay=0.1, wrap_width=300)
+                character_eq_unequip_button.set_text("衣衫襤褸")
                 character_eq_unequip_button.set_tooltip("選択したキャラクターから装備を外す。", delay=0.1, wrap_width=300)
+                character_eq_unequip_all_button.set_text("全")
                 character_eq_unequip_all_button.set_tooltip("選択したキャラクターからすべての装備を外す。", delay=0.1, wrap_width=300)
                 eq_levelup_button.set_text("日進月歩")
                 eq_levelup_button.set_tooltip("インベントリで選択した装備をレベルアップさせる。", delay=0.1, wrap_width=300)
@@ -4460,7 +4518,6 @@ if __name__ == "__main__":
 
         shop_image_slot_currency_icon.set_image(images_item[eval(f"{shop_instance.currency}(1)").image])
         shop_player_owned_currency_icon.set_image(images_item[eval(f"{shop_instance.currency}(1)").image])
-        # shop_player_owned_currency.set_text(str(player.get_cash()))
         set_currency_on_icon_and_label(player, shop_instance.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
 
         # shop_shop_introduction_sign.set_tooltip(shop_instance.description, delay=0.1, wrap_width=300)
@@ -4613,11 +4670,15 @@ if __name__ == "__main__":
     auto_battle_bar_progress = 0
     time_acc = 0
 
+    shift_held = False  # Shiftキーが押下状態かを記録する
+    last_clicked_slot = None  # 直前にクリックしたスロット(UIImage)を記録する
+
     while running:
         time_delta = clock.tick(60)/1000.0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                build_quit_game_window()
+                # build_quit_game_window()
+                running = False
             # right click to deselect from inventory
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
                 for ui_image, rect in player.dict_image_slots_rects.items():
@@ -4627,81 +4688,60 @@ if __name__ == "__main__":
                             ui_image.set_image(a)
                             player.selected_item[ui_image] = (a, False, c)
                             
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
+                    shift_held = True
+
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
+                    shift_held = False
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # print(event.pos)
-                # This is problematic because it will cause unnecessary behavior if we are in windows, like settings windows, cheems window, etc.
-                # if image_slot1.get_abs_rect().collidepoint(event.pos):
-                #     if current_game_mode == "Training Mode":
-                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         update_character_selection_menu(party_show_in_menu, None, 0)
-                #     elif current_game_mode == "Adventure Mode":
-                #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                #         update_character_selection_menu(party1_show_in_menu, None, 0)
-                # if image_slot2.get_abs_rect().collidepoint(event.pos):
-                #     if current_game_mode == "Training Mode":
-                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         update_character_selection_menu(party_show_in_menu, None, 1)
-                #     elif current_game_mode == "Adventure Mode":
-                #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                #         update_character_selection_menu(party1_show_in_menu, None, 1)
-                # if image_slot3.get_abs_rect().collidepoint(event.pos):
-                #     if current_game_mode == "Training Mode":
-                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         update_character_selection_menu(party_show_in_menu, None, 2)
-                #     elif current_game_mode == "Adventure Mode":
-                #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                #         update_character_selection_menu(party1_show_in_menu, None, 2)
-                # if image_slot4.get_abs_rect().collidepoint(event.pos):
-                #     if current_game_mode == "Training Mode":
-                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         update_character_selection_menu(party_show_in_menu, None, 3)
-                #     elif current_game_mode == "Adventure Mode":
-                #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                #         update_character_selection_menu(party1_show_in_menu, None, 3)
-                # if image_slot5.get_abs_rect().collidepoint(event.pos):
-                #     if current_game_mode == "Training Mode":
-                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         update_character_selection_menu(party_show_in_menu, None, 4)
-                #     elif current_game_mode == "Adventure Mode":
-                #         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-                #         update_character_selection_menu(party1_show_in_menu, None, 4)
-                # if image_slot6.get_abs_rect().collidepoint(event.pos):
-                #     if current_game_mode == "Training Mode":
-                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         update_character_selection_menu(party_show_in_menu, None, 5)
-                # if image_slot7.get_abs_rect().collidepoint(event.pos):
-                #     if current_game_mode == "Training Mode":
-                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         update_character_selection_menu(party_show_in_menu, None, 6)
-                # if image_slot8.get_abs_rect().collidepoint(event.pos):
-                #     if current_game_mode == "Training Mode":
-                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         update_character_selection_menu(party_show_in_menu, None, 7)
-                # if image_slot9.get_abs_rect().collidepoint(event.pos):
-                #     if current_game_mode == "Training Mode":
-                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         update_character_selection_menu(party_show_in_menu, None, 8)
-                # # This is only a temporary solution, we should consider changing layering of UI elements
-                # # if image_slot10.get_abs_rect().collidepoint(event.pos) and not reserve_character_selection_menu.are_contents_hovered():
-                # if image_slot10.get_abs_rect().collidepoint(event.pos):
-                #     if current_game_mode == "Training Mode":
-                #         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-                #         update_character_selection_menu(party_show_in_menu, None, 9)
-
+                clicked_ui_image = None
                 for ui_image, rect in player.dict_image_slots_rects.items():
                     if rect.collidepoint(event.pos):
-                        if ui_image in player.selected_item.keys():
-                            a, b, c = player.selected_item[ui_image]
-                            if b:
-                                ui_image.set_image(a)
-                                player.selected_item[ui_image] = (a, False, c)
-                                break
-
-                        player.selected_item[ui_image] = (ui_image.image, True, player.dict_image_slots_items[ui_image]) # Add newly clicked image to dict
-                        ui_image.set_image(add_outline_to_image(ui_image.image, (255, 215, 0), 1))
+                        clicked_ui_image = ui_image
                         break
 
+                if clicked_ui_image is not None:
+                    # Shiftキーなし: 単一選択
+                    if not shift_held:
+                        # すべての選択解除
+                        for sel_ui_image, (orig_img, is_highlighted, item) in player.selected_item.items():
+                            if is_highlighted:
+                                sel_ui_image.set_image(orig_img)
+                        player.selected_item.clear()
+
+                        # 新規選択
+                        player.selected_item[clicked_ui_image] = (clicked_ui_image.image, True, player.dict_image_slots_items[clicked_ui_image])
+                        clicked_ui_image.set_image(add_outline_to_image(clicked_ui_image.image, (255, 215, 0), 1))
+                        last_clicked_slot = clicked_ui_image
+
+                    # Shiftキーあり: 範囲選択
+                    else:
+                        if last_clicked_slot is None:
+                            # 前回クリックがない場合は普通に単体選択扱い
+                            player.selected_item[clicked_ui_image] = (clicked_ui_image.image, True, player.dict_image_slots_items[clicked_ui_image])
+                            clicked_ui_image.set_image(add_outline_to_image(clicked_ui_image.image, (255, 215, 0), 1))
+                            last_clicked_slot = clicked_ui_image
+                        else:
+                            # last_clicked_slotとclicked_ui_imageの間にあるスロットをまとめて選択
+                            all_slots = list(player.dict_image_slots_rects.keys())
+                            start_index = all_slots.index(last_clicked_slot)
+                            end_index = all_slots.index(clicked_ui_image)
+
+                            # start_index < end_index になるように並べ替え
+                            if start_index > end_index:
+                                start_index, end_index = end_index, start_index
+
+                            # 範囲内のスロットをすべて選択状態にする
+                            for ui_image in all_slots[start_index:end_index+1]:
+                                if ui_image not in player.selected_item:
+                                    player.selected_item[ui_image] = (ui_image.image, True, player.dict_image_slots_items[ui_image])
+                                    ui_image.set_image(add_outline_to_image(ui_image.image, (255, 215, 0), 1))
+
+                            # last_clicked_slotは特に更新しなくてもよいが、必要なら新たなクリックをlastとして記録
+                            last_clicked_slot = clicked_ui_image
 
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == button1: # Shuffle party
@@ -4722,8 +4762,7 @@ if __name__ == "__main__":
                     text_box.set_text("==============================\n")
                     restart_battle()
                 if event.ui_element == button_quit_game:
-                    save_player(player)
-                    running = False
+                    build_quit_game_window()
                 if event.ui_element == button_left_simulate_current_battle:
                     all_turns_simulate_current_battle(party1, party2, selection_simulate_current_battle.selected_option[0])
                 if event.ui_element == eq_stars_upgrade_button:
@@ -4935,8 +4974,10 @@ if __name__ == "__main__":
                             player.current_page = 0
                             global_vars.cheap_inventory_show_current_option = "Equip"
                             player.build_inventory_slots()
-                            
-                            use_item_button.set_text("Equip Item")
+                            if global_vars.language == "日本語":
+                                use_item_button.set_text("鳳冠霞帔")
+                            elif global_vars.language == "English":
+                                use_item_button.set_text("Equip Item")
                             eq_selection_menu.show()
                             character_eq_unequip_button.show()
                             character_eq_unequip_all_button.show()
@@ -4955,7 +4996,10 @@ if __name__ == "__main__":
                             player.current_page = 0
                             global_vars.cheap_inventory_show_current_option = "Item"
                             player.build_inventory_slots()
-                            use_item_button.set_text("Use Item")
+                            if global_vars.language == "日本語":
+                                use_item_button.set_text("使う")
+                            elif global_vars.language == "English":
+                                use_item_button.set_text("Use Item")
                             eq_selection_menu.hide()
                             character_eq_unequip_button.hide()
                             character_eq_unequip_all_button.hide()
@@ -4974,7 +5018,10 @@ if __name__ == "__main__":
                             player.current_page = 0
                             global_vars.cheap_inventory_show_current_option = "Consumable"
                             player.build_inventory_slots()
-                            use_item_button.set_text("Use Item")
+                            if global_vars.language == "日本語":
+                                use_item_button.set_text("使う")
+                            elif global_vars.language == "English":
+                                use_item_button.set_text("Use Item")
                             eq_selection_menu.hide()
                             character_eq_unequip_button.hide()
                             character_eq_unequip_all_button.hide()
