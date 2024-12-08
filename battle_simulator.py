@@ -613,7 +613,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
                 return
             else:
                 raise ValueError("Amount must be positive")
-
+        self.cash += amount
         while amount > 0:
             if amount <= 999999:
                 self.add_to_inventory(Cash(amount), rebuild_inventory_slots)
@@ -621,7 +621,6 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             else:
                 self.add_to_inventory(Cash(999999), False)
                 amount -= 999999
-        self.cash += amount
         try:
             set_currency_on_icon_and_label(self, the_shop.currency, shop_player_owned_currency, shop_player_owned_currency_icon)
         except NameError:
