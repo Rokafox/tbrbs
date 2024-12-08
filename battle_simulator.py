@@ -1,12 +1,59 @@
+import difflib
 import inspect
 import os, json
 import statistics
 import sys
-
 import pandas as pd
 import analyze
+
 from character import *
+start_with_max_level = True
+
+all_characters = [
+    obj for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass)
+    if issubclass(obj, Character) and obj is not Character
+]
+# create instance of each character
+if start_with_max_level:
+    all_characters: list[Character] = [c("", 1000) for c in all_characters]
+else:
+    all_characters: list[Character] = [c("", 1) for c in all_characters]
+all_characters_names: list[str] = [c.name for c in all_characters]
+print(f"Loaded {len(all_characters)} characters.")
+
+fwss_source_code_cache = {}
+fwss_noinit_source_code_cache = {}
+
+def fwss_remove_init_method(source_code: str) -> str:
+    lines = source_code.split('\n')
+    filtered_lines = []
+    inside_init = False
+    for line in lines:
+        if line.strip().startswith('def __init__'):
+            inside_init = True
+        if inside_init and line.strip().startswith('def ') and not line.strip().startswith('def __init__'):
+            inside_init = False
+        if not inside_init:
+            filtered_lines.append(line)
+    return '\n'.join(filtered_lines)
+
+print("Caching source code for all characters...")
+for x in all_characters:
+    class_name = x.__class__.__name__
+    if class_name not in fwss_source_code_cache:
+        source_code = inspect.getsource(x.__class__)
+        fwss_source_code_cache[class_name] = source_code
+        fwss_noinit_source_code_cache[class_name] = fwss_remove_init_method(source_code)
+print("Caching source code for all characters complete.")
+
 import monsters
+
+all_monsters: list[Character] = [cls(name, 1) for name, cls in monsters.__dict__.items() 
+                if inspect.isclass(cls) and issubclass(cls, Character) and cls != Character and cls != monsters.Monster]
+all_monsters_names: list[str] = [m.name for m in all_monsters]
+all_monsters_names.sort()
+print(f"Loaded {len(all_monsters)} monsters.")
+
 from item import *
 from consumable import *
 from calculate_winrate import is_someone_alive, reset_ally_enemy_attr
@@ -14,7 +61,7 @@ import shop
 import csv
 running = False
 text_box = None
-start_with_max_level = True
+
 
 
 # A hack to disable DPI scaling on Windows systems
@@ -602,28 +649,6 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
 # =====================================
 # End of Player Section
 # =====================================
-# Character Creation Section
-# =====================================
-
-all_characters = [
-    obj for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass)
-    if issubclass(obj, Character) and obj is not Character
-]
-# create instance of each character
-if start_with_max_level:
-    all_characters: list[Character] = [c("", 1000) for c in all_characters]
-else:
-    all_characters: list[Character] = [c("", 1) for c in all_characters]
-all_characters_names: list[str] = [c.name for c in all_characters]
-print(f"Loaded {len(all_characters)} characters.")
-
-
-all_monsters: list[Character] = [cls(name, 1) for name, cls in monsters.__dict__.items() 
-                if inspect.isclass(cls) and issubclass(cls, Character) and cls != Character and cls != monsters.Monster]
-all_monsters_names: list[str] = [m.name for m in all_monsters]
-all_monsters_names.sort()
-print(f"Loaded {len(all_monsters)} monsters.")
-
 
 # ---------------------------------------------------------
 # ---------------------------------------------------------
@@ -1351,26 +1376,190 @@ if __name__ == "__main__":
     # =====================================
 
     character_window = None
+    character_window_command_line = None
+    character_window_submit_button = None
+    character_window_show_guide_button = None
+    character_window_command_result_box = None
+
 
     def build_character_window():
-        global character_window
+        global character_window, character_window_command_line, character_window_submit_button
+        global character_window_show_guide_button, character_window_command_result_box
         try:
             character_window.kill()
         except Exception as e:
             pass
 
-        character_window = pygame_gui.elements.UIWindow(pygame.Rect((500, 300), (300, 100)),
+        def local_translate(s: str) -> str:
+            if global_vars.language == "English":
+                return s
+            elif global_vars.language == "日本語":
+                match s:
+                    case "Enter the command devoutly.":
+                        return "敬虔な気持ちでコマンドを入力しなさい。"
+                    case "Submit":
+                        return "献上"
+                    case "Guide":
+                        return "指南"
+                    case _:
+                        return s
+            else:
+                raise ValueError(f"Unknown language: {global_vars.language}")
+
+
+        character_window = pygame_gui.elements.UIWindow(pygame.Rect((300, 180), (500, 510)),
                                             ui_manager,
                                             window_display_title="Characters",
                                             object_id="#characters_window",
                                             resizable=False)
 
-        # For now, simply show this feature is not planned yet.
+        character_window_command_line = pygame_gui.elements.UITextEntryLine(pygame.Rect((10, 10), (480, 35)),
+                                            ui_manager,
+                                            container=character_window,
+                                            placeholder_text=local_translate("Enter the command devoutly."))
+        
+        character_window_submit_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((10, 50), (240, 50)),
+                                        text=local_translate("Submit"),
+                                        manager=ui_manager,
+                                        container=character_window,
+                                        command=lambda: advanced_character_command_add_to_result_box(character_window_command_line.get_text()))
 
-        cw_warning_label = pygame_gui.elements.UILabel(pygame.Rect((10, 10), (280, 35)),
-                                        "Implementation is not planned.",
-                                        ui_manager,
-                                        container=character_window)
+        def result_box_add_guide():
+            global eq_sell_window_command_result_box
+            if global_vars.language == "English":
+                result_box_guide = "This section provides functionality to quickly find or perform operations related to characters." \
+                " The following commands are available:\n" \
+                "<font color=#FF69B4>cweqs [str]</font>\n" \
+                "Print all characters with [str] equipment set, [str] allows lower case and partial matches. Use None to find characters without equipment set." \
+                " If [str] is not specified, all equipment set and characters are printed.\n" \
+                "<font color=#FF69B4>fwsd [str]</font>\n" \
+                "Print all characters with skill description containing [str].\n" \
+                "<font color=#FF69B4>fwss [str]</font>\n" \
+                "Print all characters with skill source code containing [str]." \
+                " This command is useful for finding characters with certain skill interactions, for example: AbsorptionShield.\n" \
+                "<font color=#FF69B4>ss [character_name]</font>\n" \
+                "View source code of the character.\n" 
+                character_window_command_result_box.set_text(html_text=result_box_guide)
+            elif global_vars.language == "日本語":
+                result_box_guide = "このセクションでは、キャラクターに関連する操作や検索を素早く行う機能を提供する。" \
+                "使用可能なコマンドは以下の通りです:\n" \
+                "<font color=#FF69B4>cweqs [str]</font>\n" \
+                "[str]装備セットを持つすべてのキャラクターを表示する。[str] は小文字や部分一致も可能です。Noneを使用すると装備セットがないキャラクターを検索できる。" \
+                "[str]が指定されない場合、すべての装備セットとキャラクターが表示される。\n" \
+                "<font color=#FF69B4>fwsd [str]</font>\n" \
+                "[str]を含むスキル説明を持つすべてのキャラクターを表示する。\n" \
+                "<font color=#FF69B4>fwss [str]</font>\n" \
+                "[str]を含むスキルのソースコードを持つすべてのキャラクターを表示する。" \
+                "このコマンドは特定のスキルの相互作用（例:AbsorptionShield）を持つキャラクターを検索する際に便利です。\n" \
+                "<font color=#FF69B4>ss [character_name]</font>\n" \
+                "指定したキャラクターのソースコードを表示する。\n"
+                character_window_command_result_box.set_text(html_text=result_box_guide)
+
+
+        character_window_show_guide_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((260, 50), (230, 50)),
+                                        text=local_translate("Guide"),
+                                        manager=ui_manager,
+                                        container=character_window,
+                                        command=result_box_add_guide)
+
+        character_window_command_result_box = pygame_gui.elements.UITextBox(html_text="",
+                                        relative_rect=pygame.Rect((10, 110), (480, 350)),
+                                        manager=ui_manager,
+                                        container=character_window,)
+
+        result_box_add_guide()
+
+    def advanced_character_command_add_to_result_box(command: str):
+        result = advanced_character_command(command)
+        character_window_command_result_box.set_text(html_text=result)
+
+    def advanced_character_command(command: str):
+        global all_characters, eq_set_list
+        if command == "":
+            return "No command entered."
+        command_fragmented = command.split()
+        
+        if command_fragmented[0] == "cweqs":
+            if len(command_fragmented) < 2:
+                # print all eqsets with characters
+                eq_set_all_available = [s.lower() for s in eq_set_list]
+                s = ""
+                for es in eq_set_all_available:
+                    characters_with_eq_set = [x for x in all_characters if x.get_equipment_set().lower() == es]
+                    s += f"Characters with equipment set '{es}':\n" + "<font color=#00852c>" + ", ".join([x.name for x in characters_with_eq_set]) + "</font>"
+                    s += "\n"
+                return s
+            eq_set = command_fragmented[1]
+            
+            # eq_set_list is a list of str of all equipment sets in the game
+            eq_set_all_available = [s.lower() for s in eq_set_list]
+            
+            # Find close matches
+            close_matches = difflib.get_close_matches(eq_set.lower(), eq_set_all_available, n=1, cutoff=0.6)
+            if not close_matches:
+                return f"Equipment set does not exist: {eq_set}."
+            
+            matched_eq_set = close_matches[0]
+            characters_with_eq_set = [x for x in all_characters if x.get_equipment_set().lower() == matched_eq_set]
+            if not characters_with_eq_set:
+                return f"No character has equipment set {matched_eq_set}."
+            
+            return f"Characters with equipment set '{matched_eq_set}':\n" + "<font color=#00852c>" + ", ".join([x.name for x in characters_with_eq_set]) + "</font>"
+        elif command_fragmented[0] == "fwsd":
+            # find certain characters with skill description
+            if len(command_fragmented) < 2:
+                return "No keyword entered."
+            keyword: str = " ".join(command_fragmented[1:])
+            matched_characters = [x for x in all_characters if keyword.lower() in x.skill_tooltip_jp().lower() + x.skill_tooltip().lower()]
+            if not matched_characters:
+                return f"No character has skill description containing '{keyword}'."
+            return f"Characters with skill description containing '{keyword}':\n" + "<font color=#00852c>" + ", ".join([x.name for x in matched_characters]) + "</font>"
+
+        elif command_fragmented[0] == "fwss":
+            # find with skill source code, useful to find certain interactions
+            if len(command_fragmented) < 2:
+                return "No keyword entered."
+            keyword: str = " ".join(command_fragmented[1:])
+            matched_characters = []
+            for x in all_characters:
+                source_code = fwss_noinit_source_code_cache[x.__class__.__name__]
+                # source_code_without_init = remove_init_method(source_code)
+                if keyword in source_code:
+                    matched_characters.append(x)
+            if not matched_characters:
+                return f"No character has skill source code containing '{keyword}'."
+            return f"Characters with skill source code containing '{keyword}':\n" + "<font color=#00852c>" + ", ".join([x.name for x in matched_characters]) + "</font>"
+        
+        elif command_fragmented[0] == "ss":
+            # print the character's source code
+            if len(command_fragmented) < 2:
+                return "No character name entered."
+            character_name = command_fragmented[1]
+            matched_characters = [x for x in all_characters if x.name.lower() == character_name.lower()]
+            if not matched_characters:
+                return f"No character with name '{character_name}'."
+            character = matched_characters[0]
+            source_code = fwss_source_code_cache[character.__class__.__name__]
+            return f"Source code for {character.name}:\n" + "<font color=#6495ed>" + source_code + "</font>"
+        else:
+            return "Invalid command."
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4590,13 +4779,10 @@ if __name__ == "__main__":
         # print(f"Currency: {currency}")
         label.set_text(str(player.get_currency(currency)))
 
-    # Event loop
-    # ==========================
-    running = True 
+
+
     # for c in all_characters + all_monsters:
         # c.equip_item_from_list(generate_equips_list(4, random_full_eqset=True)) 
-
-
 
     def initiate_player_data():
         try:
@@ -4651,7 +4837,7 @@ if __name__ == "__main__":
 
     adventure_mode_stages: dict[int, list[monsters.Monster]] = {}
     if player.cleared_stages > 0:
-        print(f"Loading adventure mode stages from player data. Current stage: {player.cleared_stages}")
+        print(f"Loaded adventure mode stages from player data. Current stage: {player.cleared_stages}")
         adventure_mode_current_stage = min(player.cleared_stages + 1, 3000)
     else:
         adventure_mode_current_stage = 1
@@ -4672,6 +4858,9 @@ if __name__ == "__main__":
 
     shift_held = False  # Shiftキーが押下状態かを記録する
     last_clicked_slot = None  # 直前にクリックしたスロット(UIImage)を記録する
+
+    print("Starting!")
+    running = True 
 
     while running:
         time_delta = clock.tick(60)/1000.0

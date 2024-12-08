@@ -1912,7 +1912,7 @@ class Character:
     def skill_tooltip_jp(self):
         return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
-    def get_equipment_set(self):
+    def get_equipment_set(self) -> str:
         if not self.equip:
             return "None"
         for e in self.equip.values():
@@ -3153,7 +3153,7 @@ class Fox(Character):
 
     def skill2_logic(self):
         memory = None
-        memory = self.get_effect_that_named("Memory", "MessengerRoseiri_Memory")
+        memory = self.get_effect_that_named("Memory", "Fox_Memory")
         if memory and memory.stacks >= 20:
             self.remove_effect(memory)
             damage_dealt = self.attack(multiplier=1.8, repeat=4)
@@ -3177,15 +3177,15 @@ class Fox(Character):
         stacks_to_gain = 0
         for ally in self.ally:
             stacks_to_gain += len(ally.debuffs)
-        memory = self.get_effect_that_named("Memory", "MessengerRoseiri_Memory")
+        memory = self.get_effect_that_named("Memory", "Fox_Memory")
         if memory and memory.stacks >= 20:
             memory.stacks = 20
-            if not self.has_effect_that_named("Shield", "MessengerRoseiri_Shield"):
+            if not self.has_effect_that_named("Shield", "Fox_Shield"):
                 shield = AbsorptionShield("Shield", -1, True, self.maxhp * 0.30, cc_immunity=False)
-                shield.additional_name = "MessengerRoseiri_Shield"
+                shield.additional_name = "Fox_Shield"
                 self.apply_effect(shield)
             else:
-                shield = self.get_effect_that_named("Shield", "MessengerRoseiri_Shield")
+                shield = self.get_effect_that_named("Shield", "Fox_Shield")
                 shield.shield_value += int(self.maxhp * 0.01)
         if stacks_to_gain > 0:
             if memory:
@@ -3194,7 +3194,7 @@ class Fox(Character):
             else:
                 new_memory = Effect("Memory", -1, True, False, can_be_removed_by_skill=False, show_stacks=True)
                 new_memory.stacks += stacks_to_gain
-                new_memory.additional_name = "MessengerRoseiri_Memory"
+                new_memory.additional_name = "Fox_Memory"
                 new_memory.tooltip_str =  ".Cherished for 200 years."
                 new_memory.tooltip_str_jp = "。200年の思い。"
                 self.apply_effect(new_memory)
