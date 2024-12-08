@@ -24,27 +24,28 @@ print(f"Loaded {len(all_characters)} characters.")
 fwss_source_code_cache = {}
 fwss_noinit_source_code_cache = {}
 
-def fwss_remove_init_method(source_code: str) -> str:
-    lines = source_code.split('\n')
-    filtered_lines = []
-    inside_init = False
-    for line in lines:
-        if line.strip().startswith('def __init__'):
-            inside_init = True
-        if inside_init and line.strip().startswith('def ') and not line.strip().startswith('def __init__'):
-            inside_init = False
-        if not inside_init:
-            filtered_lines.append(line)
-    return '\n'.join(filtered_lines)
+def fwss_cache_source_code() -> None:
+    def fwss_remove_init_method(source_code: str) -> str:
+        lines = source_code.split('\n')
+        filtered_lines = []
+        inside_init = False
+        for line in lines:
+            if line.strip().startswith('def __init__'):
+                inside_init = True
+            if inside_init and line.strip().startswith('def ') and not line.strip().startswith('def __init__'):
+                inside_init = False
+            if not inside_init:
+                filtered_lines.append(line)
+        return '\n'.join(filtered_lines)
 
-print("Caching source code for all characters...")
-for x in all_characters:
-    class_name = x.__class__.__name__
-    if class_name not in fwss_source_code_cache:
-        source_code = inspect.getsource(x.__class__)
-        fwss_source_code_cache[class_name] = source_code
-        fwss_noinit_source_code_cache[class_name] = fwss_remove_init_method(source_code)
-print("Caching source code for all characters complete.")
+    print("Caching source code for all characters...")
+    for x in all_characters:
+        class_name = x.__class__.__name__
+        if class_name not in fwss_source_code_cache:
+            source_code = inspect.getsource(x.__class__)
+            fwss_source_code_cache[class_name] = source_code
+            fwss_noinit_source_code_cache[class_name] = fwss_remove_init_method(source_code)
+    print("Caching source code for all characters complete.")
 
 import monsters
 
@@ -1436,9 +1437,16 @@ if __name__ == "__main__":
                 "Print all characters with skill description containing [str].\n" \
                 "<font color=#FF69B4>fwss [str]</font>\n" \
                 "Print all characters with skill source code containing [str]." \
-                " This command is useful for finding characters with certain skill interactions, for example: AbsorptionShield.\n" \
+                " This command is useful for finding characters with certain skill interactions, for example: AbsorptionShield." \
+                " The first time this command and ss command is used, the source code is loaded and will take 10 to 30 seconds.\n" \
                 "<font color=#FF69B4>ss [character_name]</font>\n" \
-                "View source code of the character.\n" 
+                "View source code of the character.\n" \
+                "<font color=#FF69B4>ce</font>\n" \
+                "Compare selected equipment with all characters equipment. Only the same equipment type and set are compared.\n" \
+                "<font color=#FF69B4>euc</font>\n" \
+                "This command functions the same as the ce command." \
+                " Equipment upgrade to characters. For the selected equipment, find all equipment with the same type and set equipped on any character," \
+                " but only when this equipment is better than the current equipment of the character. better: for_attacker_value is higher or for_support_value is higher.\n"
                 character_window_command_result_box.set_text(html_text=result_box_guide)
             elif global_vars.language == "日本語":
                 result_box_guide = "このセクションでは、キャラクターに関連する操作や検索を素早く行う機能を提供する。" \
@@ -1450,9 +1458,15 @@ if __name__ == "__main__":
                 "[str]を含むスキル説明を持つすべてのキャラクターを表示する。\n" \
                 "<font color=#FF69B4>fwss [str]</font>\n" \
                 "[str]を含むスキルのソースコードを持つすべてのキャラクターを表示する。" \
-                "このコマンドは特定のスキルの相互作用（例:AbsorptionShield）を持つキャラクターを検索する際に便利です。\n" \
+                "このコマンドは特定のスキルの相互作用（例:AbsorptionShield）を持つキャラクターを検索する際に便利です。" \
+                "このコマンドとssコマンドを初めて使用すると、ソースコードが読み込まれ、10から30秒かかります。\n" \
                 "<font color=#FF69B4>ss [character_name]</font>\n" \
-                "指定したキャラクターのソースコードを表示する。\n"
+                "指定したキャラクターのソースコードを表示する。\n" \
+                "<font color=#FF69B4>ce</font>\n" \
+                "選択した装備とすべてのキャラクターの装備を比較する。同じ装備タイプとセットのみが比較される。\n" \
+                "<font color=#FF69B4>euc</font>\n" \
+                "このコマンドはceコマンドと同じ機能を持つ。選択した装備について、同じタイプとセットのキャラクター装備を検索し、" \
+                "ただし、この装備がキャラクターの現在の装備よりも優れている場合にのみ表示される。優れているのは攻撃相性或いは防御相性が高い。\n"
                 character_window_command_result_box.set_text(html_text=result_box_guide)
 
 
@@ -1519,6 +1533,8 @@ if __name__ == "__main__":
             # find with skill source code, useful to find certain interactions
             if len(command_fragmented) < 2:
                 return "No keyword entered."
+            if not fwss_source_code_cache or not fwss_noinit_source_code_cache:
+                fwss_cache_source_code()
             keyword: str = " ".join(command_fragmented[1:])
             matched_characters = []
             for x in all_characters:
@@ -1534,6 +1550,8 @@ if __name__ == "__main__":
             # print the character's source code
             if len(command_fragmented) < 2:
                 return "No character name entered."
+            if not fwss_source_code_cache or not fwss_noinit_source_code_cache:
+                fwss_cache_source_code()
             character_name = command_fragmented[1]
             matched_characters = [x for x in all_characters if x.name.lower() == character_name.lower()]
             if not matched_characters:
@@ -1541,6 +1559,83 @@ if __name__ == "__main__":
             character = matched_characters[0]
             source_code = fwss_source_code_cache[character.__class__.__name__]
             return f"Source code for {character.name}:\n" + "<font color=#6495ed>" + source_code + "</font>"
+        
+        elif command_fragmented[0] == "ce":
+            # compare equipment, get first equipment from selected by player, then get all same equipment (same eq set and same type) from all characters
+            # then compare the stats
+            selected_equipment: Equip | None = None
+            for surface, selected, the_actual_item in player.selected_item.values():
+                if selected:
+                    selected_equipment = the_actual_item
+                    break
+            if not selected_equipment:
+                return "No equipment selected."
+            if not isinstance(selected_equipment, Equip):
+                return "Selected item is not an equipment."
+            # return_string = f"Selected equipment:\n{selected_equipment.print_stats_html()}"
+            # return_string += "\n\n"
+            return_string = "Characters with the same equipment:\n"
+            for character in all_characters:
+                # print(character.equip)
+                # {'Weapon': <equip.Equip object at 0x7afa4c1fd4f0>, 'Accessory': <equip.Equip object at 0x7afa4c1fd580>, 'Boots': <equip.Equip object at 0x7afa4c1fd5e0>, 'Armor': <equip.Equip object at 0x7afa4c1fd640>}
+                # if it has the same type equipped:
+                if selected_equipment.type in character.equip:
+                    if selected_equipment.eq_set == character.equip[selected_equipment.type].eq_set:
+                        return_string += f"<font color=#00852c>{character.name}</font>"
+                        if global_vars.language == "English":
+                            return_string += f"\n{character.equip[selected_equipment.type].print_stats_html(item_to_compare=selected_equipment, include_set_effect=False)}\n"
+                        elif global_vars.language == "日本語":
+                            return_string += f"\n{character.equip[selected_equipment.type].print_stats_html_jp(item_to_compare=selected_equipment, include_set_effect=False)}\n"
+                        else:
+                            raise ValueError(f"Unknown language: {global_vars.language}")
+            return return_string
+        
+        elif command_fragmented[0] == "euc":
+            # similar to ce command.
+            # equipment update characters. Select an equipment, find all characters with the same equipment,
+            # however, only when this equipment is better than the character's current equipment, it is shown.
+            # 'better': for_attacker_value is higher or for_support_value is higher
+            selected_equipment: Equip | None = None
+            for surface, selected, the_actual_item in player.selected_item.values():
+                if selected:
+                    selected_equipment = the_actual_item
+                    break
+            if not selected_equipment:
+                return "No equipment selected."
+            if not isinstance(selected_equipment, Equip):
+                return "Selected item is not an equipment."
+            
+            # Prepare a list to hold characters and their upgrade priority (difference value)
+            upgrade_list = []
+            for character in all_characters:
+                # if it has the same type equipped:
+                if selected_equipment.type in character.equip:
+                    if selected_equipment.eq_set == character.equip[selected_equipment.type].eq_set:
+                        current_equip = character.equip[selected_equipment.type]
+                        if selected_equipment.for_attacker_value > current_equip.for_attacker_value or \
+                        selected_equipment.for_support_value > current_equip.for_support_value:
+                            # Calculate the difference value
+                            difference_value = (selected_equipment.for_attacker_value - current_equip.for_attacker_value) + \
+                                            (selected_equipment.for_support_value - current_equip.for_support_value)
+                            # Append to the list with the character and difference value
+                            upgrade_list.append((character, difference_value, current_equip))
+            
+            # Sort the list by difference_value in descending order
+            upgrade_list.sort(key=lambda x: x[1], reverse=True)
+            
+            # Construct the return string
+            return_string = "Characters needing the most upgrade:\n"
+            for character, diff_value, current_equip in upgrade_list:
+                return_string += f"<font color=#00852c>{character.name}</font> (Upgrade Value: {diff_value})\n"
+                if global_vars.language == "English":
+                    return_string += f"{current_equip.print_stats_html(item_to_compare=selected_equipment, include_set_effect=False)}\n"
+                elif global_vars.language == "日本語":
+                    return_string += f"{current_equip.print_stats_html_jp(item_to_compare=selected_equipment, include_set_effect=False)}\n"
+                else:
+                    raise ValueError(f"Unknown language: {global_vars.language}")
+            
+            return return_string
+
         else:
             return "Invalid command."
 
