@@ -172,7 +172,7 @@ def load_player(filename="player_data.json"):
 # =====================================
 
 class Nine(): # A reference to 9Nine, Nine is just the player's name
-    def __init__(self, cash: int, inventory: list=None):
+    def __init__(self, cash: int):
         self.cash_initial = cash
         self.cash = 0 
         self.owned_characters = []
@@ -182,8 +182,8 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         self.inventory_item = []
         self.current_page = 0
         self.max_pages = 0
-        self.dict_image_slots_items = {}
-        self.dict_image_slots_rects = {}
+        self.dict_image_slots_items: dict[pygame_gui.elements.UIImage, Block] = {}
+        self.dict_image_slots_rects: dict[pygame_gui.elements.UIImage, pygame.Rect] = {}
         # {image_slot: UIImage : (image: Surface, is_highlighted: bool, the_actual_item: Block)}
         self.selected_item: dict[pygame_gui.elements.UIImage, tuple[pygame.Surface, bool, Block]] = {}
         self.cleared_stages = 0
@@ -1429,6 +1429,8 @@ if __name__ == "__main__":
             if global_vars.language == "English":
                 result_box_guide = "This section provides functionality to quickly find or perform operations related to characters." \
                 " The following commands are available:\n" \
+                "<font color=#FF69B4>ls</font>\n" \
+                "List all characters, ordered by level.\n" \
                 "<font color=#FF69B4>cweqs [str]</font>\n" \
                 "Print all characters with [str] equipment set, [str] allows lower case and partial matches. Use None to find characters without equipment set." \
                 " If [str] is not specified, all equipment set and characters are printed.\n" \
@@ -1438,18 +1440,24 @@ if __name__ == "__main__":
                 "Print all characters with skill source code containing [str]." \
                 " This command is useful for finding characters with certain skill interactions, for example: AbsorptionShield." \
                 " The first time this command and ss command is used, the source code is loaded and will take 10 to 30 seconds.\n" \
-                "<font color=#FF69B4>ss [character_name]</font>\n" \
-                "View source code of the character.\n" \
+                "<font color=#FF69B4>ss (character_name)</font>\n" \
+                "View source code of the character. If character_name is omitted, use selected character.\n" \
                 "<font color=#FF69B4>ce</font>\n" \
                 "Compare selected equipment with all characters equipment. Only the same equipment type and set are compared.\n" \
                 "<font color=#FF69B4>euc</font>\n" \
                 "This command functions the same as the ce command." \
                 " Equipment upgrade to characters. For the selected equipment, find all equipment with the same type and set equipped on any character," \
-                " but only when this equipment is better than the current equipment of the character. better: for_attacker_value is higher or for_support_value is higher.\n"
+                " but only when this equipment is better than the current equipment of the character. better: for_attacker_value is higher or for_support_value is higher.\n" \
+                "<font color=#FF69B4>cue (equipment type)</font>\n" \
+                "Character upgrade equipment. For the selected character and entered equipment type, find all equipment with the same set and type in the inventory," \
+                " but only when the equipment found is better than the current equipment of the character. better: for_attacker_value is higher or for_support_value is higher." \
+                " Equipment type can be omitted, in this case, use the equipment type from selection menu. Only the top 500 entries are shown.\n"
                 character_window_command_result_box.set_text(html_text=result_box_guide)
             elif global_vars.language == "日本語":
                 result_box_guide = "このセクションでは、キャラクターに関連する操作や検索を素早く行う機能を提供する。" \
                 "使用可能なコマンドは以下の通りです:\n" \
+                "<font color=#FF69B4>ls</font>\n" \
+                "レベル順に並べ替えられたすべてのキャラクターを一覧表示する。\n" \
                 "<font color=#FF69B4>cweqs [str]</font>\n" \
                 "[str]装備セットを持つすべてのキャラクターを表示する。[str] は小文字や部分一致も可能です。Noneを使用すると装備セットがないキャラクターを検索できる。" \
                 "[str]が指定されない場合、すべての装備セットとキャラクターが表示される。\n" \
@@ -1459,13 +1467,18 @@ if __name__ == "__main__":
                 "[str]を含むスキルのソースコードを持つすべてのキャラクターを表示する。" \
                 "このコマンドは特定のスキルの相互作用（例:AbsorptionShield）を持つキャラクターを検索する際に便利です。" \
                 "このコマンドとssコマンドを初めて使用すると、ソースコードが読み込まれ、10から30秒かかります。\n" \
-                "<font color=#FF69B4>ss [character_name]</font>\n" \
-                "指定したキャラクターのソースコードを表示する。\n" \
+                "<font color=#FF69B4>ss (character_name)</font>\n" \
+                "指定したキャラクターのソースコードを表示する。character_nameが省略さらた場合、選択したキャラクターを使用する。\n" \
                 "<font color=#FF69B4>ce</font>\n" \
                 "選択した装備とすべてのキャラクターの装備を比較する。同じ装備タイプとセットのみが比較される。\n" \
                 "<font color=#FF69B4>euc</font>\n" \
                 "このコマンドはceコマンドと同じ機能を持つ。選択した装備について、同じタイプとセットのキャラクター装備を検索し、" \
-                "ただし、この装備がキャラクターの現在の装備よりも優れている場合にのみ表示される。優れているのは攻撃相性或いは防御相性が高い。\n"
+                "ただし、この装備がキャラクターの現在の装備よりも優れている場合にのみ表示される。優れているのは攻撃相性或いは防御相性が高い。\n" \
+                "<font color=#FF69B4>cue (equipment type)</font>\n" \
+                "キャラクターの装備をアップグレードする。選択したキャラクターと入力された装備タイプについて、インベントリ内の同じセットとタイプの装備を検索し、" \
+                "ただし、検出された装備がキャラクターの現在の装備よりも優れている場合にのみ表示される。優れているのは攻撃相性或いは防御相性が高い。" \
+                "装備タイプは省略可能で、この場合、選択メニューから装備タイプを使用します。上位500エントリのみ表示される。\n"
+
                 character_window_command_result_box.set_text(html_text=result_box_guide)
 
 
@@ -1492,7 +1505,16 @@ if __name__ == "__main__":
             return "No command entered."
         command_fragmented = command.split()
         
-        if command_fragmented[0] == "cweqs":
+        if command_fragmented[0] == "ls":
+            # get all characters, ordered by level and name
+            all_characters_sorted = sorted(all_characters, key=lambda x: (x.lvl, x.name))
+            string = "<font color=#00852c>"
+            for c in all_characters_sorted:
+                string += f"level {c.lvl} {c.name}\n"
+            string += "</font>"
+            return string
+        
+        elif command_fragmented[0] == "cweqs":
             if len(command_fragmented) < 2:
                 # print all eqsets with characters
                 eq_set_all_available = [s.lower() for s in eq_set_list]
@@ -1518,6 +1540,7 @@ if __name__ == "__main__":
                 return f"No character has equipment set {matched_eq_set}."
             
             return f"Characters with equipment set '{matched_eq_set}':\n" + "<font color=#00852c>" + ", ".join([x.name for x in characters_with_eq_set]) + "</font>"
+        
         elif command_fragmented[0] == "fwsd":
             # find certain characters with skill description
             if len(command_fragmented) < 2:
@@ -1548,10 +1571,12 @@ if __name__ == "__main__":
         elif command_fragmented[0] == "ss":
             # print the character's source code
             if len(command_fragmented) < 2:
-                return "No character name entered."
+                character_name = character_selection_menu.selected_option[0].split()[-1]
+            else:
+                character_name = command_fragmented[1]
             if not fwss_source_code_cache or not fwss_noinit_source_code_cache:
                 fwss_cache_source_code()
-            character_name = command_fragmented[1]
+            
             matched_characters = [x for x in all_characters if x.name.lower() == character_name.lower()]
             if not matched_characters:
                 return f"No character with name '{character_name}'."
@@ -1634,6 +1659,60 @@ if __name__ == "__main__":
                     raise ValueError(f"Unknown language: {global_vars.language}")
             
             return return_string
+        
+        elif command_fragmented[0] == "cue":
+            # character upgrade equipment. Target selected character, find all equipment of the entered type
+            # from player.inventory, then compare the stats, if better, show them. A maximum of 500 entries are shown.
+            if len(command_fragmented) < 2:
+                selected_eq_type = eq_selection_menu.selected_option[0]
+            else:
+                selected_eq_type = command_fragmented[1]
+                if selected_eq_type not in ["Weapon", "Armor", "Accessory", "Boots"]:
+                    return f"Invalid equipment type entered: {selected_eq_type}."
+            
+            # Find selected character
+            selected_character = None
+            for character in party1 + party2:
+                if character.name == character_selection_menu.selected_option[0].split()[-1]:
+                    selected_character = character
+                    break
+            assert selected_character is not None, "No character selected."
+
+            # Get current equipped item
+            try:
+                selected_character_eq = selected_character.equip[selected_eq_type]
+            except KeyError:
+                return f"{selected_character.name} does not have {selected_eq_type} equipped."
+
+            # Filter inventory for matching equipment type and set
+            filtered_eq_list = [
+                eq for eq in player.inventory_equip
+                if eq.type == selected_eq_type and eq.eq_set == selected_character_eq.eq_set
+                and (eq.for_attacker_value > selected_character_eq.for_attacker_value or
+                    eq.for_support_value > selected_character_eq.for_support_value)
+            ]
+
+            # Sort the filtered equipment by improvement value (difference)
+            sorted_eq_list = sorted(
+                filtered_eq_list,
+                key=lambda eq: (eq.for_attacker_value - selected_character_eq.for_attacker_value) +
+                            (eq.for_support_value - selected_character_eq.for_support_value),
+                reverse=True
+            )
+
+            # Take only the best 500 entries
+            best_500_eq_list = sorted_eq_list[:500]
+
+            # Construct the return string
+            return_string = f"Equipment for {selected_character.name} (Top 500 upgrades):\n"
+            for i, eq in enumerate(best_500_eq_list):
+                return_string += f"{eq.print_stats_html(item_to_compare=selected_character_eq, include_set_effect=False)}\n"
+
+            if len(sorted_eq_list) > 500:
+                return_string += "Showing the top 500 entries. Some entries were omitted.\n"
+
+            return return_string
+
 
         else:
             return "Invalid command."
@@ -2798,6 +2877,7 @@ if __name__ == "__main__":
         # maps UIImage to Rect, used for collision detection in pygame event
         list_of_rects_for_inventory_image_slots = [x.get_abs_rect() for x in gutted_inventory_image_slots]
         dict_image_slots_rects = {k: v for k, v in mit.zip_equal(gutted_inventory_image_slots, list_of_rects_for_inventory_image_slots)} # UIImage : Rect
+        dict_image_slots_rects: dict[pygame_gui.elements.UIImage, pygame.Rect]
         return gutted_inventory_image_slots, dict_image_slots_rects
 
     inventory_image_slots = create_inventory_image_slots(24, 1278, 196, 64, 64, 8, ui_manager, column=4)
@@ -3854,12 +3934,21 @@ if __name__ == "__main__":
         return False
 
 
-    def update_character_selection_menu(party_show_in_menu, di=0):
+    def update_character_selection_menu(party_show_in_menu: list[str] | None, di: int=0):
         """
-        remaining_characters_show_in_menu: Can be None, if so, it is not being rebuilt
+        party_show_in_menu: List of strings to show in the character selection menu
         di: Default option index
         """
         global character_selection_menu, ui_manager
+        # if party_show_in_menu is not provided, we build from party1 and party2
+        if not party_show_in_menu:
+            if current_game_mode == "Training Mode":
+                party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
+            elif current_game_mode == "Adventure Mode":
+                party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
+
+        if di >= len(party_show_in_menu):
+            di = 0
 
         character_selection_menu.kill()
         character_selection_menu = pygame_gui.elements.UIDropDownMenu(party_show_in_menu,
@@ -4951,6 +5040,8 @@ if __name__ == "__main__":
     time_acc = 0
 
     shift_held = False  # Shiftキーが押下状態かを記録する
+    s_key_held = False
+    w_key_held = False
     last_clicked_slot = None  # 直前にクリックしたスロット(UIImage)を記録する
 
     print("Starting!")
@@ -4974,12 +5065,46 @@ if __name__ == "__main__":
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     shift_held = True
+                if event.key == pygame.K_s:
+                    s_key_held = True
+                if event.key == pygame.K_w:
+                    w_key_held = True
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     shift_held = False
+                if event.key == pygame.K_s:
+                    s_key_held = False
+                if event.key == pygame.K_w:
+                    w_key_held = False
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if image_slot1.rect.collidepoint(event.pos):
+                    print("Clicked image_slot1.")
+                    update_character_selection_menu(None, di=0)
+                if image_slot2.rect.collidepoint(event.pos):
+                    print("Clicked image_slot2.")
+                    update_character_selection_menu(None, di=1)
+                if image_slot3.rect.collidepoint(event.pos):
+                    print("Clicked image_slot3.")
+                    update_character_selection_menu(None, di=2)
+                if image_slot4.rect.collidepoint(event.pos):
+                    print("Clicked image_slot4.")
+                    update_character_selection_menu(None, di=3)
+                if image_slot5.rect.collidepoint(event.pos):
+                    print("Clicked image_slot5.")
+                    update_character_selection_menu(None, di=4)
+                if image_slot6.rect.collidepoint(event.pos):
+                    print("Clicked image_slot6.")
+                if image_slot7.rect.collidepoint(event.pos):
+                    print("Clicked image_slot7.")
+                if image_slot8.rect.collidepoint(event.pos):
+                    print("Clicked image_slot8.")
+                if image_slot9.rect.collidepoint(event.pos):
+                    print("Clicked image_slot9.")
+                if image_slot10.rect.collidepoint(event.pos):
+                    print("Clicked image_slot10.")
+
                 clicked_ui_image = None
                 for ui_image, rect in player.dict_image_slots_rects.items():
                     if rect.collidepoint(event.pos):
