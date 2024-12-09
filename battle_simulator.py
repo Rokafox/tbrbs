@@ -806,6 +806,7 @@ if __name__ == "__main__":
 
     image_slots_party1 = [image_slot1, image_slot2, image_slot3, image_slot4, image_slot5]
     image_slots_party2 = [image_slot6, image_slot7, image_slot8, image_slot9, image_slot10]
+    image_slots_all = [*image_slots_party1, *image_slots_party2]
 
     image_slot_overlay1 = pygame_gui.elements.UIImage(pygame.Rect((100, 0), (156, 210)),
                                         pygame.Surface((156, 210)),
@@ -2511,7 +2512,9 @@ if __name__ == "__main__":
                 game_mode_selection_label.set_text("Game Mode:")
                 game_mode_selection_label.set_tooltip("Select the game mode: Training Mode, Adventure Mode.", delay=0.1, wrap_width=300)
                 label_character_selection_menu.set_text("Selected Character:")
-                label_character_selection_menu.set_tooltip("Selected character. Use items, equip, unequip and others use this character as target.", delay=0.1, wrap_width=300)
+                label_character_selection_menu.set_tooltip("Selected character. Use items, equip, unequip and others use this character as target." \
+                " S + left click on character image can also be used to select a character."
+                , delay=0.1, wrap_width=300)
                 use_item_button.set_text("Equip Item")
                 use_item_button.set_tooltip("The selected item is used on the selected character. If the selected item is an equipment item, equip it to the selected character." \
                                             " Multiple items may be equipped or used at one time." \
@@ -2521,7 +2524,9 @@ if __name__ == "__main__":
                                             delay=0.1, wrap_width=300)
                 use_itemx10_button.set_tooltip("Use selected item 10 times, only effective on comsumables.", delay=0.1, wrap_width=300)
                 button_cheems.set_text("Cheems")
-                button_cheems.set_tooltip("Open team selection window.", delay=0.1, wrap_width=300)
+                button_cheems.set_tooltip("Open team selection window. Note: Shortcut key W + left click" \
+                " on 2 characters images allow quick swapping without opening the menu and editing the team."
+                , delay=0.1, wrap_width=300)
                 button_characters.set_text("Characters")
                 button_characters.set_tooltip("Open character window.", delay=0.1, wrap_width=300)
                 button_about.set_text("About")
@@ -2589,7 +2594,9 @@ if __name__ == "__main__":
                 game_mode_selection_label.set_text("海闊天空：")
                 game_mode_selection_label.set_tooltip("ゲームモードを選択する：訓練モード、冒険モード。", delay=0.1, wrap_width=300)
                 label_character_selection_menu.set_text("天下無双：")
-                label_character_selection_menu.set_tooltip("キャラクターを選択する。アイテムの使用、装備の使用、装備の解除、その他がこのキャラクターを対象として行われる。", delay=0.1, wrap_width=300)
+                label_character_selection_menu.set_tooltip("キャラクターを選択する。アイテムの使用、装備の使用、装備の解除、その他がこのキャラクターを対象として行われる。" \
+                "キャラクター画像にS+左クリックでもキャラクターを選択できる。"
+                , delay=0.1, wrap_width=300)
                 use_item_button.set_text("鳳冠霞帔")
                 use_item_button.set_tooltip("選択したアイテムを選択したキャラクターに使用する。選択したアイテムが装備アイテムの場合、選択したキャラクターに装備する。一度に複数のアイテムを装備・使用することができる。" \
                                             "選択方法：左クリックでアイテムを選択、右クリックでアイテムを選択解除。" \
@@ -2598,7 +2605,8 @@ if __name__ == "__main__":
                                             delay=0.1, wrap_width=300)
                 use_itemx10_button.set_tooltip("選択したアイテムを10回使用し、消耗品にのみ有効である。", delay=0.1, wrap_width=300)
                 button_cheems.set_text("チームズ")
-                button_cheems.set_tooltip("チーム選択画面を開く。", delay=0.1, wrap_width=300)
+                button_cheems.set_tooltip("チーム選択画面を開く。注意事項：2匹キャラクター画像にW+左クリックで素早くこの2匹を入れ替える。チーム編成メニューを開かなくても。"
+                , delay=0.1, wrap_width=300)
                 button_characters.set_text("百花繚乱")
                 button_characters.set_tooltip("キャラクター画面を開く。", delay=0.1, wrap_width=300)
                 button_about.set_text("洞若觀火")
@@ -3988,7 +3996,6 @@ if __name__ == "__main__":
         remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
 
         party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-        remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
         update_character_selection_menu(party_show_in_menu)
 
         global_vars.turn_info_string = ""
@@ -4014,7 +4021,6 @@ if __name__ == "__main__":
         remaining_characters = [character for character in all_characters if character not in party1]
         remaining_characters.sort(key=lambda x: x.lvl, reverse=True)
         party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-        remaining_characters_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in remaining_characters]
         update_character_selection_menu(party1_show_in_menu)
 
         global_vars.turn_info_string = ""
@@ -4077,6 +4083,33 @@ if __name__ == "__main__":
         elif current_game_mode == "Training Mode":
             party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
             update_character_selection_menu(party_show_in_menu)
+
+    def swap_characters_in_party(two_index: set[int]):
+        """
+        Swaps two characters in the party.
+        """
+        global party1, party2
+        # print(two_index) # {0, 1}
+        indices = list(two_index)
+        # if two index is both 0 to 5, then we are swapping party1 characters
+        if all(0 <= i < 5 for i in indices):
+            party1[indices[0]], party1[indices[1]] = party1[indices[1]], party1[indices[0]]
+        # if two index is both 5 to 10, then we are swapping party2 characters
+        elif all(5 <= i < 10 for i in indices):
+            party2[indices[0] - 5], party2[indices[1] - 5] = party2[indices[1] - 5], party2[indices[0] - 5]
+        # if one index is 0 to 5 and the other is 5 to 10, then we are swapping between party1 and party2
+        elif 0 <= indices[0] < 5 and 5 <= indices[1] < 10 and current_game_mode == "Training Mode":
+            party1[indices[0]], party2[indices[1] - 5] = party2[indices[1] - 5], party1[indices[0]]
+        elif 0 <= indices[1] < 5 and 5 <= indices[0] < 10 and current_game_mode == "Training Mode":
+            party1[indices[1]], party2[indices[0] - 5] = party2[indices[0] - 5], party1[indices[1]]
+        else:
+            return
+        text_box.set_text("=====================================\n") 
+        restart_battle()
+        redraw_ui(party1, party2)
+        update_character_selection_menu(None) 
+
+
 
 
     def add_outline_to_image(surface, outline_color, outline_thickness):
@@ -5043,6 +5076,7 @@ if __name__ == "__main__":
     s_key_held = False
     w_key_held = False
     last_clicked_slot = None  # 直前にクリックしたスロット(UIImage)を記録する
+    character_swap_set = set()
 
     print("Starting!")
     running = True 
@@ -5079,32 +5113,19 @@ if __name__ == "__main__":
                     w_key_held = False
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if image_slot1.rect.collidepoint(event.pos):
-                    print("Clicked image_slot1.")
-                    update_character_selection_menu(None, di=0)
-                if image_slot2.rect.collidepoint(event.pos):
-                    print("Clicked image_slot2.")
-                    update_character_selection_menu(None, di=1)
-                if image_slot3.rect.collidepoint(event.pos):
-                    print("Clicked image_slot3.")
-                    update_character_selection_menu(None, di=2)
-                if image_slot4.rect.collidepoint(event.pos):
-                    print("Clicked image_slot4.")
-                    update_character_selection_menu(None, di=3)
-                if image_slot5.rect.collidepoint(event.pos):
-                    print("Clicked image_slot5.")
-                    update_character_selection_menu(None, di=4)
-                if image_slot6.rect.collidepoint(event.pos):
-                    print("Clicked image_slot6.")
-                if image_slot7.rect.collidepoint(event.pos):
-                    print("Clicked image_slot7.")
-                if image_slot8.rect.collidepoint(event.pos):
-                    print("Clicked image_slot8.")
-                if image_slot9.rect.collidepoint(event.pos):
-                    print("Clicked image_slot9.")
-                if image_slot10.rect.collidepoint(event.pos):
-                    print("Clicked image_slot10.")
 
+                # character selection and party member swap
+                for index, image_slot in enumerate(image_slots_all):
+                    if image_slot.rect.collidepoint(event.pos):
+                        if s_key_held:
+                            update_character_selection_menu(None, di=index)
+                        if w_key_held:
+                            character_swap_set.add(index)
+                            if len(character_swap_set) == 2:
+                                swap_characters_in_party(character_swap_set)
+                                character_swap_set.clear()
+
+                # item selection from inventory
                 clicked_ui_image = None
                 for ui_image, rect in player.dict_image_slots_rects.items():
                     if rect.collidepoint(event.pos):
