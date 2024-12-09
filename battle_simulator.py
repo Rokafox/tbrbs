@@ -1429,9 +1429,11 @@ if __name__ == "__main__":
             global eq_sell_window_command_result_box
             if global_vars.language == "English":
                 result_box_guide = "This section provides functionality to quickly find or perform operations related to characters." \
+                " Click on the character name link while holding either 12345 assigns the character to party1," \
+                " while holding either qwert assigns the character to party2." \
                 " The following commands are available:\n" \
                 "<font color=#FF69B4>ls</font>\n" \
-                "List all characters, ordered by level.\n" \
+                "List all characters, ordered by level. This command is executed if no commands are given.\n" \
                 "<font color=#FF69B4>cweqs [str]</font>\n" \
                 "Print all characters with [str] equipment set, [str] allows lower case and partial matches. Use None to find characters without equipment set." \
                 " If [str] is not specified, all equipment set and characters are printed.\n" \
@@ -1456,9 +1458,11 @@ if __name__ == "__main__":
                 character_window_command_result_box.set_text(html_text=result_box_guide)
             elif global_vars.language == "日本語":
                 result_box_guide = "このセクションでは、キャラクターに関連する操作や検索を素早く行う機能を提供する。" \
+                "12345キーを押しながらキャラクター名リンクをクリックすると、キャラクターがparty1に割り当てられ、" \
+                "qwertキーを押しながらキャラクター名リンクをクリックすると、キャラクターがparty2に割り当てられる。" \
                 "使用可能なコマンドは以下の通りです:\n" \
                 "<font color=#FF69B4>ls</font>\n" \
-                "レベル順に並べ替えられたすべてのキャラクターを一覧表示する。\n" \
+                "レベル順に並べ替えられたすべてのキャラクターを一覧表示する。コマンドが指定されていない場合、このコマンドが実行される。\n" \
                 "<font color=#FF69B4>cweqs [str]</font>\n" \
                 "[str]装備セットを持つすべてのキャラクターを表示する。[str] は小文字や部分一致も可能です。Noneを使用すると装備セットがないキャラクターを検索できる。" \
                 "[str]が指定されない場合、すべての装備セットとキャラクターが表示される。\n" \
@@ -1492,7 +1496,8 @@ if __name__ == "__main__":
         character_window_command_result_box = pygame_gui.elements.UITextBox(html_text="",
                                         relative_rect=pygame.Rect((10, 110), (480, 350)),
                                         manager=ui_manager,
-                                        container=character_window,)
+                                        container=character_window,
+                                        object_id="#character_window_command_result_box")
 
         result_box_add_guide()
 
@@ -1503,16 +1508,15 @@ if __name__ == "__main__":
     def advanced_character_command(command: str):
         global all_characters, eq_set_list
         if command == "":
-            return "No command entered."
+            command = "ls"
         command_fragmented = command.split()
         
         if command_fragmented[0] == "ls":
             # get all characters, ordered by level and name
             all_characters_sorted = sorted(all_characters, key=lambda x: (x.lvl, x.name))
-            string = "<font color=#00852c>"
+            string = ""
             for c in all_characters_sorted:
-                string += f"level {c.lvl} {c.name}\n"
-            string += "</font>"
+                string += f"level {c.lvl} <a href='{c.name}'>{c.name}</a>\n"
             return string
         
         elif command_fragmented[0] == "cweqs":
@@ -1522,7 +1526,8 @@ if __name__ == "__main__":
                 s = ""
                 for es in eq_set_all_available:
                     characters_with_eq_set = [x for x in all_characters if x.get_equipment_set().lower() == es]
-                    s += f"Characters with equipment set '{es}':\n" + "<font color=#00852c>" + ", ".join([x.name for x in characters_with_eq_set]) + "</font>"
+                    linked_names = [f"<a href='{x.name}'>{x.name}</a>" for x in characters_with_eq_set]
+                    s += f"Characters with equipment set '{es}':\n" + ", ".join(linked_names)
                     s += "\n"
                 return s
             eq_set = command_fragmented[1]
@@ -1540,7 +1545,8 @@ if __name__ == "__main__":
             if not characters_with_eq_set:
                 return f"No character has equipment set {matched_eq_set}."
             
-            return f"Characters with equipment set '{matched_eq_set}':\n" + "<font color=#00852c>" + ", ".join([x.name for x in characters_with_eq_set]) + "</font>"
+            linked_names = [f"<a href='{x.name}'>{x.name}</a>" for x in characters_with_eq_set]
+            return f"Characters with equipment set '{matched_eq_set}':\n" + ", ".join(linked_names)
         
         elif command_fragmented[0] == "fwsd":
             # find certain characters with skill description
@@ -1550,7 +1556,8 @@ if __name__ == "__main__":
             matched_characters = [x for x in all_characters if keyword.lower() in x.skill_tooltip_jp().lower() + x.skill_tooltip().lower()]
             if not matched_characters:
                 return f"No character has skill description containing '{keyword}'."
-            return f"Characters with skill description containing '{keyword}':\n" + "<font color=#00852c>" + ", ".join([x.name for x in matched_characters]) + "</font>"
+            linked_names = [f"<a href='{x.name}'>{x.name}</a>" for x in matched_characters]
+            return f"Characters with skill description containing '{keyword}':\n" + ", ".join(linked_names)
 
         elif command_fragmented[0] == "fwss":
             # find with skill source code, useful to find certain interactions
@@ -1567,7 +1574,8 @@ if __name__ == "__main__":
                     matched_characters.append(x)
             if not matched_characters:
                 return f"No character has skill source code containing '{keyword}'."
-            return f"Characters with skill source code containing '{keyword}':\n" + "<font color=#00852c>" + ", ".join([x.name for x in matched_characters]) + "</font>"
+            linked_names = [f"<a href='{x.name}'>{x.name}</a>" for x in matched_characters]
+            return f"Characters with skill source code containing '{keyword}':\n" + ", ".join(linked_names)
         
         elif command_fragmented[0] == "ss":
             # print the character's source code
@@ -1583,7 +1591,7 @@ if __name__ == "__main__":
                 return f"No character with name '{character_name}'."
             character = matched_characters[0]
             source_code = fwss_source_code_cache[character.__class__.__name__]
-            return f"Source code for {character.name}:\n" + "<font color=#6495ed>" + source_code + "</font>"
+            return f"Source code for <a href='{character.name}'>{character.name}</a>:\n" + "<font color=#6495ed>" + source_code + "</font>"
         
         elif command_fragmented[0] == "ce":
             # compare equipment, get first equipment from selected by player, then get all same equipment (same eq set and same type) from all characters
@@ -1606,7 +1614,7 @@ if __name__ == "__main__":
                 # if it has the same type equipped:
                 if selected_equipment.type in character.equip:
                     if selected_equipment.eq_set == character.equip[selected_equipment.type].eq_set:
-                        return_string += f"<font color=#00852c>{character.name}</font>"
+                        return_string += f"<a href='{character.name}'>{character.name}</a>"
                         if global_vars.language == "English":
                             return_string += f"\n{character.equip[selected_equipment.type].print_stats_html(item_to_compare=selected_equipment, include_set_effect=False)}\n"
                         elif global_vars.language == "日本語":
@@ -1651,7 +1659,7 @@ if __name__ == "__main__":
             # Construct the return string
             return_string = "Characters needing the most upgrade:\n"
             for character, diff_value, current_equip in upgrade_list:
-                return_string += f"<font color=#00852c>{character.name}</font> (Upgrade Value: {diff_value})\n"
+                return_string += f"<a href='{character.name}'>{character.name}</a> (Upgrade Value: {diff_value})\n"
                 if global_vars.language == "English":
                     return_string += f"{current_equip.print_stats_html(item_to_compare=selected_equipment, include_set_effect=False)}\n"
                 elif global_vars.language == "日本語":
@@ -2995,31 +3003,33 @@ if __name__ == "__main__":
                                             ui_manager,
                                             container=cheems_window)
         
-        party1_member_a_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+        random_plus_all_characters_names: list[str] = ["***Random***"] + all_characters_names
+        random_plus_all_monsters_names: list[str] = ["***Random***"] + all_monsters_names
+        party1_member_a_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                 party1[0].name,
                                                                 pygame.Rect((10, 50), (180, 35)),
                                                                 ui_manager,
                                                                 container=cheems_window)
         
-        party1_member_b_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+        party1_member_b_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                 party1[1].name,
                                                                 pygame.Rect((10, 90), (180, 35)),
                                                                 ui_manager,
                                                                 container=cheems_window)
         
-        party1_member_c_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+        party1_member_c_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                 party1[2].name,
                                                                 pygame.Rect((10, 130), (180, 35)),
                                                                 ui_manager,
                                                                 container=cheems_window)
         
-        party1_member_d_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+        party1_member_d_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                 party1[3].name,
                                                                 pygame.Rect((10, 170), (180, 35)),
                                                                 ui_manager,
                                                                 container=cheems_window)
         
-        party1_member_e_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+        party1_member_e_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                 party1[4].name,
                                                                 pygame.Rect((10, 210), (180, 35)),
                                                                 ui_manager,
@@ -3028,9 +3038,9 @@ if __name__ == "__main__":
         list_of_names_for_p2 = None
         match current_game_mode:
             case "Adventure Mode":
-                list_of_names_for_p2 = all_monsters_names
+                list_of_names_for_p2 = random_plus_all_monsters_names
             case "Training Mode":
-                list_of_names_for_p2 = all_characters_names
+                list_of_names_for_p2 = random_plus_all_characters_names
             case _:
                 raise ValueError(f"Unknown game mode: {current_game_mode}")
 
@@ -3172,34 +3182,35 @@ if __name__ == "__main__":
         if party not in [1, 2]:
             raise ValueError(f"party must be 1 or 2, but got {party}")
         names = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]]
+        random_plus_all_characters_names: list[str] = ["***Random***"] + all_characters_names
         if party == 1:
             # This is extremely stupid, maybe there is a better implementation
             party1_member_a_selection_menu.kill()
-            party1_member_a_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+            party1_member_a_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                     names[0],
                                                                     pygame.Rect((10, 50), (180, 35)),
                                                                     ui_manager,
                                                                     container=cheems_window)
             party1_member_b_selection_menu.kill()
-            party1_member_b_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+            party1_member_b_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                     names[1],
                                                                     pygame.Rect((10, 90), (180, 35)),
                                                                     ui_manager,
                                                                     container=cheems_window)
             party1_member_c_selection_menu.kill()
-            party1_member_c_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+            party1_member_c_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                     names[2],
                                                                     pygame.Rect((10, 130), (180, 35)),
                                                                     ui_manager,
                                                                     container=cheems_window)
             party1_member_d_selection_menu.kill()
-            party1_member_d_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+            party1_member_d_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                     names[3],
                                                                     pygame.Rect((10, 170), (180, 35)),
                                                                     ui_manager,
                                                                     container=cheems_window)
             party1_member_e_selection_menu.kill()
-            party1_member_e_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+            party1_member_e_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                     names[4],
                                                                     pygame.Rect((10, 210), (180, 35)),
                                                                     ui_manager,
@@ -3209,38 +3220,38 @@ if __name__ == "__main__":
                 cheems_response_label.set_text("Party 2 is reserved for monsters in adventure mode.")
                 return None
             party2_member_a_selection_menu.kill()
-            party2_member_a_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+            party2_member_a_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                     names[0],
                                                                     pygame.Rect((210, 50), (180, 35)),
                                                                     ui_manager,
                                                                     container=cheems_window)
             party2_member_b_selection_menu.kill()
-            party2_member_b_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+            party2_member_b_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                     names[1],
                                                                     pygame.Rect((210, 90), (180, 35)),
                                                                     ui_manager,
                                                                     container=cheems_window)
             party2_member_c_selection_menu.kill()
-            party2_member_c_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+            party2_member_c_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                     names[2],
                                                                     pygame.Rect((210, 130), (180, 35)),
                                                                     ui_manager,
                                                                     container=cheems_window)
             party2_member_d_selection_menu.kill()
-            party2_member_d_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+            party2_member_d_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                     names[3],
                                                                     pygame.Rect((210, 170), (180, 35)),
                                                                     ui_manager,
                                                                     container=cheems_window)
             party2_member_e_selection_menu.kill()
-            party2_member_e_selection_menu = pygame_gui.elements.UIDropDownMenu(all_characters_names,
+            party2_member_e_selection_menu = pygame_gui.elements.UIDropDownMenu(random_plus_all_characters_names,
                                                                     names[4],
                                                                     pygame.Rect((210, 210), (180, 35)),
                                                                     ui_manager,
                                                                     container=cheems_window)
             
 
-    def save_cheems_team(team_name: str | None, party: list[str]):
+    def save_cheems_team(team_name: str | None, party_one_or_two: int):
         """
         Save a team to player.cheems.
         player.cheems is dict[str, list[str]]  with default {}, team_name as key, and list of character names as value.
@@ -3250,6 +3261,20 @@ if __name__ == "__main__":
         assert player is not None
         assert isinstance(player, Nine)
         assert cheems_response_label is not None
+
+        # compile the party from selection menus
+        if party_one_or_two == 1:
+            party = [party1_member_a_selection_menu.selected_option[0],
+                    party1_member_b_selection_menu.selected_option[0],
+                    party1_member_c_selection_menu.selected_option[0],
+                    party1_member_d_selection_menu.selected_option[0],
+                    party1_member_e_selection_menu.selected_option[0]]
+        else:
+            party = [party2_member_a_selection_menu.selected_option[0],
+                    party2_member_b_selection_menu.selected_option[0],
+                    party2_member_c_selection_menu.selected_option[0],
+                    party2_member_d_selection_menu.selected_option[0],
+                    party2_member_e_selection_menu.selected_option[0]]
 
         if team_name is None:
             team_name = cheems_create_new_team_name_entry.get_text()
@@ -4049,11 +4074,39 @@ if __name__ == "__main__":
                                     party2_member_c_selection_menu.selected_option[0], party2_member_d_selection_menu.selected_option[0],
                                     party2_member_e_selection_menu.selected_option[0]]
         # party1_edited and party2_edited are list of character names
-
-        # guardrail: same character cannot appear twice on the field
-        # if len(set(party1_edited + party2_edited)) != 10:
-        #     cheems_response_label.set_text("Same character cannot appear twice!")
-        #     return
+        # 3.9.0: now party1_edited and party2_edited can take ***Random*** as a character name
+        # In this case, the character will be randomly selected from the remaining characters
+        if current_game_mode == "Training Mode":
+            if "***Random***" in party1_edited or "***Random***" in party2_edited:
+                remaining_characters = [character for character in all_characters_names if character not in party1_edited + party2_edited]
+                # how many random characters to select
+                n = party1_edited.count("***Random***") + party2_edited.count("***Random***")
+                assert n <= len(remaining_characters), "Not enough characters to select from."
+                random_characters = random.sample(remaining_characters, n)
+                for i, character in enumerate(party1_edited):
+                    if character == "***Random***":
+                        party1_edited[i] = random_characters.pop()
+                for i, character in enumerate(party2_edited):
+                    if character == "***Random***":
+                        party2_edited[i] = random_characters.pop()
+        elif current_game_mode == "Adventure Mode":
+            # party1 is characters, party2 is monsters
+            if "***Random***" in party1_edited:
+                remaining_characters = [character for character in all_characters_names if character not in party1_edited]
+                n = party1_edited.count("***Random***")
+                assert n <= len(remaining_characters), "Not enough characters to select from."
+                random_characters = random.sample(remaining_characters, n)
+                for i, character in enumerate(party1_edited):
+                    if character == "***Random***":
+                        party1_edited[i] = random_characters.pop()
+            if "***Random***" in party2_edited:
+                remaining_characters = [character for character in all_monsters_names if character not in party2_edited]
+                n = party2_edited.count("***Random***")
+                assert n <= len(remaining_characters), "Not enough monsters to select from."
+                random_characters = random.sample(remaining_characters, n)
+                for i, character in enumerate(party2_edited):
+                    if character == "***Random***":
+                        party2_edited[i] = random_characters.pop()
 
         character_counts = {}
         for character in party1_edited + party2_edited:
@@ -4077,12 +4130,8 @@ if __name__ == "__main__":
         text_box.set_text("=====================================\n")
         restart_battle()
         redraw_ui(party1, party2)
-        if current_game_mode == "Adventure Mode":
-            party1_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in party1]
-            update_character_selection_menu(party1_show_in_menu)
-        elif current_game_mode == "Training Mode":
-            party_show_in_menu = [f" Lv.{character.lvl} {character.name}" for character in itertools.chain(party1, party2)]
-            update_character_selection_menu(party_show_in_menu)
+        update_character_selection_menu(None)
+
 
     def swap_characters_in_party(two_index: set[int]):
         """
@@ -4109,7 +4158,24 @@ if __name__ == "__main__":
         redraw_ui(party1, party2)
         update_character_selection_menu(None) 
 
-
+    def replace_character_with_new(character_name: str, index: int):
+        """
+        Replaces a character in the party with a new character.
+        """
+        global party1, party2
+        # if character already in party, return
+        if any(character_name == character.name for character in itertools.chain(party1, party2)):
+            return
+        if 0 <= index < 5:
+            party1[index] = next((c for c in all_characters if c.name == character_name), None)
+        elif 5 <= index < 10:
+            if current_game_mode == "Adventure Mode":
+                return
+            party2[index - 5] = next((c for c in all_characters if c.name == character_name), None)
+        text_box.set_text("=====================================\n")
+        restart_battle()
+        redraw_ui(party1, party2)
+        update_character_selection_menu(None)
 
 
     def add_outline_to_image(surface, outline_color, outline_thickness):
@@ -5074,7 +5140,22 @@ if __name__ == "__main__":
 
     shift_held = False  # Shiftキーが押下状態かを記録する
     s_key_held = False
+    q_key_held = False
     w_key_held = False
+    e_key_held = False
+    r_key_held = False
+    t_key_held = False
+    one_key_held = False
+    two_key_held = False
+    three_key_held = False
+    four_key_held = False
+    five_key_held = False
+    six_key_held = False
+    seven_key_held = False
+    eight_key_held = False
+    nine_key_held = False
+    zero_key_held = False
+
     last_clicked_slot = None  # 直前にクリックしたスロット(UIImage)を記録する
     character_swap_set = set()
 
@@ -5101,16 +5182,72 @@ if __name__ == "__main__":
                     shift_held = True
                 if event.key == pygame.K_s:
                     s_key_held = True
+                if event.key == pygame.K_q:
+                    q_key_held = True
                 if event.key == pygame.K_w:
                     w_key_held = True
+                if event.key == pygame.K_e:
+                    e_key_held = True
+                if event.key == pygame.K_r:
+                    r_key_held = True
+                if event.key == pygame.K_t:
+                    t_key_held = True
+                if event.key == pygame.K_1:
+                    one_key_held = True
+                if event.key == pygame.K_2:
+                    two_key_held = True
+                if event.key == pygame.K_3:
+                    three_key_held = True
+                if event.key == pygame.K_4:
+                    four_key_held = True
+                if event.key == pygame.K_5:
+                    five_key_held = True
+                if event.key == pygame.K_6:
+                    six_key_held = True
+                if event.key == pygame.K_7:
+                    seven_key_held = True
+                if event.key == pygame.K_8:
+                    eight_key_held = True
+                if event.key == pygame.K_9:
+                    nine_key_held = True
+                if event.key == pygame.K_0:
+                    zero_key_held = True
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     shift_held = False
                 if event.key == pygame.K_s:
                     s_key_held = False
+                if event.key == pygame.K_q:
+                    q_key_held = False
                 if event.key == pygame.K_w:
                     w_key_held = False
+                if event.key == pygame.K_e:
+                    e_key_held = False
+                if event.key == pygame.K_r:
+                    r_key_held = False
+                if event.key == pygame.K_t:
+                    t_key_held = False
+                if event.key == pygame.K_1:
+                    one_key_held = False
+                if event.key == pygame.K_2:
+                    two_key_held = False
+                if event.key == pygame.K_3:
+                    three_key_held = False
+                if event.key == pygame.K_4:
+                    four_key_held = False
+                if event.key == pygame.K_5:
+                    five_key_held = False
+                if event.key == pygame.K_6:
+                    six_key_held = False
+                if event.key == pygame.K_7:
+                    seven_key_held = False
+                if event.key == pygame.K_8:
+                    eight_key_held = False
+                if event.key == pygame.K_9:
+                    nine_key_held = False
+                if event.key == pygame.K_0:
+                    zero_key_held = False
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 
@@ -5298,9 +5435,9 @@ if __name__ == "__main__":
                 if event.ui_element == cheems_update_party_members_button:
                     cheems_edit_party()
                 if event.ui_element == cheems_save_party1_button:
-                    save_cheems_team(None, [c.name for c in party1])
+                    save_cheems_team(None, 1)
                 if event.ui_element == cheems_save_party2_button:
-                    save_cheems_team(None, [c.name for c in party2])
+                    save_cheems_team(None, 2)
                 if event.ui_element == cheems_apply_to_party1_button:
                     apply_cheems_to_party(1)
                 if event.ui_element == cheems_apply_to_party2_button:
@@ -5313,6 +5450,32 @@ if __name__ == "__main__":
                     build_character_window()
                 if event.ui_element == button_about:
                     build_about_window()
+
+            if event.type == pygame_gui.UI_TEXT_BOX_LINK_CLICKED:
+                # print(event.link_target) # Brandon
+                # print(event.ui_object_id)
+                if event.ui_object_id == "#characters_window.#character_window_command_result_box":
+                    if one_key_held:
+                        replace_character_with_new(event.link_target, 0)
+                    elif two_key_held:
+                        replace_character_with_new(event.link_target, 1)
+                    elif three_key_held:
+                        replace_character_with_new(event.link_target, 2)
+                    elif four_key_held:
+                        replace_character_with_new(event.link_target, 3)
+                    elif five_key_held:
+                        replace_character_with_new(event.link_target, 4)
+
+                    elif q_key_held:
+                        replace_character_with_new(event.link_target, 5)
+                    elif w_key_held:
+                        replace_character_with_new(event.link_target, 6)
+                    elif e_key_held:
+                        replace_character_with_new(event.link_target, 7)
+                    elif r_key_held:
+                        replace_character_with_new(event.link_target, 8)
+                    elif t_key_held:
+                        replace_character_with_new(event.link_target, 9)
 
 
             if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
@@ -5477,20 +5640,28 @@ if __name__ == "__main__":
                         member_list = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]]
                         text = ""
                         for i, m in enumerate(member_list):
-                            text += f"{m}    "
-                            actual_character = None
-                            for c in all_characters:
-                                if c.name == m:
-                                    actual_character = c
-                                    break
-                            try:
-                                img_slots[i].set_image(actual_character.featured_image)
+                            if m != "***Random***":
+                                text += f"{m}    "
+                                actual_character = None
+                                for c in all_characters:
+                                    if c.name == m:
+                                        actual_character = c
+                                        break
+                                try:
+                                    img_slots[i].set_image(actual_character.featured_image)
+                                    if global_vars.language == "日本語":
+                                        img_slots[i].set_tooltip(actual_character.skill_tooltip_jp(), delay=0.1, wrap_width=800)
+                                    elif global_vars.language == "English":
+                                        img_slots[i].set_tooltip(actual_character.skill_tooltip(), delay=0.1, wrap_width=800)
+                                except Exception:
+                                    img_slots[i].set_image(images_item["404"])
+                            else:
+                                text += "Random    "
+                                img_slots[i].set_image(images_item["406cheems"])
                                 if global_vars.language == "日本語":
-                                    img_slots[i].set_tooltip(actual_character.skill_tooltip_jp(), delay=0.1, wrap_width=600)
+                                    img_slots[i].set_tooltip("ランダムに選ばれたキャラクター。", delay=0.1)
                                 elif global_vars.language == "English":
-                                    img_slots[i].set_tooltip(actual_character.skill_tooltip(), delay=0.1, wrap_width=600)
-                            except Exception:
-                                img_slots[i].set_image(images_item["404"])
+                                    img_slots[i].set_tooltip("Randomly selected character.", delay=0.1)
 
                         cheems_player_cheems_member_label.set_text(text)
                         cheems_apply_to_party1_button.show()
