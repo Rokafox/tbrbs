@@ -3,7 +3,9 @@ import inspect
 import os, json
 import statistics
 import sys
+import numpy as np
 import pandas as pd
+from PIL import Image
 import analyze
 
 from character import *
@@ -1389,6 +1391,8 @@ if __name__ == "__main__":
     character_max_pages = 0
     character_image_slots = None
     character_overview_current_page_characters = None
+    character_overwiew_sort_selection_menu = None
+
     def build_character_overview_window():
         """
         This window displays the image of all characters just like the inventory.
@@ -1398,9 +1402,10 @@ if __name__ == "__main__":
         except Exception:
             image_slots[i].set_image(images_item["404"])
         """
-        global character_overview_window, all_characters
+        global character_overview_window, all_characters, all_characters_showcase
         global character_page_label, character_current_page, character_max_pages
         global character_image_slots, character_overview_current_page_characters
+        global character_overwiew_sort_selection_menu
         try:
             character_overview_window.kill()
         except Exception as e:
@@ -1430,6 +1435,19 @@ if __name__ == "__main__":
                                         manager=ui_manager,
                                         container=character_overview_window,
                                         command=lambda:next_character_page())
+
+        character_overwiew_sort_selection_menu = pygame_gui.elements.UIDropDownMenu(["Sort by Image", "Sort by Name"],
+                                                            "Sort by Image",
+                                                            pygame.Rect((320, 10), (180, 35)),
+                                                            ui_manager,
+                                                            container=character_overview_window,)
+
+        character_overwiew_refresh_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((510, 10), (100, 35)),
+                                        text='Refresh',
+                                        manager=ui_manager,
+                                        container=character_overview_window,
+                                        command=lambda:build_characters_overview_page())
+
 
         character_page_label = pygame_gui.elements.UILabel(
             pygame.Rect((100, 10), (100, 35)),
@@ -1475,10 +1493,17 @@ if __name__ == "__main__":
 
             # If have any filtering/sorting, apply it here
             # NOTE: We are using the showcase characters, the level and stats are not the same as the actual characters
-            filtered_characters = all_characters_showcase
+            match character_overwiew_sort_selection_menu.selected_option[0]:
+                case "Sort by Name":
+                    sorted_characters = all_characters_showcase # already sorted by name
+                case "Sort by Image":
+                    # Sort by dominant color
+                    sorted_characters = all_characters_showcase_sorted_by_color
+                case _:
+                    sorted_characters = all_characters_showcase
 
             # Chunk the characters into pages of 36
-            chunked_characters = list(mit.chunked(filtered_characters, 36))
+            chunked_characters = list(mit.chunked(sorted_characters, 36))
             if not chunked_characters:
                 # No characters at all, just hide slots
                 show_n_slots_of_character_image_slots(0)
@@ -1507,7 +1532,7 @@ if __name__ == "__main__":
                     tooltip_text += character.skill_tooltip_jp()
                 elif global_vars.language == "English":
                     tooltip_text += character.skill_tooltip()
-                slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=700)
+                slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=800)
 
             # Update the page label
             character_page_label.set_text(f"{character_current_page + 1}/{character_max_pages + 1}")
@@ -4458,6 +4483,36 @@ if __name__ == "__main__":
         update_character_selection_menu(None)
 
 
+    # ========================
+    # Image manipulation
+    # ========================
+
+    def im_get_dominant_color(surface: pygame.Surface):
+        """Calculate the average RGB color of a pygame.Surface while ignoring transparent pixels."""
+        if surface is None:
+            return 0
+        size = surface.get_size()
+        raw_str = pygame.image.tobytes(surface, "RGBA", False)  # Convert to RGBA bytes
+        np_image = np.frombuffer(raw_str, dtype=np.uint8).reshape((size[1], size[0], 4))  # Reshape to (H, W, 4)
+
+        # Split RGB and Alpha channels
+        np_rgb = np_image[:, :, :3]  # RGB values
+        alpha_channel = np_image[:, :, 3]  # Alpha values
+
+        # Create a mask for non-transparent pixels (alpha > 0)
+        non_transparent_mask = alpha_channel > 0
+        if np.any(non_transparent_mask):  # Check if there are any non-transparent pixels
+            # Only include RGB values where the pixel is non-transparent
+            valid_rgb = np_rgb[non_transparent_mask]
+            avg_color = np.mean(valid_rgb, axis=0)  # Average the valid pixels
+            # stupidly give a number to the color
+            one_number = sum(avg_color) / 3
+            return one_number
+        else:
+            return 0 
+
+    all_characters_showcase_sorted_by_color = sorted(all_characters_showcase, key=lambda c: im_get_dominant_color(c.featured_image))
+
     def add_outline_to_image(surface, outline_color, outline_thickness):
         """
         Adds an outline to the image at the specified index in the image_slots list.
@@ -6004,7 +6059,7 @@ if __name__ == "__main__":
                         cheems_update_with_party2_button.hide()
                         cheems_rename_teams_entry.hide()
                         cheems_rename_team_button.hide()
-                        cheems_meme_dog_image_slot.show()                              
+                        cheems_meme_dog_image_slot.show()                        
 
 
             ui_manager_lower.process_events(event)

@@ -22,7 +22,7 @@ class Character:
         self.lvl_max = 1000
         self.exp = exp
         self.equip = equip
-        self.image = [] if image is None else image # list of pygame.Surface
+        self.image: list['pygame'.Surface] = [] if image is None else image # list of pygame.Surface
         self.initialize_stats()
         self.skill1_cooldown_max = 5 
         self.skill2_cooldown_max = 5
