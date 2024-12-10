@@ -1910,7 +1910,7 @@ class Character:
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
 
     def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
+        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n"
 
     def get_equipment_set(self) -> str:
         if not self.equip:
@@ -2767,7 +2767,7 @@ class Cerberus(Character):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n\nExecution threshold : {self.execution_threshold*100}%"
 
     def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n\n処刑閾値 : {self.execution_threshold*100}%"
+        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n\n処刑閾値:{self.execution_threshold*100}%"
 
     def skill1_logic(self):
         def effect(self, target):
@@ -2940,7 +2940,7 @@ class Pheonix(Character):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n\nFirst time on skill 2: {self.first_time}"
 
     def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n\n初回スキル2発動: {self.first_time}"
+        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n\n初回スキル2発動:{self.first_time}"
 
     def skill1_logic(self):
         def burn_effect(self, target):
@@ -3631,7 +3631,7 @@ class Raven(Character):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n Skill 2 counter : {self.raven_skill2_counter}\n Shield value : {self.raven_skill2_damage_dealt}\n"
 
     def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n スキル2 カウンター : {self.raven_skill2_counter}\n シールド値 : {self.raven_skill2_damage_dealt}\n"
+        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n\nシールド値:{self.raven_skill2_damage_dealt}\n"
 
     def skill1_logic(self):
         blackbird = self.get_effect_that_named("Blackbird", "Raven_Blackbird")
@@ -3702,7 +3702,7 @@ class RavenWB(Character):
         return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n Skill 2 counter : {self.raven_skill2_counter}\n Shield value : {self.raven_skill2_damage_dealt}\n"
 
     def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n スキル2 カウンター : {self.raven_skill2_counter}\n シールド値 : {self.raven_skill2_damage_dealt}\n"
+        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n\nシールド値:{self.raven_skill2_damage_dealt}\n"
 
     def skill1_logic(self):
         blackbird = self.get_effect_that_named("Blackbird", "Raven_Blackbird")
@@ -4837,12 +4837,6 @@ class Timber(Character):
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
-
     def skill1_logic(self):
         self.apply_effect(StatsEffect("Accuracy Up", 6, True, {"acc": 0.4}))
         def poison_effect(self, target):
@@ -4899,12 +4893,6 @@ class Scout(Character):
                                     "八陣:防御力とクリティカル防御が40%増加する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 4
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def skill1_logic(self):
         def sting_effect(self, target):
@@ -4983,12 +4971,6 @@ class Kyle(Character):
 
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル 1 : {self.skill1_description_jp}\nクールダウン : {self.skill1_cooldown} 行動\n\nスキル 2 : {self.skill2_description_jp}\nクールダウン : {self.skill2_cooldown} 行動\n\nスキル 3 : {self.skill3_description_jp}\n"
 
     def skill1_logic(self):
         two_neighbor = self.get_neighbor_allies_not_including_self()

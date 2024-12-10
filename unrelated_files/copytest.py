@@ -12,9 +12,11 @@ class Dog:
         self.age += 1
     def add_orange(self):
         self.items.append('orange')
+    def lose_icecream(self):
+        self.items.remove('icecream')
 
 
-doge = Dog('doge', 5, ['banana', 'apple'])
+doge = Dog('doge', 5, ['banana', 'apple', 'kiwi', 'icecream'])
 cate = copy.copy(doge)
 
 print(f"doge: {doge.name}, {doge.age}, {doge.items}")
@@ -30,13 +32,19 @@ doge.add_orange()
 print(f"doge: {doge.name}, {doge.age}, {doge.items}")
 print(f"cate: {cate.name}, {cate.age}, {cate.items}")
 
+doge.lose_icecream()
+print(f"doge: {doge.name}, {doge.age}, {doge.items}")
+print(f"cate: {cate.name}, {cate.age}, {cate.items}")
+
 
 # Output:
 """
-doge: doge, 5, ['banana', 'apple']
-cate: doge, 5, ['banana', 'apple']
-doge: doge, 6, ['banana', 'apple']
-cate: doge, 5, ['banana', 'apple']
-doge: doge, 6, ['banana', 'apple', 'orange']
-cate: doge, 5, ['banana', 'apple', 'orange']
+doge: doge, 5, ['banana', 'apple', 'kiwi', 'icecream']
+cate: doge, 5, ['banana', 'apple', 'kiwi', 'icecream']
+doge: doge, 6, ['banana', 'apple', 'kiwi', 'icecream']
+cate: doge, 5, ['banana', 'apple', 'kiwi', 'icecream']
+doge: doge, 6, ['banana', 'apple', 'kiwi', 'icecream', 'orange']
+cate: doge, 5, ['banana', 'apple', 'kiwi', 'icecream', 'orange']
+doge: doge, 6, ['banana', 'apple', 'kiwi', 'orange']
+cate: doge, 5, ['banana', 'apple', 'kiwi', 'orange']
 """

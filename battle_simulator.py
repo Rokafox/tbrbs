@@ -21,6 +21,8 @@ else:
 all_characters_names: list[str] = [c.name for c in all_characters]
 print(f"Loaded {len(all_characters)} characters.")
 
+all_characters_showcase = all_characters.copy() # equip is synchronized, stats not.
+
 fwss_source_code_cache = {}
 fwss_noinit_source_code_cache = {}
 
@@ -1045,10 +1047,16 @@ if __name__ == "__main__":
     button_cheems.set_tooltip("Open team selection window.", delay=0.1, wrap_width=300)
 
     # Characters Button with height 50
-    button_characters = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 480), (156, 50)),
+    button_characters = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 480), (100, 50)),
                                         text='Characters',
                                         manager=ui_manager,)
     button_characters.set_tooltip("Open character window.", delay=0.1, wrap_width=300)
+
+    button_characters_true = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1005, 480), (51, 50)),
+                                        text='^',
+                                        manager=ui_manager,
+                                        command=lambda: build_character_overview_window())
+    button_characters_true.set_tooltip("Open character overwiew window.", delay=0.1, wrap_width=300)
 
     # About Button with height 50
     button_about = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 540), (156, 50)),
@@ -1376,6 +1384,149 @@ if __name__ == "__main__":
     # Character Section
     # =====================================
 
+    character_overview_window = None
+    character_current_page = 0
+    character_max_pages = 0
+    character_image_slots = None
+    character_overview_current_page_characters = None
+    def build_character_overview_window():
+        """
+        This window displays the image of all characters just like the inventory.
+        Fill the image with character.featured_image:
+        try:
+            image_slots[i].set_image(character.featured_image)
+        except Exception:
+            image_slots[i].set_image(images_item["404"])
+        """
+        global character_overview_window, all_characters
+        global character_page_label, character_current_page, character_max_pages
+        global character_image_slots, character_overview_current_page_characters
+        try:
+            character_overview_window.kill()
+        except Exception as e:
+            pass
+
+        character_overview_window = pygame_gui.elements.UIWindow(pygame.Rect((100, 285), (900, 345)),
+                                            ui_manager,
+                                            window_display_title="Characters Overview",
+                                            object_id="#characters_overview_window",
+                                            resizable=False)
+
+        # a selection menu is reserved for future use
+        # character_overview_big_selection_menu = pygame_gui.elements.UIDropDownMenu(["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"],
+        #                                                     "Option 1",
+        #                                                     pygame.Rect((10, 10), (100, 35)),
+        #                                                     ui_manager,
+        #                                                     container=character_overview_window)
+        # later, this selection menu can be replaced by other multiple small components for features like sorting, filtering, etc.
+
+        character_overwiew_previous_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((10, 10), (100, 35)),
+                                        text='<',
+                                        manager=ui_manager,
+                                        container=character_overview_window,
+                                        command=lambda:previous_character_page())
+        character_overwiew_next_page_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((200, 10), (100, 35)),
+                                        text='>',
+                                        manager=ui_manager,
+                                        container=character_overview_window,
+                                        command=lambda:next_character_page())
+
+        character_page_label = pygame_gui.elements.UILabel(
+            pygame.Rect((100, 10), (100, 35)),
+            text="1/1",
+            manager=ui_manager,
+            container=character_overview_window
+        )
+
+        def create_character_image_slots(n, start_x, start_y, slot_width, slot_height, spacing, ui_manager, column=6) -> list:
+            # -> list of UIImage
+            character_image_slots = []
+            x = start_x
+            y = start_y
+
+            for i in range(n):
+                slot_rect = pygame.Rect((x, y), (slot_width, slot_height))
+                image_slot = pygame_gui.elements.UIImage(slot_rect, pygame.Surface((slot_width, slot_height)), ui_manager, container=character_overview_window)
+                character_image_slots.append(image_slot)
+
+                x += slot_width + spacing
+                if (i + 1) % column == 0:
+                    x = start_x
+                    y += slot_height + spacing
+
+            return character_image_slots
+        
+        character_image_slots = create_character_image_slots(36, 16, 60, 64, 64, 8, ui_manager, column=12) # fits perfectly
+
+        def show_n_slots_of_character_image_slots(n):
+            """Show the first n character image slots and hide the rest."""
+            if n > len(character_image_slots):
+                print(f"Warning: n = {n} is larger than character_image_slots length = {len(character_image_slots)}")
+                n = len(character_image_slots)
+            for i in range(n, len(character_image_slots)):
+                character_image_slots[i].hide()
+            for i in range(n):
+                character_image_slots[i].show()
+
+
+        def build_characters_overview_page():
+            """Build the current page of the character overview, showing up to 36 characters."""
+            global all_characters, character_current_page, character_max_pages, character_overview_current_page_characters
+
+            # If have any filtering/sorting, apply it here
+            # NOTE: We are using the showcase characters, the level and stats are not the same as the actual characters
+            filtered_characters = all_characters_showcase
+
+            # Chunk the characters into pages of 36
+            chunked_characters = list(mit.chunked(filtered_characters, 36))
+            if not chunked_characters:
+                # No characters at all, just hide slots
+                show_n_slots_of_character_image_slots(0)
+                character_page_label.set_text("0/0")
+                return
+
+            character_max_pages = max(0, len(chunked_characters) - 1)
+            # Ensure current_page is in valid range
+            character_current_page = max(0, min(character_current_page, character_max_pages))
+
+            current_page_characters = chunked_characters[character_current_page]
+            character_overview_current_page_characters = current_page_characters
+            count = len(current_page_characters)
+            show_n_slots_of_character_image_slots(count)
+
+            # Set images and tooltips:
+            for slot, character in zip(character_image_slots, current_page_characters):
+                # Try to set the character image
+                try:
+                    slot.set_image(character.featured_image)
+                except Exception:
+                    slot.set_image(images_item["404"])
+
+                tooltip_text = f"<b>{character.name}</b>\n"
+                if global_vars.language == "日本語":
+                    tooltip_text += character.skill_tooltip_jp()
+                elif global_vars.language == "English":
+                    tooltip_text += character.skill_tooltip()
+                slot.set_tooltip(tooltip_text, delay=0.1, wrap_width=700)
+
+            # Update the page label
+            character_page_label.set_text(f"{character_current_page + 1}/{character_max_pages + 1}")
+
+        build_characters_overview_page()
+
+        def next_character_page():
+            global character_current_page, character_max_pages
+            if character_current_page < character_max_pages:
+                character_current_page += 1
+                build_characters_overview_page()
+
+        def previous_character_page():
+            global character_current_page
+            if character_current_page > 0:
+                character_current_page -= 1
+                build_characters_overview_page()
+
+
     character_window = None
     character_window_command_line = None
     character_window_submit_button = None
@@ -1412,7 +1563,7 @@ if __name__ == "__main__":
                                             ui_manager,
                                             window_display_title="Characters",
                                             object_id="#characters_window",
-                                            resizable=False)
+                                            resizable=False,)
 
         character_window_command_line = pygame_gui.elements.UITextEntryLine(pygame.Rect((10, 10), (480, 35)),
                                             ui_manager,
@@ -1429,11 +1580,13 @@ if __name__ == "__main__":
             global eq_sell_window_command_result_box
             if global_vars.language == "English":
                 result_box_guide = "This section provides functionality to quickly find or perform operations related to characters." \
-                " Click on the character name link while holding either 12345 assigns the character to party1," \
-                " while holding either qwert assigns the character to party2." \
+                " Click on the character name link to copy that character. Use R + left click on a character image to replace with copied character." \
+                " For a bug free experience, before clicking a link, click anywhere in the text box first." \
                 " The following commands are available:\n" \
                 "<font color=#FF69B4>ls</font>\n" \
                 "List all characters, ordered by level. This command is executed if no commands are given.\n" \
+                "<font color=#FF69B4>cfn</font>\n" \
+                "List all characters half naked, meaning they are missing equipment.\n" \
                 "<font color=#FF69B4>cweqs [str]</font>\n" \
                 "Print all characters with [str] equipment set, [str] allows lower case and partial matches. Use None to find characters without equipment set." \
                 " If [str] is not specified, all equipment set and characters are printed.\n" \
@@ -1458,11 +1611,13 @@ if __name__ == "__main__":
                 character_window_command_result_box.set_text(html_text=result_box_guide)
             elif global_vars.language == "日本語":
                 result_box_guide = "このセクションでは、キャラクターに関連する操作や検索を素早く行う機能を提供する。" \
-                "12345キーを押しながらキャラクター名リンクをクリックすると、キャラクターがparty1に割り当てられ、" \
-                "qwertキーを押しながらキャラクター名リンクをクリックすると、キャラクターがparty2に割り当てられる。" \
+                "キャラクター名のリンクをクリックすると、そのキャラクターがコピーされる。メイン画面のキャラクター画像をRキーを押しながらクリックすると、コピーしたキャラクターで置き換える。" \
+                "バグのない体験をするために、リンクをクリックする前に、まずテキストボックスのどこかをクリックしてください。" \
                 "使用可能なコマンドは以下の通りです:\n" \
                 "<font color=#FF69B4>ls</font>\n" \
                 "レベル順に並べ替えられたすべてのキャラクターを一覧表示する。コマンドが指定されていない場合、このコマンドが実行される。\n" \
+                "<font color=#FF69B4>cfn</font>\n" \
+                "装備品が不足のキャラクターをすべてリストアップする。\n" \
                 "<font color=#FF69B4>cweqs [str]</font>\n" \
                 "[str]装備セットを持つすべてのキャラクターを表示する。[str] は小文字や部分一致も可能です。Noneを使用すると装備セットがないキャラクターを検索できる。" \
                 "[str]が指定されない場合、すべての装備セットとキャラクターが表示される。\n" \
@@ -1512,13 +1667,33 @@ if __name__ == "__main__":
         command_fragmented = command.split()
         
         if command_fragmented[0] == "ls":
-            # get all characters, ordered by level and name
+            # Get all characters, ordered by level and name
             all_characters_sorted = sorted(all_characters, key=lambda x: (x.lvl, x.name))
-            string = ""
+            grouped_characters = {}
+            
+            # Group characters by level
             for c in all_characters_sorted:
-                string += f"level {c.lvl} <a href='{c.name}'>{c.name}</a>\n"
+                if c.lvl not in grouped_characters:
+                    grouped_characters[c.lvl] = []
+                grouped_characters[c.lvl].append(c.name)
+            
+            # Create a compact string representation
+            string = ""
+            for lvl, names in grouped_characters.items():
+                linked_names = [f"<a href='{x}'>{x}</a>" for x in names]
+                string += f"Level {lvl}: {', '.join(linked_names)}\n"
+            
             return string
         
+        elif command_fragmented[0] == "cfn":
+            # character half naked, meaning they are missing equipment
+            characters_half_naked = [x for x in all_characters if len(x.equip) < 4]
+            if not characters_half_naked:
+                return "All characters are fully equipped."
+            linked_names = [f"<a href='{x.name}'>{x.name}</a>" for x in characters_half_naked]
+            return f"Characters with missing equipment:\n" + ", ".join(linked_names)
+
+
         elif command_fragmented[0] == "cweqs":
             if len(command_fragmented) < 2:
                 # print all eqsets with characters
@@ -2533,10 +2708,17 @@ if __name__ == "__main__":
                 use_itemx10_button.set_tooltip("Use selected item 10 times, only effective on comsumables.", delay=0.1, wrap_width=300)
                 button_cheems.set_text("Cheems")
                 button_cheems.set_tooltip("Open team selection window. Note: Shortcut key W + left click" \
-                " on 2 characters images allow quick swapping without opening the menu and editing the team."
+                " on 2 characters images allow quick swapping without opening the menu and editing the team." \
+                " In the cheems menu, left click on a character image of a team to copy that character," \
+                " R + left click on a character image on the main screen to replace with the copied character."
                 , delay=0.1, wrap_width=300)
                 button_characters.set_text("Characters")
-                button_characters.set_tooltip("Open character window.", delay=0.1, wrap_width=300)
+                button_characters.set_tooltip("Open character console.", delay=0.1, wrap_width=300)
+                button_characters_true.set_tooltip("Open character overview window. This window is useful if you have full images of characters." \
+                                                   " Copy a character by left clicking on the character image in this window" \
+                                                   " allow replace a character by R + left clicking on the character image on the main menu." \
+                                                   " More features are not planned. Introduced in 3.9.0"
+                                                   , delay=0.1, wrap_width=300)
                 button_about.set_text("About")
                 button_about.set_tooltip("Open about window.", delay=0.1, wrap_width=300)
                 character_eq_unequip_button.set_tooltip("Remove equipment from the selected character.", delay=0.1, wrap_width=300)
@@ -2613,10 +2795,16 @@ if __name__ == "__main__":
                                             delay=0.1, wrap_width=300)
                 use_itemx10_button.set_tooltip("選択したアイテムを10回使用し、消耗品にのみ有効である。", delay=0.1, wrap_width=300)
                 button_cheems.set_text("チームズ")
-                button_cheems.set_tooltip("チーム選択画面を開く。注意事項：2匹キャラクター画像にW+左クリックで素早くこの2匹を入れ替える。チーム編成メニューを開かなくても。"
+                button_cheems.set_tooltip("チーム選択画面を開く。注意事項：2匹キャラクター画像にW+左クリックで素早くこの2匹を入れ替える。チーム編成メニューを開かなくても。" \
+                                          "チームズメニューで、チームのキャラクター画像を左クリックすると、そのキャラクターをコピーする。" \
+                                          "R+左クリックでメイン画面のキャラクターをコピーしたキャラクターに置き換える。"
                 , delay=0.1, wrap_width=300)
                 button_characters.set_text("百花繚乱")
-                button_characters.set_tooltip("キャラクター画面を開く。", delay=0.1, wrap_width=300)
+                button_characters.set_tooltip("キャラクターコンソールを開く。", delay=0.1, wrap_width=300)
+                button_characters_true.set_tooltip("キャラクターのオーバービューを開く。このオプションは、キャラクター画像がある場合に便利であろう。" \
+                                                   "キャラクター画像を左クリックしてキャラクターをコピーし、メインメニューのキャラクター画像をR+左クリックで置き換える。" \
+                                                   "機能追加は計画されていない。3.9.0で導入されました。"
+                                                   , delay=0.1, wrap_width=300)
                 button_about.set_text("洞若觀火")
                 button_about.set_tooltip("アプリ概要画面を開く。", delay=0.1, wrap_width=300)
                 character_eq_unequip_button.set_text("衣衫襤褸")
@@ -4246,6 +4434,18 @@ if __name__ == "__main__":
         # if character already in party, return
         if any(character_name == character.name for character in itertools.chain(party1, party2)):
             return
+        # if character_name is "***Random***", replace with a random character
+        if character_name == "***Random***":
+            if current_game_mode == "Training Mode":
+                remaining_characters = [character for character in all_characters if character not in itertools.chain(party1, party2)]
+                character_name = random.choice(remaining_characters).name
+            elif current_game_mode == "Adventure Mode":
+                if index < 5:
+                    remaining_characters = [character for character in all_characters if character not in party1]
+                    character_name = random.choice(remaining_characters).name
+                else:
+                    remaining_characters = [character for character in all_monsters if character not in party2]
+                    character_name = random.choice(remaining_characters).name
         if 0 <= index < 5:
             party1[index] = next((c for c in all_characters if c.name == character_name), None)
         elif 5 <= index < 10:
@@ -4876,7 +5076,7 @@ if __name__ == "__main__":
     box_submenu_refresh_stage_button.hide()
 
     box_submenu_stage_info_label = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((550, 560), (80, 35)),
-                                                                    text='Current Stage: 1',
+                                                                    text='Stage',
                                                                     manager=ui_manager)
     box_submenu_stage_info_label.hide()
 
@@ -5333,12 +5533,43 @@ if __name__ == "__main__":
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 
+                # character quick replace from cheems
                 if cheems_player_cheems_char_img_slot_a is not None:
-                    if cheems_player_cheems_char_img_slot_a.rect.collidepoint(event.pos) and r_key_held:
-                        c = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]][0]
-                        character_replace_name = c
-                
-
+                    if cheems_player_cheems_char_img_slot_a.rect.collidepoint(event.pos):
+                        try:
+                            c = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]][0]
+                            character_replace_name = c
+                        except KeyError:
+                            # this happens probably when cheems_show_player_cheems_selection_menu has not refreshed itself
+                            pass
+                if cheems_player_cheems_char_img_slot_b is not None:
+                    if cheems_player_cheems_char_img_slot_b.rect.collidepoint(event.pos):
+                        try:
+                            c = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]][1]
+                            character_replace_name = c
+                        except KeyError:
+                            pass
+                if cheems_player_cheems_char_img_slot_c is not None:
+                    if cheems_player_cheems_char_img_slot_c.rect.collidepoint(event.pos):
+                        try:
+                            c = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]][2]
+                            character_replace_name = c
+                        except KeyError:
+                            pass
+                if cheems_player_cheems_char_img_slot_d is not None:
+                    if cheems_player_cheems_char_img_slot_d.rect.collidepoint(event.pos):
+                        try:
+                            c = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]][3]
+                            character_replace_name = c
+                        except KeyError:
+                            pass
+                if cheems_player_cheems_char_img_slot_e is not None:
+                    if cheems_player_cheems_char_img_slot_e.rect.collidepoint(event.pos):
+                        try:
+                            c = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]][4]
+                            character_replace_name = c
+                        except KeyError:
+                            pass
 
 
                 # character selection and party member swap
@@ -5355,6 +5586,18 @@ if __name__ == "__main__":
                             character_replace_index = index
                             if character_replace_name:
                                 replace_character_with_new(character_replace_name, character_replace_index)
+
+                # character replacement from character_overview
+                if character_overview_window is not None:
+                    for i, image_slot in enumerate(character_image_slots):
+                        if image_slot.rect.collidepoint(event.pos):
+                            # print(character_overview_current_page_characters[i]) # character
+                            try:
+                                character_replace_name = character_overview_current_page_characters[i].name
+                            except IndexError:
+                                # for werid cases
+                                pass
+
 
                 # item selection from inventory
                 clicked_ui_image = None
@@ -5553,28 +5796,7 @@ if __name__ == "__main__":
                 # print(event.link_target) # Brandon
                 # print(event.ui_object_id)
                 if event.ui_object_id == "#characters_window.#character_window_command_result_box":
-                    if one_key_held:
-                        replace_character_with_new(event.link_target, 0)
-                    elif two_key_held:
-                        replace_character_with_new(event.link_target, 1)
-                    elif three_key_held:
-                        replace_character_with_new(event.link_target, 2)
-                    elif four_key_held:
-                        replace_character_with_new(event.link_target, 3)
-                    elif five_key_held:
-                        replace_character_with_new(event.link_target, 4)
-
-                    elif q_key_held:
-                        replace_character_with_new(event.link_target, 5)
-                    elif w_key_held:
-                        replace_character_with_new(event.link_target, 6)
-                    elif e_key_held:
-                        replace_character_with_new(event.link_target, 7)
-                    elif r_key_held:
-                        replace_character_with_new(event.link_target, 8)
-                    elif t_key_held:
-                        replace_character_with_new(event.link_target, 9)
-
+                    character_replace_name = event.link_target
 
             if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
                 if event.ui_element == game_mode_selection_menu:
@@ -5751,9 +5973,9 @@ if __name__ == "__main__":
                                     img_slots[i].set_image(images_item["404"])
                                 finally:
                                     if global_vars.language == "日本語":
-                                        img_slots[i].set_tooltip(actual_character.skill_tooltip_jp(), delay=0.1, wrap_width=800)
+                                        img_slots[i].set_tooltip(actual_character.skill_tooltip_jp(), delay=0.1, wrap_width=600)
                                     elif global_vars.language == "English":
-                                        img_slots[i].set_tooltip(actual_character.skill_tooltip(), delay=0.1, wrap_width=800)
+                                        img_slots[i].set_tooltip(actual_character.skill_tooltip(), delay=0.1, wrap_width=600)
                             else:
                                 text += "Random    "
                                 img_slots[i].set_image(images_item["406cheems"])
