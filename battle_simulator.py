@@ -2936,6 +2936,8 @@ if __name__ == "__main__":
     cheems_delete_team_button = None
     cheems_rename_teams_entry = None
     cheems_rename_team_button = None
+    cheems_update_with_party1_button = None
+    cheems_update_with_party2_button = None
     cheems_meme_dog_image_slot = None
 
     def build_cheems_window():
@@ -2947,6 +2949,7 @@ if __name__ == "__main__":
         global cheems_show_player_cheems_selection_menu, cheems_player_cheems_member_label
         global cheems_player_cheems_char_img_slot_a, cheems_player_cheems_char_img_slot_b, cheems_player_cheems_char_img_slot_c, cheems_player_cheems_char_img_slot_d, cheems_player_cheems_char_img_slot_e
         global cheems_apply_to_party1_button, cheems_apply_to_party2_button, cheems_delete_team_button
+        global cheems_update_with_party1_button, cheems_update_with_party2_button
         global cheems_rename_teams_entry, cheems_rename_team_button
         global cheems_meme_dog_image_slot
 
@@ -2977,6 +2980,10 @@ if __name__ == "__main__":
                         return "パーティ1適用"
                     case "Apply to Party 2":
                         return "パーティ2適用"
+                    case "Update with Party 1":
+                        return "パーティ1で更新"
+                    case "Update with Party 2":
+                        return "パーティ2で更新"
                     case "Delete Team":
                         return "チーム削除"
                     case "Enter a new team name:":
@@ -3132,23 +3139,30 @@ if __name__ == "__main__":
         cheems_player_cheems_char_img_slot_e.set_image(images_item["405"])
 
         # Button to apply the selected team to party 1 or party 2
-        cheems_apply_to_party1_button = pygame_gui.elements.UIButton(pygame.Rect((400, 210), (190, 35)),
+        cheems_apply_to_party1_button = pygame_gui.elements.UIButton(pygame.Rect((400, 210), (190, 45)),
                                             text=local_translate("Apply to Party 1"),
                                             manager=ui_manager,
                                             container=cheems_window)
         cheems_apply_to_party1_button.hide()
 
-        cheems_apply_to_party2_button = pygame_gui.elements.UIButton(pygame.Rect((600, 210), (190, 35)),
+        cheems_apply_to_party2_button = pygame_gui.elements.UIButton(pygame.Rect((600, 210), (190, 45)),
                                             text=local_translate("Apply to Party 2"),
                                             manager=ui_manager,
                                             container=cheems_window)
         cheems_apply_to_party2_button.hide()
 
-        cheems_delete_team_button = pygame_gui.elements.UIButton(pygame.Rect((400, 260), (390, 50)),
-                                            text=local_translate("Delete Team"),
+        # 260
+        cheems_update_with_party1_button = pygame_gui.elements.UIButton(pygame.Rect((400, 265), (190, 45)),
+                                            text=local_translate("Update with Party 1"),
+                                            manager=ui_manager,
+                                            container=cheems_window,)
+        cheems_update_with_party1_button.hide()
+
+        cheems_update_with_party2_button = pygame_gui.elements.UIButton(pygame.Rect((600, 265), (190, 45)),
+                                            text=local_translate("Update with Party 2"),
                                             manager=ui_manager,
                                             container=cheems_window)
-        cheems_delete_team_button.hide()
+        cheems_update_with_party2_button.hide()
 
         cheems_rename_teams_entry = pygame_gui.elements.UITextEntryLine(pygame.Rect((400, 320), (390, 35)),
                                             ui_manager,
@@ -3156,11 +3170,17 @@ if __name__ == "__main__":
                                             placeholder_text=local_translate("Enter a new team name:"))
         cheems_rename_teams_entry.hide()
 
-        cheems_rename_team_button = pygame_gui.elements.UIButton(pygame.Rect((400, 365), (390, 50)),
+        cheems_rename_team_button = pygame_gui.elements.UIButton(pygame.Rect((400, 365), (190, 50)),
                                             text=local_translate("Rename Team"),
                                             manager=ui_manager,
                                             container=cheems_window)
         cheems_rename_team_button.hide()
+
+        cheems_delete_team_button = pygame_gui.elements.UIButton(pygame.Rect((600, 365), (190, 50)),
+                                            text=local_translate("Delete Team"),
+                                            manager=ui_manager,
+                                            container=cheems_window)
+        cheems_delete_team_button.hide()
 
         # When None is selected, the right side is empty and lack beauty. To fix this, we show the image of the 
         # actual meme dog cheems
@@ -3323,10 +3343,66 @@ if __name__ == "__main__":
         cheems_apply_to_party1_button.hide()
         cheems_apply_to_party2_button.hide()
         cheems_delete_team_button.hide()
+        cheems_update_with_party1_button.hide()
+        cheems_update_with_party2_button.hide()
         cheems_rename_teams_entry.hide()
         cheems_rename_team_button.hide()
         cheems_meme_dog_image_slot.show()         
 
+    def update_cheems_team(with_party_one_or_two: int):
+        # update the selected team with the current party 1 or party 2
+        global player, text_box, cheems_show_player_cheems_selection_menu
+        # player must be a subclass of Nine
+        assert player is not None
+        assert isinstance(player, Nine)
+        assert cheems_response_label is not None
+
+        if cheems_show_player_cheems_selection_menu.selected_option[0] == "None":
+            cheems_response_label.set_text("Select a team to update.")
+            return None
+        
+        if with_party_one_or_two == 1:
+            party = [party1_member_a_selection_menu.selected_option[0],
+                    party1_member_b_selection_menu.selected_option[0],
+                    party1_member_c_selection_menu.selected_option[0],
+                    party1_member_d_selection_menu.selected_option[0],
+                    party1_member_e_selection_menu.selected_option[0]]
+        else:
+            party = [party2_member_a_selection_menu.selected_option[0],
+                    party2_member_b_selection_menu.selected_option[0],
+                    party2_member_c_selection_menu.selected_option[0],
+                    party2_member_d_selection_menu.selected_option[0],
+                    party2_member_e_selection_menu.selected_option[0]]
+        
+        for character_name in party:
+            if character_name in all_monsters_names:
+                cheems_response_label.set_text(f"Monsters are not allowed in teams.")
+                return
+
+        player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]] = party
+        cheems_response_label.set_text(f"Team updated.")
+
+        # Update the cheems selection menu
+
+        cheems_show_player_cheems_selection_menu.kill()
+        cheems_show_player_cheems_selection_menu = pygame_gui.elements.UIDropDownMenu(["None"] + get_player_cheems_team_names(player),
+                                                                "None",
+                                                                pygame.Rect((400, 50), (400, 35)),
+                                                                ui_manager,
+                                                                container=cheems_window)
+        cheems_player_cheems_member_label.set_text("")
+        img_slots = [cheems_player_cheems_char_img_slot_a, cheems_player_cheems_char_img_slot_b,
+        cheems_player_cheems_char_img_slot_c, cheems_player_cheems_char_img_slot_d, cheems_player_cheems_char_img_slot_e]
+        for i in img_slots:
+            i.set_image(images_item["405"])
+        cheems_apply_to_party1_button.hide()
+        cheems_apply_to_party2_button.hide()
+        cheems_delete_team_button.hide()
+        cheems_update_with_party1_button.hide()
+        cheems_update_with_party2_button.hide()
+        cheems_rename_teams_entry.hide()
+        cheems_rename_team_button.hide()
+        cheems_meme_dog_image_slot.show()
 
     def delete_cheems_team(team_name: str):
         """
@@ -3365,6 +3441,8 @@ if __name__ == "__main__":
         cheems_apply_to_party1_button.hide()
         cheems_apply_to_party2_button.hide()
         cheems_delete_team_button.hide()
+        cheems_update_with_party1_button.hide()
+        cheems_update_with_party2_button.hide()
         cheems_rename_teams_entry.hide()
         cheems_rename_team_button.hide()
         cheems_meme_dog_image_slot.show()
@@ -3416,6 +3494,8 @@ if __name__ == "__main__":
         cheems_apply_to_party1_button.hide()
         cheems_apply_to_party2_button.hide()
         cheems_delete_team_button.hide()
+        cheems_update_with_party1_button.hide()
+        cheems_update_with_party2_button.hide()
         cheems_rename_teams_entry.hide()
         cheems_rename_team_button.hide()
         cheems_meme_dog_image_slot.show()
@@ -4888,15 +4968,15 @@ if __name__ == "__main__":
                                                             "Silver Wolf Company",
                                                             pygame.Rect((300, 500), (212, 35)),
                                                             ui_manager)
-    # if start_with_max_level and global_vars.allow_cheat:
-    #     shop_select_a_shop.add_options(["CHEAT"])
 
     extra_shop_list = eq_set_list_without_none_and_void
     # Add "Forge" to each string in the list
     extra_shop_list_a = [f"{item} Forge" for item in extra_shop_list]
     extra_shop_list_b = [f"{item} Reforged" for item in extra_shop_list]
-    extra_shop_list_c = None
-    # extra_shop_list_c = [f"{item} Premium" for item in extra_shop_list]
+    if global_vars.allow_cheat:
+        extra_shop_list_c = [f"{item} Premium" for item in extra_shop_list]
+    else:
+        extra_shop_list_c = None
     extra_shop_list = extra_shop_list_a + extra_shop_list_b
     if extra_shop_list_c:
         extra_shop_list += extra_shop_list_c
@@ -5442,6 +5522,10 @@ if __name__ == "__main__":
                     apply_cheems_to_party(1)
                 if event.ui_element == cheems_apply_to_party2_button:
                     apply_cheems_to_party(2)
+                if event.ui_element == cheems_update_with_party1_button:
+                    update_cheems_team(1)
+                if event.ui_element == cheems_update_with_party2_button:
+                    update_cheems_team(2)
                 if event.ui_element == cheems_delete_team_button:
                     delete_cheems_team(cheems_show_player_cheems_selection_menu.selected_option[0])
                 if event.ui_element == cheems_rename_team_button:
@@ -5649,12 +5733,13 @@ if __name__ == "__main__":
                                         break
                                 try:
                                     img_slots[i].set_image(actual_character.featured_image)
+                                except Exception:
+                                    img_slots[i].set_image(images_item["404"])
+                                finally:
                                     if global_vars.language == "日本語":
                                         img_slots[i].set_tooltip(actual_character.skill_tooltip_jp(), delay=0.1, wrap_width=800)
                                     elif global_vars.language == "English":
                                         img_slots[i].set_tooltip(actual_character.skill_tooltip(), delay=0.1, wrap_width=800)
-                                except Exception:
-                                    img_slots[i].set_image(images_item["404"])
                             else:
                                 text += "Random    "
                                 img_slots[i].set_image(images_item["406cheems"])
@@ -5667,6 +5752,8 @@ if __name__ == "__main__":
                         cheems_apply_to_party1_button.show()
                         cheems_apply_to_party2_button.show()
                         cheems_delete_team_button.show()
+                        cheems_update_with_party1_button.show()
+                        cheems_update_with_party2_button.show()
                         cheems_rename_teams_entry.show()
                         cheems_rename_team_button.show()
                         cheems_meme_dog_image_slot.hide()
@@ -5677,6 +5764,8 @@ if __name__ == "__main__":
                         cheems_apply_to_party1_button.hide()
                         cheems_apply_to_party2_button.hide()
                         cheems_delete_team_button.hide()
+                        cheems_update_with_party1_button.hide()
+                        cheems_update_with_party2_button.hide()
                         cheems_rename_teams_entry.hide()
                         cheems_rename_team_button.hide()
                         cheems_meme_dog_image_slot.show()                              
