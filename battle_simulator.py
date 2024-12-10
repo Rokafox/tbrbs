@@ -5238,6 +5238,8 @@ if __name__ == "__main__":
 
     last_clicked_slot = None  # 直前にクリックしたスロット(UIImage)を記録する
     character_swap_set = set()
+    character_replace_name: str = ""
+    character_replace_index: int = -1
 
     print("Starting!")
     running = True 
@@ -5331,6 +5333,14 @@ if __name__ == "__main__":
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 
+                if cheems_player_cheems_char_img_slot_a is not None:
+                    if cheems_player_cheems_char_img_slot_a.rect.collidepoint(event.pos) and r_key_held:
+                        c = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]][0]
+                        character_replace_name = c
+                
+
+
+
                 # character selection and party member swap
                 for index, image_slot in enumerate(image_slots_all):
                     if image_slot.rect.collidepoint(event.pos):
@@ -5341,6 +5351,10 @@ if __name__ == "__main__":
                             if len(character_swap_set) == 2:
                                 swap_characters_in_party(character_swap_set)
                                 character_swap_set.clear()
+                        if r_key_held:
+                            character_replace_index = index
+                            if character_replace_name:
+                                replace_character_with_new(character_replace_name, character_replace_index)
 
                 # item selection from inventory
                 clicked_ui_image = None
