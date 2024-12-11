@@ -3205,7 +3205,7 @@ class Fox(Character):
 class Taily(Character): 
     """
     A reference to a dead mobile game character
-    Tank
+    Protector
     Build: hp, def
     Effect name is rediculous but does not matter
     """
@@ -3215,12 +3215,12 @@ class Taily(Character):
         self.skill1_description = "305% atk on 3 closest enemies, Stun the target for 10 turns."
         self.skill2_description = "700% atk on enemy with highest hp, damage increased by 50% if target has more than 90% hp ratio."
         self.skill3_description = "At start of battle, apply Blessing of Firewood to all allies." \
-        " When an ally is about to take normal attack or skill damage, take the damage instead. Damage taken is reduced by 40% when taking damage for an ally." \
+        " When an ally is about to take normal damage, take the damage instead. Damage taken is reduced by 40% when taking damage for an ally." \
         " Cannot protect against status effect and status damage."
         self.skill1_description_jp = "最も近い3体の敵に305%の攻撃を行い、対象を10ターンの間スタンさせる。"
         self.skill2_description_jp = "最もHPが高い敵に700%の攻撃を行う。対象のHP割合が90%以上の場合、ダメージが50%増加する。"
         self.skill3_description_jp = "戦闘開始時に全ての味方に柴の加護を付与する。" \
-                                    "味方が通常攻撃やスキルダメージを受ける際、そのダメージを代わりに受ける。味方のためにダメージを受ける場合、被ダメージが40%軽減される。" \
+                                    "味方が通常ダメージを受ける際、そのダメージを代わりに受ける。味方のためにダメージを受ける場合、被ダメージが40%軽減される。" \
                                     "状態異常および状態ダメージからは守れない。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -3245,14 +3245,51 @@ class Taily(Character):
     def battle_entry_effects(self):
         allies = [x for x in self.ally if x != self]
         for ally in allies:
-            e = ProtectedEffect("Blessing of Firewood", -1, True, False, self, 0.6)
-            e.can_be_removed_by_skill = False
+            e = ProtectedEffect("Blessing of Firewood", -1, True, False, self, 0.6, can_be_removed_by_skill=False)
+            ally.apply_effect(e)
+
+
+class Nobutuna(Character):
+    """
+    Protector, crit
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Nobutuna"
+        self.skill1_description = "Select 2 allies of highest atk, their crit chance is increased by 60%, crit damage is increased by 40% for 28 turns."
+        self.skill2_description = "Attack random enemies 6 times with 300% atk."
+        self.skill3_description = "At start of battle, apply Floating Moon to all allies." \
+        " Floating Moon: When you are about to take normal damage, damage is reduced by 35%, the effect applier takes the 90% of that damage instead."
+        self.skill1_description_jp = "攻撃力が最も高い味方2人を選び、28ターンの間、クリティカル率を60%、クリティカルダメージを40%増加させる。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力の300%で6回攻撃する。"
+        self.skill3_description_jp = "戦闘開始時、全ての味方に「浮舟月影」を付与する。浮舟月影：通常ダメージを受ける際、そのダメージは35%減少し、効果の付与者がそのダメージの90%を代わりに受ける。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        allies = self.target_selection(keyword="n_highest_attr", keyword2="2", keyword3="atk", keyword4="ally")
+        for ally in allies:
+            ally.apply_effect(StatsEffect("Crit Up", 28, True, {"crit": 0.6, "critdmg": 0.4}))
+        return 0
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=3.0, repeat=6)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Floating Moon", -1, True, False, self, 0.65, 0.9, can_be_removed_by_skill=False)
             ally.apply_effect(e)
 
 
 class Rika(Character): 
     """
-    Tank & Status damage
+    Protector & Status damage
     Build: hp, def
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -3301,7 +3338,7 @@ class Rika(Character):
 
 class Rubin(Character):
     """
-    tank
+    Protector
     Build: spd, def, hp
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
