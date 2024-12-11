@@ -19,6 +19,8 @@ autobattle_speed = "Normal"
 after_autobattle = "Do Nothing"
 # settings
 draw_battle_chart = "True"
+# commands
+cue_best_equip = []
 # shop
 player_is_in_shop = False
 current_shop_instance = None

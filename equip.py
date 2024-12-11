@@ -11,7 +11,6 @@ def normal_distribution(min_value, max_value, mean, std):
 
 class Equip(Block):
     def __init__(self, name: str, type: str, rarity: str, eq_set: str="None", level: int=40):
-        # lists, changing them likely wont give an error.
         super().__init__(name, "")
         self.type_list = ["Weapon", "Armor", "Accessory", "Boots"] # do not change this list.
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
@@ -663,7 +662,7 @@ class Equip(Block):
         attack_total_score = atk_score + spd_score + crit_score + critdmg_score + penetration_score + acc_score
         support_total_score = def_score + maxhp_score + eva_score + critdef_score + he_score
 
-        total_score = attack_total_score + support_total_score * 0.33
+        total_score = attack_total_score + support_total_score * 0.20
 
         return total_score 
 
@@ -707,7 +706,7 @@ class Equip(Block):
         attack_total_score = atk_score + spd_score + crit_score + critdmg_score + penetration_score + acc_score
         support_total_score = def_score + maxhp_score + spd_score + eva_score + critdef_score + he_score
 
-        total_score = attack_total_score * 0.33 + support_total_score
+        total_score = attack_total_score * 0.20 + support_total_score
 
         return total_score 
     

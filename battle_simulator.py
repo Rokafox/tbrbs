@@ -245,7 +245,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             "cheems": self.cheems,
         }
 
-    def build_inventory_slots(self, given_eq_list: list[Equip] | None=None):
+    def build_inventory_slots(self):
         """
         [given_eq_list] is a list of Equip objects, if available, we will use this list to build the inventory slots if case of Equip.
         """
@@ -254,8 +254,8 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
         only_include = global_vars.cheap_inventory_show_current_option
         match only_include:
             case "Equip":
-                if given_eq_list:
-                    filtered_inventory = given_eq_list
+                if global_vars.cue_best_equip:
+                    filtered_inventory = global_vars.cue_best_equip
                 else:
                     filtered_inventory = self.inventory_equip
                     if global_vars.cheap_inventory_filter_have_owner == "Has Owner":
@@ -1281,31 +1281,20 @@ if __name__ == "__main__":
                 m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Legendary", 
                                                             eq_level=int(adventure_mode_current_stage)))
 
-    def adventure_mode_stage_increase():
+
+    def adventure_mode_stage_jump(how_many: int) -> bool:
         global current_game_mode, adventure_mode_current_stage
-        if current_game_mode == "Training Mode":
-            raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
-        if adventure_mode_current_stage == 3000:
+        assert current_game_mode == "Adventure Mode", "Cannot jump stage in other game modes."
+        if adventure_mode_current_stage + how_many > 3000:
             text_box.set_text("We have reached the end of the world.\n")
             return False
-        if player.cleared_stages < adventure_mode_current_stage:
-            text_box.set_text("We have not cleared the current stage.\n")
+        if adventure_mode_current_stage + how_many < 1:
+            text_box.set_text("This stage is the start of the journey.\n")
             return False
-        adventure_mode_current_stage += 1
+        adventure_mode_current_stage += how_many
         adventure_mode_generate_stage()
         set_up_characters_adventure_mode()
         return True
-
-    def adventure_mode_stage_decrease():
-        global current_game_mode, adventure_mode_current_stage
-        if current_game_mode == "Training Mode":
-            raise Exception("Cannot change stage in Training Mode. See Game Mode Section.")
-        if adventure_mode_current_stage == 1:
-            text_box.set_text("This stage is the start of the journey.\n")
-            return
-        adventure_mode_current_stage -= 1
-        adventure_mode_generate_stage()
-        set_up_characters_adventure_mode()
 
     def adventure_mode_stage_refresh():
         global current_game_mode, adventure_mode_current_stage
@@ -1926,7 +1915,8 @@ if __name__ == "__main__":
             if len(sorted_eq_list) > 500:
                 return_string += "Showing the top 500 entries. Some entries were omitted.\n"
 
-            player.build_inventory_slots(given_eq_list=best_500_eq_list)
+            global_vars.cue_best_equip = best_500_eq_list
+            player.build_inventory_slots()
 
             return return_string
 
@@ -2791,9 +2781,10 @@ if __name__ == "__main__":
                 box_submenu_exit_shop_button.set_text("Exit Shop")
                 box_submenu_exit_shop_button.set_tooltip("Exit the shop.", delay=0.1)
                 box_submenu_previous_stage_button.set_text("Prev")
-                box_submenu_previous_stage_button.set_tooltip("Go to previous stage.", delay=0.1)
+                box_submenu_previous_stage_button.set_tooltip("Go to previous stage. Ctrl click to jump 10 stages back.", delay=0.1)
                 box_submenu_next_stage_button.set_text("Next")
-                box_submenu_next_stage_button.set_tooltip("Advance to the next stage. You can proceed only if the current stage has been cleared.", delay=0.1)
+                box_submenu_next_stage_button.set_tooltip("Advance to the next stage. You can proceed only if the current stage has been cleared." \
+                                                          " Ctrl click to jump 10 stages forward.", delay=0.1)
                 box_submenu_refresh_stage_button.set_text("Refresh")
                 box_submenu_refresh_stage_button.set_tooltip("Refresh the current stage, get a new set of monsters.", delay=0.1)
             case "日本語":
@@ -2880,9 +2871,10 @@ if __name__ == "__main__":
                 box_submenu_exit_shop_button.set_text("退店")
                 box_submenu_exit_shop_button.set_tooltip("店から出る。", delay=0.1)
                 box_submenu_previous_stage_button.set_text("過去")
-                box_submenu_previous_stage_button.set_tooltip("前のステージに戻る。", delay=0.1)
+                box_submenu_previous_stage_button.set_tooltip("前のステージに戻る。CTRL+クリックで10ステージ戻る。", delay=0.1)
                 box_submenu_next_stage_button.set_text("未来")
-                box_submenu_next_stage_button.set_tooltip("次のステージに進む。現在のステージがクリアされている場合のみ進むことができる。", delay=0.1)
+                box_submenu_next_stage_button.set_tooltip("次のステージに進む。現在のステージがクリアされている場合のみ進むことができる。" \
+                                                          "CTRL+クリックで10ステージ進む。", delay=0.1)
                 box_submenu_refresh_stage_button.set_text("捲土重来")
                 box_submenu_refresh_stage_button.set_tooltip("現在のステージを一新し、新しいモンスターの一族を調達する。", delay=0.1)
 
@@ -3048,6 +3040,7 @@ if __name__ == "__main__":
         return None      
 
     def cheap_inventory_sort():
+        global_vars.cue_best_equip = []
         player.sort_inventory_abc(global_vars.cheap_inventory_sort_a,
                                   global_vars.cheap_inventory_sort_b,
                                   global_vars.cheap_inventory_sort_c)
@@ -5486,7 +5479,8 @@ if __name__ == "__main__":
     auto_battle_bar_progress = 0
     time_acc = 0
 
-    shift_held = False  # Shiftキーが押下状態かを記録する
+    shift_held = False
+    ctrl_held = False
     s_key_held = False
     q_key_held = False
     w_key_held = False
@@ -5530,6 +5524,8 @@ if __name__ == "__main__":
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     shift_held = True
+                if event.key == pygame.K_LCTRL or event.key == pygame.K_RCTRL:
+                    ctrl_held = True
                 if event.key == pygame.K_s:
                     s_key_held = True
                 if event.key == pygame.K_q:
@@ -5566,6 +5562,8 @@ if __name__ == "__main__":
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     shift_held = False
+                if event.key == pygame.K_LCTRL or event.key == pygame.K_RCTRL:
+                    ctrl_held = False
                 if event.key == pygame.K_s:
                     s_key_held = False
                 if event.key == pygame.K_q:
@@ -5780,12 +5778,18 @@ if __name__ == "__main__":
                 if event.ui_element == character_eq_unequip_all_button:
                     unequip_all_items()
                 if event.ui_element == box_submenu_previous_stage_button:
-                    adventure_mode_stage_decrease()
+                    if ctrl_held:
+                        adventure_mode_stage_jump(-10)
+                    else:
+                        adventure_mode_stage_jump(-1)
                     box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
                     box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
                     turn = 1
                 if event.ui_element == box_submenu_next_stage_button:
-                    adventure_mode_stage_increase()
+                    if ctrl_held:
+                        adventure_mode_stage_jump(10)
+                    else:
+                        adventure_mode_stage_jump(1)
                     box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
                     box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
                     turn = 1
@@ -5947,6 +5951,7 @@ if __name__ == "__main__":
                 if event.ui_element == cheap_inventory_what_to_show_selection_menu:
                     match cheap_inventory_what_to_show_selection_menu.selected_option[0]:
                         case "Equip":
+                            # global_vars.cue_best_equip = []
                             player.current_page = 0
                             global_vars.cheap_inventory_show_current_option = "Equip"
                             player.build_inventory_slots()
@@ -6127,7 +6132,7 @@ if __name__ == "__main__":
                             text_box.set_text("==============================\n")
                             restart_battle()
                         elif current_game_mode == "Adventure Mode":
-                            if adventure_mode_stage_increase():
+                            if adventure_mode_stage_jump(1):
                                 box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
                                 box_submenu_stage_info_label.set_tooltip(adventure_mode_info_tooltip(), delay=0.1, wrap_width=300)
                                 turn = 1
