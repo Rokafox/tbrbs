@@ -1229,8 +1229,7 @@ class Character:
                     new_value = min(new_value, self.maxhp)
                 elif attr == "maxhp":
                     self.hp = min(self.hp, new_value)
-                if new_value <= 0:
-                    raise Exception(f"New stat is 0 or below, Does not make sense: {stats}, {attr}, {value}, {new_value}") 
+                assert new_value > 0, f"New stat is 0 or below, Does not make sense: {stats}, {attr}, {value}, {new_value}" 
             else:
                 if reversed:
                     new_value = getattr(self, attr) - value
