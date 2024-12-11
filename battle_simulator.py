@@ -245,32 +245,35 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             "cheems": self.cheems,
         }
 
-    def build_inventory_slots(self):
+    def build_inventory_slots(self, given_eq_list: list[Equip] | None=None):
+        """
+        [given_eq_list] is a list of Equip objects, if available, we will use this list to build the inventory slots if case of Equip.
+        """
         self.selected_item = {}
         page = self.current_page
-        # try:
         only_include = global_vars.cheap_inventory_show_current_option
-        # except NameError:
-        #     only_include = "Equip"
         match only_include:
             case "Equip":
-                filtered_inventory = self.inventory_equip
-                if global_vars.cheap_inventory_filter_have_owner == "Has Owner":
-                    filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
-                elif global_vars.cheap_inventory_filter_have_owner == "No Owner":
-                    filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
+                if given_eq_list:
+                    filtered_inventory = given_eq_list
+                else:
+                    filtered_inventory = self.inventory_equip
+                    if global_vars.cheap_inventory_filter_have_owner == "Has Owner":
+                        filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is not None]
+                    elif global_vars.cheap_inventory_filter_have_owner == "No Owner":
+                        filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner is None]
 
-                if global_vars.cheap_inventory_filter_owned_by_char not in ["Not Specified", "Currently Selected"]:
-                    filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == global_vars.cheap_inventory_filter_owned_by_char]
-                elif global_vars.cheap_inventory_filter_owned_by_char == "Currently Selected":
-                    s = character_selection_menu.selected_option[0].split(" ")[-1]
-                    filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == s]
+                    if global_vars.cheap_inventory_filter_owned_by_char not in ["Not Specified", "Currently Selected"]:
+                        filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == global_vars.cheap_inventory_filter_owned_by_char]
+                    elif global_vars.cheap_inventory_filter_owned_by_char == "Currently Selected":
+                        s = character_selection_menu.selected_option[0].split(" ")[-1]
+                        filtered_inventory = [x for x in filtered_inventory if hasattr(x, "owner") and x.owner == s]
 
-                if global_vars.cheap_inventory_filter_eqset != "Not Specified":
-                    filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == global_vars.cheap_inventory_filter_eqset]
+                    if global_vars.cheap_inventory_filter_eqset != "Not Specified":
+                        filtered_inventory = [x for x in filtered_inventory if hasattr(x, "eq_set") and x.eq_set == global_vars.cheap_inventory_filter_eqset]
 
-                if global_vars.cheap_inventory_filter_type != "Not Specified":
-                    filtered_inventory = [x for x in filtered_inventory if isinstance(x, Equip) and x.type == global_vars.cheap_inventory_filter_type]
+                    if global_vars.cheap_inventory_filter_type != "Not Specified":
+                        filtered_inventory = [x for x in filtered_inventory if isinstance(x, Equip) and x.type == global_vars.cheap_inventory_filter_type]
 
             case "Consumable":
                 filtered_inventory = self.inventory_consumable
@@ -1173,12 +1176,15 @@ if __name__ == "__main__":
     eq_level_up_to_max_button.set_tooltip("Level up selected equipment in the inventory to the maximum level.", delay=0.1, wrap_width=300)
 
 
-    eq_stars_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 490), (156, 35)),
+    eq_stars_upgrade_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 490), (100, 35)),
                                         text='Star Enhancement',
                                         manager=ui_manager,
-                                        tool_tip_text = "Upgrade stars for item")
-    eq_stars_upgrade_button.set_tooltip("Increase the star rank of selected equipment in inventory.", delay=0.1, wrap_width=300)
+                                        command=lambda: eq_stars_upgrade(True, 1))
 
+    eq_stars_upgrade_buttonx15 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1185, 490), (51, 35)),
+                                        text='x15',
+                                        manager=ui_manager,
+                                        command=lambda: eq_stars_upgrade(True, 15))
     
     eq_sell_selected_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((1080, 530), (156, 35)),
                                         text='Sell Selected',
@@ -1920,6 +1926,8 @@ if __name__ == "__main__":
             if len(sorted_eq_list) > 500:
                 return_string += "Showing the top 500 entries. Some entries were omitted.\n"
 
+            player.build_inventory_slots(given_eq_list=best_500_eq_list)
+
             return return_string
 
 
@@ -2266,10 +2274,10 @@ if __name__ == "__main__":
                 return
 
 
-    def eq_stars_upgrade(is_upgrade: bool):
+    def eq_stars_upgrade(is_upgrade: bool, upgrade_how_many_times: int = 1):
         text_box.set_text("==============================\n")
         text_box_text_to_append = ""
-        selected_items = []
+        selected_items: list[Equip] = []
         # print(player.selected_item)
         if not player.selected_item:
             text_box_text_to_append += "No item is selected.\n"
@@ -2283,32 +2291,35 @@ if __name__ == "__main__":
             text_box.append_html_text(text_box_text_to_append)
             return
         
-        cost_total = int(sum([item_to_upgrade.star_enhence_cost for item_to_upgrade in selected_items]))
-        if player.cash < cost_total:
-            text_box_text_to_append += f"Not enough cash for star enhancement.\n"
+        for i in range(upgrade_how_many_times):
+            text_box_text_to_append = f"loop {i}:\n"
+            cost_total = int(sum([item_to_upgrade.star_enhence_cost for item_to_upgrade in selected_items]))
+            if player.cash < cost_total:
+                text_box_text_to_append += f"Not enough cash for star enhancement.\n"
+                text_box.append_html_text(text_box_text_to_append)
+                return
+            
+            for item_to_upgrade in selected_items:
+                if item_to_upgrade.stars_rating == item_to_upgrade.stars_rating_max and is_upgrade:
+                    continue
+                if item_to_upgrade.stars_rating == 0 and not is_upgrade:
+                    continue
+                a, b = item_to_upgrade.upgrade_stars_func(is_upgrade) 
+                text_box_text_to_append += f"Upgrading {item_to_upgrade}. Stars: {int(a)} -> {int(b)}\n"
+
+                for k, (a, b, c) in player.selected_item.items():
+                    if c == item_to_upgrade:
+                        if global_vars.language == "English":
+                            k.set_tooltip(item_to_upgrade.print_stats_html(), delay=0.1, wrap_width=400)
+                        elif global_vars.language == "日本語":
+                            k.set_tooltip(item_to_upgrade.print_stats_html_jp(), delay=0.1, wrap_width=400)
+
+            if cost_total > 0:
+                player.lose_cash(cost_total, False)
+                text_box_text_to_append += f"Upgraded {len(selected_items)} items for {cost_total} cash.\n"
             text_box.append_html_text(text_box_text_to_append)
-            return
-        
-        for item_to_upgrade in selected_items:
-            if item_to_upgrade.stars_rating == item_to_upgrade.stars_rating_max and is_upgrade:
-                text_box_text_to_append += f"Max stars reached: {str(item_to_upgrade)}\n"
-                continue
-            if item_to_upgrade.stars_rating == 0 and not is_upgrade:
-                text_box_text_to_append += f"Min stars reached: {str(item_to_upgrade)}\n"
-                continue
-            a, b = item_to_upgrade.upgrade_stars_func(is_upgrade) 
-            text_box_text_to_append += f"Upgrading {item_to_upgrade} in inventory.\n"
-            text_box_text_to_append += f"Stars: {int(a)} -> {int(b)}\n"
-            for k, (a, b, c) in player.selected_item.items():
-                if c == item_to_upgrade:
-                    if global_vars.language == "English":
-                        k.set_tooltip(item_to_upgrade.print_stats_html(), delay=0.1, wrap_width=300)
-                    elif global_vars.language == "日本語":
-                        k.set_tooltip(item_to_upgrade.print_stats_html_jp(), delay=0.1, wrap_width=300)
-        if cost_total > 0:
-            player.lose_cash(cost_total, False)
-            text_box_text_to_append += f"Upgraded {len(selected_items)} items for {cost_total} cash.\n"
-        text_box.append_html_text(text_box_text_to_append)
+
+
 
 
     def eq_level_up(is_level_up: bool = True, amount_to_level: int = 1):
@@ -2755,6 +2766,7 @@ if __name__ == "__main__":
                 eq_level_up_to_max_button.set_tooltip("Level up selected equipment in the inventory to the maximum level.", delay=0.1, wrap_width=300)
                 eq_stars_upgrade_button.set_text("Star Enhancement")
                 eq_stars_upgrade_button.set_tooltip("Increase the star rank of selected equipment in inventory.", delay=0.1, wrap_width=300)
+                eq_stars_upgrade_buttonx15.set_tooltip("Increase the star rank of selected equipment in inventory by 15 times.", delay=0.1, wrap_width=300)
                 eq_sell_selected_button.set_text("Sell Selected")
                 eq_sell_selected_button.set_tooltip("Sell selected equipment in the inventory.", delay=0.1, wrap_width=300)
                 eq_mass_sell_button.set_text("Mass Sell")
@@ -2843,6 +2855,7 @@ if __name__ == "__main__":
                 eq_level_up_to_max_button.set_tooltip("インベントリ内の選択した装備を最大レベルまでレベルアップさせる。", delay=0.1, wrap_width=300)
                 eq_stars_upgrade_button.set_text("明星天外")
                 eq_stars_upgrade_button.set_tooltip("インベントリ内の選択した装備品のスターランクを上げる。", delay=0.1, wrap_width=300)
+                eq_stars_upgrade_buttonx15.set_tooltip("インベントリ内の選択した装備品のスターランクを15回上げる。", delay=0.1, wrap_width=300)
                 eq_sell_selected_button.set_text("指定販売")
                 eq_sell_selected_button.set_tooltip("インベントリーの中から選択した装備品を販売する。", delay=0.1, wrap_width=300)
                 eq_mass_sell_button.set_text("一括処分")
@@ -5723,10 +5736,6 @@ if __name__ == "__main__":
                     build_quit_game_window()
                 if event.ui_element == button_left_simulate_current_battle:
                     all_turns_simulate_current_battle(party1, party2, selection_simulate_current_battle.selected_option[0])
-                if event.ui_element == eq_stars_upgrade_button:
-                    eq_stars_upgrade(True)
-                # if event.ui_element == character_replace_button:
-                #     replace_character_with_reserve_member(character_selection_menu.selected_option[0].split()[-1], reserve_character_selection_menu.selected_option[0].split()[-1])
                 if event.ui_element == eq_levelup_button:
                     eq_level_up(amount_to_level=1)
                 if event.ui_element == eq_levelup_buttonx10:
@@ -5952,6 +5961,7 @@ if __name__ == "__main__":
                             eq_levelup_buttonx10.show()
                             eq_level_up_to_max_button.show()
                             eq_stars_upgrade_button.show()
+                            eq_stars_upgrade_buttonx15.show()
                             eq_sell_selected_button.show()
                             eq_mass_sell_button.show()
                             item_sell_button.hide()
@@ -5974,6 +5984,7 @@ if __name__ == "__main__":
                             eq_levelup_buttonx10.hide()
                             eq_level_up_to_max_button.hide()
                             eq_stars_upgrade_button.hide()
+                            eq_stars_upgrade_buttonx15.hide()
                             eq_sell_selected_button.hide()
                             eq_mass_sell_button.hide()
                             item_sell_button.show()
@@ -5996,6 +6007,7 @@ if __name__ == "__main__":
                             eq_levelup_buttonx10.hide()
                             eq_level_up_to_max_button.hide()
                             eq_stars_upgrade_button.hide()
+                            eq_stars_upgrade_buttonx15.hide()
                             eq_sell_selected_button.hide()
                             eq_mass_sell_button.hide()
                             item_sell_button.show()
