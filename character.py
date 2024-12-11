@@ -5572,6 +5572,43 @@ class Lenpo(Character):
         self.apply_effect(self_defense)
 
 
+class LenpoOG(Character):
+    """
+    Original. Simply high burst damage 
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "LenpoOG"
+        self.skill1_description = "Target 1 enemy of highest hp percentage, attack with 800% atk."
+        self.skill2_description = "Heal hp by 50% of maxhp, then attack a random enemy with 800% atk."
+        self.skill3_description = "At start of battle, apply Fujieda on yourself. Fujieda: Normal damage is cancelled 12 times."
+        self.skill1_description_jp = "HP割合が最も高い敵1体を対象に、攻撃力の800%で攻撃する。"
+        self.skill2_description_jp = "自身のHPを最大HPの50%分治療し、その後、ランダムな敵1体に攻撃力の800%で攻撃する。"
+        self.skill3_description_jp = "戦闘開始時に自身に「藤枝」を付与する。藤枝：通常ダメージを12回無効化する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=8.0, repeat=1, target_kw1="n_highest_hp_percentage_enemy", target_kw2="1")
+        return damage_dealt
+
+    def skill2_logic(self):
+        self.heal(target_kw1="yourself", value=self.maxhp * 0.5)
+        damage_dealt = self.attack(multiplier=8.0, repeat=1)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        fujieda = CancellationShield("Fujieda", -1, True, threshold=0, cc_immunity=False, uses=12,
+                                     remove_this_effect_when_use_is_zero=True,
+                                     cover_normal_damage=True, cover_status_damage=False)
+        fujieda.can_be_removed_by_skill = False
+        self.apply_effect(fujieda)
+
+
 class George(Character):
     """
 
