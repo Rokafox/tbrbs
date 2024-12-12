@@ -5,7 +5,6 @@ import statistics
 import sys
 import numpy as np
 import pandas as pd
-from PIL import Image
 import analyze
 
 from character import *
@@ -63,7 +62,7 @@ from item import *
 from consumable import *
 from calculate_winrate import is_someone_alive, reset_ally_enemy_attr
 import shop
-import csv
+# import csv
 running = False
 text_box = None
 
@@ -1291,6 +1290,10 @@ if __name__ == "__main__":
         if adventure_mode_current_stage + how_many < 1:
             text_box.set_text("This stage is the start of the journey.\n")
             return False
+        # print(player.cleared_stages, adventure_mode_current_stage)
+        # if player.cleared_stages < adventure_mode_current_stage and how_many > 0:
+        #     text_box.set_text("We have not cleared the current stage.\n")
+        #     return False
         adventure_mode_current_stage += how_many
         adventure_mode_generate_stage()
         set_up_characters_adventure_mode()
@@ -2781,10 +2784,10 @@ if __name__ == "__main__":
                 box_submenu_exit_shop_button.set_text("Exit Shop")
                 box_submenu_exit_shop_button.set_tooltip("Exit the shop.", delay=0.1)
                 box_submenu_previous_stage_button.set_text("Prev")
-                box_submenu_previous_stage_button.set_tooltip("Go to previous stage. Ctrl click to jump 10 stages back.", delay=0.1)
+                box_submenu_previous_stage_button.set_tooltip("Go to previous stage. Ctrl click to jump 10 stages back. Shift click to jump 100 stages back.", delay=0.1)
                 box_submenu_next_stage_button.set_text("Next")
                 box_submenu_next_stage_button.set_tooltip("Advance to the next stage. You can proceed only if the current stage has been cleared." \
-                                                          " Ctrl click to jump 10 stages forward.", delay=0.1)
+                                                          " Ctrl click to jump 10 stages forward, Shift click to jump 100 stages forward.", delay=0.1)
                 box_submenu_refresh_stage_button.set_text("Refresh")
                 box_submenu_refresh_stage_button.set_tooltip("Refresh the current stage, get a new set of monsters.", delay=0.1)
             case "日本語":
@@ -2871,10 +2874,10 @@ if __name__ == "__main__":
                 box_submenu_exit_shop_button.set_text("退店")
                 box_submenu_exit_shop_button.set_tooltip("店から出る。", delay=0.1)
                 box_submenu_previous_stage_button.set_text("過去")
-                box_submenu_previous_stage_button.set_tooltip("前のステージに戻る。CTRL+クリックで10ステージ戻る。", delay=0.1)
+                box_submenu_previous_stage_button.set_tooltip("前のステージに戻る。CTRL+クリックで10ステージ戻る。SHIFT+クリックで100ステージ戻る。", delay=0.1)
                 box_submenu_next_stage_button.set_text("未来")
                 box_submenu_next_stage_button.set_tooltip("次のステージに進む。現在のステージがクリアされている場合のみ進むことができる。" \
-                                                          "CTRL+クリックで10ステージ進む。", delay=0.1)
+                                                          "CTRL+クリックで10ステージ進む。SHIFT+クリックで100ステージ進む。", delay=0.1)
                 box_submenu_refresh_stage_button.set_text("捲土重来")
                 box_submenu_refresh_stage_button.set_tooltip("現在のステージを一新し、新しいモンスターの一族を調達する。", delay=0.1)
 
@@ -5780,6 +5783,8 @@ if __name__ == "__main__":
                 if event.ui_element == box_submenu_previous_stage_button:
                     if ctrl_held:
                         adventure_mode_stage_jump(-10)
+                    elif shift_held:
+                        adventure_mode_stage_jump(-100)
                     else:
                         adventure_mode_stage_jump(-1)
                     box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")
@@ -5788,6 +5793,8 @@ if __name__ == "__main__":
                 if event.ui_element == box_submenu_next_stage_button:
                     if ctrl_held:
                         adventure_mode_stage_jump(10)
+                    elif shift_held:
+                        adventure_mode_stage_jump(100)
                     else:
                         adventure_mode_stage_jump(1)
                     box_submenu_stage_info_label.set_text(f"Stage {adventure_mode_current_stage}")

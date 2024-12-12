@@ -1269,7 +1269,7 @@ class Character:
                     new_value = max(new_value, 0)
                 if attr == "maxhp":
                     new_value = max(new_value, 1)
-                assert new_value >= 0, f"New value is negative: {new_value}"
+                assert new_value >= 0, f"New value is negative: {new_value}, {attr}, {value}"
                 maxhp_prev = self.maxhp
                 # print(f"maxhp_prev: {maxhp_prev}")
                 hp_prev = self.hp
@@ -1677,7 +1677,7 @@ class Character:
                     if (hasattr(e, "additional_name") and not hasattr(effect, "additional_name")) or \
                         (hasattr(effect, "additional_name") and not hasattr(e, "additional_name")):
                         continue
-                    # NOTE: directly remove effect will cause error. Reason: the only effect that use replace is Lester exciting time, who adds atk when being healed.
+                    # directly remove effect will cause error. Reason: the only effect that use replace is Lester exciting time, who adds atk when being healed.
                     # if heal is during status_effects_midturn method, the list of effect is not being updated constantly.
                     # patched in 3.7.7
                     if self.is_in_iteration_of_status_effects_midturn:
@@ -3283,6 +3283,44 @@ class Nobutuna(Character):
         allies = [x for x in self.ally if x != self]
         for ally in allies:
             e = ProtectedEffect("Floating Moon", -1, True, False, self, 0.65, 0.9, can_be_removed_by_skill=False)
+            ally.apply_effect(e)
+
+
+class NobutunaAL(Character):
+    """
+    Protector, critdmg, multi-attack
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "NobutunaAL"
+        self.skill1_description = "Select 3 allies of highest atk, their crit damage is increased by 120% for 28 turns."
+        self.skill2_description = "Attack random enemies 13 times with 180% atk."
+        self.skill3_description = "At start of battle, apply Floating Moon to all allies." \
+        " Floating Moon: When you are about to take normal damage, damage is reduced by 40%, the effect applier takes the 90% of that damage instead."
+        self.skill1_description_jp = "攻撃力が最も高い味方3人を選び、28ターンの間、クリティカルダメージを120%増加させる。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力の180%で13回攻撃する。"
+        self.skill3_description_jp = "戦闘開始時、全ての味方に「浮舟月影」を付与する。浮舟月影：通常ダメージを受ける際、そのダメージは40%減少し、効果の付与者がそのダメージの90%を代わりに受ける。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 3
+
+    def skill1_logic(self):
+        allies = self.target_selection(keyword="n_highest_attr", keyword2="3", keyword3="atk", keyword4="ally")
+        for ally in allies:
+            ally.apply_effect(StatsEffect("Crit Up", 28, True, {"critdmg": 1.2}))
+        return 0
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=1.8, repeat=13)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        allies = [x for x in self.ally if x != self]
+        for ally in allies:
+            e = ProtectedEffect("Floating Moon", -1, True, False, self, 0.60, 0.9, can_be_removed_by_skill=False)
             ally.apply_effect(e)
 
 
@@ -5066,7 +5104,8 @@ class Lester(Character):
         self.name = "Lester"
         self.skill1_description = "Apply Exciting Time for the ally with Bookmarks of Memories for 24 turns." \
         " Exciting Time: Every time when a hp recovery is received, atk is increased by 15% of the amount of overheal," \
-        " Atk bonus effect lasts for 10 turns. If the same effect is applied, atk bonus is accumulated to the new effect."
+        " Atk bonus effect lasts for 10 turns. If the same effect is applied, atk bonus is accumulated to the new effect." \
+        " The atk bonus cannot exceed 5 * your level."
         self.skill2_description = "Remove a maximum of 4 active debuffs from the ally with Bookmarks of Memories and" \
         " heal 10% of maxhp to the ally. For each debuff removed, heal amount is increased by 10% of maxhp."
         self.skill3_description = "Select 1 neighbor ally of highest atk, apply Bookmarks of Memories to that ally." \
@@ -5074,7 +5113,8 @@ class Lester(Character):
         " When using skills, if the ally with Bookmarks of Memories is defeated, the skill becomes normal attack," \
         " before this normal attack, 30% chance to revive the ally with 50% hp."
         # 思い出のしおり ドキドキタイム
-        self.skill1_description_jp = "「思い出のしおり」を持つ味方に24ターンの間「ドキドキタイム」を付与する。ドキドキタイム：HP回復を受けるたびに、超過回復分の15%攻撃力が増加する。この攻撃力のボーナス効果は10ターン持続する。同じ効果が再度適用された場合、攻撃力のボーナスは新しい効果に累積される。"
+        self.skill1_description_jp = "「思い出のしおり」を持つ味方に24ターンの間「ドキドキタイム」を付与する。ドキドキタイム：HP回復を受けるたびに、超過回復分の15%攻撃力が増加する。この攻撃力のボーナス効果は10ターン持続する。同じ効果が再度適用された場合、攻撃力のボーナスは新しい効果に累積される。" \
+        "攻撃力のボーナスは自身のレベル×5を超えることはない。"
         self.skill2_description_jp = "「思い出のしおり」を持つ味方から最大4つのアクティブなデバフを解除し、その味方の最大HPの10%を治療する。解除されたデバフ1つにつき、回復量が最大HPの10%増加する。"
         self.skill3_description_jp = "攻撃力が最も高い隣接する味方1体を選び、その味方に「思い出のしおり」を付与する。思い出のしおり：攻撃が外れるたびに攻撃力、速度と命中率が10%増加し、最大HPの10%を回復する。スキルを使用する際、「思い出のしおり」を持つ味方が倒されている場合、そのスキルは通常攻撃に変わる。" \
         "この通常攻撃の前に、30%の確率でその味方を50%のHPで復活させる。"
@@ -7736,6 +7776,32 @@ class Galahad(Character):
             for a in allies:
                 a.apply_effect(ReductionShield("Shining Will", 20, True, 0.50, False))
 
+
+class Ace(Character):
+    """
+    Character Template
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Ace"
+        self.skill1_description = ""
+        self.skill2_description = ""
+        self.skill3_description = ""
+        self.skill1_description_jp = ""
+        self.skill2_description_jp = ""
+        self.skill3_description_jp = ""
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        return 0
+
+    def skill2_logic(self):
+        return 0
+
+    def skill3(self):
+        pass
 
 
 # class NC(Character):

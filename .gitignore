@@ -2,6 +2,7 @@ __pycache__/
 .tmp/
 player_data.json
 image/character
+image/character_unused
 image/monster
 *.spec
 build/

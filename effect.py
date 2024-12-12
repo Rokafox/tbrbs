@@ -2957,7 +2957,7 @@ class LesterExcitingTimeEffect(Effect):
         if overheal_value > 0:
             bonus = int(overheal_value * 0.15)
             bonus = max(bonus, 1)
-            # bonus = min(bonus, 5 * self.buff_applier.lvl)
+            bonus = min(bonus, 5 * self.buff_applier.lvl)
             atkup = StatsEffect("Atk Up", 10, True, main_stats_additive_dict={"atk": bonus})
             atkup.apply_rule = "replace"
             atkup.additional_name = "Lester_Exciting_Time_Atk_Bonus"
