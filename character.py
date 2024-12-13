@@ -7723,7 +7723,7 @@ class Wyatt(Character):
 
 class Galahad(Character):
     """
-    Character Template
+    
     Build: 
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
@@ -7779,29 +7779,94 @@ class Galahad(Character):
 
 class Ace(Character):
     """
-    Character Template
+    
     Build: 
     """
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Ace"
-        self.skill1_description = ""
-        self.skill2_description = ""
-        self.skill3_description = ""
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = ""
+        self.skill1_description = "All allies have their defense increased by 40% of your defense for 24 turns."
+        self.skill2_description = "Apply Sword Art on all enemies for 20 turns." \
+        " Sword Art: Whenever taking normal damage, take status damage equal to 30% of the defense of the effect applier."
+        self.skill3_description = "At start of battle, apply Judgment on an ally of highest atk." \
+        " Judgment: crit, critdmg, accuracy increased by 30%, penetration increased by 10%."
+        self.skill1_description_jp = "全ての味方の防御力を、自身の防御力の40%分増加させる。効果は24ターン持続する。"
+        self.skill2_description_jp = "全ての敵に20ターンの間「剣舞」を付与する。剣舞：通常ダメージを受けるたびに、この効果を付与した者の防御力の30%分の状態異常ダメージを受ける。"
+        self.skill3_description_jp = "戦闘開始時、攻撃力が最も高い味方1人に「審判」を付与する。審判：クリティカル率、クリティカルダメージ、命中率が30%増加し、貫通力が10%増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
     def skill1_logic(self):
+        for a in self.ally:
+            a.apply_effect(StatsEffect("Defense Up", 24, True, main_stats_additive_dict={"defense": self.defense * 0.40}))
         return 0
 
     def skill2_logic(self):
+        for e in self.enemy:
+            e.apply_effect(StingEffect("Sword Art", 20, False, self.defense * 0.30, self))
         return 0
 
     def skill3(self):
         pass
+
+    def battle_entry_effects(self):
+        ally_high_atk = max(self.ally, key=lambda x: x.atk)
+        ally_high_atk.apply_effect(StatsEffect("Judgment", -1, True, {"crit": 0.30, "critdmg": 0.30, "acc": 0.30, "penetration": 0.10}, can_be_removed_by_skill=False))
+
+
+class AceAL(Character):
+    """
+    
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "AceAL"
+        self.skill1_description = "All allies have their defense increased by 15% of your defense for 20 turns," \
+        " for each ally missing, effect is increased by 15%."
+        self.skill2_description = "Apply Sword Art on enemy of highest atk for 20 turns." \
+        " Sword Art: Whenever taking normal damage, take status damage equal to 100% of the defense of the effect applier."
+        self.skill3_description = "At start of battle, apply Judgment on an ally of highest atk." \
+        " Judgment: crit, critdmg, accuracy increased by 40%, atk and penetration increased by 20%."
+        self.skill1_description_jp = "全ての味方の防御力を、自身の防御力の15%分増加させる。効果は20ターン持続する。撃破された味方1人につき、効果が15%増加する。"
+        self.skill2_description_jp = "攻撃力が最も高い敵に20ターンの間「剣舞」を付与する。剣舞：通常ダメージを受けるたびに、この効果を付与した者の防御力の100%分の状態異常ダメージを受ける。"
+        self.skill3_description_jp = "戦闘開始時、攻撃力が最も高い味方1人に「審判」を付与する。審判：クリティカル率、クリティカルダメージ、命中率が40%増加し、攻撃力と貫通力が20%増加する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        missing_allies = 5 - len(self.ally) + 1
+        for a in self.ally:
+            a.apply_effect(StatsEffect("Defense Up", 20, True, main_stats_additive_dict={"defense": self.defense * 0.15 * missing_allies}))
+        return 0
+
+    def skill2_logic(self):
+        target = mit.one(self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="atk", keyword4="enemy"))
+        target.apply_effect(StingEffect("Sword Art", 20, False, self.defense, self))
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        ally_high_atk = max(self.ally, key=lambda x: x.atk)
+        ally_high_atk.apply_effect(StatsEffect("Judgment", -1, True, {"crit": 0.40, "critdmg": 0.40, "acc": 0.40, "penetration": 0.20, "atk": 1.20},
+                                               can_be_removed_by_skill=False))
+
+
+
+# Eqset ideas
+# As long as you are alive, damage reduction for allies
+# After using a skill, 20% chance to recast the skill
+# After using skill1, if skill2 can be used, use skill2
+
+
+
+
+
+
+
+
 
 
 # class NC(Character):
