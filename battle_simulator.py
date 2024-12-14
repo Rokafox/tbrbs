@@ -2423,8 +2423,8 @@ if __name__ == "__main__":
                 "This will sell all equipment with market value less than or equal to 200.\n" \
                 "<font color=#FF69B4>x.rarity == 'Common'</font>\n" \
                 "This will sell all equipment with rarity Common.\n" \
-                "<font color=#FF69B4>(x.for_attacker_value < 18 and x.for_support_value < 18)</font>\n" \
-                "This will sell all equipment with Attacker value and Support value less than 18.\n" \
+                "<font color=#FF69B4>(x.for_attacker_value < 9 and x.for_support_value < 9)</font>\n" \
+                "This will sell all equipment with Attacker value and Support value less than 9.\n" \
                 "<font color=#FF69B4>x.eq_set == 'Flute'</font>\n" \
                 "This will sell all equipment with set Flute.\n" \
                 "<font color=#FF69B4>x.type == 'Weapon'</font>\n" \
@@ -2442,8 +2442,8 @@ if __name__ == "__main__":
                 "市場価値が200以下のすべての装備品を売却する。\n" \
                 "<font color=#FF69B4>x.rarity == 'Common'</font>\n" \
                 "レアリティが'Common'のすべての装備品を売却する。\n" \
-                "<font color=#FF69B4>(x.for_attacker_value < 18 and x.for_support_value < 18)</font>\n" \
-                "攻撃相性かつ防御相性が18未満のすべての装備品を売却する。\n" \
+                "<font color=#FF69B4>(x.for_attacker_value < 9 and x.for_support_value < 9)</font>\n" \
+                "攻撃相性かつ防御相性が9未満のすべての装備品を売却する。\n" \
                 "<font color=#FF69B4>x.eq_set == 'Flute'</font>\n" \
                 "セットが'Flute'のすべての装備品を売却する。\n" \
                 "<font color=#FF69B4>x.type == 'Weapon'</font>\n" \

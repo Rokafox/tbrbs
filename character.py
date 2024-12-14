@@ -7859,6 +7859,8 @@ class AceAL(Character):
 # As long as you are alive, damage reduction for allies
 # After using a skill, 20% chance to recast the skill
 # After using skill1, if skill2 can be used, use skill2
+# army green, army desert
+# After using a skill, reset cooldown of the other skill
 
 
 

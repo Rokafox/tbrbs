@@ -627,17 +627,17 @@ class Equip(Block):
         An attacker would need atk_flat, atk_percent, crit, critdmg, penetration, spd_flat, spd, acc
         Score is decided by trial and error
         """
-        rarity_values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.50]
+        rarity_values = [1.00, 1.15, 1.30, 1.45, 1.60, 1.75]
         rarity_multipliers = {rarity: value for rarity, value in zip(self.rarity_list, rarity_values)}
         rarity_multiplier = rarity_multipliers.get(self.rarity)
 
         total_score = 0
-        atk_score = (5 + self.atk_flat * rarity_multiplier / self.level) * (1 + self.atk_percent)
-        spd_score = (5 + self.spd_flat * rarity_multiplier / self.level) * (1 + self.spd)
-        # after some testing, 100% crit is roughly worth 2.5 points of attack_score
+        atk_score = (5 + self.atk_flat * rarity_multiplier / self.level) * (1 + self.atk_percent) - 5
+        spd_score = (5 + self.spd_flat * rarity_multiplier / self.level) * (1 + self.spd) - 5
+        # after some testing, 100% crit is roughly worth 2.5 points of atk
         # so 1% crit is worth 2.5 / 100 points = 0.025 points
         crit_score = self.crit * 100 * 0.025
-        # 150% critdmg is worth 2.5 points of attack_score
+        # 150% critdmg is worth 2.5 points of atk
         # so 1% critdmg is worth 2.5 / 150 points = 0.016666666666666666 points
         critdmg_score = self.critdmg * 100 * 0.016666666666666666
         # penetration: 50% for 2.5
@@ -646,9 +646,10 @@ class Equip(Block):
         # acc: 75% for 2.5
         # so 1% acc is worth 2.5 / 75 points = 0.03333333333333333 points
         acc_score = self.acc * 100 * 0.03333333333333333
-        # The stats below are not important for an attacker, but still need to be calculated
-        def_score = (5 + self.def_flat * rarity_multiplier / self.level) * (1 + self.def_percent)
-        maxhp_score = (5 + self.maxhp_flat * rarity_multiplier / self.level) * (1 + self.maxhp_percent) / 20
+
+        def_score = (5 + self.def_flat * rarity_multiplier / self.level) * (1 + self.def_percent) - 5
+        maxhp_score = (5 + self.maxhp_flat * rarity_multiplier / self.level) * (1 + self.maxhp_percent) - 5
+        maxhp_score = maxhp_score / 20
         # eva: 50% for 2.5
         # so 1% eva is worth 2.5 / 50 points = 0.05 points
         eva_score = self.eva * 100 * 0.05
@@ -662,8 +663,8 @@ class Equip(Block):
         attack_total_score = atk_score + spd_score + crit_score + critdmg_score + penetration_score + acc_score
         support_total_score = def_score + maxhp_score + eva_score + critdef_score + he_score
 
-        total_score = attack_total_score + support_total_score * 0.20
-
+        total_score = attack_total_score + support_total_score * 0.33
+        assert total_score >= 0
         return total_score 
 
 
@@ -672,42 +673,30 @@ class Equip(Block):
         A support would need maxhp_flat, maxhp_percent, def_flat, def_percent, critdef, eva, heal_efficiency, spd_flat, spd
         Score is decided by trial and error
         """
-        rarity_values = [1.00, 1.10, 1.20, 1.30, 1.40, 1.50]
+        rarity_values = [1.00, 1.15, 1.30, 1.45, 1.60, 1.75]
         rarity_multipliers = {rarity: value for rarity, value in zip(self.rarity_list, rarity_values)}
         rarity_multiplier = rarity_multipliers.get(self.rarity)
 
         total_score = 0
-        atk_score = (5 + self.atk_flat * rarity_multiplier / self.level) * (1 + self.atk_percent)
-        spd_score = (5 + self.spd_flat * rarity_multiplier / self.level) * (1 + self.spd)
-        # after some testing, 100% crit is roughly worth 2.5 points of attack_score
-        # so 1% crit is worth 2.5 / 100 points = 0.025 points
+        atk_score = (5 + self.atk_flat * rarity_multiplier / self.level) * (1 + self.atk_percent) - 5
+        spd_score = (5 + self.spd_flat * rarity_multiplier / self.level) * (1 + self.spd) - 5
         crit_score = self.crit * 100 * 0.025
-        # 150% critdmg is worth 2.5 points of attack_score
-        # so 1% critdmg is worth 2.5 / 150 points = 0.016666666666666666 points
         critdmg_score = self.critdmg * 100 * 0.016666666666666666
-        # penetration: 50% for 2.5
-        # so 1% penetration is worth 2.5 / 50 points = 0.05 points
         penetration_score = self.penetration * 100 * 0.05
-        # acc: 75% for 2.5
-        # so 1% acc is worth 2.5 / 75 points = 0.03333333333333333 points
         acc_score = self.acc * 100 * 0.03333333333333333
-        # The stats below are not important for an attacker, but still need to be calculated
-        def_score = (5 + self.def_flat * rarity_multiplier / self.level) * (1 + self.def_percent)
-        maxhp_score = (5 + self.maxhp_flat * rarity_multiplier / self.level) * (1 + self.maxhp_percent) / 20
-        # eva: 50% for 2.5
-        # so 1% eva is worth 2.5 / 50 points = 0.05 points
+
+        def_score = (5 + self.def_flat * rarity_multiplier / self.level) * (1 + self.def_percent) - 5
+        maxhp_score = (5 + self.maxhp_flat * rarity_multiplier / self.level) * (1 + self.maxhp_percent) - 5
+        maxhp_score = maxhp_score / 20
         eva_score = self.eva * 100 * 0.05
-        # critdef: 150% for 2.5
-        # so 1% critdef is worth 2.5 / 150 points = 0.016666666666666666 points
         critdef_score = self.critdef * 100 * 0.016666666666666666
-        # heal_efficiency: 150% for 2.5
         he_score = self.heal_efficiency * 100 * 0.016666666666666666
 
         attack_total_score = atk_score + spd_score + crit_score + critdmg_score + penetration_score + acc_score
         support_total_score = def_score + maxhp_score + spd_score + eva_score + critdef_score + he_score
 
-        total_score = attack_total_score * 0.20 + support_total_score
-
+        total_score = attack_total_score * 0.33 + support_total_score
+        assert total_score >= 0
         return total_score 
     
 
