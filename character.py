@@ -1977,9 +1977,7 @@ class Character:
             self.apply_effect(EquipmentSetEffect_Liquidation("Liquidation Set", -1, True, 0.20))
         elif set_name == "Cosmic":
             effect_cosmic = StatsEffect("Cosmic Set", -1, True, {"maxhp": 1.018}, condition=lambda char: char.is_alive(),
-                                        use_active_flag=False)
-            effect_cosmic.is_set_effect = True
-            effect_cosmic.sort_priority = 2000
+                                        use_active_flag=False, is_set_effect=True)
             # effect_cosmic.original_maxhp = self.maxhp
             # def new_apply_effect_at_end_of_turn(effect, char):
             #     if char.maxhp > effect.original_maxhp * 200:
@@ -1996,9 +1994,7 @@ class Character:
             cloud_hide_effect = HideEffect("Hide", 50, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
             cloud_hide_effect.is_set_effect = True
             cloud_hide_effect.sort_priority = 2000
-            cloud_speed_effect = StatsEffect("Cloudy", -1, True, {"spd": 1.05, "atk": 0.90})
-            cloud_speed_effect.is_set_effect = True
-            cloud_speed_effect.sort_priority = 2000
+            cloud_speed_effect = StatsEffect("Cloudy", -1, True, {"spd": 1.05, "atk": 0.90}, is_set_effect=True)
             self.apply_effect(cloud_hide_effect)
             self.apply_effect(cloud_speed_effect)
         # 1987: Select the highest one from 3 of your main stats: atk, def, spd. 15% of the selected stat is added to the ally
@@ -2026,7 +2022,12 @@ class Character:
         elif set_name == "Tigris":
             # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
             self.apply_effect(EquipmentSetEffect_Tigris("Tigris Set", -1, True))
-
+        elif set_name == "Armygreen":
+            # gives some sub stats
+            self.apply_effect(StatsEffect("Armygreen Set", -1, True, {"crit": 0.30, "acc": 0.30, "critdmg": 0.30, "penetration": 0.10}, is_set_effect=True))
+        elif set_name == "Armydesert":
+            # gives some defensive sub stats: critdef, heal_efficiency, eva
+            self.apply_effect(StatsEffect("Armydesert Set", -1, True, {"critdef": 0.50, "heal_efficiency": 0.50, "eva": 0.20}, is_set_effect=True))
 
         # The following are for testing how valable a stat increase is, atk 50%, crit 100%, critdmg 100%....
         elif set_name == "Statstestatk":

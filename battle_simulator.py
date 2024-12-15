@@ -385,10 +385,10 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
             while amount_to_add > 0:
                 # Decide how much to put in a new stack
                 stack_size = min(amount_to_add, item.max_stack)
-                new_item = type(item)(stack_size)
-                # If the item has brand, copy that as well
                 if hasattr(item, 'brand'):
-                    new_item.brand = item.brand
+                    new_item = type(item)(stack_size, item.brand)
+                else:
+                    new_item = type(item)(stack_size)
 
                 inv_ref.append(new_item)
                 amount_to_add -= stack_size
@@ -417,7 +417,12 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
 
         # Non-stackable items still require a linear search, but these should be relatively rare
         # For stackable items:
-        create_instance = item_type(1)
+        # print(item_type) # <class 'consumable.EquipPackageBrandSpecific'>
+        # if it is EquipPackageBrandSpecific class, we need to create instance including brand
+        if item_type.__name__ == "EquipPackageBrandSpecific":
+            create_instance = item_type(1, item_brand)
+        else:
+            create_instance = item_type(1)
         what_is_this = create_instance.__class__.__bases__[0].__name__.lower()
         inv_ref = eval(f"self.inventory_{what_is_this}")
 

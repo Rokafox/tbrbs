@@ -1511,6 +1511,8 @@ class StatsEffect(Effect):
                 raise Exception("stats_dict_function can only be used when condition func is provided and use_active_flag are False.")
             self.stats_dict = self.stats_dict_function()
         self.is_set_effect = is_set_effect
+        if self.is_set_effect:
+            self.sort_priority = 2000
         self.can_be_removed_by_skill = can_be_removed_by_skill
         self.main_stats_additive_dict = main_stats_additive_dict
         self.stats_dict_value_increase_when_missing_attack = stats_dict_value_increase_when_missing_attack

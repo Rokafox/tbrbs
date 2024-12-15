@@ -170,7 +170,7 @@ class EquipPackage6(Consumable):
 
 
 class EquipPackageBrandSpecific(Consumable):
-    def __init__(self, stack: int, brand: str=""):
+    def __init__(self, stack: int, brand: str):
         super().__init__(f"{brand} Chest", f"Obtain 100 random {brand} equipment.")
         self.brand = brand
         self.image = "special_chest"

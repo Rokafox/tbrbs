@@ -16,7 +16,7 @@ class Equip(Block):
         self.eq_set_list = ["None", "Arasaka", "KangTao", "Militech", "NUSA", "Sovereign", 
                             "Snowflake", "Void", "Flute", "Rainbow", "Dawn", "Bamboo", "Rose", "OldRusty",
                             "Liquidation", "Cosmic", "Newspaper", "Cloud", "Purplestar", "1987", "7891", "Freight",
-                            "Runic", "Grassland", "Tigris"]
+                            "Runic", "Grassland", "Tigris", "Armygreen", "Armydesert"]
         # self.eq_set_list = ["None", "Void", "Statstestatk", "Statstestdef", "Statstestspd", "Statstestmaxhp", "Statstestcrit",
         #                     "Statstestcritdmg", "Statstesthe", "Statstestpen", "Statstesteva", "Statstestacc", "Statstestcritdef"]
         self.level = level
@@ -210,6 +210,15 @@ class Equip(Block):
                 return (
                     "When targeting multiple enemies, for each enemy that is missing, damage is increased by 90% for that attack or skill."
                 )
+            case "Armygreen":
+                return (
+                    "Crit, Critdmg, Accuracy + 30%, penetration + 10%."
+                )
+            case "Armydesert":
+                # critdef, heal_efficiency, eva
+                return (
+                    "Critdef, heal efficiency + 50%, eva + 20%."
+                )
             case _:
                 return ""
 
@@ -313,6 +322,14 @@ class Equip(Block):
             case "Tigris":
                 return (
                     "複数の敵をターゲットにした場合、敵が1体足りないごとに、その攻撃またはスキルのダメージが90％増加する。"
+                )
+            case "Armygreen":
+                return (
+                    "クリティカル率、クリティカルダメージ、命中率が30%増加し、貫通率が10%増加する。"
+                )
+            case "Armydesert":
+                return (
+                    "クリティカル防御、回復効率が50%増加し、回避率が20%増加する。"
                 )
             case _:
                 return ""
