@@ -1072,14 +1072,14 @@ class Equip(Block):
             if item_to_compare:
                 diff = self_val - cmp_val
                 if diff > 0:
-                    diff_str_att = f"<font color=#00FF00>{cmp_val:.3f} ↑ {abs(diff):.3f}</font>"
+                    diff_str_att = f"<font color=#00FF00>{cmp_val:.4f} ↑ {abs(diff):.4f}</font>"
                 elif diff < 0:
-                    diff_str_att = f"<font color=#FF0000>{cmp_val:.3f} ↓ {abs(diff):.3f}</font>"
+                    diff_str_att = f"<font color=#FF0000>{cmp_val:.4f} ↓ {abs(diff):.4f}</font>"
                 else:
-                    diff_str_att = f"<font color=#6495ed>{cmp_val:.3f} → {abs(diff):.3f}</font>"
-                stats += f"<font color={attacker_value_color}>Attack Value: {self_val:.3f} | {diff_str_att}</font>\n"
+                    diff_str_att = f"<font color=#6495ed>{cmp_val:.4f} → {abs(diff):.4f}</font>"
+                stats += f"<font color={attacker_value_color}>Attack Value: {self_val:.4f} | {diff_str_att}</font>\n"
             else:
-                stats += f"<font color={attacker_value_color}>Attack Value: {self_val:.3f}</font>\n"
+                stats += f"<font color={attacker_value_color}>Attack Value: {self_val:.4f}</font>\n"
 
         if (self.for_support_value > 0) or (item_to_compare and item_to_compare.for_support_value > 0):
             self_val = self.for_support_value
@@ -1087,14 +1087,14 @@ class Equip(Block):
             if item_to_compare:
                 diff = self_val - cmp_val
                 if diff > 0:
-                    diff_str_sup = f"<font color=#00FF00>{cmp_val:.3f} ↑ {abs(diff):.3f}</font>"
+                    diff_str_sup = f"<font color=#00FF00>{cmp_val:.4f} ↑ {abs(diff):.4f}</font>"
                 elif diff < 0:
-                    diff_str_sup = f"<font color=#FF0000>{cmp_val:.3f} ↓ {abs(diff):.3f}</font>"
+                    diff_str_sup = f"<font color=#FF0000>{cmp_val:.4f} ↓ {abs(diff):.4f}</font>"
                 else:
-                    diff_str_sup = f"<font color=#6495ed>{cmp_val:.3f} → {abs(diff):.3f}</font>"
-                stats += f"<font color={support_value_color}>Support Value: {self_val:.3f} | {diff_str_sup}</font>\n"
+                    diff_str_sup = f"<font color=#6495ed>{cmp_val:.4f} → {abs(diff):.4f}</font>"
+                stats += f"<font color={support_value_color}>Support Value: {self_val:.4f} | {diff_str_sup}</font>\n"
             else:
-                stats += f"<font color={support_value_color}>Support Value: {self_val:.3f}</font>\n"
+                stats += f"<font color={support_value_color}>Support Value: {self_val:.4f}</font>\n"
 
         if self.stars_rating < self.stars_rating_max:
             stats += f"<font color=#AF6E4D>Stars Enhancement Cost: {self.star_enhence_cost} </font>\n"
@@ -1297,14 +1297,14 @@ class Equip(Block):
             diff = self_val - cmp_val
             if cmp:
                 if diff > 0:
-                    diff_str_att = f"<font color=#00FF00>{cmp_val:.3f} ↑ {abs(diff):.3f}</font>"
+                    diff_str_att = f"<font color=#00FF00>{cmp_val:.4f} ↑ {abs(diff):.4f}</font>"
                 elif diff < 0:
-                    diff_str_att = f"<font color=#FF0000>{cmp_val:.3f} ↓ {abs(diff):.3f}</font>"
+                    diff_str_att = f"<font color=#FF0000>{cmp_val:.4f} ↓ {abs(diff):.4f}</font>"
                 else:
-                    diff_str_att = f"<font color=#6495ed>{cmp_val:.3f} → {abs(diff):.3f}</font>"
-                stats += f"<font color={attacker_value_color}>攻撃相性: {self_val:.3f} | {diff_str_att}</font>\n"
+                    diff_str_att = f"<font color=#6495ed>{cmp_val:.4f} → {abs(diff):.4f}</font>"
+                stats += f"<font color={attacker_value_color}>攻撃相性: {self_val:.4f} | {diff_str_att}</font>\n"
             else:
-                stats += f"<font color={attacker_value_color}>攻撃相性: {self_val:.3f}</font>\n"
+                stats += f"<font color={attacker_value_color}>攻撃相性: {self_val:.4f}</font>\n"
 
         # 防御相性
         if (self.for_support_value > 0) or (cmp and cmp.for_support_value > 0):
@@ -1313,14 +1313,14 @@ class Equip(Block):
             diff = self_val - cmp_val
             if cmp:
                 if diff > 0:
-                    diff_str_sup = f"<font color=#00FF00>{cmp_val:.3f} ↑ {abs(diff):.3f}</font>"
+                    diff_str_sup = f"<font color=#00FF00>{cmp_val:.4f} ↑ {abs(diff):.4f}</font>"
                 elif diff < 0:
-                    diff_str_sup = f"<font color=#FF0000>{cmp_val:.3f} ↓ {abs(diff):.3f}</font>"
+                    diff_str_sup = f"<font color=#FF0000>{cmp_val:.4f} ↓ {abs(diff):.4f}</font>"
                 else:
-                    diff_str_sup = f"<font color=#6495ed>{cmp_val:.3f} → {abs(diff):.3f}</font>"
-                stats += f"<font color={support_value_color}>防御相性: {self_val:.3f} | {diff_str_sup}</font>\n"
+                    diff_str_sup = f"<font color=#6495ed>{cmp_val:.4f} → {abs(diff):.4f}</font>"
+                stats += f"<font color={support_value_color}>防御相性: {self_val:.4f} | {diff_str_sup}</font>\n"
             else:
-                stats += f"<font color={support_value_color}>防御相性: {self_val:.3f}</font>\n"
+                stats += f"<font color={support_value_color}>防御相性: {self_val:.4f}</font>\n"
 
         # スター強化コスト
         if self.stars_rating < self.stars_rating_max:
