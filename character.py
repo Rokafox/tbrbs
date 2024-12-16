@@ -4,7 +4,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DamageTypeConvertionEffect, DecayEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DamageTypeConvertionEffect, DecayEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FallingPetalEffect, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -5578,7 +5578,7 @@ class East(Character):
         nmdm = ReductionShield("No Matter Day or Month", -1, True, 1.0, False, cover_status_damage=True, cover_normal_damage=True,
                                requirement=requirement_func,
                                requirement_description="Attacker is both poisoned and burning.",
-                               requirement_description_jp="攻撃側は毒と燃焼の両方が負っている。")
+                               requirement_description_jp="攻撃側は毒と燃焼状態である。")
         nmdm.can_be_removed_by_skill = False
         self.apply_effect(nmdm)
         
@@ -7855,12 +7855,61 @@ class AceAL(Character):
                                                can_be_removed_by_skill=False))
 
 
+class Tom(Character):
+    """
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Tom"
+        self.skill1_description = "Attack random enemies 6 times with 200% atk, each attack has a 20% chance to inflict Defense Down for 20 turns." \
+        " Defense Down: Defense is reduced by 30%."
+        self.skill2_description = "Attack random enemies 3 times with 300% atk, if target has Burn, damage is increased by 50%."
+        self.skill3_description = "Normal attack attack 2 times. At start of battle, apply Falling Petal on yourself and another ally of highest atk." \
+        " Falling Petal: The first time when hp falls below 50%, for 30 turns, damage taken is reduced by 90%, " \
+        " when this effect triggers, silence for 30 turns."
+        self.skill1_description_jp = "ランダムな敵に攻撃力の200%で6回攻撃し、各攻撃には20%の確率で20ターンの間「防御ダウン」を付与する。防御ダウン：防御力が30%減少する。"
+        self.skill2_description_jp = "ランダムな敵に攻撃力の300%で3回攻撃し、対象が「燃焼」状態の場合、ダメージが50%増加する。"
+        self.skill3_description_jp = "通常攻撃が2回攻撃になる。戦闘開始時、自身と攻撃力が最も高いもう1人の味方に「落桜」を付与する。落桜：初めてHPが50%未満になった時、30ターンの間受けるダメージが90%減少する。この効果が発動すると、30ターンの間「沈黙」状態になる。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        def defense_down(char, target: Character):
+            target.apply_effect(StatsEffect("Defense Down", 20, False, {"defense": 0.70}))
+        damage_dealt = self.attack(multiplier=2.0, repeat=6, func_after_dmg=defense_down)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def damage_amplify(char, target: Character, damage):
+            if target.has_effect_that_named("Burn", None, None):
+                return damage * 1.50
+            return damage
+        damage_dealt = self.attack(multiplier=3.0, repeat=3, func_damage_step=damage_amplify)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        return self.attack(repeat=2)
+
+    def battle_entry_effects(self):
+        ally_except_self = [x for x in self.ally if x != self]
+        assert len(ally_except_self) < 5
+        ally_high_atk = max(ally_except_self, key=lambda x: x.atk)
+        eff_to_apply_a = ReductionShield("Harmony", 30, True, 0.9, False)
+        eff_to_apply_b = SilenceEffect("Silence", 30, False, False)
+        ally_high_atk.apply_effect(FallingPetalEffect("Falling Petal", -1, True, False, self, 0.5,
+                                                      effect_to_apply=eff_to_apply_a, another_effect_to_apply=eff_to_apply_b, can_be_removed_by_skill=False))
+        self.apply_effect(FallingPetalEffect("Falling Petal", -1, True, False, self, 0.5,
+                                            effect_to_apply=eff_to_apply_a, another_effect_to_apply=eff_to_apply_b, can_be_removed_by_skill=False))
+
 
 # Eqset ideas
 # As long as you are alive, damage reduction for allies
 # After using a skill, 20% chance to recast the skill
 # After using skill1, if skill2 can be used, use skill2
-# army green, army desert
 # After using a skill, reset cooldown of the other skill
 
 

@@ -2344,6 +2344,60 @@ class DamageTypeConvertionEffect(Effect):
         return f"攻撃時、ダメージタイプを{self.new_damage_type}に変換する。"
 
 
+# " Falling Petal: The first time when hp falls below 50%, for 30 turns, damage taken is reduced by 90%, " \
+# " when this effect triggers, you are silenced for 30 turns."
+class FallingPetalEffect(Effect):
+    """
+    Apply effect the first time when hp falls below [at_what_hp_percentage]
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, effect_applier,
+                 at_what_hp_percentage, effect_to_apply: Effect, another_effect_to_apply: Effect=None, 
+                 more_effects_to_apply: list[Effect]=None, can_be_removed_by_skill=False):
+        super().__init__(name, duration, is_buff)
+        self.cc_immunity = cc_immunity
+        self.effect_applier = effect_applier
+        self.at_what_hp_percentage = at_what_hp_percentage
+        self.effect_to_apply = effect_to_apply
+        self.another_effect_to_apply = another_effect_to_apply
+        self.more_effects_to_apply = more_effects_to_apply
+        self.can_be_removed_by_skill = can_be_removed_by_skill
+        self.apply_rule = "stack"
+
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            return
+        if character.is_silenced():
+            return
+        if character.hp < character.maxhp * self.at_what_hp_percentage:
+            # effect = ReductionShield("Falling Petal", 30, True, 0.9, False)
+            # character.apply_effect(effect)
+            # effect = SilenceEffect("Silence", self.silence_duration, False, False)
+            # character.apply_effect(effect)
+            character.apply_effect(copy.copy(self.effect_to_apply))
+            if self.another_effect_to_apply:
+                character.apply_effect(copy.copy(self.another_effect_to_apply))
+            if self.more_effects_to_apply:
+                for effect in self.more_effects_to_apply:
+                    character.apply_effect(copy.copy(effect))
+            character.remove_effect(self)
+
+    def tooltip_description(self):
+        list_of_effect_names = [self.effect_to_apply.name]
+        if self.another_effect_to_apply:
+            list_of_effect_names.append(self.another_effect_to_apply.name)
+        if self.more_effects_to_apply:
+            list_of_effect_names += [e.name for e in self.more_effects_to_apply]
+        return f"The first time when hp falls below {self.at_what_hp_percentage*100}%, apply {', '.join(list_of_effect_names)}."
+    
+    def tooltip_description_jp(self):
+        list_of_effect_names = [self.effect_to_apply.name]
+        if self.another_effect_to_apply:
+            list_of_effect_names.append(self.another_effect_to_apply.name)
+        if self.more_effects_to_apply:
+            list_of_effect_names += [e.name for e in self.more_effects_to_apply]
+        return f"HPが{self.at_what_hp_percentage*100}%以下になったとき、{'、'.join(list_of_effect_names)}を付与する。"
+
+
 # =========================================================
 # End of Special effects
 # Effects in the above section need special handling.
