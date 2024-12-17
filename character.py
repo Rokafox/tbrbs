@@ -7963,6 +7963,60 @@ class Tom(Character):
                                             effect_to_apply=eff_to_apply_a, another_effect_to_apply=eff_to_apply_b, can_be_removed_by_skill=False))
 
 
+class Wolf(Character):
+    """
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Wolf"
+        self.skill1_description = "Attack closest enemy with 700% atk, after the attack, select a neighbor ally of highest atk," \
+        " apply Cloud and Rain for 30 turns, Cloud and Rain: maxhp increase by 100%, heal efficiency increase by 50%," \
+        " when the same effect is applied, duration is refreshed."
+        self.skill2_description = "Attack enemy of lowest hp with 300% atk 2 times, after the attack, heal hp for 2 allies of lowest hp percentage" \
+        " by 33% of damage dealt."
+        self.skill3_description = "Normal attack attack 3 times, after the attack, for 3 turns, apply Lonesome Rain on yourself," \
+        " Lonesome Rain: atk increases by 40%, when the same effect is applied, duration is refreshed."
+        self.skill1_description_jp = "最も近い敵に攻撃力の700%で攻撃し、攻撃後、隣接する味方のうち攻撃力が最も高い味方を選び、30ターンの間「雲雨御召」を付与する。雲雨御召：最大HPが100%増加し、回復効率が50%増加する。同じ効果が再度適用された場合、持続時間が更新される。"
+        self.skill2_description_jp =  "HPが最も低い敵に攻撃力の300%で2回攻撃し、攻撃後、HP割合が最も低い味方2人のHPを、与えたダメージの33%分回復する。"
+        self.skill3_description_jp = "通常攻撃で3回攻撃し、攻撃後、自身に3ターンの間「寂寥の雨」を付与する。寂寥の雨：攻撃力が40%増加する。同じ効果が再度適用された場合、持続時間が更新される。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=7.0, repeat=1, target_kw1="enemy_in_front")
+        neighbor = self.get_neighbor_allies_not_including_self()
+        if not neighbor:
+            return damage_dealt
+        ally_high_atk = max(neighbor, key=lambda x: x.atk)
+        cloud_and_rain = StatsEffect("Cloud and Rain", 30, True, {"maxhp": 2.00, "heal_efficiency": 0.50})
+        cloud_and_rain.additional_name = "Wolf_Cloud_and_Rain"
+        cloud_and_rain.apply_rule = "stack"
+        ally_high_atk.apply_effect(cloud_and_rain)
+        return damage_dealt
+
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=3.0, repeat=2, target_kw1="n_lowest_hp_percentage_enemy", target_kw2="1")
+        self.update_ally_and_enemy()
+        if self.is_alive():
+            allies = list(self.target_selection(keyword="n_lowest_hp_percentage_ally", keyword2="2"))
+            if allies:
+                self.heal(value=damage_dealt * 0.33, target_list=allies)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        damage_dealt = self.attack(repeat=3)
+        if self.is_alive():
+            lonesome_rain = StatsEffect("Lonesome Rain", 3, True, {"atk": 1.40})
+            lonesome_rain.additional_name = "Wolf_Lonesome_Rain"
+            lonesome_rain.apply_rule = "stack"
+            self.apply_effect(lonesome_rain)
+        return damage_dealt
+
+
 # Eqset ideas
 # As long as you are alive, damage reduction for allies
 # After using a skill, 20% chance to recast the skill
