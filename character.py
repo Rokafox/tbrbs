@@ -4,7 +4,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DamageTypeConvertionEffect, DecayEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FallingPetalEffect, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BirdShadowEffect, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DamageTypeConvertionEffect, DecayEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FallingPetalEffect, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -5430,12 +5430,12 @@ class Zhen(Character):
                 if a.is_alive() and a.is_stunned():
                     return True
             return False
-        wavering_glow = ReductionShield("Dragon Cushion", -1, True, 0.6, False, cover_status_damage=False, cover_normal_damage=True,
+        dc = ReductionShield("Dragon Cushion", -1, True, 0.6, False, cover_status_damage=False, cover_normal_damage=True,
                                         requirement=requirement_func,
                                         requirement_description="Taking damage from the enemy who has a stunned ally.",
                                         requirement_description_jp="スタンしている味方がいる敵からダメージを受けた時。")
-        wavering_glow.can_be_removed_by_skill = False
-        self.apply_effect(wavering_glow)
+        dc.can_be_removed_by_skill = False
+        self.apply_effect(dc)
         for e in self.enemy:
             shadow_of_great_bird = ReductionShield("Shadow of Great Bird", -1, False, 0.5, False, cover_status_damage=True, cover_normal_damage=True,
                                                 requirement=lambda x, y: x.is_stunned(),
@@ -5444,7 +5444,65 @@ class Zhen(Character):
             e.apply_effect(shadow_of_great_bird)
 
 
-class Cupid(Character):
+class ZhenAL(Character):
+    """
+    Stun support
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "ZhenAL"
+        self.skill1_description = "Apply Shadow of Great Bird on 3 enemies of highest hp percentage for indefinite turns." \
+        " Shadow of Great Bird: When hp falls below 90%|60%|30%, stun for 7 turns at the start of turn." \
+        " Each effect triggers on specific hp percentage can only be applied once." \
+        " The previous effect is replaced when the same effect is applied."
+        self.skill2_description = "This skill becomes normal attack if no enemies are stunned. Attack stunned enemies 3 times with 270% atk," \
+        " each attack removes 1 random active buff from the target."
+        self.skill3_description = "Apply Dragon Cushion on yourself. When taking normal damage from the enemy who has a stunned ally, damage taken is reduced by 70%."
+        self.skill1_description_jp = "HP割合が最も高い敵3体に無期限で「鴻影」を付与する。鴻影：HPが90%|60%|30%以下になった時、ターン開始時に7ターンの間スタン状態にする。各HP割合に対応する効果は1回のみ発動する。同じ効果が再度適用された場合、前の効果は上書きされる。"
+        self.skill2_description_jp = "スタン状態の敵がいない場合、このスキルは通常攻撃になる。スタン状態の敵に攻撃力の270%で3回攻撃し、各攻撃ごとに対象のアクティブなバフを1つ解除する。"
+        self.skill3_description_jp = "自身に「龍クッション」を付与する。スタン状態の味方がいる敵から通常ダメージを受ける際、受けるダメージが70%減少する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        targets = list(self.target_selection(keyword="n_highest_hp_percentage_enemy", keyword2="3"))
+        for t in targets:
+            stun = StunEffect("Stun", 7, False, False)
+            sgb = BirdShadowEffect("Shadoww of Great Bird", -1, False, False, self, 
+                                   effect_dict={0.9: stun, 0.6: stun, 0.3: stun}, can_be_removed_by_skill=True)
+            sgb.additional_name = "ZhenAL_Shadow_of_Great_Bird"
+            sgb.apply_rule = "replace"
+            t.apply_effect(sgb)
+        return 0
+
+    def skill2_logic(self):
+        stunned_targets = list(self.target_selection(keyword="enemy_that_must_have_effect", keyword2="Stun"))
+        if not stunned_targets:
+            return self.normal_attack()
+        def remove_buffs(self, target):
+            target.remove_random_amount_of_buffs(1, allow_infinite_duration=False)
+        damage_dealt = self.attack(multiplier=2.7, repeat=3, func_after_dmg=remove_buffs, target_list=stunned_targets)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        def requirement_func(charac, attacker):
+            for a in attacker.ally:
+                if a.is_alive() and a.is_stunned():
+                    return True
+            return False
+        dc = ReductionShield("Dragon Cushion", -1, True, 0.7, False, cover_status_damage=False, cover_normal_damage=True,
+                                        requirement=requirement_func,
+                                        requirement_description="Taking damage from the enemy who has a stunned ally.",
+                                        requirement_description_jp="スタンしている味方がいる敵からダメージを受けた時。")
+        dc.can_be_removed_by_skill = False
+        self.apply_effect(dc)
+
+
+class Cupid(Character): 
     """
     Very special attacker
     Build: 

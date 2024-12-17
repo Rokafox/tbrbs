@@ -2366,8 +2366,6 @@ class FallingPetalEffect(Effect):
     def apply_effect_on_trigger(self, character):
         if character.is_dead():
             return
-        if character.is_silenced():
-            return
         if character.hp < character.maxhp * self.at_what_hp_percentage:
             # effect = ReductionShield("Falling Petal", 30, True, 0.9, False)
             # character.apply_effect(effect)
@@ -2396,6 +2394,55 @@ class FallingPetalEffect(Effect):
         if self.more_effects_to_apply:
             list_of_effect_names += [e.name for e in self.more_effects_to_apply]
         return f"HPが{self.at_what_hp_percentage*100}%以下になったとき、{'、'.join(list_of_effect_names)}を付与する。"
+
+
+# this effect is kinda similar, but does the following:
+# given a dict of {hp_percentage: effect_to_apply}, apply the effect when hp falls below the percentage.
+# each effect can only be used once. For example, 0.8: stun, 0.6: stun, if hp suddenly falls below 0.5, then 2 effects are applied at once.
+class BirdShadowEffect(Effect):
+    """
+    Given a dict of {hp_percentage: effect_to_apply}, apply the effect when hp falls below the percentage.
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, effect_applier,
+                 effect_dict: dict[float, Effect], can_be_removed_by_skill=False):
+        super().__init__(name, duration, is_buff)
+        self.cc_immunity = cc_immunity
+        self.effect_applier = effect_applier
+        self.effect_dict = effect_dict
+        self.can_be_removed_by_skill = can_be_removed_by_skill
+        self.apply_rule = "replace"
+
+    def apply_effect_on_trigger(self, character):
+        if character.is_dead():
+            return
+        for hp_percentage, effect in list(self.effect_dict.items()):
+            if character.hp < character.maxhp * hp_percentage:
+                character.apply_effect(copy.copy(effect))
+                del self.effect_dict[hp_percentage]
+
+    def apply_effect_at_end_of_turn(self, character):
+        # if dict is empty, remove the effect.
+        if not self.effect_dict:
+            character.remove_effect(self)
+
+    def tooltip_description(self):
+        threshold_effects = [f"Below {int(hp_percentage * 100)}% HP: {effect.name}" for hp_percentage, effect in self.effect_dict.items()]
+        return f"When HP first falls below each listed threshold, apply the corresponding effect(s) once: {', '.join(threshold_effects)}."
+
+    def tooltip_description_jp(self):
+        threshold_effects_jp = [f"HPが{int(hp_percentage * 100)}%未満になると{effect.name}" for hp_percentage, effect in self.effect_dict.items()]
+        return f"HPが指定した割合を初めて下回ったとき、対応する効果を一度だけ適用する:{','.join(threshold_effects_jp)}。"
+
+
+
+
+
+
+
+
+
+
+
 
 
 # =========================================================
