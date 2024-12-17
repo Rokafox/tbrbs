@@ -6198,7 +6198,7 @@ class Xunmu(Character):
             def value_func(char, effect_applier):
                 return (char.maxhp - char.hp) * 0.04
             regen = ContinuousHealEffect("Regeneration", 12, True, value_function=value_func, buff_applier=self,
-                                         value_function_description="5% of lost hp", value_function_description_jp="失ったHPの5%")
+                                         value_function_description="4% of lost hp", value_function_description_jp="失ったHPの4%")
             a.apply_effect(regen)
         return 0
 
@@ -6212,6 +6212,63 @@ class Xunmu(Character):
         for a in self.get_neighbor_allies_not_including_self():
             a.apply_effect(StatsEffect("Milk", -1, True, main_stats_additive_dict={"maxhp": int(self.maxhp * 0.4)}, can_be_removed_by_skill=False))
             a.hp = a.maxhp
+
+
+class XunmuAL(Character):
+    """
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "XunmuAL"
+        self.skill1_description = "Attack 3 closest enemies with 240% atk and apply Freeze for 10 turns." \
+        " If target has Burn, deal 100% additional damage."
+        self.skill2_description = "Apply Regeneration for 12 turns for nearby allies including yourself." \
+        " Regeneration: Recover hp by 4% of their lost hp each turn."
+        self.skill3_description = "At start of battle, target neighbor ally of lower atk and apply Fine Milk," \
+        " Fine Milk: Maxhp is increased by 60% of your maxhp, hp is set to 100% of maxhp. Atk, crit, critdmg is increased by 30% of heal efficiency" \
+        " if heal efficiency is above 150%."
+        self.skill1_description_jp = "最も近い3人の敵に攻撃力の240%で攻撃し、10ターンの間「凍結」を付与する。対象が「燃焼」状態の場合、追加で100%のダメージを与える。"
+        self.skill2_description_jp = "自分を含む隣接する味方に12ターンの間「再生」を付与する。再生：毎ターン、失ったHPの4%分を回復する。"
+        self.skill3_description_jp = "戦闘開始時、自分より攻撃力が低い隣接する味方1人に「極上ミルク」を付与する。極上ミルク：最大HPが自身の最大HPの60%分増加し、HPが最大HPの100%に設定される。回復効率が150%以上の場合、攻撃力、クリティカル率、クリティカルダメージが回復効率の30%分増加する。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+
+
+    def skill1_logic(self):
+        def freeze_effect(self, target: Character):
+            target.apply_effect(FrozenEffect("Freeze", 10, False, self))
+        def additional_dmg(self, target: Character, final_damage):
+            if target.has_effect_that_named("Burn"):
+                final_damage *= 2.0
+            return final_damage
+        damage_dealt = self.attack(multiplier=2.4, repeat=1, target_kw1="n_enemy_in_front", target_kw2="3", func_after_dmg=freeze_effect,
+                                    func_damage_step=additional_dmg)
+        return damage_dealt
+
+    def skill2_logic(self):
+        self.update_ally_and_enemy()
+        for a in self.get_neighbor_allies_including_self():
+            def value_func(char, effect_applier):
+                return (char.maxhp - char.hp) * 0.04
+            regen = ContinuousHealEffect("Regeneration", 12, True, value_function=value_func, buff_applier=self,
+                                            value_function_description="4% of lost hp", value_function_description_jp="失ったHPの4%")
+            a.apply_effect(regen)
+        return 0
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        ally_loweratk = min(self.get_neighbor_allies_not_including_self(), key=lambda x: x.atk)
+        if ally_loweratk.heal_efficiency > 1.50:
+            scale_value = ally_loweratk.heal_efficiency * 0.30
+            fine_milk = StatsEffect("Fine Milk", -1, True, {"atk": 1 + scale_value, "crit": scale_value, "critdmg": scale_value},
+                                    main_stats_additive_dict={"maxhp": int(self.maxhp * 0.6)}, can_be_removed_by_skill=False)
+        else:
+            fine_milk = StatsEffect("Fine Milk", -1, True, main_stats_additive_dict={"maxhp": int(self.maxhp * 0.6)}, can_be_removed_by_skill=False)
+        ally_loweratk.apply_effect(fine_milk)
+
 
 
 class Xunyu(Character):
