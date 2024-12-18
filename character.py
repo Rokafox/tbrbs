@@ -8089,28 +8089,33 @@ class Niles(Character):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Niles"
-        self.skill1_description = "Apply Apple Wine on ally of highest atk and ally of lowest atk for 20 turns." \
-        " Apple Wine: When a active buff effect is applied, its duration is increased by 3 turns."
-        self.skill2_description = "Attack enemy of highest hp with 300% atk, for each ally alive, attack 1 more time."
-        self.skill3_description = ""
-        self.skill1_description_jp = ""
-        self.skill2_description_jp = ""
-        self.skill3_description_jp = ""
+        self.skill1_description = "Apply Apple Wine on ally of highest atk and ally of lowest atk for 25 turns." \
+        " Apple Wine: When a active buff effect is applied, its duration is increased by 4 turns."
+        self.skill2_description = "Attack enemy of highest hp with 270% atk, for each ally alive, attack 2 more times."
+        self.skill3_description = "After using skill2, apply Flower on all allies for 4 turns," \
+        " Flower: Damage taken is reduced by 40%, each subsequent damage taken in the same turn is further reduced by 40%."
+        self.skill1_description_jp = "攻撃力が最も高い味方と最も低い味方に25ターンの間「林檎酒」を付与する。林檎酒：アクティブなバフ効果が付与された際、その持続時間が4ターン延長される。"
+        self.skill2_description_jp = "HPが最も高い敵に攻撃力の270%で攻撃し、生存している味方1人につき、さらに2回攻撃する。"
+        self.skill3_description_jp = "スキル2を使用した後、全ての味方に4ターンの間「花」を付与する。花：受けるダメージが40%減少し、同じターン内での2回目以降のダメージはさらに40%減少する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
     def skill1_logic(self):
         high_atk = max(self.ally, key=lambda x: x.atk)
         low_atk = min(self.ally, key=lambda x: x.atk)
-        apple_wine = DurationBonusEffect("Apple Wine", 20, True, False, self, buff_value=3)
+        apple_wine = DurationBonusEffect("Apple Wine", 25, True, False, self, buff_value=4)
         high_atk.apply_effect(apple_wine)
         low_atk.apply_effect(copy.copy(apple_wine))
         return 0
 
     def skill2_logic(self):
-        amount_of_allies = len(self.ally)
-        damage_dealt = self.attack(multiplier=3.0, repeat=amount_of_allies, target_kw1="n_highest_attr", 
+        amount_of_allies = len(self.ally) * 2
+        damage_dealt = self.attack(multiplier=2.7, repeat=amount_of_allies, target_kw1="n_highest_attr", 
                                    target_kw2="1", target_kw3="hp", target_kw4="enemy")
+        if self.is_alive():
+            for a in self.ally:
+                shield = AntiMultiStrikeReductionShield("Flower", 4, True, 0.40, False)
+                a.apply_effect(shield)
         return damage_dealt
 
     def skill3(self):
