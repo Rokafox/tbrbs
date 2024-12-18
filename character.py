@@ -98,6 +98,7 @@ class Character:
         self.have_taken_action: bool = False # whether the character has taken action in the battle
         self.multiple_target_selection_targets_missing = 0
         self.is_in_iteration_of_status_effects_midturn = False
+        self.is_in_iteration_of_status_effects_startturn = False
         self.damage_type_during_attack_method: str = "undefined" # "normal", "status", "bypass", "undefined"
         # When applying buffs, the bonus value is added in apply_effect method, can be negative.
         self.duration_bonus_when_apply_effect_buff: int = 0 
@@ -1683,7 +1684,7 @@ class Character:
                     # directly remove effect will cause error. Reason: the only effect that use replace is Lester exciting time, who adds atk when being healed.
                     # if heal is during status_effects_midturn method, the list of effect is not being updated constantly.
                     # patched in 3.7.7
-                    if self.is_in_iteration_of_status_effects_midturn:
+                    if self.is_in_iteration_of_status_effects_midturn or self.is_in_iteration_of_status_effects_startturn:
                         e.remove_this_effect_as_it_is_replaced = True
                     else:
                         self.remove_effect(e)
@@ -1846,6 +1847,7 @@ class Character:
     def status_effects_start_of_turn(self):
         # Currently, effects are not removed and continue to receive updates even if character is dead. 
         # If we want to do this, remember: Reborn effect should not be removed.
+        self.is_in_iteration_of_status_effects_startturn = True
         for effect in self.buffs.copy() + self.debuffs.copy():
             if effect.flag_for_remove:
                 global_vars.turn_info_string += f"Effect condition no longer met: {effect.name} on {self.name}.\n"
@@ -1861,6 +1863,10 @@ class Character:
                 global_vars.turn_info_string += f"{effect.name} on {self.name} has expired.\n"
                 self.remove_effect(effect)
                 effect.apply_effect_on_expire(self)
+        self.is_in_iteration_of_status_effects_startturn = False
+        for effect in self.buffs.copy() + self.debuffs.copy():
+            if hasattr(effect, "remove_this_effect_as_it_is_replaced") and effect.remove_this_effect_as_it_is_replaced:
+                self.remove_effect(effect)
     
     # Every turn, calculate apply_effect_on_turn effect of all buffs and debuffs. ie. poison, burn, etc.
     def status_effects_midturn(self):
