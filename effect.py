@@ -2434,15 +2434,52 @@ class BirdShadowEffect(Effect):
         return f"HPが指定した割合を初めて下回ったとき、対応する効果を一度だけ適用する:{','.join(threshold_effects_jp)}。"
 
 
+# effect duration bonus effect
+# this effect adjusts duration_bonus_when_apply_effect_buff and duration_bonus_when_apply_effect_debuff,
+# integer value, can be positive or negative.
+# when removed, set them to 0.
+class DurationBonusEffect(Effect):
+    """
+    Adjust duration_bonus_when_apply_effect_buff and duration_bonus_when_apply_effect_debuff.
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, effect_applier, buff_value=0, debuff_value=0):
+        super().__init__(name, duration, is_buff)
+        self.cc_immunity = cc_immunity
+        self.effect_applier = effect_applier
+        self.buff_value = buff_value
+        self.debuff_value = debuff_value
 
+    def apply_effect_on_apply(self, character):
+        character.duration_bonus_when_apply_effect_buff += self.buff_value
+        character.duration_bonus_when_apply_effect_debuff += self.debuff_value
 
+    def apply_effect_on_remove(self, character):
+        character.duration_bonus_when_apply_effect_buff -= self.buff_value
+        character.duration_bonus_when_apply_effect_debuff -= self.debuff_value
 
+    def tooltip_description(self):
+        s = "When applying effect, "
+        if self.buff_value > 0:
+            s += f"buff effect duration is increased by {self.buff_value}. "
+        elif self.buff_value < 0:
+            s += f"buff effect duration is decreased by {-self.buff_value}. "
+        if self.debuff_value > 0:
+            s += f"debuff effect duration is increased by {self.debuff_value}. "
+        elif self.debuff_value < 0:
+            s += f"debuff effect duration is decreased by {-self.debuff_value}. "
+        return s
 
-
-
-
-
-
+    def tooltip_description_jp(self):
+        s = "効果を適用するとき、"
+        if self.buff_value > 0:
+            s += f"バフ効果の持続時間が{self.buff_value}増加する。"
+        elif self.buff_value < 0:
+            s += f"バフ効果の持続時間が{-self.buff_value}減少する。"
+        if self.debuff_value > 0:
+            s += f"デバフ効果の持続時間が{self.debuff_value}増加する。"
+        elif self.debuff_value < 0:
+            s += f"デバフ効果の持続時間が{-self.debuff_value}減少する。"
+        return s
 
 
 # =========================================================

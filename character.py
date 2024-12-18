@@ -4,7 +4,7 @@ import copy, random
 import re
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BirdShadowEffect, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DamageTypeConvertionEffect, DecayEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FallingPetalEffect, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BirdShadowEffect, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DamageTypeConvertionEffect, DecayEffect, DurationBonusEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FallingPetalEffect, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -99,6 +99,9 @@ class Character:
         self.multiple_target_selection_targets_missing = 0
         self.is_in_iteration_of_status_effects_midturn = False
         self.damage_type_during_attack_method: str = "undefined" # "normal", "status", "bypass", "undefined"
+        # When applying buffs, the bonus value is added in apply_effect method, can be negative.
+        self.duration_bonus_when_apply_effect_buff: int = 0 
+        self.duration_bonus_when_apply_effect_debuff: int = 0
 
         if self.equip:
             for item in self.equip.values():
@@ -1730,13 +1733,17 @@ class Character:
                     global_vars.turn_info_string += f"{effect.name} on {self.name} has been stacked. Uses: {e.uses}.\n"
                     return
 
+        # if the effect is not infinite duration(.duration > 0), the duration is adjusted by character bonus duration
+        if effect.duration > 0:
+            if effect.is_buff:
+                effect.duration += self.duration_bonus_when_apply_effect_buff
+            else:
+                effect.duration += self.duration_bonus_when_apply_effect_debuff
+            # then check duration is valid or not, if not(<=0), do not apply the effect.
+            if effect.duration <= 0:
+                return
+        
         # Do we allow applying effect on dead character? Yes, for some effects.
-        # if effect.is_buff:
-        #     self.buffs.append(effect)
-        #     self.buffs.sort(key=lambda x: x.sort_priority)
-        # else:
-        #     self.debuffs.append(effect)
-        #     self.debuffs.sort(key=lambda x: x.sort_priority)
         # insert the effect in the correct position based on sort_priority
         if effect.is_buff:
             bisect.insort(self.buffs, effect, key=lambda x: x.sort_priority)
@@ -8073,6 +8080,53 @@ class Wolf(Character):
             lonesome_rain.apply_rule = "stack"
             self.apply_effect(lonesome_rain)
         return damage_dealt
+
+
+class Niles(Character):
+    """
+    Build: 
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Niles"
+        self.skill1_description = "Apply Apple Wine on ally of highest atk and ally of lowest atk for 20 turns." \
+        " Apple Wine: When a active buff effect is applied, its duration is increased by 3 turns."
+        self.skill2_description = "Attack enemy of highest hp with 300% atk, for each ally alive, attack 1 more time."
+        self.skill3_description = ""
+        self.skill1_description_jp = ""
+        self.skill2_description_jp = ""
+        self.skill3_description_jp = ""
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def skill1_logic(self):
+        high_atk = max(self.ally, key=lambda x: x.atk)
+        low_atk = min(self.ally, key=lambda x: x.atk)
+        apple_wine = DurationBonusEffect("Apple Wine", 20, True, False, self, buff_value=3)
+        high_atk.apply_effect(apple_wine)
+        low_atk.apply_effect(copy.copy(apple_wine))
+        return 0
+
+    def skill2_logic(self):
+        amount_of_allies = len(self.ally)
+        damage_dealt = self.attack(multiplier=3.0, repeat=amount_of_allies, target_kw1="n_highest_attr", 
+                                   target_kw2="1", target_kw3="hp", target_kw4="enemy")
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Eqset ideas
