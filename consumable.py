@@ -7,7 +7,7 @@ from equip import generate_equips_list, adventure_generate_random_equip_with_wei
 
 # NOTE:
 # 1. name must be equal to class name, see load_player() in bs
-# 2. Every time a new consumable is added, add it to get_1_random_consumable() in consumable.py
+# 2. Every time a new consumable is added, add it to get_1_random_consumable() in consumable.py, and also in shop.py.
 
 
 # Price : common < uncommon < rare < epic < unique < legendary, 50, 100, 250, 500, 1000, 2500
@@ -221,7 +221,11 @@ class FoodPackage(Consumable):
         all_subclasses = Consumable.__subclasses__()
         food_list = []
         for c in all_subclasses:
-            instance = c(1)
+            try:
+                instance = c(1)
+            except TypeError:
+                # EquipPackageBrandSpecific needs 2 arguments
+                continue
             if instance.type == "Food" and instance.rarity in ["Common", "Uncommon"]:
                 food_list.append(instance)
 
@@ -256,7 +260,11 @@ class FoodPackage2(Consumable):
         all_subclasses = Consumable.__subclasses__()
         food_list = []
         for c in all_subclasses:
-            instance = c(1)
+            try:
+                instance = c(1)
+            except TypeError:
+                # EquipPackageBrandSpecific needs 2 arguments
+                continue
             if instance.type == "Food" and instance.rarity in ["Rare", "Epic"]:
                 food_list.append(instance)
 
@@ -288,7 +296,11 @@ class FoodPackage3(Consumable):
         all_subclasses = Consumable.__subclasses__()
         food_list = []
         for c in all_subclasses:
-            instance = c(1)
+            try:
+                instance = c(1)
+            except TypeError:
+                # EquipPackageBrandSpecific needs 2 arguments
+                continue
             if instance.type == "Food" and instance.rarity in ["Unique", "Legendary"]:
                 food_list.append(instance)
 
@@ -448,7 +460,7 @@ class Orange(Consumable):
         orange_effect = AntiMultiStrikeReductionShield('Orange', d, True, 0.25, False)
         orange_effect.additional_name = "Food_Orange"
         user.apply_effect(orange_effect)
-        return f"{user.name} applied Orange Shield for {d} turns."
+        return f"{user.name} applied Orange for {d} turns."
     
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
@@ -460,11 +472,37 @@ class Orange(Consumable):
                 return True
         
 
+class Orange_Juice(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("100% Orange Juice", "Apply Shield to user for 6-12 turns. Shield absorbs approximatly 250000 damage.")
+        self.image = "food_orange_juice"
+        self.rarity = "Unique"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 15000
+
+    def E(self, user, player):
+        d = random.randint(6, 12)
+        shield_amount = int(250000 * random.uniform(0.8, 1.2))
+        orangej_effect = AbsorptionShield('100% Orange Juice', d, True, shield_amount, False)
+        orangej_effect.additional_name = "Food_Orange_Juice"
+        user.apply_effect(orangej_effect)
+        return f"{user.name} applied 100% Orange Juice for {d} turns."
+
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Orange Juice", additional_name="Food_Orange_Juice"):
+                return False
+            else:
+                return True
 
 
 
 
 
 def get_1_random_consumable():
-    consumable_list = [Banana(1), Kiwi(1), Strawberry(1), Pancake(1), Mantou(1), Orange(1)]
+    consumable_list = [Banana(1), Kiwi(1), Strawberry(1), Pancake(1), Mantou(1), Orange(1), Orange_Juice(1)]
     return random.choice(consumable_list)

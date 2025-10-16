@@ -64,7 +64,7 @@ from calculate_winrate import is_someone_alive, reset_ally_enemy_attr
 import shop
 # import csv
 running = False
-text_box = None
+# text_box = None
 
 
 
