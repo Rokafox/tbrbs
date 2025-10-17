@@ -263,10 +263,11 @@ class Big_Food_Market(Shop):
         package_of_items.append(consumable.FoodPackage2(1))
         package_of_items.append(consumable.FoodPackage3(1))
 
-
+        package_of_items.append(consumable.Apple(random.randint(1, 300)))
         package_of_items.append(consumable.Banana(random.randint(1, 300)))
         package_of_items.append(consumable.Kiwi(random.randint(1, 300)))
         package_of_items.append(consumable.Strawberry(random.randint(1, 300)))
+        package_of_items.append(consumable.Orange_Juice_60(random.randint(1, 300)))
         package_of_items.append(consumable.Pancake(random.randint(1, 300)))
         package_of_items.append(consumable.Mantou(random.randint(1, 300)))
         package_of_items.append(consumable.Orange(random.randint(1, 300)))

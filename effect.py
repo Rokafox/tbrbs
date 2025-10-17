@@ -219,6 +219,11 @@ class Effect:
         else:
             return "説明なし。"
 
+    def set_apply_rule(self, rule: str):
+        if rule in ["default", "stack", "replace"]:
+            self.apply_rule = rule
+        else:
+            raise ValueError("Invalid apply rule. Must be 'default', 'stack', or 'replace'.")
 
 
 class ReservedEffect(Effect):

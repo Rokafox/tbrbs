@@ -10,6 +10,30 @@ from equip import generate_equips_list, adventure_generate_random_equip_with_wei
 # 2. Every time a new consumable is added, add it to get_1_random_consumable() in consumable.py, and also in shop.py.
 
 
+def food_package_distribute_sum(objects: list, target_sum=100, min_value=1):
+    """
+    Modify objects in place so that the sum of their current_stack attributes equals target_sum.
+    Each current_stack value will be at least min_value and appear random.
+    Function by AI.
+    """
+    n = len(objects)
+    if n == 0:
+        raise ValueError("No objects to distribute values to.")
+    if n * min_value > target_sum:
+        raise ValueError(f"Cannot distribute {target_sum} among {n} objects with minimum {min_value}")
+    values = [min_value] * n
+    remaining = target_sum - sum(values)
+    # Distribute remaining using random partition
+    if remaining > 0:
+        # Generate n-1 random split points
+        splits = sorted([random.randint(0, remaining) for _ in range(n - 1)])
+        partition = [splits[0]] + [splits[i] - splits[i-1] for i in range(1, n-1)] + [remaining - splits[-1]]
+        for i in range(n):
+            values[i] += partition[i]
+    for i, obj in enumerate(objects):
+        obj.current_stack = values[i]
+
+
 # Price : common < uncommon < rare < epic < unique < legendary, 50, 100, 250, 500, 1000, 2500
 class Consumable(Block):
     def __init__(self, name, description):
@@ -230,10 +254,8 @@ class FoodPackage(Consumable):
                 food_list.append(instance)
 
         # Now we have for example [Banana(1), Kiwi(1)], but 100 is needed, so a random combination with the sum of 100,
-        # for example [Banana(50), Kiwi(50)], set food.current_stack to 50
-        for f in food_list:
-            f.current_stack = 100 // len(food_list)
-
+        # for example [Banana(50), Kiwi(50)] is needed.
+        food_package_distribute_sum(food_list, target_sum=100)
         player.add_package_of_items_to_inventory(food_list)
         return None
 
@@ -268,9 +290,7 @@ class FoodPackage2(Consumable):
             if instance.type == "Food" and instance.rarity in ["Rare", "Epic"]:
                 food_list.append(instance)
 
-        for f in food_list:
-            f.current_stack = 100 // len(food_list)
-
+        food_package_distribute_sum(food_list, target_sum=100)
         player.add_package_of_items_to_inventory(food_list)
         return None
 
@@ -304,9 +324,7 @@ class FoodPackage3(Consumable):
             if instance.type == "Food" and instance.rarity in ["Unique", "Legendary"]:
                 food_list.append(instance)
 
-        for f in food_list:
-            f.current_stack = 100 // len(food_list)
-
+        food_package_distribute_sum(food_list, target_sum=100)
         player.add_package_of_items_to_inventory(food_list)
         return None
 
@@ -315,18 +333,38 @@ class FoodPackage3(Consumable):
 
 
 
-
-
-
-
-
-
-
-
-
 #==================================================================================================
 # Food
 #==================================================================================================
+class Apple(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Apple", "ATK + 20% for 16-20 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_apple"
+        self.rarity = "Common"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 800
+
+    def E(self, user, player):
+        d = random.randint(16, 20)
+        apple_effect = StatsEffect('Apple', d, True, {"atk": 1.2})
+        apple_effect.additional_name = "Food_Apple"
+        apple_effect.set_apply_rule("stack")
+        user.apply_effect(apple_effect)
+        return f"{user.name} applied Apple for {d} turns."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Apple", additional_name="Food_Apple"):
+                return False
+            else:
+                return True
+
+
 class Banana(Consumable):
     def __init__(self, stack: int):
         super().__init__("Banana", "Recover approximatly 30000 hp.")
@@ -348,7 +386,6 @@ class Banana(Consumable):
             return False
         else:
             return user.hp < user.maxhp - 30000
-        
 
 
 class Kiwi(Consumable):
@@ -397,6 +434,37 @@ class Strawberry(Consumable):
             return False
         else:
             return user.hp < user.maxhp - 150000
+
+
+class Orange_Juice_60(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("60% Orange Juice", "Apply Shield to user for 8-10 turns. Shield absorbs approximatly 112500 damage.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_orange_juice_60"
+        self.rarity = "Rare"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 3000
+
+    def E(self, user, player):
+        d = random.randint(8, 10)
+        shield_amount = int(112500 * random.uniform(0.8, 1.2))
+        orangej_effect = AbsorptionShield('60% Orange Juice', d, True, shield_amount, False)
+        orangej_effect.additional_name = "Food_Orange_Juice_60"
+        orangej_effect.set_apply_rule("stack")
+        user.apply_effect(orangej_effect)
+        return f"{user.name} applied 60% Orange Juice for {d} turns."
+
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="60% Orange Juice", additional_name="Food_Orange_Juice_60"):
+                return False
+            else:
+                return True
+
 
 
 class Pancake(Consumable):
@@ -448,6 +516,7 @@ class Mantou(Consumable):
 class Orange(Consumable):
     def __init__(self, stack: int):
         super().__init__("Orange", "Apply Shield to user for 6-12 turns. Damage is reduced by 25%, each subsequent damage taken on the same turn is further reduced by 25%.")
+        self.description += " When same effect is applied, duration is refreshed."
         self.image = "orange"
         self.rarity = "Unique"
         self.type = "Food"
@@ -459,6 +528,7 @@ class Orange(Consumable):
         d = random.randint(6, 12)
         orange_effect = AntiMultiStrikeReductionShield('Orange', d, True, 0.25, False)
         orange_effect.additional_name = "Food_Orange"
+        orange_effect.set_apply_rule("stack")
         user.apply_effect(orange_effect)
         return f"{user.name} applied Orange for {d} turns."
     
@@ -474,19 +544,21 @@ class Orange(Consumable):
 
 class Orange_Juice(Consumable):
     def __init__(self, stack: int):
-        super().__init__("100% Orange Juice", "Apply Shield to user for 6-12 turns. Shield absorbs approximatly 250000 damage.")
+        super().__init__("100% Orange Juice", "Apply Shield to user for 8-12 turns. Shield absorbs approximatly 225000 damage.")
+        self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_orange_juice"
         self.rarity = "Unique"
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 15000
+        self.market_value = 8000
 
     def E(self, user, player):
-        d = random.randint(6, 12)
-        shield_amount = int(250000 * random.uniform(0.8, 1.2))
+        d = random.randint(8, 12)
+        shield_amount = int(225000 * random.uniform(0.8, 1.2))
         orangej_effect = AbsorptionShield('100% Orange Juice', d, True, shield_amount, False)
         orangej_effect.additional_name = "Food_Orange_Juice"
+        orangej_effect.set_apply_rule("stack")
         user.apply_effect(orangej_effect)
         return f"{user.name} applied 100% Orange Juice for {d} turns."
 
@@ -494,7 +566,7 @@ class Orange_Juice(Consumable):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            if user.has_effect_that_named(effect_name="Orange Juice", additional_name="Food_Orange_Juice"):
+            if user.has_effect_that_named(effect_name="100% Orange Juice", additional_name="Food_Orange_Juice"):
                 return False
             else:
                 return True
@@ -504,5 +576,6 @@ class Orange_Juice(Consumable):
 
 
 def get_1_random_consumable():
-    consumable_list = [Banana(1), Kiwi(1), Strawberry(1), Pancake(1), Mantou(1), Orange(1), Orange_Juice(1)]
+    consumable_list = [Apple(1), Banana(1), Kiwi(1), Strawberry(1), Orange_Juice_60(1),
+                        Pancake(1), Mantou(1), Orange(1), Orange_Juice(1)]
     return random.choice(consumable_list)
