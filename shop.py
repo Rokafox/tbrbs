@@ -161,7 +161,7 @@ class Armory_Brand_Specific_Premium(Shop):
 
     def decide_price(self):
         for k, (s, d, f) in self.inventory.copy().items():
-            price = k.market_value // 100
+            price = k.market_value // 200
             # price *= k.market_value // 100
             self.inventory[k] = (price, d, f)
 
