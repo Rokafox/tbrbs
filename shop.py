@@ -265,12 +265,15 @@ class Big_Food_Market(Shop):
 
         package_of_items.append(consumable.Apple(random.randint(1, 300)))
         package_of_items.append(consumable.Banana(random.randint(1, 300)))
+        package_of_items.append(consumable.Orange(random.randint(1, 300)))
         package_of_items.append(consumable.Kiwi(random.randint(1, 300)))
+        package_of_items.append(consumable.Fried_Shrimp(random.randint(1, 300)))
         package_of_items.append(consumable.Strawberry(random.randint(1, 300)))
         package_of_items.append(consumable.Orange_Juice_60(random.randint(1, 300)))
+        package_of_items.append(consumable.Milk(random.randint(1, 300)))
         package_of_items.append(consumable.Pancake(random.randint(1, 300)))
         package_of_items.append(consumable.Mantou(random.randint(1, 300)))
-        package_of_items.append(consumable.Orange(random.randint(1, 300)))
+        package_of_items.append(consumable.Ramen(random.randint(1, 300)))
         package_of_items.append(consumable.Orange_Juice(random.randint(1, 300)))
 
         # Choose 5 random items from the package_of_items

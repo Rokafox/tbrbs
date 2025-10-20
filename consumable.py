@@ -338,7 +338,7 @@ class FoodPackage3(Consumable):
 #==================================================================================================
 class Apple(Consumable):
     def __init__(self, stack: int):
-        super().__init__("Apple", "ATK + 20% for 16-20 turns.")
+        super().__init__("Apple", "ATK + 10% for 16-20 turns.")
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_apple"
         self.rarity = "Common"
@@ -349,7 +349,7 @@ class Apple(Consumable):
 
     def E(self, user, player):
         d = random.randint(16, 20)
-        apple_effect = StatsEffect('Apple', d, True, {"atk": 1.2})
+        apple_effect = StatsEffect('Apple', d, True, {"atk": 1.1})
         apple_effect.additional_name = "Food_Apple"
         apple_effect.set_apply_rule("stack")
         user.apply_effect(apple_effect)
@@ -388,6 +388,36 @@ class Banana(Consumable):
             return user.hp < user.maxhp - 30000
 
 
+class Orange(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Orange", "Apply Shield to user for 8-9 turns. Shield absorbs approximatly 22500 damage.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_orange"
+        self.rarity = "Common"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 800
+
+    def E(self, user, player):
+        d = random.randint(8, 9)
+        shield_amount = int(22500 * random.uniform(0.8, 1.2))
+        orange_effect = AbsorptionShield('Orange', d, True, shield_amount, False)
+        orange_effect.additional_name = "Food_Orange"
+        orange_effect.set_apply_rule("stack")
+        user.apply_effect(orange_effect)
+        return f"{user.name} applied Orange for {d} turns."
+
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Orange", additional_name="Food_Orange"):
+                return False
+            else:
+                return True
+
+
 class Kiwi(Consumable):
     def __init__(self, stack: int):
         super().__init__("Kiwi", "Recover approximatly 70000 hp.")
@@ -410,6 +440,35 @@ class Kiwi(Consumable):
         else:
             return user.hp < user.maxhp - 70000
         
+
+class Fried_Shrimp(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Fried Shrimp", "ATK + 15% for 17-21 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_fried_shrimp"
+        self.rarity = "Uncommon"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 1500
+
+    def E(self, user, player):
+        d = random.randint(17, 21)
+        fs_effect = StatsEffect('Fried Shrimp', d, True, {"atk": 1.15})
+        fs_effect.additional_name = "Food_Fried_Shrimp"
+        fs_effect.set_apply_rule("stack")
+        user.apply_effect(fs_effect)
+        return f"{user.name} applied Fried Shrimp for {d} turns."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Fried Shrimp", additional_name="Food_Fried_Shrimp"):
+                return False
+            else:
+                return True
+
 
 class Strawberry(Consumable):
     def __init__(self, stack: int):
@@ -466,6 +525,22 @@ class Orange_Juice_60(Consumable):
                 return True
 
 
+class Milk(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Milk", "Gain EXP by approximately 20% of max EXP.")
+        self.image = "food_milk"
+        self.rarity = "Epic"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 3000
+    def E(self, user, player):
+        exp_gain = int(user.maxexp * 0.2 * random.uniform(0.8, 1.2))
+        user.gain_exp(exp_gain)
+        return f"{user.name} gained {exp_gain} EXP."
+    def auto_E_condition(self, user, player):
+        return False
+
 
 class Pancake(Consumable):
     def __init__(self, stack: int):
@@ -513,11 +588,11 @@ class Mantou(Consumable):
             return user.hp < user.maxhp - 300000
 
 
-class Orange(Consumable):
+class Ramen(Consumable):
     def __init__(self, stack: int):
-        super().__init__("Orange", "Apply Shield to user for 6-12 turns. Damage is reduced by 25%, each subsequent damage taken on the same turn is further reduced by 25%.")
+        super().__init__("Ramen", "Apply Shield to user for 9-12 turns. Damage is reduced by 25%, each subsequent damage taken on the same turn is further reduced by 25%.")
         self.description += " When same effect is applied, duration is refreshed."
-        self.image = "orange"
+        self.image = "food_ramen"
         self.rarity = "Unique"
         self.type = "Food"
         self.current_stack = max(1, stack)
@@ -525,18 +600,18 @@ class Orange(Consumable):
         self.market_value = 8000
 
     def E(self, user, player):
-        d = random.randint(6, 12)
-        orange_effect = AntiMultiStrikeReductionShield('Orange', d, True, 0.25, False)
-        orange_effect.additional_name = "Food_Orange"
-        orange_effect.set_apply_rule("stack")
-        user.apply_effect(orange_effect)
-        return f"{user.name} applied Orange for {d} turns."
-    
+        d = random.randint(9, 12)
+        ramen_effect = AntiMultiStrikeReductionShield('Ramen', d, True, 0.25, False)
+        ramen_effect.additional_name = "Food_Ramen"
+        ramen_effect.set_apply_rule("stack")
+        user.apply_effect(ramen_effect)
+        return f"{user.name} applied Ramen for {d} turns."
+
     def auto_E_condition(self, user, player):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            if user.has_effect_that_named(effect_name="Orange", additional_name="Food_Orange"):
+            if user.has_effect_that_named(effect_name="Ramen", additional_name="Food_Ramen"):
                 return False
             else:
                 return True
@@ -544,7 +619,7 @@ class Orange(Consumable):
 
 class Orange_Juice(Consumable):
     def __init__(self, stack: int):
-        super().__init__("100% Orange Juice", "Apply Shield to user for 8-12 turns. Shield absorbs approximatly 225000 damage.")
+        super().__init__("100% Orange Juice", "Apply Shield to user for 9-12 turns. Shield absorbs approximatly 225000 damage.")
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_orange_juice"
         self.rarity = "Unique"
@@ -554,7 +629,7 @@ class Orange_Juice(Consumable):
         self.market_value = 8000
 
     def E(self, user, player):
-        d = random.randint(8, 12)
+        d = random.randint(9, 12)
         shield_amount = int(225000 * random.uniform(0.8, 1.2))
         orangej_effect = AbsorptionShield('100% Orange Juice', d, True, shield_amount, False)
         orangej_effect.additional_name = "Food_Orange_Juice"
@@ -576,6 +651,6 @@ class Orange_Juice(Consumable):
 
 
 def get_1_random_consumable():
-    consumable_list = [Apple(1), Banana(1), Kiwi(1), Strawberry(1), Orange_Juice_60(1),
-                        Pancake(1), Mantou(1), Orange(1), Orange_Juice(1)]
+    consumable_list = [Apple(1), Banana(1), Orange(1), Kiwi(1), Fried_Shrimp(1), Strawberry(1), Orange_Juice_60(1),
+                        Milk(1), Pancake(1), Mantou(1), Ramen(1), Orange_Juice(1)]
     return random.choice(consumable_list)
