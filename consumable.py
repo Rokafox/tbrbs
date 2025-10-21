@@ -365,6 +365,35 @@ class Apple(Consumable):
                 return True
 
 
+class Coconuts(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Coconuts", "DEF + 10% for 16-20 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_coconuts"
+        self.rarity = "Common"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 800
+
+    def E(self, user, player):
+        d = random.randint(16, 20)
+        coconuts_effect = StatsEffect('Coconuts', d, True, {"defense": 1.1})
+        coconuts_effect.additional_name = "Food_Coconuts"
+        coconuts_effect.set_apply_rule("stack")
+        user.apply_effect(coconuts_effect)
+        return f"{user.name} applied Coconuts for {d} turns."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Coconuts", additional_name="Food_Coconuts"):
+                return False
+            else:
+                return True
+
+
 class Banana(Consumable):
     def __init__(self, stack: int):
         super().__init__("Banana", "Recover approximatly 30000 hp.")
@@ -470,6 +499,36 @@ class Fried_Shrimp(Consumable):
                 return True
 
 
+# def + 15%
+class Pomegranate(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Pomegranate", "DEF + 15% for 17-21 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_pomegranate"
+        self.rarity = "Uncommon"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 1500
+
+    def E(self, user, player):
+        d = random.randint(17, 21)
+        pomo_effect = StatsEffect('Pomegranate', d, True, {"defense": 1.15})
+        pomo_effect.additional_name = "Food_Pomegranate"
+        pomo_effect.set_apply_rule("stack")
+        user.apply_effect(pomo_effect)
+        return f"{user.name} applied Pomegranate for {d} turns."
+
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Pomegranate", additional_name="Food_Pomegranate"):
+                return False
+            else:
+                return True
+
+
 class Strawberry(Consumable):
     def __init__(self, stack: int):
         super().__init__("Strawberry", "")
@@ -529,7 +588,7 @@ class Milk(Consumable):
     def __init__(self, stack: int):
         super().__init__("Milk", "Gain EXP by approximately 20% of max EXP.")
         self.image = "food_milk"
-        self.rarity = "Epic"
+        self.rarity = "Rare"
         self.type = "Food"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
@@ -540,6 +599,35 @@ class Milk(Consumable):
         return f"{user.name} gained {exp_gain} EXP."
     def auto_E_condition(self, user, player):
         return False
+
+
+class Sandwich(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Sandwich", "All stats + 5% for 18-22 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_sandwich"
+        self.rarity = "Rare"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 3000
+
+    def E(self, user, player):
+        d = random.randint(18, 22)
+        sandwich_effect = StatsEffect('Sandwich', d, True, {"atk": 1.05, "defense": 1.05, "spd": 1.05, "maxhp": 1.05})
+        sandwich_effect.additional_name = "Food_Sandwich"
+        sandwich_effect.set_apply_rule("stack")
+        user.apply_effect(sandwich_effect)
+        return f"{user.name} applied Sandwich for {d} turns."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Sandwich", additional_name="Food_Sandwich"):
+                return False
+            else:
+                return True
 
 
 class Pancake(Consumable):
@@ -564,6 +652,39 @@ class Pancake(Consumable):
         else:
             return user.hp < user.maxhp - 230000
         
+
+class Swiss_Roll(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Swiss Roll", "Regenerate approximately 26450 hp each turn for 10 turns.")
+        self.image = "food_swiss_roll"
+        self.rarity = "Epic"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 5000
+
+    def E(self, user, player):
+        heal_func = lambda character, buff_applier: int(26450 * random.uniform(0.8, 1.2))
+        swiss_roll_effect = ContinuousHealEffect('Swiss Roll', 10, True, heal_func, user,
+                                                 value_function_description="approximatly 26450", 
+                                                 value_function_description_jp="約26450")
+        swiss_roll_effect.additional_name = "Food_Swiss_Roll"
+        swiss_roll_effect.set_apply_rule("stack")
+        user.apply_effect(swiss_roll_effect)
+        return f"{user.name} applied Swiss Roll for 10 turns."
+    
+    def auto_E_condition(self, user, player):
+        if user.hp >= user.maxhp:
+            return False
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Swiss Roll", additional_name="Food_Swiss_Roll"):
+                return False
+            else:
+                return True
+
+
 
 class Mantou(Consumable):
     def __init__(self, stack: int):
@@ -647,10 +768,40 @@ class Orange_Juice(Consumable):
                 return True
 
 
+class Matcha_Roll(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Matcha Roll", "All stats + 12% for 22-26 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_matcha_roll"
+        self.rarity = "Legendary"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 12000
+
+    def E(self, user, player):
+        d = random.randint(22, 26)
+        matcha_effect = StatsEffect('Matcha Roll', d, True, {"atk": 1.12, "defense": 1.12, "spd": 1.12, "maxhp": 1.12})
+        matcha_effect.additional_name = "Food_Matcha_Roll"
+        matcha_effect.set_apply_rule("stack")
+        user.apply_effect(matcha_effect)
+        return f"{user.name} applied Matcha Roll for {d} turns."
+
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Matcha Roll", additional_name="Food_Matcha_Roll"):
+                return False
+            else:
+                return True
 
 
 
 def get_1_random_consumable():
-    consumable_list = [Apple(1), Banana(1), Orange(1), Kiwi(1), Fried_Shrimp(1), Strawberry(1), Orange_Juice_60(1),
-                        Milk(1), Pancake(1), Mantou(1), Ramen(1), Orange_Juice(1)]
+    consumable_list = [Apple(1), Coconuts(1), Banana(1), Orange(1),
+                        Kiwi(1), Fried_Shrimp(1), Pomegranate(1), Strawberry(1), Orange_Juice_60(1),
+                        Milk(1), Sandwich(1), Pancake(1), Swiss_Roll(1), Mantou(1), Ramen(1), Orange_Juice(1),
+                        Matcha_Roll(1),
+                          ]
     return random.choice(consumable_list)
