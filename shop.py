@@ -280,6 +280,7 @@ class Big_Food_Market(Shop):
         package_of_items.append(consumable.Ramen(random.randint(1, 300)))
         package_of_items.append(consumable.Orange_Juice(random.randint(1, 300)))
         package_of_items.append(consumable.Matcha_Roll(random.randint(1, 300)))
+        package_of_items.append(consumable.Icecream(random.randint(1, 300)))
 
         # Choose 5 random items from the package_of_items
         if len(package_of_items) < 5:

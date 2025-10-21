@@ -336,6 +336,7 @@ class FoodPackage3(Consumable):
 #==================================================================================================
 # Food
 #==================================================================================================
+# Common
 class Apple(Consumable):
     def __init__(self, stack: int):
         super().__init__("Apple", "ATK + 10% for 16-20 turns.")
@@ -447,6 +448,7 @@ class Orange(Consumable):
                 return True
 
 
+# Uncommon
 class Kiwi(Consumable):
     def __init__(self, stack: int):
         super().__init__("Kiwi", "Recover approximatly 70000 hp.")
@@ -499,7 +501,6 @@ class Fried_Shrimp(Consumable):
                 return True
 
 
-# def + 15%
 class Pomegranate(Consumable):
     def __init__(self, stack: int):
         super().__init__("Pomegranate", "DEF + 15% for 17-21 turns.")
@@ -529,6 +530,7 @@ class Pomegranate(Consumable):
                 return True
 
 
+# Rare
 class Strawberry(Consumable):
     def __init__(self, stack: int):
         super().__init__("Strawberry", "")
@@ -630,6 +632,7 @@ class Sandwich(Consumable):
                 return True
 
 
+# Epic
 class Pancake(Consumable):
     def __init__(self, stack: int):
         super().__init__("Pancake", "Recover approximatly 230000 hp.")
@@ -685,7 +688,7 @@ class Swiss_Roll(Consumable):
                 return True
 
 
-
+# Unique
 class Mantou(Consumable):
     def __init__(self, stack: int):
         super().__init__("Mantou", "Recover approximatly 300000 hp.")
@@ -768,6 +771,7 @@ class Orange_Juice(Consumable):
                 return True
 
 
+# Legendary
 class Matcha_Roll(Consumable):
     def __init__(self, stack: int):
         super().__init__("Matcha Roll", "All stats + 12% for 22-26 turns.")
@@ -797,11 +801,34 @@ class Matcha_Roll(Consumable):
                 return True
 
 
+class Icecream(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Icecream", "Recover 222222 hp and remove 2 random debuffs.")
+        self.image = "food_icecream"
+        self.rarity = "Legendary"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 12000
+
+    def E(self, user, player):
+        heal_amount = 222222
+        user.heal_hp(heal_amount, self)
+        user.remove_random_amount_of_debuffs(2)
+        return f"{user.name} healed {heal_amount} hp and removed 2 debuffs by {self.name}."
+
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            return user.hp < user.maxhp - 222222 and len(user.get_active_removable_effects(get_buffs=False, get_debuffs=True)) > 0
+
+
 
 def get_1_random_consumable():
     consumable_list = [Apple(1), Coconuts(1), Banana(1), Orange(1),
                         Kiwi(1), Fried_Shrimp(1), Pomegranate(1), Strawberry(1), Orange_Juice_60(1),
                         Milk(1), Sandwich(1), Pancake(1), Swiss_Roll(1), Mantou(1), Ramen(1), Orange_Juice(1),
-                        Matcha_Roll(1),
+                        Matcha_Roll(1), Icecream(1)
                           ]
     return random.choice(consumable_list)
