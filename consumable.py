@@ -688,6 +688,35 @@ class Swiss_Roll(Consumable):
                 return True
 
 
+class Chocolate(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Chocolate", "CRIT Rate + 55.55% for 19-23 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_chocolate"
+        self.rarity = "Epic"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 5000
+
+    def E(self, user, player):
+        d = random.randint(19, 23)
+        chocolate_effect = StatsEffect('Chocolate', d, True, {"crit": 0.5555})
+        chocolate_effect.additional_name = "Food_Chocolate"
+        chocolate_effect.set_apply_rule("stack")
+        user.apply_effect(chocolate_effect)
+        return f"{user.name} applied Chocolate for {d} turns."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Chocolate", additional_name="Food_Chocolate"):
+                return False
+            else:
+                return True
+
+
 # Unique
 class Mantou(Consumable):
     def __init__(self, stack: int):
@@ -714,7 +743,7 @@ class Mantou(Consumable):
 
 class Ramen(Consumable):
     def __init__(self, stack: int):
-        super().__init__("Ramen", "Apply Shield to user for 9-12 turns. Damage is reduced by 25%, each subsequent damage taken on the same turn is further reduced by 25%.")
+        super().__init__("Ramen", "Apply Shield to user for 9-12 turns. Damage is reduced by 15%, each subsequent damage taken on the same turn is further reduced by 15%.")
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_ramen"
         self.rarity = "Unique"
@@ -725,7 +754,7 @@ class Ramen(Consumable):
 
     def E(self, user, player):
         d = random.randint(9, 12)
-        ramen_effect = AntiMultiStrikeReductionShield('Ramen', d, True, 0.25, False)
+        ramen_effect = AntiMultiStrikeReductionShield('Ramen', d, True, 0.15, False)
         ramen_effect.additional_name = "Food_Ramen"
         ramen_effect.set_apply_rule("stack")
         user.apply_effect(ramen_effect)
@@ -824,11 +853,32 @@ class Icecream(Consumable):
             return user.hp < user.maxhp - 222222 and len(user.get_active_removable_effects(get_buffs=False, get_debuffs=True)) > 0
 
 
+class Fries(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Fries", "Apply Shield to user for 14-16 turns. Shield reduces damage taken by 25%.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_fries"
+        self.rarity = "Legendary"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 12000
 
-def get_1_random_consumable():
-    consumable_list = [Apple(1), Coconuts(1), Banana(1), Orange(1),
-                        Kiwi(1), Fried_Shrimp(1), Pomegranate(1), Strawberry(1), Orange_Juice_60(1),
-                        Milk(1), Sandwich(1), Pancake(1), Swiss_Roll(1), Mantou(1), Ramen(1), Orange_Juice(1),
-                        Matcha_Roll(1), Icecream(1)
-                          ]
-    return random.choice(consumable_list)
+    def E(self, user, player):
+        d = random.randint(14, 16)
+        fries_effect = ReductionShield('Fries', d, True, 0.25, False)
+        fries_effect.additional_name = "Food_Fries"
+        fries_effect.set_apply_rule("stack")
+        user.apply_effect(fries_effect)
+        return f"{user.name} applied Fries for {d} turns."
+
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Fries", additional_name="Food_Fries"):
+                return False
+            else:
+                return True
+
+
