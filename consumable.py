@@ -882,3 +882,30 @@ class Fries(Consumable):
                 return True
 
 
+class Chocolate_Cake(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Chocolate Cake", "CRIT Rate + 55.55%, CRIT Dmg + 33.33% for 21-25 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_chocolate_cake"
+        self.rarity = "Legendary"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 12000
+
+    def E(self, user, player):
+        d = random.randint(21, 25)
+        chocolate_effect = StatsEffect('Chocolate Cake', d, True, {"crit": 0.5555, "critdmg": 0.3333})
+        chocolate_effect.additional_name = "Food_Chocolate_Cake"
+        chocolate_effect.set_apply_rule("stack")
+        user.apply_effect(chocolate_effect)
+        return f"{user.name} applied Chocolate Cake for {d} turns."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Chocolate Cake", additional_name="Food_Chocolate_Cake"):
+                return False
+            else:
+                return True
