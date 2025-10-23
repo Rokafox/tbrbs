@@ -1,7 +1,9 @@
 import bisect
 from collections.abc import Callable
+import inspect
 import copy, random
 import re
+import textwrap
 from typing import Generator, Tuple
 from numpy import character
 from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BirdShadowEffect, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DamageTypeConvertionEffect, DecayEffect, DurationBonusEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FallingPetalEffect, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
@@ -9,6 +11,8 @@ from equip import Equip, generate_equips_list, adventure_generate_random_equip_w
 import more_itertools as mit
 import itertools
 import global_vars
+
+# TODO: Add skill1_counter to Character class
 
 
 class Character:
@@ -84,6 +88,8 @@ class Character:
         self.skill2_cooldown = 0
         self.skill1_can_be_used = True
         self.skill2_can_be_used = True
+        self.skill1_can_be_copied = True
+        self.skill2_can_be_copied = True
         self.damage_taken_this_turn: list[tuple[int, Character, str]] = []
         # list of tuples (damage, attacker, dt), damage is int, attacker is Character object, dt is damage type
         # useful for recording damage taken sequence for certain effects
@@ -2759,7 +2765,7 @@ class Cerberus(Character):
     Attacker, execute, late power spike
     Build: crit, spd, def, atk
     """
-    def __init__(self, name, lvl, exp=0, equip=None, image=None, execution_threshold=0.15):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None, execution_threshold=0.16):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "Cerberus"
         self.execution_threshold = execution_threshold
@@ -2797,7 +2803,8 @@ class Cerberus(Character):
             if target.hp < target.maxhp * self.execution_threshold and not target.is_dead():
                 target.take_bypass_status_effect_damage(target.hp, self)
                 global_vars.turn_info_string += f"{target.name} is executed by {self.name}.\n"
-                self.execution_threshold += 0.04
+                if self.__class__.__name__ == "Cerberus":
+                    self.execution_threshold += 0.04
                 self.heal_hp(self.maxhp * 0.3, self)
                 stats_dict = {"atk": 1.3, "critdmg": 0.3}
                 self.update_stats(stats_dict)
@@ -2942,18 +2949,18 @@ class Pheonix(Character):
                                     "燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
         self.skill3_description_jp = "倒れた次のターンにHP80%で復活する。復活した場合、攻撃力が30ターンの間20%増加する。" \
                                     "この効果はスキルで取り除くことができない。"
-        self.first_time = True
+        self.skill2_first_use = True
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
     def clear_others(self):
-        self.first_time = True
+        self.skill2_first_use = True
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n\nFirst time on skill 2: {self.first_time}"
+        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n\nFirst time on skill 2: {self.skill2_first_use}"
 
     def skill_tooltip_jp(self):
-        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n\n初回スキル2発動:{self.first_time}"
+        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n\n初回スキル2発動:{self.skill2_first_use}"
 
     def skill1_logic(self):
         def burn_effect(self, target):
@@ -2963,8 +2970,8 @@ class Pheonix(Character):
         return damage_dealt
 
     def skill2_logic(self):
-        if self.first_time:
-            self.first_time = False
+        if self.skill2_first_use:
+            self.skill2_first_use = False
             allies = self.get_neighbor_allies_not_including_self()
             if not allies:
                 return 0
@@ -4195,6 +4202,8 @@ class Yuri(Character):
         self.bt_eagle = False
         self.bt_cat = False
         self.skill2_can_be_used = False
+        self.skill1_can_be_copied = False
+        self.skill2_can_be_copied = False
 
     def clear_others(self):
         self.bt_bear = False
@@ -4202,6 +4211,8 @@ class Yuri(Character):
         self.bt_eagle = False
         self.bt_cat = False
         self.skill2_can_be_used = False
+        self.skill1_can_be_copied = False
+        self.skill2_can_be_copied = False
 
     def status_effects_at_end_of_turn(self):
         if self.skill1_can_be_used and self.bt_bear and self.bt_wolf and self.bt_eagle and self.bt_cat:
@@ -5684,7 +5695,7 @@ class Lenpo(Character):
             t = self.target_selection(keyword="n_highest_attr", keyword2="1", keyword3="hp", keyword4="enemy")
             t = mit.one(t)
             damage_dealt += self.attack(multiplier=4.0, target_list=[t])
-        if self.is_alive():
+        if self.is_alive() and self.__class__.__name__ == "Lenpo":
             sd = self.get_effect_that_named("Self Defense", "Lenpo_Self_Defense")
             sd.uses += 3
         return damage_dealt
@@ -5702,7 +5713,7 @@ class Lenpo(Character):
             t.apply_effect(ContinuousHealEffect("Regeneration", 24, True, value_function=heal_func, buff_applier=self,
                                                 value_function_description=f"{((abs(t_hp_after - t_hp_prev)) * 1.00) / 24}",
                                                 value_function_description_jp=f"{((abs(t_hp_after - t_hp_prev)) * 1.00) / 24}"))
-        if self.is_alive():
+        if self.is_alive() and self.__class__.__name__ == "Lenpo":
             sd = self.get_effect_that_named("Self Defense", "Lenpo_Self_Defense")
             sd.uses += 3
         return damage_dealt
@@ -6413,12 +6424,19 @@ class Clarence(Character):
             if target.is_alive() and target.hp < target.maxhp * 0.10:
                 target.take_bypass_status_effect_damage(target.hp, self)
         damage_dealt = self.attack(multiplier=5.0, repeat=1, target_kw1="all_enemy", func_damage_step=damage_reduction, func_after_dmg=after_dmg)
-        self.clarence_gain_stars(5)
+        if self.__class__.__name__ == "Clarence":
+            self.clarence_gain_stars(5)
         return damage_dealt
 
     def skill2_logic(self):
         stars = self.get_effect_that_named("Stars", "Clarence_Stars")
-        stars_available = max(stars.stacks, 0)
+        if not stars:
+            global_vars.turn_info_string += f"{self.name} has no Stars to consume for skill 2.\n"
+            return 0
+        stars_available = stars.stacks
+        if stars_available == 0:
+            global_vars.turn_info_string += f"{self.name} has no Stars to consume for skill 2.\n"
+            return 0
         damage_dealt = 0
         if stars_available:
             if 0 < stars_available <= 5:
@@ -6437,8 +6455,8 @@ class Clarence(Character):
                     if self.is_alive() and self.enemy:
                         damage_dealt += self.attack(multiplier=1.0, repeat=stars_available - 10, damage_type="bypass")
             stars.stacks = 0
-
-        self.clarence_gain_stars(5)
+        if self.__class__.__name__ == "Clarence":
+            self.clarence_gain_stars(5)
         return damage_dealt
 
     def skill3(self):
@@ -6606,7 +6624,7 @@ class ShuijingAL(Character):
             tsuru.additional_name = "ShuijingAL_Tsuru"
             tsuru.apply_rule = "stack"
             e.apply_effect(tsuru)
-        if self.skill2_first_use:
+        if self.skill2_first_use and self.__class__.__name__ == "ShuijingAL":
             assert self.shuijingal_marked_ally is not None
             self.shuijingal_marked_ally.try_remove_effect_with_name("Delay")
             self.try_remove_effect_with_name("Ready")
@@ -8128,11 +8146,111 @@ class Niles(Character):
         pass
 
 
+class Tim(Character):
+    """
+    Cast skill from ally and enemy's 
+    Build: Any
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "Tim"
+        self.skill1_description = "Copy and cast skill1 from an ally of highest atk except yourself."
+        self.skill2_description = "Copy and cast skill2 from an enemy of highest atk."
+        self.skill3_description = "Normal attack copy and cast a random skill from a random ally or enemy except yourself." \
+        " Skill copy has no effect if there is no valid target or the target's skill cannot be copied."
+        self.skill1_description_jp = "味方のうち自分以外の攻撃力が最も高い者のスキル1をコピーして発動する。"
+        self.skill2_description_jp = "敵のうち攻撃力が最も高い者のスキル2をコピーして発動する。"
+        self.skill3_description_jp = "通常攻撃は自分以外の味方または敵のランダムなスキルをコピーして発動する。" \
+        "スキルをコピーしようとする時、有効な対象がいない場合或は対象のスキルがコピーできない場合、効果がない。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.skill2_extra_damage = 0
+        self.raven_skill2_counter = 0
+        self.raven_skill2_damage_dealt = 0
+        self.skill2_first_use = True
+        self.execution_threshold = 0
 
+    def clear_others(self):
+        self.skill2_extra_damage = 0
+        self.raven_skill2_counter = 0
+        self.raven_skill2_damage_dealt = 0
+        self.skill2_first_use = True
+        self.execution_threshold = 0
 
+    def skill1_logic(self):
+        ally_except_self = [x for x in self.ally if x != self and x.skill1_can_be_copied]
+        if not ally_except_self:
+            global_vars.turn_info_string += f"No effect! {self.name} has no ally to copy skill1 from.\n"
+            return 0
+        ally_high_atk = max(ally_except_self, key=lambda x: x.atk)
+        global_vars.turn_info_string += f"{self.name} is copying skill1 from {ally_high_atk.name}.\n"
+        # return ally_high_atk.skill1_logic() # Not this
+        # Copy all code from ally_high_atk.skill1_logic() and execute here
+        # Get the complete source code and dedent it
+        source_code = inspect.getsource(ally_high_atk.skill1_logic)
+        source_code = textwrap.dedent(source_code)
+        # Execute to create the function in a namespace
+        original_globals = ally_high_atk.skill1_logic.__globals__
+        namespace = original_globals.copy()
+        exec(source_code, namespace)
+        # Call the function with self as the argument
+        result = namespace['skill1_logic'](self)
+        return result
 
+    def skill2_logic(self):
+        # Could be self if charmed
+        enemy_high_atk_list = [x for x in self.enemy if x != self and x.skill2_can_be_copied]
+        enemy_high_atk_list = sorted(enemy_high_atk_list, key=lambda x: x.atk, reverse=True)
+        if not enemy_high_atk_list:
+            global_vars.turn_info_string += f"No effect! {self.name} has no enemy to copy skill2 from.\n"
+            return 0
+        enemy_high_atk = enemy_high_atk_list[0]
+        global_vars.turn_info_string += f"{self.name} is copying skill2 from {enemy_high_atk.name}.\n"
+        # Get the complete source code and dedent it
+        source_code = inspect.getsource(enemy_high_atk.skill2_logic)
+        source_code = textwrap.dedent(source_code)
+        # Execute to create the function in a namespace
+        original_globals = enemy_high_atk.skill2_logic.__globals__
+        namespace = original_globals.copy()
+        exec(source_code, namespace)
+        # Call the function with self as the argument
+        result = namespace['skill2_logic'](self)
+        return result
 
+    def skill3(self):
+        pass
 
+    def normal_attack(self):
+        target_except_self = self.ally + self.enemy
+        target_except_self = [x for x in target_except_self if x != self]
+        target_except_self = [x for x in target_except_self if x.skill1_can_be_copied or x.skill2_can_be_copied]
+        if not target_except_self:
+            global_vars.turn_info_string += f"No effect! {self.name} has no target to copy a skill.\n"
+            return 0
+        target = random.choice(target_except_self)
+        skill_choice = []
+        if target.skill1_can_be_copied:
+            skill_choice.append(1)
+        if target.skill2_can_be_copied:
+            skill_choice.append(2)
+        chosen_skill = random.choice(skill_choice)
+        if chosen_skill == 1:
+            global_vars.turn_info_string += f"{self.name} is copying skill1 from {target.name}.\n"
+            source_code = inspect.getsource(target.skill1_logic)
+        else:
+            global_vars.turn_info_string += f"{self.name} is copying skill2 from {target.name}.\n"
+            source_code = inspect.getsource(target.skill2_logic)
+        source_code = textwrap.dedent(source_code)
+        # Execute to create the function in a namespace
+        original_globals = target.skill1_logic.__globals__ if chosen_skill == 1 else target.skill2_logic.__globals__
+        namespace = original_globals.copy()
+        exec(source_code, namespace)
+        # Call the function with self as the argument
+        if chosen_skill == 1:
+            result = namespace['skill1_logic'](self)
+        else:
+            result = namespace['skill2_logic'](self)
+        return result
 
 
 

@@ -530,6 +530,36 @@ class Pomegranate(Consumable):
                 return True
 
 
+class Baozi(Consumable):
+    # maxhp + 30% for 27-33 turns
+    def __init__(self, stack: int):
+        super().__init__("Baozi", "Max HP + 30% for 27-33 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_baozi"
+        self.rarity = "Uncommon"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 1500
+
+    def E(self, user, player):
+        d = random.randint(27, 33)
+        baozi_effect = StatsEffect('Baozi', d, True, {"maxhp": 1.3})
+        baozi_effect.additional_name = "Food_Baozi"
+        baozi_effect.set_apply_rule("stack")
+        user.apply_effect(baozi_effect)
+        return f"{user.name} applied Baozi for {d} turns."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Baozi", additional_name="Food_Baozi"):
+                return False
+            else:
+                return True
+
+
 # Rare
 class Strawberry(Consumable):
     def __init__(self, stack: int):

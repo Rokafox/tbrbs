@@ -27,7 +27,7 @@ class FinePrinter:
             print(*args, **kwargs)
 
 
-def get_all_characters(test_mode: int) -> tuple[list[character.Character], str]:
+def get_all_characters(test_mode: int | str) -> tuple[list[character.Character], str]:
     all_characters = [cls(name, 40) for name, cls in character.__dict__.items() 
                     if inspect.isclass(cls) and issubclass(cls, character.Character) and cls != character.Character]
     all_monsters = [cls(name, 40) for name, cls in monsters.__dict__.items() 
@@ -398,7 +398,7 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
             
             with open("logs/error.log", "a") as f:
                 f.write(global_vars.turn_info_string + "\n" + str(e) + "\n")
-                f.write(traceback.format_exc())  # トレースバックをログファイルに書き込み
+                f.write(traceback.format_exc())
                 f.write(current_party_info + "\n\n\n\n\n")
 
         turns_total += turns

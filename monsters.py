@@ -2181,13 +2181,13 @@ class Captain(Monster):
         self.is_boss = False
         self.skill1_add_def_down = False
         self.skill2_add_unhealable = False
+        self.skill1_can_be_copied = False
+        self.skill2_can_be_copied = False
 
     def clear_others(self):
         self.skill1_add_def_down = False
         self.skill2_add_unhealable = False
-        super().clear_others()
 
-    
 
     def skill1_logic(self):
         def def_down(self, target):
@@ -5927,7 +5927,8 @@ class Daji(Monster):
         self.is_boss = True
         self.current_atk_bonus = 1.11
         self.current_shield_bonus = 3
-
+        self.skill1_can_be_copied = False
+        self.skill2_can_be_copied = False
     
 
     def clear_others(self):

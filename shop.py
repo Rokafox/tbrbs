@@ -259,9 +259,9 @@ class Big_Food_Market(Shop):
         # package_of_items.append(consumable.EquipPackage5(random.randint(1, 10)))
         # package_of_items.append(consumable.EquipPackage6(random.randint(1, 10)))
 
-        package_of_items.append(consumable.FoodPackage(random.randint(1, 5)))
-        package_of_items.append(consumable.FoodPackage2(random.randint(1, 5)))
-        package_of_items.append(consumable.FoodPackage3(random.randint(1, 5)))
+        package_of_items.append(consumable.FoodPackage(random.randint(1, 9)))
+        package_of_items.append(consumable.FoodPackage2(random.randint(1, 9)))
+        package_of_items.append(consumable.FoodPackage3(random.randint(1, 9)))
 
         package_of_items.append(consumable.Apple(random.randint(100, 500)))
         package_of_items.append(consumable.Coconuts(random.randint(100, 500)))
@@ -270,6 +270,7 @@ class Big_Food_Market(Shop):
         package_of_items.append(consumable.Kiwi(random.randint(100, 500)))
         package_of_items.append(consumable.Fried_Shrimp(random.randint(100, 500)))
         package_of_items.append(consumable.Pomegranate(random.randint(100, 500)))
+        package_of_items.append(consumable.Baozi(random.randint(100, 500)))
         package_of_items.append(consumable.Strawberry(random.randint(100, 500)))
         package_of_items.append(consumable.Orange_Juice_60(random.randint(100, 500)))
         package_of_items.append(consumable.Milk(random.randint(100, 500)))
