@@ -1,5 +1,4 @@
 import difflib
-import inspect
 import os, json
 import statistics
 import sys

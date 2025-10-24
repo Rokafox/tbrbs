@@ -90,6 +90,9 @@ class Character:
         self.skill2_can_be_used = True
         self.skill1_can_be_copied = True
         self.skill2_can_be_copied = True
+        self.skill1_counter = 0 # counts how many times skill1 has been used
+        self.skill2_counter = 0
+        self.skill_func_flag_cooldown_does_not_apply = False # temp flag for skill1() and skill2()
         self.damage_taken_this_turn: list[tuple[int, Character, str]] = []
         # list of tuples (damage, attacker, dt), damage is int, attacker is Character object, dt is damage type
         # useful for recording damage taken sequence for certain effects
@@ -236,37 +239,43 @@ class Character:
         self.attack()
 
     def skill1(self, update_skillcooldown=True):
-        # Warning: Following characters have their own skill1 function:
-        # Pepper, Ophelia
         global_vars.turn_info_string += f"{self.name} cast skill 1.\n"
         if self.skill1_cooldown > 0:
             raise Exception
         damage_dealt = self.skill1_logic()
-        if update_skillcooldown:
-            self.update_skill_cooldown(1)
         if self.get_equipment_set() == "OldRusty" and random.random() < 0.65:
             global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Old Rusty set effect.\n"
-            self.skill1_cooldown = 0
+            self.skill_func_flag_cooldown_does_not_apply = True
+        if update_skillcooldown and not self.skill_func_flag_cooldown_does_not_apply:
+            self.update_skill_cooldown(1)
+        self.skill_func_flag_cooldown_does_not_apply = False
+        self.skill1_counter += 1
         return None # for now
 
     def skill2(self, update_skillcooldown=True):
-        # Warning: Following characters have their own skill2 function:
-        # Pepper, Ophelia
         global_vars.turn_info_string += f"{self.name} cast skill 2.\n"
         if self.skill2_cooldown > 0:
             raise Exception
         damage_dealt = self.skill2_logic()
-        if update_skillcooldown:
-            self.update_skill_cooldown(2)
         if self.get_equipment_set() == "Purplestar" and random.random() < 0.85:
             global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Purplestar set effect.\n"
-            self.skill2_cooldown = 0
+            self.skill_func_flag_cooldown_does_not_apply = True
+        if update_skillcooldown and not self.skill_func_flag_cooldown_does_not_apply:
+            self.update_skill_cooldown(2)
+        self.skill_func_flag_cooldown_does_not_apply = False
+        self.skill2_counter += 1
         return None # for now
     
     def skill1_logic(self):
+        """
+        skill_func_flag_cooldown_does_not_apply can be set to True to prevent cooldown update.
+        """
         pass
 
     def skill2_logic(self):
+        """
+        skill_func_flag_cooldown_does_not_apply can be set to True to prevent cooldown update.
+        """
         pass
 
 
@@ -1581,7 +1590,7 @@ class Character:
                         return True
         return False
 
-    def get_effect_that_named(self, effect_name: str = None, additional_name: str = None, class_name: str = None) -> Effect:
+    def get_effect_that_named(self, effect_name: str = None, additional_name: str = None, class_name: str = None) -> Effect | None:
         """
         Return the first effect found that matches the given effect name.
         """
@@ -1925,10 +1934,37 @@ class Character:
             self.skill2_cooldown -= 1
 
     def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n"
+        return (
+            f"Skill 1 : {self.skill1_description}\n"
+            f"Cooldown : {self.skill1_cooldown} action(s) "
+            f"Casted: {self.skill1_counter} time(s)\n\n"
+            f"Skill 2 : {self.skill2_description}\n"
+            f"Cooldown : {self.skill2_cooldown} action(s) "
+            f"Casted: {self.skill2_counter} time(s)\n\n"
+            f"Skill 3 : {self.skill3_description}\n"
+            + self.skill_tooltip_additional()
+        )
 
     def skill_tooltip_jp(self):
-        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n"
+        return (
+            f"スキル1:{self.skill1_description_jp}\n" 
+            f"クールダウン:{self.skill1_cooldown}行動 "
+            f"使用:{self.skill1_counter}回\n\n"
+            f"スキル2:{self.skill2_description_jp}\n"
+            f"クールダウン:{self.skill2_cooldown}行動 "
+            f"使用:{self.skill2_counter}回\n\n"
+            f"スキル3:{self.skill3_description_jp}\n"
+            + self.skill_tooltip_additional_jp()
+        )
+
+    def skill_tooltip_additional(self):
+        """
+        Character specific tooltip added after the normal skill tooltip.
+        """
+        return ""
+
+    def skill_tooltip_additional_jp(self):
+        return ""
 
     def get_equipment_set(self) -> str:
         if not self.equip:
@@ -2782,11 +2818,11 @@ class Cerberus(Character):
     def clear_others(self):
         self.execution_threshold = 0.16
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n\nExecution threshold : {self.execution_threshold*100}%"
-
-    def skill_tooltip_jp(self):
-        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n\n処刑閾値:{self.execution_threshold*100}%"
+    def skill_tooltip_additional(self):
+        return f"Execution threshold : {self.execution_threshold*100}%"
+    
+    def skill_tooltip_additional_jp(self):
+        return f"処刑閾値:{self.execution_threshold*100}%"
 
     def skill1_logic(self):
         def effect(self, target):
@@ -2833,31 +2869,21 @@ class Pepper(Character):
         self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 3
 
-    def skill1(self):
-        global_vars.turn_info_string += f"{self.name} cast skill 1.\n"
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         dice = random.randint(1, 100)
         if dice <= 70:
             damage_dealt = self.attack(multiplier=8.0, repeat=1, target_kw1="enemy_in_front", always_hit=True)
-            self.update_skill_cooldown(1)
         elif dice <= 90 and dice > 70:
             damage_dealt = self.attack(target_kw1="n_random_ally", target_kw2="1", multiplier=3.0, repeat=1)
             global_vars.turn_info_string += f"{self.name} damaged an ally by accident.\n"
-            self.skill1_cooldown = 0
+            self.skill_func_flag_cooldown_does_not_apply = True
         else:
             damage_dealt = self.attack(target_kw1="yourself", multiplier=3.0, repeat=1)
             global_vars.turn_info_string += f"{self.name} damaged self by accident.\n"
-            self.skill1_cooldown = 0
-        if self.get_equipment_set() == "OldRusty" and random.random() < 0.65:
-            global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Old Rusty set effect.\n"
-            self.skill1_cooldown = 0
+            self.skill_func_flag_cooldown_does_not_apply = True
         return damage_dealt
 
-    def skill2(self):
-        if self.skill2_cooldown > 0:
-            raise Exception
-        global_vars.turn_info_string += f"{self.name} cast skill 2.\n"
+    def skill2_logic(self):
         target = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="ally"))
         pondice = random.randint(1, 100)
         if pondice <= 70:
@@ -2870,17 +2896,13 @@ class Pepper(Character):
                     revive_target.revive(0, 0.8, self)
         elif pondice <= 90 and pondice > 70:
             global_vars.turn_info_string += f"No effect! {self.name} failed to heal.\n"
-            self.skill2_cooldown = 0
-            return 0
+            self.skill_func_flag_cooldown_does_not_apply = True
         else:
             target.take_damage(self.atk * 2.0, self)
             global_vars.turn_info_string += f"{self.name} damaged {target.name} by accident.\n"
-            self.skill2_cooldown = 0
-            return 0
-        self.update_skill_cooldown(2)
+            self.skill_func_flag_cooldown_does_not_apply = True
         return 0
         
-
     def skill3(self):
         pass
 
@@ -2944,23 +2966,13 @@ class Pheonix(Character):
         self.skill3_description = "Revive with 80% hp the next turn after fallen. When revived, increase atk by 20% for 30 turns." \
         " This effect cannot be removed by skill."
         self.skill1_description_jp = "全ての敵に190%の攻撃を行い、80%の確率で25ターンの間燃焼を付与する。燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
-        self.skill2_description_jp = "初回発動時: 隣接する全ての味方に新生を付与する。" \
+        self.skill2_description_jp = "初回発動時:隣接する全ての味方に新生を付与する。" \
                                     "新生:倒された場合、HP40%で復活する。2回目以降の発動:ランダムな敵のペアに260%の攻撃を行い、80%の確率で25ターンの間燃焼を付与する。" \
                                     "燃焼は毎ターン攻撃力の20%の状態ダメージを与える。"
         self.skill3_description_jp = "倒れた次のターンにHP80%で復活する。復活した場合、攻撃力が30ターンの間20%増加する。" \
                                     "この効果はスキルで取り除くことができない。"
-        self.skill2_first_use = True
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
-
-    def clear_others(self):
-        self.skill2_first_use = True
-
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n\nFirst time on skill 2: {self.skill2_first_use}"
-
-    def skill_tooltip_jp(self):
-        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n\n初回スキル2発動:{self.skill2_first_use}"
 
     def skill1_logic(self):
         def burn_effect(self, target):
@@ -2970,8 +2982,7 @@ class Pheonix(Character):
         return damage_dealt
 
     def skill2_logic(self):
-        if self.skill2_first_use:
-            self.skill2_first_use = False
+        if self.skill2_counter == 0:
             allies = self.get_neighbor_allies_not_including_self()
             if not allies:
                 return 0
@@ -3706,27 +3717,24 @@ class Raven(Character):
         self.skill1_description = "Apply Blackbird on your self for 30 turns. For 15 turns, neighbor allies lose 30% of their atk, add the reduced atk to your atk." \
         " If you already have Blackbird, its duration is refreshed, atk lose and gain is not triggered."
         self.skill2_description = "Attack enemy with lowest def 6 times with 285% atk."
-        self.skill3_description = "After using 2 times of skill 2, apply a shield on neighbor allies after the skill, absorb damage up to 80% of total" \
+        self.skill3_description = "Every 2 times of using skill 2, apply a shield on neighbor allies after the skill, absorb damage up to 80% of total" \
         " damage dealt by skill 2."
         self.skill1_description_jp = "自身に30ターンの間ブラックバードを適用する。15ターンの間、隣接する味方の攻撃力が30%減少し、その減少分を自身の攻撃力に加える。" \
                                     "すでにブラックバード状態中の場合、持続時間が更新され、攻撃力の減少および増加は発動しない。"
         self.skill2_description_jp = "最も防御力の低い敵に285%の攻撃力で6回攻撃する。"
-        self.skill3_description_jp = "スキル2を2回使用後、スキル使用後に隣接する味方にシールドを適用し、スキル2によって与えた総ダメージの80%までを吸収する。"
+        self.skill3_description_jp = "スキル2を2回使用するたびに、スキル使用後に隣接する味方にシールドを適用し、スキル2によって与えた総ダメージの80%までを吸収する。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
-        self.raven_skill2_counter = 0
         self.raven_skill2_damage_dealt = 0
 
     def clear_others(self):
-        self.raven_skill2_counter = 0
         self.raven_skill2_damage_dealt = 0
-        super().clear_others()
 
-    def skill_tooltip(self):
-        return f"Skill 1 : {self.skill1_description}\nCooldown : {self.skill1_cooldown} action(s)\n\nSkill 2 : {self.skill2_description}\nCooldown : {self.skill2_cooldown} action(s)\n\nSkill 3 : {self.skill3_description}\n Skill 2 counter : {self.raven_skill2_counter}\n Shield value : {self.raven_skill2_damage_dealt}\n"
-
-    def skill_tooltip_jp(self):
-        return f"スキル1:{self.skill1_description_jp}\nクールダウン:{self.skill1_cooldown}行動\n\nスキル2:{self.skill2_description_jp}\nクールダウン:{self.skill2_cooldown}行動\n\nスキル3:{self.skill3_description_jp}\n\nシールド値:{self.raven_skill2_damage_dealt}\n"
+    def skill_tooltip_additional(self):
+        return f"Skill 2 Damage Dealt: {self.raven_skill2_damage_dealt}\n"
+    
+    def skill_tooltip_additional_jp(self):
+        return f"スキル2ダメージ合計: {self.raven_skill2_damage_dealt}\n"
 
     def skill1_logic(self):
         blackbird = self.get_effect_that_named("Blackbird", "Raven_Blackbird")
@@ -3746,17 +3754,14 @@ class Raven(Character):
     def skill2_logic(self):
         damage_dealt = self.attack(target_kw1="n_lowest_attr",target_kw2="1",target_kw3="defense",target_kw4="enemy", multiplier=2.85, repeat=6)
         self.raven_skill2_damage_dealt += damage_dealt
-        self.raven_skill2_counter += 1
-        if self.raven_skill2_counter == 2:
-            if self.raven_skill2_damage_dealt > 0:
-                neighbors:list[Character] = self.get_neighbor_allies_not_including_self()
-                for ally in neighbors:
-                    shield = AbsorptionShield("Shield", -1, True, self.raven_skill2_damage_dealt * 0.8, cc_immunity=False)
-                    shield.additional_name = "Raven_Shield"
-                    ally.apply_effect(shield)
-            self.raven_skill2_counter = 0
+        # when skill 2 counter is like 2, 5, 8, 11, ...
+        if self.is_alive() and (self.raven_skill2_damage_dealt > 0) and ((self.skill2_counter % 3) == 2):
+            neighbors:list[Character] = self.get_neighbor_allies_not_including_self()
+            for ally in neighbors:
+                shield = AbsorptionShield("Shield", -1, True, self.raven_skill2_damage_dealt * 0.8, cc_immunity=False)
+                shield.additional_name = "Raven_Shield"
+                ally.apply_effect(shield)
         return damage_dealt
-
 
     def skill3(self):
         pass
@@ -3789,7 +3794,6 @@ class RavenWB(Character):
         self.raven_skill2_damage_dealt = 0
 
     def clear_others(self):
-        self.raven_skill2_counter = 0
         self.raven_skill2_damage_dealt = 0
         super().clear_others()
 
@@ -3881,10 +3885,7 @@ class Ophelia(Character):
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
 
-    def skill1(self):
-        global_vars.turn_info_string += f"{self.name} cast skill 1.\n"
-        if self.skill1_cooldown > 0:
-            raise Exception
+    def skill1_logic(self):
         buff_to_remove_list = []
         def card_effect(self, target):
             for buff in self.buffs:
@@ -3910,22 +3911,14 @@ class Ophelia(Character):
         self.buffs = [buff for buff in self.buffs if buff not in buff_to_remove_list]
         self.apply_effect(Effect("Death Card", -1, True, False, can_be_removed_by_skill=False))
         if lucky_card_found:
-            self.skill1_cooldown = 0
-        else:
-            self.update_skill_cooldown(1)
+            self.skill_func_flag_cooldown_does_not_apply = True
         dice = random.randint(1, 100)
         if dice <= 30:
             self.apply_effect(Effect("Luck Card", -1, True, False, can_be_removed_by_skill=False))
             global_vars.turn_info_string += f"{self.name} gained Luck Card.\n"
-        if self.get_equipment_set() == "OldRusty" and random.random() < 0.65:
-            global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Old Rusty set effect.\n"
-            self.skill1_cooldown = 0
         return damage_dealt
 
-    def skill2(self):
-        global_vars.turn_info_string += f"{self.name} cast skill 2.\n"
-        if self.skill2_cooldown > 0:
-            raise Exception
+    def skill2_logic(self):
         buff_to_remove_list = []
         for ally in self.ally:
             ally.apply_effect(ContinuousHealEffect("Regeneration", 10, True, lambda x, y: x.maxhp * 0.05, self, "5% of max hp",
@@ -3944,9 +3937,7 @@ class Ophelia(Character):
                 lucky_card_found = True
                 break
         if lucky_card_found:
-            self.skill2_cooldown = 0
-        else:
-            self.update_skill_cooldown(2)
+            self.skill_func_flag_cooldown_does_not_apply = True
         self.buffs = [buff for buff in self.buffs if buff not in buff_to_remove_list]
         self.apply_effect(Effect("Love Card", -1, True, False, can_be_removed_by_skill=False))
         dice = random.randint(1, 100)
@@ -6350,7 +6341,7 @@ class XunmuAL(Character):
         else:
             fine_milk = StatsEffect("Fine Milk", -1, True, main_stats_additive_dict={"maxhp": int(self.maxhp * 0.6)}, can_be_removed_by_skill=False)
         ally_loweratk.apply_effect(fine_milk)
-
+        ally_loweratk.hp = ally_loweratk.maxhp
 
 
 class Xunyu(Character):
@@ -8158,8 +8149,8 @@ class Tim(Character):
         self.skill2_description = "Copy and cast skill2 from an enemy of highest atk."
         self.skill3_description = "Normal attack copy and cast a random skill from a random ally or enemy except yourself." \
         " Skill copy has no effect if there is no valid target or the target's skill cannot be copied."
-        self.skill1_description_jp = "味方のうち自分以外の攻撃力が最も高い者のスキル1をコピーして発動する。"
-        self.skill2_description_jp = "敵のうち攻撃力が最も高い者のスキル2をコピーして発動する。"
+        self.skill1_description_jp = "自分以外の攻撃力が最も高い味方のスキル1をコピーして発動する。"
+        self.skill2_description_jp = "自分以外の攻撃力が最も高い敵のスキル2をコピーして発動する。"
         self.skill3_description_jp = "通常攻撃は自分以外の味方または敵のランダムなスキルをコピーして発動する。" \
         "スキルをコピーしようとする時、有効な対象がいない場合或は対象のスキルがコピーできない場合、効果がない。"
         self.skill1_cooldown_max = 4

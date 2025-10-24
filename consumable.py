@@ -554,7 +554,9 @@ class Baozi(Consumable):
         if not self.can_use_on_dead and user.is_dead():
             return False
         else:
-            if user.has_effect_that_named(effect_name="Baozi", additional_name="Food_Baozi"):
+            # Removing chunk of hp is not ideal, so use when duration is low
+            baozi_effect = user.get_effect_that_named(effect_name="Baozi", additional_name="Food_Baozi")
+            if baozi_effect and baozi_effect.duration > 3:
                 return False
             else:
                 return True
@@ -635,7 +637,7 @@ class Milk(Consumable):
 
 class Sandwich(Consumable):
     def __init__(self, stack: int):
-        super().__init__("Sandwich", "All stats + 5% for 18-22 turns.")
+        super().__init__("Sandwich", "All main stats + 5% for 18-22 turns.")
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_sandwich"
         self.rarity = "Rare"
@@ -747,6 +749,36 @@ class Chocolate(Consumable):
                 return True
 
 
+class Onigiri(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Onigiri", "Max HP + 60% for 31-37 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_onigiri"
+        self.rarity = "Epic"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 5000
+
+    def E(self, user, player):
+        d = random.randint(31, 37)
+        onigiri_effect = StatsEffect('Onigiri', d, True, {"maxhp": 1.6})
+        onigiri_effect.additional_name = "Food_Onigiri"
+        onigiri_effect.set_apply_rule("stack")
+        user.apply_effect(onigiri_effect)
+        return f"{user.name} applied Onigiri for {d} turns."
+    
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        else:
+            onigiri_effect = user.get_effect_that_named(effect_name="Onigiri", additional_name="Food_Onigiri")
+            if onigiri_effect and onigiri_effect.duration > 4:
+                return False
+            else:
+                return True
+
+
 # Unique
 class Mantou(Consumable):
     def __init__(self, stack: int):
@@ -833,7 +865,7 @@ class Orange_Juice(Consumable):
 # Legendary
 class Matcha_Roll(Consumable):
     def __init__(self, stack: int):
-        super().__init__("Matcha Roll", "All stats + 12% for 22-26 turns.")
+        super().__init__("Matcha Roll", "All main stats + 12% for 22-26 turns.")
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_matcha_roll"
         self.rarity = "Legendary"
@@ -855,6 +887,41 @@ class Matcha_Roll(Consumable):
             return False
         else:
             if user.has_effect_that_named(effect_name="Matcha Roll", additional_name="Food_Matcha_Roll"):
+                return False
+            else:
+                return True
+
+
+# All main stats except maxhp + 3.3% for all allies for 22-26 turns
+class Sushi_A(Consumable):
+    def __init__(self, stack: int):
+        super().__init__("Sushi A", "All main stats except max HP + 3.3% for all allies for 22-26 turns.")
+        self.description += " When same effect is applied, duration is refreshed."
+        self.image = "food_sushi_a"
+        self.rarity = "Legendary"
+        self.type = "Food"
+        self.current_stack = max(1, stack)
+        self.current_stack = min(self.current_stack, self.max_stack)
+        self.market_value = 12000
+
+    def E(self, user, player):
+        for ally in user.ally:
+            d = random.randint(22, 26)
+            sushi_effect = StatsEffect('Sushi A', d, True, {"atk": 1.033, "defense": 1.033, "spd": 1.033})
+            sushi_effect.additional_name = f"Food_Sushi_A"
+            sushi_effect.set_apply_rule("stack")
+            ally.apply_effect(sushi_effect)
+        return f"{user.name} applied Sushi A to all allies."
+
+    def auto_E_condition(self, user, player):
+        if not self.can_use_on_dead and user.is_dead():
+            return False
+        if user.is_charmed():
+            return False
+        if len(user.ally) < 4:
+            return False
+        else:
+            if user.has_effect_that_named(effect_name="Sushi A", additional_name="Food_Sushi_A"):
                 return False
             else:
                 return True
