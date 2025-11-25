@@ -32,6 +32,7 @@ class Effect:
         self.original_duration = duration
         self.already_applied = False
         self.is_reserved_effect = False
+        self.is_hidden_effect = False # Hidden effects are not shown in the UI.
     
     def is_permanent(self):
         return self.duration == -1
@@ -902,7 +903,9 @@ class ResolveEffect(Effect):
     during damage step, ResolveEffect will not be able to guarantee survival.
     """
     def __init__(self, name, duration, is_buff, cc_immunity, hp_to_leave=1, 
-                    cover_status_damage=False, cover_normal_damage=True, same_turn_usage="unlimited"):
+                    cover_status_damage=False, cover_normal_damage=True, same_turn_usage="unlimited",
+                    remove_this_after_trigger_on_the_next_turn=False,
+                    percentage_hp_heal_after_remove=0):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.cc_immunity = cc_immunity
@@ -911,29 +914,39 @@ class ResolveEffect(Effect):
         self.cover_status_damage = cover_status_damage
         self.cover_normal_damage = cover_normal_damage
         self.same_turn_usage = same_turn_usage
+        self.remove_this_after_trigger_on_the_next_turn = remove_this_after_trigger_on_the_next_turn
+        self.percentage_hp_heal_after_remove = percentage_hp_heal_after_remove
         self.how_many_times_triggered_this_turn = 1
         self.character_current_turn = 0
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         if character.is_dead():
             return damage
-        if damage > character.hp and self.same_turn_usage == "unlimited":
-            if self.cover_normal_damage and which_ds == "normal":
-                return character.hp - self.hp_to_leave
-            elif self.cover_status_damage and which_ds == "status":
-                return character.hp - self.hp_to_leave
-        elif damage > character.hp and type(self.same_turn_usage) == int:
-            if self.character_current_turn != character.battle_turns:
-                self.character_current_turn = character.battle_turns
-                self.how_many_times_triggered_this_turn = 1
-            else:
-                self.how_many_times_triggered_this_turn += 1
-            if self.how_many_times_triggered_this_turn <= self.same_turn_usage:
+        if damage > character.hp:
+            if self.remove_this_after_trigger_on_the_next_turn:
+                self.flag_for_remove = True
+            if self.same_turn_usage == "unlimited":
                 if self.cover_normal_damage and which_ds == "normal":
                     return character.hp - self.hp_to_leave
                 elif self.cover_status_damage and which_ds == "status":
                     return character.hp - self.hp_to_leave
+            elif type(self.same_turn_usage) == int:
+                if self.character_current_turn != character.battle_turns:
+                    self.character_current_turn = character.battle_turns
+                    self.how_many_times_triggered_this_turn = 1
+                else:
+                    self.how_many_times_triggered_this_turn += 1
+                if self.how_many_times_triggered_this_turn <= self.same_turn_usage:
+                    if self.cover_normal_damage and which_ds == "normal":
+                        return character.hp - self.hp_to_leave
+                    elif self.cover_status_damage and which_ds == "status":
+                        return character.hp - self.hp_to_leave
         return damage
+
+    def apply_effect_on_remove(self, character):
+        if self.percentage_hp_heal_after_remove > 0 and character.is_alive():
+            heal_amount = character.maxhp * self.percentage_hp_heal_after_remove
+            character.heal_hp(heal_amount, character)
 
     def tooltip_description(self):
         s = f"When taking damage that exceeds current HP, the damage is reduced so that HP becomes {self.hp_to_leave}."
@@ -1813,16 +1826,20 @@ class ContinuousDamageEffect(Effect):
     [damage_type] can be "status", "bypass", "normal".
     """
     def __init__(self, name, duration, is_buff, value, imposter, remove_by_heal=False,
-                 damage_type="status"):
+                 damage_type="status", trigger_on_every_turn=True, trigger_on_action=False):
         super().__init__(name, duration, is_buff)
         self.value = float(value)
         self.is_buff = is_buff
         self.imposter = imposter # The character that applies this effect
         self.remove_by_heal = remove_by_heal
         self.damage_type = damage_type
+        self.trigger_on_every_turn = trigger_on_every_turn
+        self.trigger_on_action = trigger_on_action
         self.how_many_times_this_effect_is_triggered_lifetime = 0
     
     def apply_effect_on_trigger(self, character):
+        if not self.trigger_on_every_turn:
+            return
         if character.is_dead():
             return
         match self.damage_type:
@@ -1836,6 +1853,22 @@ class ContinuousDamageEffect(Effect):
                 raise Exception(f"Invalid damage type: {self.damage_type} in ContinuousDamageEffect.")
         self.how_many_times_this_effect_is_triggered_lifetime += 1
     
+    def apply_effect_before_action(self, character):
+        if not self.trigger_on_action:
+            return
+        if character.is_dead():
+            return
+        match self.damage_type:
+            case "status":
+                character.take_status_damage(self.value, self.imposter)
+            case "bypass":
+                character.take_bypass_status_effect_damage(self.value, self.imposter)
+            case "normal":
+                character.take_damage(self.value, self.imposter)
+            case _:
+                raise Exception(f"Invalid damage type: {self.damage_type} in ContinuousDamageEffect.")
+        self.how_many_times_this_effect_is_triggered_lifetime += 1
+
     def apply_effect_after_heal_step(self, character, heal_value, overheal_value):
         if self.remove_by_heal:
             global_vars.turn_info_string += f"{character.name}'s {self.name} is removed by heal.\n"
@@ -1854,7 +1887,11 @@ class ContinuousDamageEffect(Effect):
             "normal": "通常"
         }
         damage_type = damage_type_dict.get(self.damage_type, self.damage_type)
-        s = f"毎ターン{(self.value):.2f}{damage_type}ダメージを受ける。"
+        if self.trigger_on_every_turn and not self.trigger_on_action:
+            s0 = "毎ターン"
+        elif not self.trigger_on_every_turn and self.trigger_on_action:
+            s0 = "行動前に"
+        s = f"{s0}{(self.value):.2f}{damage_type}ダメージを受ける。"
         if self.remove_by_heal:
             s += "この効果は回復によって解除できる。"
         return s

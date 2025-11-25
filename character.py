@@ -691,6 +691,7 @@ class Character:
     def reset_number_of_attacks(self):
         self.number_of_attacks = 0
 
+
     def heal(self, target_kw1="Undefined_ally", target_kw2="Undefined", target_kw3="Undefined", target_kw4="Undefined", 
              value=0, repeat=1, func_after_each_heal=None, target_list=None, func_before_heal=None) -> int:
         # -> healing done
@@ -720,7 +721,7 @@ class Character:
                     func_after_each_heal(self, t, healing, overhealing)
         return healing_done
 
-    # Action logic
+
     def action(self, skill_priority: int = 1) -> None:
         if self.get_equipment_set() == "Freight":
             skill_priority = 2
@@ -728,9 +729,9 @@ class Character:
         for eff in self.buffs.copy() + self.debuffs.copy():
             eff.apply_effect_before_action(self)
 
-        # Action is not allowed if the character is dead
-        if self.is_dead():
-            raise Exception("Dead character cannot act.")
+        # dead: could be apply_effect_before_action effect
+        # if self.is_dead():
+        #     raise Exception("Dead character cannot act.")
         # Action is disabled if no enemies are present
         if not self.enemy:
             global_vars.turn_info_string += f"Waiting for enemies to appear.\n"
@@ -838,9 +839,9 @@ class Character:
         book_sp = []
         book_buff = []
         book_debuff = []
-        # Collect all buffs and debuffs into the book list
+        # Collect all buffs and debuffs into the book list, ignoring set effects and hidden effects
         for effect in self.buffs:
-            if not effect.is_set_effect:
+            if not effect.is_set_effect and not effect.is_hidden_effect:
                 if effect.duration == -1 and effect.can_be_removed_by_skill == False:
                     if global_vars.language == "日本語" and hasattr(effect, "print_stats_html_jp"):
                         book_sp.append(effect.print_stats_html_jp())
@@ -853,7 +854,7 @@ class Character:
                         book_buff.append(effect.print_stats_html())
 
         for effect in self.debuffs:
-            if not effect.is_set_effect:
+            if not effect.is_set_effect and not effect.is_hidden_effect:
                 if effect.duration == -1 and effect.can_be_removed_by_skill == False:
                     if global_vars.language == "日本語" and hasattr(effect, "print_stats_html_jp"):
                         book_sp.append(effect.print_stats_html_jp())
@@ -2849,6 +2850,80 @@ class Cerberus(Character):
 
     def skill3(self):
         pass
+
+
+class CerberusLT(Character):
+    """
+    Attacker, execute, late power spike
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None, execution_threshold=0.20):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "CerberusLT"
+        self.execution_threshold = execution_threshold
+
+        self.skill1_description = "Attack 2 random enemies with 320% atk and inflict Fragile for 30 turns. " \
+        "Fragile: before action, take 160% atk status damage. " \
+        "If Gentle Magic is not on self, Fragile inflicts 320% atk status damage instead."
+        self.skill2_description = "Attack enemy of lowest hp percentage with 250% atk 4 times. " \
+        "If Gentle Magic is not on self and target hp is less then 20% during the attack, execute the target " \
+        "and increase your execution threshold by 5%."
+        self.skill3_description = "At start of battle, apply Gentle Magic on yourself. " \
+        "When taking fatal damage, survive with 1 hp for that turn and remove the effect." \
+        " When Gentle Magic is removed, heal hp by 30% of maxhp."
+        self.skill1_description_jp = "ランダムな敵2体に攻撃力320%攻撃を行い、30ターンの間「裂傷」を付与する。" \
+        "裂傷:行動前に攻撃力160%の状態異常ダメージを受ける。" \
+        "自身に優しい魔法が付与されていない時、裂傷は攻撃力320%の状態異常ダメージを与える。"
+        self.skill2_description_jp = "HP割合が最も低い敵に攻撃力250%で4回攻撃する。" \
+        "自身に優しい魔法が付与されていない時、攻撃中に対象のHPが20%以下の場合、対象を処刑する。" \
+        "処刑時、自身の処刑閾値が5%上昇する。"
+        self.skill3_description_jp = "自分に「優しい魔法」を付与する。致命ダメージを受ける際、そのターンHP1で耐える。" \
+        "その後、この効果は解除される。優しい魔法が解除されると、最大HPの30%分回復する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+
+    def clear_others(self):
+        self.execution_threshold = 0.20
+
+    def skill_tooltip_additional(self):
+        return f"Execution threshold : {self.execution_threshold*100}%"
+    
+    def skill_tooltip_additional_jp(self):
+        return f"処刑閾値:{self.execution_threshold*100}%"
+
+    def skill1_logic(self):
+        def fragile_effect(self: Character, target: Character):
+            fragile_dmg_multiplier = 1.6
+            if not self.has_effect_that_named("Gentle Magic", "CerberusLT_GentleMagic"):
+                fragile_dmg_multiplier = 3.2
+            target.apply_effect(ContinuousDamageEffect("Fragile", 30, False, self.atk * fragile_dmg_multiplier, self,
+                                                       trigger_on_every_turn=False, trigger_on_action=True))
+        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="2", multiplier=3.2, repeat=1, func_after_dmg=fragile_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        def effect(self: Character, target: Character):
+            if target is self:
+                return
+            if self.__class__.__name__ == "CerberusLT" and not self.has_effect_that_named("Gentle Magic", "CerberusLT_GentleMagic"):
+                if target.hp < target.maxhp * self.execution_threshold and not target.is_dead():
+                    target.take_bypass_status_effect_damage(target.hp, self)
+                    global_vars.turn_info_string += f"{target.name} is executed by {self.name}.\n"
+                    self.execution_threshold += 0.05
+                    # print(f"{self.name} have a successful execution, new threshold: {self.execution_threshold}")
+        damage_dealt = self.attack(target_kw1="n_lowest_hp_percentage_enemy",target_kw2="1", multiplier=2.5, repeat=4, func_after_dmg=effect)
+        return damage_dealt
+
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        gentle_magic = ResolveEffect("Gentle Magic", -1, True, False, hp_to_leave=1,
+                                     cover_normal_damage=True, cover_status_damage=True,
+                                     remove_this_after_trigger_on_the_next_turn=True,
+                                     percentage_hp_heal_after_remove=0.3)
+        gentle_magic.can_be_removed_by_skill = False
+        gentle_magic.additional_name = "CerberusLT_GentleMagic"
+        self.apply_effect(gentle_magic)
 
 
 class Pepper(Character):
