@@ -506,7 +506,7 @@ class Ghost(Monster):
         self.skill2_description = "Attack closest enemy 4 times with 200% atk. For 20 turns, all allies takes 40% less damage."
         self.skill3_description = "Normal attack will try target enemy with Fear first. damage increased by 100% if target has Fear. As long as you are alive, Fear effect gain the following effect: accuracy - 20%, atk - 20%."
         self.skill1_description_jp = "全ての敵に攻撃力200%のダメージを与え、確率100%、80%、60%、30%、0%で30ターンの間恐怖を付与。敵が味方の数によって確率が異なる。味方が少ないほど、確率が高くなる。"
-        self.skill2_description_jp = "最も近い敵に4回攻撃力200%のダメージを与える。20ターンの間、全ての味方は40%のダメージを受ける。"
+        self.skill2_description_jp = "最も近い敵に4回攻撃力200%のダメージを与える。20ターンの間、全ての味方の受けるダメージを40%減少させる。"
         self.skill3_description_jp = "通常攻撃は恐怖を付与された敵を狙う。対象が恐怖を持っている場合、ダメージが100%増加する。自分が生存している間、恐怖効果は以下の効果を得る:命中率-20%、攻撃力-20%。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -921,6 +921,47 @@ class Sylphid(Monster):
             a.apply_effect(ashield)
 
 
+class GhostB(Monster):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "GhostB"
+        self.skill1_description = "Attack 5 enemies with 225% atk and apply Fear on targets for 30 turns. Apply chance is 100%, 80%, 60%, 40%, 20% for each enemy depending on how many allies the enemy has. The fewer allies the enemy has, the higher the chance."
+        self.skill2_description = "For 50 turns, reduce normal damage taken by 85%. When same effect is applied, duration is refreshed."
+        self.skill3_description = "Normal attack will try target enemy with Fear first. damage increased by 100% if target has Fear. As long as you are alive, Fear effect gain the following effect: accuracy - 20%, atk - 20%."
+        self.skill1_description_jp = "全ての敵に攻撃力225%のダメージを与え、確率100%、80%、60%、40%、20%で30ターンの間恐怖を付与。敵が味方の数によって確率が異なる。味方が少ないほど、確率が高くなる。"
+        self.skill2_description_jp = "50ターンの間、自分の受ける通常ダメージを85%減少する。同じ効果が適用された場合、持続時間が更新される。"
+        self.skill3_description_jp = "通常攻撃は恐怖を付与された敵を狙う。対象が恐怖を持っている場合、ダメージが100%増加する。自分が生存している間、恐怖効果は以下の効果を得る:命中率-20%、攻撃力-20%。"
+        self.skill1_cooldown_max = 5
+        self.skill2_cooldown_max = 5
+        self.is_boss = False
+        self.fear_effect_dict = {"acc": -0.20, "atk": 0.8}
+    
+
+    def skill1_logic(self):
+        chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 40, 20], fillvalue=0))
+        def fear_effect(self, target):
+            dice = random.randint(1, 100)
+            if dice <= chance_dict[len(self.enemy)]:
+                target.apply_effect(FearEffect('Fear', duration=30, is_buff=False))
+        damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.25, repeat=1, func_after_dmg=fear_effect)
+        return damage_dealt
+
+    def skill2_logic(self):
+        mist = ReductionShield('Thin Mist', 50, True, 0.85, False,
+                                cover_status_damage=False, cover_normal_damage=True)
+        mist.apply_rule = "stack"
+        self.apply_effect(mist)
+        return 0
+        
+    def skill3(self):
+        pass
+
+    def normal_attack(self):
+        def fear_amplify(self, target, final_damage):
+            if target.has_effect_that_named("Fear"):
+                final_damage *= 2.0
+            return final_damage
+        self.attack(func_damage_step=fear_amplify, target_kw1="n_enemy_with_effect", target_kw2="1", target_kw3="Fear")
 
 
 
