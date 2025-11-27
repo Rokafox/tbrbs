@@ -2772,7 +2772,7 @@ class Fenrir(Character):
 
     def skill1_logic(self):
         damage_dealt = self.attack(multiplier=2.2, repeat_seq=3, target_kw1="enemy_in_front")
-        neighbors = self.get_neighbor_allies_not_including_self() # list
+        neighbors = self.get_neighbor_allies_not_including_self()
         for ally in neighbors:
             ally.skill1_cooldown = max(ally.skill1_cooldown - 2, 0)
             ally.skill2_cooldown = max(ally.skill2_cooldown - 2, 0)
@@ -2781,7 +2781,7 @@ class Fenrir(Character):
 
     def skill2_logic(self):
         damage_dealt = self.attack(multiplier=3.9, repeat=1, target_kw1="enemy_in_front")
-        neighbors = self.get_neighbor_allies_not_including_self() # list
+        neighbors = self.get_neighbor_allies_not_including_self()
         for ally in neighbors:
             ally.remove_random_amount_of_debuffs(2)
         return damage_dealt
@@ -2795,6 +2795,58 @@ class Fenrir(Character):
             e = EffectShield1("Fluffy Protection", -1, True, 0.4, lambda x: x.defense * 0.55, False, False, self, cover_status_damage=False)
             e.can_be_removed_by_skill = False
             ally.apply_effect(e)
+
+
+class FenrirSC(Character):
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.name = "FenrirSC"
+        self.skill1_description = "Apply Candy on neighbor ally of highest atk and reduce skill cooldown of that ally by 2 turns. " \
+        "Candy increases atk by 15%."
+        self.skill2_description = "Remove 2 debuffs from neighbor allies and heal them for 320% of your defense." \
+        " The remaining debuffs have their duration reduced by 50%."
+        self.skill3_description = "At start of battle, apply Fluffy Boundary to neighbor allies. " \
+        "Fluffy Boundary reduces damage taken by maximum of 30% depending on your percentage of hp."
+        self.skill1_description_jp = "隣接する攻撃力が最も高い味方にキャンディを付与し、その味方のスキルクールダウンを2ターン減少。キャンディは攻撃力を15%増加する。"
+        self.skill2_description_jp = "隣接する味方のデバフを2つ解除し、防御力の320%分回復する。残りのデバフの持続時間を50%減少させる。"
+        self.skill3_description_jp = "戦闘開始時、隣接する味方にもふもふ境界を付与。もふもふ境界は付与者のHP割合に応じて、受けるダメージを最大30%まで軽減する。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 5
+
+    def skill1_logic(self):
+        neighbors = sorted(self.get_neighbor_allies_not_including_self(), key=lambda x: x.atk, reverse=True)
+        if neighbors:
+            target_ally = neighbors[0]
+            target_ally.apply_effect(StatsEffect("Candy", -1, True, {"atk": 1.15}))
+            target_ally.skill1_cooldown = max(target_ally.skill1_cooldown - 2, 0)
+            target_ally.skill2_cooldown = max(target_ally.skill2_cooldown - 2, 0)
+            global_vars.turn_info_string += f"{target_ally.name} skill cooldown reduced by 2.\n"
+        return None
+
+    def skill2_logic(self):
+        neighbors = self.get_neighbor_allies_not_including_self()
+        for ally in neighbors:
+            ally.remove_random_amount_of_debuffs(2)
+            for d in ally.debuffs:
+                if d.duration > 0:
+                    d.duration = max(1, d.duration // 2)
+        self.update_ally_and_enemy()
+        neighbors = self.get_neighbor_allies_not_including_self()
+        if neighbors:
+            self.heal(target_list=neighbors, value=self.defense * 3.2)
+        return None
+        
+    def skill3(self):
+        pass
+
+    def battle_entry_effects(self):
+        neighbors = self.get_neighbor_allies_not_including_self()
+        for ally in neighbors:
+            fluffy_boundary = ReductionShield("Fluffy Boundary", -1, True, 0.3, cc_immunity=False, 
+                                            effect_applier=self, effect_value_scaled_by_applier_hp_percentage=True)
+            fluffy_boundary.can_be_removed_by_skill = False
+            fluffy_boundary.additional_name = "FenrirSC_Fluffy Boundary"
+            ally.apply_effect(fluffy_boundary)
 
 
 class Cerberus(Character):
@@ -2853,31 +2905,25 @@ class Cerberus(Character):
 
 
 class CerberusLT(Character):
-    """
-    Attacker, execute, late power spike
-    """
     def __init__(self, name, lvl, exp=0, equip=None, image=None, execution_threshold=0.20):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "CerberusLT"
         self.execution_threshold = execution_threshold
-
-        self.skill1_description = "Attack 2 random enemies with 320% atk and inflict Fragile for 30 turns. " \
-        "Fragile: before action, take 160% atk status damage. " \
-        "If Gentle Magic is not on self, Fragile inflicts 320% atk status damage instead."
+        self.skill1_description = "Attack 2 random enemies with 320% atk. " \
+        "If Gentle Magic is not on self, inflicts Fragile for 20 turns. Fragile: before action, take 320% atk status damage."
         self.skill2_description = "Attack enemy of lowest hp percentage with 250% atk 4 times. " \
         "If Gentle Magic is not on self and target hp is less then 20% during the attack, execute the target " \
         "and increase your execution threshold by 5%."
         self.skill3_description = "At start of battle, apply Gentle Magic on yourself. " \
         "When taking fatal damage, survive with 1 hp for that turn and remove the effect." \
-        " When Gentle Magic is removed, heal hp by 30% of maxhp."
-        self.skill1_description_jp = "ランダムな敵2体に攻撃力320%攻撃を行い、30ターンの間「裂傷」を付与する。" \
-        "裂傷:行動前に攻撃力160%の状態異常ダメージを受ける。" \
-        "自身に優しい魔法が付与されていない時、裂傷は攻撃力320%の状態異常ダメージを与える。"
+        " When Gentle Magic is removed, heal hp by 35% of maxhp."
+        self.skill1_description_jp = "ランダムな敵2体に攻撃力320%攻撃を行う。自身に優しい魔法が付与されていない時、20ターンの間「裂傷」を付与する。" \
+        "裂傷:行動前に攻撃力320%の状態異常ダメージを受ける。"
         self.skill2_description_jp = "HP割合が最も低い敵に攻撃力250%で4回攻撃する。" \
         "自身に優しい魔法が付与されていない時、攻撃中に対象のHPが20%以下の場合、対象を処刑する。" \
         "処刑時、自身の処刑閾値が5%上昇する。"
         self.skill3_description_jp = "自分に「優しい魔法」を付与する。致命ダメージを受ける際、そのターンHP1で耐える。" \
-        "その後、この効果は解除される。優しい魔法が解除されると、最大HPの30%分回復する。"
+        "その後、この効果は解除される。優しい魔法が解除されると、最大HPの35%分回復する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
@@ -2892,11 +2938,10 @@ class CerberusLT(Character):
 
     def skill1_logic(self):
         def fragile_effect(self: Character, target: Character):
-            fragile_dmg_multiplier = 1.6
             if not self.has_effect_that_named("Gentle Magic", "CerberusLT_GentleMagic"):
                 fragile_dmg_multiplier = 3.2
-            target.apply_effect(ContinuousDamageEffect("Fragile", 30, False, self.atk * fragile_dmg_multiplier, self,
-                                                       trigger_on_every_turn=False, trigger_on_action=True))
+                target.apply_effect(ContinuousDamageEffect("Fragile", 20, False, self.atk * fragile_dmg_multiplier, self,
+                                                        trigger_on_every_turn=False, trigger_on_action=True))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="2", multiplier=3.2, repeat=1, func_after_dmg=fragile_effect)
         return damage_dealt
 
@@ -2920,7 +2965,7 @@ class CerberusLT(Character):
         gentle_magic = ResolveEffect("Gentle Magic", -1, True, False, hp_to_leave=1,
                                      cover_normal_damage=True, cover_status_damage=True,
                                      remove_this_after_trigger_on_the_next_turn=True,
-                                     percentage_hp_heal_after_remove=0.3)
+                                     percentage_hp_heal_after_remove=0.35)
         gentle_magic.can_be_removed_by_skill = False
         gentle_magic.additional_name = "CerberusLT_GentleMagic"
         self.apply_effect(gentle_magic)

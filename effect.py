@@ -402,10 +402,12 @@ class ReductionShield(Effect):
     """
     def __init__(self, name, duration, is_buff, effect_value, cc_immunity, *, requirement=None, 
                  requirement_description=None, requirement_description_jp=None, damage_function=None, 
-                 cover_status_damage=True, cover_normal_damage=True):
+                 cover_status_damage=True, cover_normal_damage=True, effect_applier=None,
+                 effect_value_scaled_by_applier_hp_percentage=False):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.effect_value = effect_value
+        self.effect_value_original = effect_value
         self.cc_immunity = cc_immunity
         self.requirement = requirement
         self.requirement_description = requirement_description
@@ -414,10 +416,14 @@ class ReductionShield(Effect):
         self.damage_function = damage_function
         self.cover_status_damage = cover_status_damage
         self.cover_normal_damage = cover_normal_damage
-
+        self.effect_applier = effect_applier
+        self.effect_value_scaled_by_applier_hp_percentage = effect_value_scaled_by_applier_hp_percentage
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         prev_damage = damage
+        if self.effect_applier and self.effect_value_scaled_by_applier_hp_percentage:
+            hp_percentage = self.effect_applier.hp / self.effect_applier.maxhp
+            self.effect_value = hp_percentage * self.effect_value_original
         if self.requirement is not None:
             if not attacker:
                 global_vars.turn_info_string += f"{self.name} could not be triggered on {character.name}, attacker not found.\n"
@@ -447,9 +453,12 @@ class ReductionShield(Effect):
     
     def tooltip_description(self):
         str = ""
-        if self.effect_value > 0:
+        ev = self.effect_value_original
+        if self.effect_value_scaled_by_applier_hp_percentage:
+            ev = ev * self.effect_applier.hp / self.effect_applier.maxhp
+        if ev >= 0:
             if self.is_buff:
-                str += f"Reduces damage taken by {self.effect_value*100}%."
+                str += f"Reduces damage taken by {ev*100:.1f}%."
                 if self.cover_normal_damage and self.cover_status_damage:
                     str += " Applies to all damage."
                 elif self.cover_normal_damage:
@@ -457,7 +466,7 @@ class ReductionShield(Effect):
                 elif self.cover_status_damage:
                     str += " Applies to status damage."
             else:
-                str += f"Increases damage taken by {self.effect_value*100}%."
+                str += f"Increases damage taken by {ev*100:.1f}%."
                 if self.cover_normal_damage and self.cover_status_damage:
                     str += " Applies to all damage."
                 elif self.cover_normal_damage:
@@ -472,9 +481,12 @@ class ReductionShield(Effect):
     
     def tooltip_description_jp(self):
         str = ""
-        if self.effect_value > 0:
+        ev = self.effect_value_original
+        if self.effect_value_scaled_by_applier_hp_percentage:
+            ev = ev * self.effect_applier.hp / self.effect_applier.maxhp
+        if ev >= 0:
             if self.is_buff:
-                str += f"受けるダメージを{self.effect_value*100:.1f}%軽減。"
+                str += f"受けるダメージを{ev*100:.1f}%軽減。"
                 if self.cover_normal_damage and self.cover_status_damage:
                     str += "全てのダメージに適用。"
                 elif self.cover_normal_damage:
@@ -482,7 +494,7 @@ class ReductionShield(Effect):
                 elif self.cover_status_damage:
                     str += "状態異常ダメージに適用。"
             else:
-                str += f"受けるダメージを{self.effect_value*100:.1f}%増加。"
+                str += f"受けるダメージを{ev*100:.1f}%増加。"
                 if self.cover_normal_damage and self.cover_status_damage:
                     str += "全てのダメージに適用。"
                 elif self.cover_normal_damage:
@@ -958,6 +970,10 @@ class ResolveEffect(Effect):
             s += " Applies to status damage."
         if type(self.same_turn_usage) == int:
             s += f" Can be triggered {self.same_turn_usage} times per turn."
+        if self.remove_this_after_trigger_on_the_next_turn:
+            s += " This effect will be removed at the end of the turn after it is triggered."
+        if self.percentage_hp_heal_after_remove > 0:
+            s += f" Heals {self.percentage_hp_heal_after_remove*100:.1f}% of max HP when removed."
         return s
     
     def tooltip_description_jp(self):
@@ -970,6 +986,10 @@ class ResolveEffect(Effect):
             s += "状態異常ダメージに適用。"
         if type(self.same_turn_usage) == int:
             s += f"1ターンに{self.same_turn_usage}回まで発動可能。"
+        if self.remove_this_after_trigger_on_the_next_turn:
+            s += "この効果は発動後、ターン終了時に解除される。"
+        if self.percentage_hp_heal_after_remove > 0:
+            s += f"解除する際、最大HPの{self.percentage_hp_heal_after_remove*100:.1f}%回復する。"
         return s
 
 

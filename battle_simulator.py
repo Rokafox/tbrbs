@@ -5410,7 +5410,7 @@ if __name__ == "__main__":
         label.set_text(str(player.get_currency(currency)))
 
 
-
+    # equip all characters and monsters with random equipment for testing
     # for c in all_characters + all_monsters:
         # c.equip_item_from_list(generate_equips_list(4, random_full_eqset=True)) 
 
