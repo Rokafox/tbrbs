@@ -2726,9 +2726,7 @@ if __name__ == "__main__":
                 button_characters.set_text("Characters")
                 button_characters.set_tooltip("Open character console.", delay=0.1, wrap_width=300)
                 button_characters_true.set_tooltip("Open character overview window. This window is useful if you have full images of characters." \
-                                                   " Copy a character by left clicking on the character image in this window" \
-                                                   " allow replace a character by R + left clicking on the character image on the main menu." \
-                                                   " More features are not planned. Introduced in 3.9.0"
+                                                   " Use drag and drop to replace a main menu character."
                                                    , delay=0.1, wrap_width=300)
                 button_about.set_text("About")
                 button_about.set_tooltip("Open about window.", delay=0.1, wrap_width=300)
@@ -2815,8 +2813,7 @@ if __name__ == "__main__":
                 button_characters.set_text("百花繚乱")
                 button_characters.set_tooltip("キャラクターコンソールを開く。", delay=0.1, wrap_width=300)
                 button_characters_true.set_tooltip("キャラクターのオーバービューを開く。このオプションは、キャラクター画像がある場合に便利であろう。" \
-                                                   "キャラクター画像を左クリックしてキャラクターをコピーし、メインメニューのキャラクター画像をR+左クリックで置き換える。" \
-                                                   "機能追加は計画されていない。3.9.0で導入されました。"
+                                                   "ドラッグとドロップでメインメニューのキャラクターを置き換える。"
                                                    , delay=0.1, wrap_width=300)
                 button_about.set_text("洞若觀火")
                 button_about.set_tooltip("アプリ概要画面を開く。", delay=0.1, wrap_width=300)
@@ -5480,7 +5477,6 @@ if __name__ == "__main__":
     zero_key_held = False
 
     last_clicked_slot = None  # 直前にクリックしたスロット(UIImage)を記録する
-    character_swap_set = set()
     character_replace_name: str = ""
     character_replace_index: int = -1
 
@@ -5626,20 +5622,12 @@ if __name__ == "__main__":
                 # character selection and party member swap
                 for index, image_slot in enumerate(image_slots_all):
                     if image_slot.rect.collidepoint(event.pos):
-                        # for example:     image_slot10 = pygame_gui.elements.UIImage(pygame.Rect((900, 650), (156, 156)),
-                                        # pygame.Surface((156, 156)),
-                                        # ui_manager)
                         ui_drag_and_drop_target_orig_pos = (image_slot.rect.x, image_slot.rect.y)
                         ui_drag_and_drop_usage = "main_character_swap"
                         ui_drag_and_drop_target = image_slot
                         
                         if s_key_held:
                             update_character_selection_menu(None, di=index)
-                        # if w_key_held:
-                        #     character_swap_set.add(index)
-                        #     if len(character_swap_set) == 2:
-                        #         swap_characters_in_party(character_swap_set)
-                        #         character_swap_set.clear()
                         if r_key_held:
                             character_replace_index = index
                             if character_replace_name:
@@ -5649,12 +5637,10 @@ if __name__ == "__main__":
                 if character_overview_window is not None:
                     for i, image_slot in enumerate(character_image_slots):
                         if image_slot.rect.collidepoint(event.pos):
-                            # print(character_overview_current_page_characters[i]) # character
-                            try:
-                                character_replace_name = character_overview_current_page_characters[i].name
-                            except IndexError:
-                                # for werid cases
-                                pass
+                            ui_drag_and_drop_target_orig_pos = (image_slot.rect.x, image_slot.rect.y)
+                            ui_drag_and_drop_usage = "overview_character_replace"
+                            ui_drag_and_drop_target = image_slot
+                            character_replace_name = character_overview_current_page_characters[i].name
 
 
                 # item selection from inventory
@@ -5707,10 +5693,21 @@ if __name__ == "__main__":
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1 and ui_drag_and_drop_target != None:
                     if ui_drag_and_drop_usage == "main_character_swap":
-                        for index, image_slot in enumerate([s for s in image_slots_all if s != ui_drag_and_drop_target]):
-                            if image_slot.rect.collidepoint(event.pos):
-                                swap_characters_in_party({index, image_slots_all.index(ui_drag_and_drop_target)})
+                        index_drop_target = image_slots_all.index(ui_drag_and_drop_target)
+                        for index, image_slot in enumerate(image_slots_all):
+                            if index != index_drop_target and image_slot.rect.collidepoint(event.pos):
+                                swap_characters_in_party({index, index_drop_target})
                                 break
+                    elif ui_drag_and_drop_usage == "overview_character_replace":
+                        for index, image_slot in enumerate(image_slots_all):
+                            if image_slot.rect.collidepoint(event.pos):
+                                character_replace_index = index
+                                if character_replace_name:
+                                    replace_character_with_new(character_replace_name, character_replace_index)
+                                break
+
+
+                    ui_drag_and_drop_target.set_position(ui_drag_and_drop_target_orig_pos)
                     ui_drag_and_drop_target = None
                     ui_drag_and_drop_usage = ""
                     ui_drag_and_drop_target_orig_pos = (0, 0)
