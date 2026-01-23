@@ -715,51 +715,33 @@ if __name__ == "__main__":
     image_files_character = [x[:-4] for x in os.listdir("./image/character") if x.endswith((".jpg", ".png"))]
     image_files_monster = [x[:-4] for x in os.listdir("./image/monster") if x.endswith((".jpg", ".png"))]
     image_files_item = [x[:-4] for x in os.listdir("./image/item") if x.endswith((".jpg", ".png"))]
-    images_character = {} # str : pygame.Surface
-    images_monster = {} # str : pygame.Surface
-    images_item = {} # str : pygame.Surface
+    images_character: dict[str, pygame.Surface] = {}
+    images_monster: dict[str, pygame.Surface] = {}
+    images_item: dict[str, pygame.Surface] = {}
 
     for name in image_files_character:
         image_path_jpg = f"image/character/{name}.jpg"
         image_path_png = f"image/character/{name}.png"
-
-        try:
-            if os.path.exists(image_path_jpg):
-                images_character[name] = pygame.image.load(image_path_jpg)
-            elif os.path.exists(image_path_png):
-                images_character[name] = pygame.image.load(image_path_png)
-            else:
-                print(f"ファイル {name} は見つかりませんでした。")
-        except Exception as e:
-            print(f"画像 {name} の読み込み中にエラーが発生しました: {e}")
+        if os.path.exists(image_path_jpg):
+            images_character[name] = pygame.image.load(image_path_jpg)
+        elif os.path.exists(image_path_png):
+            images_character[name] = pygame.image.load(image_path_png)
 
     for name in image_files_monster:
         image_path_jpg = f"image/monster/{name}.jpg"
         image_path_png = f"image/monster/{name}.png"
-
-        try:
-            if os.path.exists(image_path_jpg):
-                images_monster[name] = pygame.image.load(image_path_jpg)
-            elif os.path.exists(image_path_png):
-                images_monster[name] = pygame.image.load(image_path_png)
-            else:
-                print(f"ファイル {name} は見つかりませんでした。")
-        except Exception as e:
-            print(f"画像 {name} の読み込み中にエラーが発生しました: {e}")
+        if os.path.exists(image_path_jpg):
+            images_monster[name] = pygame.image.load(image_path_jpg)
+        elif os.path.exists(image_path_png):
+            images_monster[name] = pygame.image.load(image_path_png)
 
     for name in image_files_item:
         image_path_jpg = f"image/item/{name}.jpg"
         image_path_png = f"image/item/{name}.png"
-
-        try:
-            if os.path.exists(image_path_jpg):
-                images_item[name] = pygame.image.load(image_path_jpg)
-            elif os.path.exists(image_path_png):
-                images_item[name] = pygame.image.load(image_path_png)
-            else:
-                print(f"ファイル {name} は見つかりませんでした。")
-        except Exception as e:
-            print(f"画像 {name} の読み込み中にエラーが発生しました: {e}")
+        if os.path.exists(image_path_jpg):
+            images_item[name] = pygame.image.load(image_path_jpg)
+        elif os.path.exists(image_path_png):
+            images_item[name] = pygame.image.load(image_path_png)
 
     for k, v in images_character.items():
         prefix = k.split("_")[0] # "cerberus_1" -> "cerberus", "fenrir_2" -> "fenrir"
@@ -767,9 +749,11 @@ if __name__ == "__main__":
             if character.name.lower() == prefix:
                 character.image.append(v)
                 
+    # featured image is simply assigned from the first image in the list
     for c in all_characters:
-        c.set_up_featured_image()
-
+        if not c.set_up_featured_image():
+            print(f"Character {c.name} has no image assigned, using 404 image.")
+            c.featured_image = images_item["404"]
 
     for k, v in images_monster.items():
         for monster in all_monsters:
@@ -777,7 +761,9 @@ if __name__ == "__main__":
                 monster.image.append(v)
 
     for m in all_monsters:
-        m.set_up_featured_image()
+        if not m.set_up_featured_image():
+            print(f"Monster {m.original_name} has no image assigned, using 404 image.")
+            m.featured_image = images_item["404"]
 
     # =====================================
     # End of Loading Images
@@ -1398,11 +1384,7 @@ if __name__ == "__main__":
     def build_character_overview_window():
         """
         This window displays the image of all characters just like the inventory.
-        Fill the image with character.featured_image:
-        try:
-            image_slots[i].set_image(character.featured_image)
-        except Exception:
-            image_slots[i].set_image(images_item["404"])
+        Fill the image with character.featured_image
         """
         global character_overview_window, all_characters, all_characters_showcase
         global character_page_label, character_current_page, character_max_pages
@@ -1524,11 +1506,7 @@ if __name__ == "__main__":
             # Set images and tooltips:
             for slot, character in zip(character_image_slots, current_page_characters):
                 # Try to set the character image
-                try:
-                    slot.set_image(character.featured_image)
-                except Exception:
-                    slot.set_image(images_item["404"])
-
+                slot.set_image(character.featured_image)
                 tooltip_text = f"<b>{character.name}</b>\n"
                 if global_vars.language == "日本語":
                     tooltip_text += character.skill_tooltip_jp()
@@ -4841,11 +4819,7 @@ if __name__ == "__main__":
                          labels, healthbar, equip_effect_slots, image_slots_overlays, healthbar_overlays):
             for i, character in enumerate(party):
                 if refill_image:
-                    try:
-                        image_slots[i].set_image(character.featured_image)
-                    except Exception:
-                        image_slots[i].set_image(images_item["404"])
-
+                    image_slots[i].set_image(character.featured_image)
 
                 if global_vars.language == "日本語" and hasattr(character, "tooltip_string_jp"):
                     image_slots[i].set_tooltip(character.tooltip_string_jp(), delay=0.1, wrap_width=250)
@@ -5511,6 +5485,10 @@ if __name__ == "__main__":
     character_replace_index: int = -1
 
     print("Starting!")
+    # Currently drag and drop only available for character overview for quick replace
+    ui_drag_and_drop_target = None
+    ui_drag_and_drop_target_orig_pos = (0, 0)
+    ui_drag_and_drop_usage = "" # "character_quick_replace" etc.
     running = True 
 
     while running:
@@ -5648,13 +5626,20 @@ if __name__ == "__main__":
                 # character selection and party member swap
                 for index, image_slot in enumerate(image_slots_all):
                     if image_slot.rect.collidepoint(event.pos):
+                        # for example:     image_slot10 = pygame_gui.elements.UIImage(pygame.Rect((900, 650), (156, 156)),
+                                        # pygame.Surface((156, 156)),
+                                        # ui_manager)
+                        ui_drag_and_drop_target_orig_pos = (image_slot.rect.x, image_slot.rect.y)
+                        ui_drag_and_drop_usage = "main_character_swap"
+                        ui_drag_and_drop_target = image_slot
+                        
                         if s_key_held:
                             update_character_selection_menu(None, di=index)
-                        if w_key_held:
-                            character_swap_set.add(index)
-                            if len(character_swap_set) == 2:
-                                swap_characters_in_party(character_swap_set)
-                                character_swap_set.clear()
+                        # if w_key_held:
+                        #     character_swap_set.add(index)
+                        #     if len(character_swap_set) == 2:
+                        #         swap_characters_in_party(character_swap_set)
+                        #         character_swap_set.clear()
                         if r_key_held:
                             character_replace_index = index
                             if character_replace_name:
@@ -5718,6 +5703,21 @@ if __name__ == "__main__":
 
                             # last_clicked_slotは特に更新しなくてもよいが、必要なら新たなクリックをlastとして記録
                             last_clicked_slot = clicked_ui_image
+
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1 and ui_drag_and_drop_target != None:
+                    if ui_drag_and_drop_usage == "main_character_swap":
+                        for index, image_slot in enumerate([s for s in image_slots_all if s != ui_drag_and_drop_target]):
+                            if image_slot.rect.collidepoint(event.pos):
+                                swap_characters_in_party({index, image_slots_all.index(ui_drag_and_drop_target)})
+                                break
+                    ui_drag_and_drop_target = None
+                    ui_drag_and_drop_usage = ""
+                    ui_drag_and_drop_target_orig_pos = (0, 0)
+
+            if event.type == pygame.MOUSEMOTION:
+                if ui_drag_and_drop_target != None:
+                    ui_drag_and_drop_target.set_position((ui_drag_and_drop_target.rect.x + event.rel[0], ui_drag_and_drop_target.rect.y + event.rel[1]))
 
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == button1: # Shuffle party

@@ -27,21 +27,23 @@ class Character:
         self.exp = exp
         self.equip = equip
         self.image: list['pygame'.Surface] = [] if image is None else image # list of pygame.Surface
+        self.featured_image: 'pygame'.Surface | None = None
         self.initialize_stats()
         self.skill1_cooldown_max = 5 
         self.skill2_cooldown_max = 5
-        self.effect_immunity = [] # list of str effect names
+        self.effect_immunity:list[str] = [] # list of effect names
 
 
     def set_up_featured_image(self):
-        try:
+        if self.image:
             self.featured_image = self.image[0]
-        except IndexError:
-            if hasattr(self, "original_name"):
-                print(f"Image not found: {self.original_name.lower()}")
+            return True
+        else:
+            if hasattr(self, "original_name"): # for Monster class
+                print(f"Featured image cannot be assigned as none available: {self.original_name.lower()}")
             else:
-                print(f"Image not found: {self.name.lower()}")
-            self.featured_image = None
+                print(f"Featured image cannot be assigned as none available: {self.name.lower()}")
+            return False
 
     def to_dict(self): # Will only save lvl, exp, equip
         return {
