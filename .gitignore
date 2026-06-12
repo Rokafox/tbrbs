@@ -10,3 +10,6 @@ dist/
 .venv/
 logs/
 image_backup/
+
+# macOS
+.DS_Store

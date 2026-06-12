@@ -687,17 +687,16 @@ if __name__ == "__main__":
     pygame.display.set_caption("Battle Simulator")
     # if there is icon, use it
     try:
-        icon = pygame.image.load("icon.png")
-        pygame.display.set_icon(icon)
-    except Exception as e:
-        print(f"Error loading icon: {e}")
+        pygame.display.set_icon(pygame.image.load("icon.png"))
+    except Exception as _:
+        print(f"Error loading icon: {_}")
 
     if not os.path.exists("./.tmp"):
         os.mkdir("./.tmp")
 
     # clean everything in ./.tmp, old data
-    for file in os.listdir("./.tmp"):
-        os.remove(f"./.tmp/{file}")
+    for _ in os.listdir("./.tmp"):
+        os.remove(f"./.tmp/{_}")
 
     # =====================================
     # Load Images
@@ -820,8 +819,8 @@ if __name__ == "__main__":
                                         pygame.Surface((156, 210)),
                                         ui_manager_overlay)
     image_slot_overlay_party1 = [image_slot_overlay1, image_slot_overlay2, image_slot_overlay3, image_slot_overlay4, image_slot_overlay5]
-    for i in image_slot_overlay_party1:
-        i.set_image(images_item["405"])
+    for _ in image_slot_overlay_party1:
+        _.set_image(images_item["405"])
     image_slot_overlay6 = pygame_gui.elements.UIImage(pygame.Rect((100, 550), (156, 256)),
                                         pygame.Surface((156, 256)),
                                         ui_manager_overlay)
@@ -838,8 +837,8 @@ if __name__ == "__main__":
                                         pygame.Surface((156, 256)),
                                         ui_manager_overlay)
     image_slot_overlay_party2 = [image_slot_overlay6, image_slot_overlay7, image_slot_overlay8, image_slot_overlay9, image_slot_overlay10]
-    for i in image_slot_overlay_party2:
-        i.set_image(images_item["405"])
+    for _ in image_slot_overlay_party2:
+        _.set_image(images_item["405"])
 
 
 
@@ -921,8 +920,8 @@ if __name__ == "__main__":
     equip_set_slot_party1 = [equip_slota5, equip_slotsb5, equip_slotsc5, equip_slotsd5, equip_slotse5]
     equip_set_slot_party2 = [equip_slotsf5, equip_slotsg5, equip_slotsh5, equip_slotsi5, equip_slotsj5]                            
 
-    for slot in equip_set_slot_party1 + equip_set_slot_party2:
-        slot.set_image(images_item["KKKKK"])
+    for _ in equip_set_slot_party1 + equip_set_slot_party2:
+        _.set_image(images_item["KKKKK"])
 
     # Character Names and Level Labels
     # ==========================
@@ -974,23 +973,23 @@ if __name__ == "__main__":
     # =====================================
     # Left Side 
 
-    button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 300), (156, 35)),
+    button_shuffle_party = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 300), (156, 35)),
                                         text='Shuffle Party',
                                         manager=ui_manager,
                                         tool_tip_text = "Shuffle party and restart the battle")
-    button1.set_tooltip("Shuffle the party members and restart battle. On adventure mode, only party 1 is shuffled.", delay=0.1, wrap_width=300)
+    button_shuffle_party.set_tooltip("Shuffle the party members and restart battle. On adventure mode, only party 1 is shuffled.", delay=0.1, wrap_width=300)
 
-    button4 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 340), (156, 35)),
+    button_restart_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 340), (156, 35)),
                                         text='Restart Battle',
                                         manager=ui_manager,
                                         tool_tip_text = "Restart battle")
-    button4.set_tooltip("Restart battle.", delay=0.1)
+    button_restart_battle.set_tooltip("Restart battle.", delay=0.1)
 
-    button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 380), (156, 35)),
+    button_restart_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 380), (156, 35)),
                                         text='All Turns',
                                         manager=ui_manager,
                                         tool_tip_text = "Skip to the end of the battle.")
-    button3.set_tooltip("Skip to the end of the battle.", delay=0.1, wrap_width=300)
+    button_restart_battle.set_tooltip("Skip to the end of the battle.", delay=0.1, wrap_width=300)
 
     button_left_simulate_current_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 420), (78, 50)),
                                         text='Simulate',
@@ -2687,12 +2686,12 @@ if __name__ == "__main__":
                 button_quit_game.set_tooltip("Save player data as player_data.json and exit.", delay=0.1, wrap_width=300)
                 button_left_simulate_current_battle.set_text("Simulate")
                 button_left_simulate_current_battle.set_tooltip("Simulate current battle n times and print the result.", delay=0.1, wrap_width=300)
-                button3.set_text("All Turns")
-                button3.set_tooltip("Skip to the end of the battle.", delay=0.1, wrap_width=300)
-                button4.set_text("Restart Battle")
-                button4.set_tooltip("Restart battle.", delay=0.1)
-                button1.set_text('Shuffle Party')
-                button1.set_tooltip("Shuffle the party members and restart battle. On adventure mode, only party 1 is shuffled.", delay=0.1, wrap_width=300)
+                button_restart_battle.set_text("All Turns")
+                button_restart_battle.set_tooltip("Skip to the end of the battle.", delay=0.1, wrap_width=300)
+                button_restart_battle.set_text("Restart Battle")
+                button_restart_battle.set_tooltip("Restart battle.", delay=0.1)
+                button_shuffle_party.set_text('Shuffle Party')
+                button_shuffle_party.set_tooltip("Shuffle the party members and restart battle. On adventure mode, only party 1 is shuffled.", delay=0.1, wrap_width=300)
                 next_turn_button.set_text("Next Turn")
                 next_turn_button_tooltip_str = "Next turn. Rewards are earned if the battle is won in adventure mode." \
                 " The details of rewards are shown when hovering over the stage number label."
@@ -2730,6 +2729,8 @@ if __name__ == "__main__":
                                                    , delay=0.1, wrap_width=300)
                 button_about.set_text("About")
                 button_about.set_tooltip("Open about window.", delay=0.1, wrap_width=300)
+                character_eq_unequip_button.set_text("Unequip")
+                character_eq_unequip_all_button.set_text("All")
                 character_eq_unequip_button.set_tooltip("Remove equipment from the selected character.", delay=0.1, wrap_width=300)
                 character_eq_unequip_all_button.set_tooltip("Remove all equipment from the selected character.", delay=0.1, wrap_width=300)
                 eq_levelup_button.set_text("Level Up")
@@ -2777,12 +2778,12 @@ if __name__ == "__main__":
                 button_quit_game.set_tooltip("プレイヤーデータをplayer_data.jsonとして保存し、アプリを終了する。", delay=0.1, wrap_width=300)
                 button_left_simulate_current_battle.set_text("柳暗花明")
                 button_left_simulate_current_battle.set_tooltip("現在の戦闘をn回シミュレートし、結果を表示する。", delay=0.1, wrap_width=300)
-                button3.set_text("夢幻泡影")
-                button3.set_tooltip("戦闘終了まで飛ばす。", delay=0.1, wrap_width=300)
-                button4.set_text("東山再起")
-                button4.set_tooltip("戦闘再開。", delay=0.1, wrap_width=300)
-                button1.set_text('一期一会')
-                button1.set_tooltip("パーティメンバーをランダムに編成してバトルを再開する。冒険モードではパーティ1のみ入れ替わる。", delay=0.1, wrap_width=300)
+                button_restart_battle.set_text("夢幻泡影")
+                button_restart_battle.set_tooltip("戦闘終了まで飛ばす。", delay=0.1, wrap_width=300)
+                button_restart_battle.set_text("東山再起")
+                button_restart_battle.set_tooltip("戦闘再開。", delay=0.1, wrap_width=300)
+                button_shuffle_party.set_text('一期一会')
+                button_shuffle_party.set_tooltip("パーティメンバーをランダムに編成してバトルを再開する。冒険モードではパーティ1のみ入れ替わる。", delay=0.1, wrap_width=300)
                 next_turn_button.set_text("花鳥風月")
                 next_turn_button_tooltip_str = "次のターン。冒険モードで勝利すると報酬を獲得できる。報酬の詳細は、ステージ番号のラベルにカーソルを合わせると表示される。"
                 next_turn_button.set_tooltip(next_turn_button_tooltip_str, delay=0.1, wrap_width=300)
@@ -2798,7 +2799,7 @@ if __name__ == "__main__":
                 label_character_selection_menu.set_tooltip("キャラクターを選択する。アイテムの使用、装備の使用、装備の解除、その他がこのキャラクターを対象として行われる。" \
                 "キャラクター画像にS+左クリックでもキャラクターを選択できる。"
                 , delay=0.1, wrap_width=300)
-                use_item_button.set_text("鳳冠霞帔")
+                use_item_button.set_text("狼に衣")
                 use_item_button.set_tooltip("選択したアイテムを選択したキャラクターに使用する。選択したアイテムが装備アイテムの場合、選択したキャラクターに装備する。一度に複数のアイテムを装備・使用することができる。" \
                                             "選択方法：左クリックでアイテムを選択、右クリックでアイテムを選択解除。" \
                                             "Shift+左クリックで複数のアイテムを選択する。"
@@ -4782,20 +4783,20 @@ if __name__ == "__main__":
                                 [character_healthbar_slot_top3_o1, character_healthbar_slot_top3_o2, character_healthbar_slot_top3_o3],
                                 [character_healthbar_slot_top4_o1, character_healthbar_slot_top4_o2, character_healthbar_slot_top4_o3],
                                 [character_healthbar_slot_top5_o1, character_healthbar_slot_top5_o2, character_healthbar_slot_top5_o3]]
-    for t in health_bar_party1_overlay:
-        for overlay in t:
-            overlay.set_image((images_item["405"]))
-            overlay.change_layer(1)
+    for _ in health_bar_party1_overlay:
+        for _ in _:
+            _.set_image((images_item["405"]))
+            _.change_layer(1)
     
     health_bar_party2_overlay = [[character_healthbar_slot_buttom1_o1, character_healthbar_slot_buttom1_o2, character_healthbar_slot_buttom1_o3],
                                 [character_healthbar_slot_buttom2_o1, character_healthbar_slot_buttom2_o2, character_healthbar_slot_buttom2_o3],
                                 [character_healthbar_slot_buttom3_o1, character_healthbar_slot_buttom3_o2, character_healthbar_slot_buttom3_o3],
                                 [character_healthbar_slot_buttom4_o1, character_healthbar_slot_buttom4_o2, character_healthbar_slot_buttom4_o3],
                                 [character_healthbar_slot_buttom5_o1, character_healthbar_slot_buttom5_o2, character_healthbar_slot_buttom5_o3]]
-    for t in health_bar_party2_overlay:
-        for overlay in t:
-            overlay.set_image((images_item["405"]))
-            overlay.change_layer(1)
+    for _ in health_bar_party2_overlay:
+        for _ in _:
+            _.set_image((images_item["405"]))
+            _.change_layer(1)
 
 
 
@@ -5233,7 +5234,7 @@ if __name__ == "__main__":
     shop_player_owned_currency_icon = pygame_gui.elements.UIImage(pygame.Rect((625, 500), (32, 32)),
                                         pygame.Surface((32, 32)),
                                         ui_manager)
-    shop_player_owned_currency = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((660, 500), (100, 36)),
+    shop_player_owned_currency = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((660, 500), (200, 36)),
                                                                     text='17522443',
                                                                     manager=ui_manager)
     shop_player_owned_currency.set_tooltip("Owned currency. Different shops may accept different currency.", delay=0.1)
@@ -5717,7 +5718,7 @@ if __name__ == "__main__":
                     ui_drag_and_drop_target.set_position((ui_drag_and_drop_target.rect.x + event.rel[0], ui_drag_and_drop_target.rect.y + event.rel[1]))
 
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
-                if event.ui_element == button1: # Shuffle party
+                if event.ui_element == button_shuffle_party: # Shuffle party
                     if cheems_window is not None:
                         cheems_window.kill()
                     text_box.set_text("==============================\n")
@@ -5729,9 +5730,9 @@ if __name__ == "__main__":
                 if event.ui_element == next_turn_button:
                     if next_turn(party1, party2):
                         turn += 1
-                if event.ui_element == button3:
+                if event.ui_element == button_restart_battle:
                     all_turns(party1, party2)
-                if event.ui_element == button4: # Restart battle
+                if event.ui_element == button_restart_battle: # Restart battle
                     text_box.set_text("==============================\n")
                     restart_battle()
                 if event.ui_element == button_quit_game:
@@ -5933,7 +5934,7 @@ if __name__ == "__main__":
                     swap_language()
                     try:
                         settings_window.kill()
-                    except Exception as e:
+                    except Exception:
                         pass
                 if event.ui_element == shop_select_a_shop:
                     the_shop = redraw_ui_shop_edition()
