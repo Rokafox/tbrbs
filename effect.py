@@ -28,12 +28,14 @@ class Effect:
         self.tooltip_str_jp = tooltip_str_jp
         self.can_be_removed_by_skill = can_be_removed_by_skill
         self.show_stacks = show_stacks
-        self.is_protected_effect = False
+        self.is_protected_effect = False # currently unused attribute.
         self.original_duration = duration
         self.already_applied = False
         self.is_reserved_effect = False
         self.is_hidden_effect = False # Hidden effects are not shown in the UI.
-    
+        self.effect_applier = None
+        self.remove_if_effect_applier_down = False
+
     def is_permanent(self):
         return self.duration == -1
     

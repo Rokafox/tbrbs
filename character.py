@@ -6,7 +6,7 @@ import re
 import textwrap
 from typing import Generator, Tuple
 from numpy import character
-from effect import AbsorptionShield, AntiMultiStrikeReductionShield, BirdShadowEffect, BubbleWorldEffect, CancellationShield, CocoaSleepEffect, ConfuseEffect, ContinuousDamageEffect, ContinuousDamageEffect_Poison, ContinuousHealEffect, CupidLeadArrowEffect, DamageReflect, DamageTypeConvertionEffect, DecayEffect, DurationBonusEffect, EastBoilingWaterEffect, Effect, EffectShield1, EffectShield1_healoncrit, EffectShield2, EffectShield2_HealonDamage, EquipmentSetEffect_Arasaka, EquipmentSetEffect_Bamboo, EquipmentSetEffect_Dawn, EquipmentSetEffect_Flute, EquipmentSetEffect_Freight, EquipmentSetEffect_Grassland, EquipmentSetEffect_KangTao, EquipmentSetEffect_Liquidation, EquipmentSetEffect_Militech, EquipmentSetEffect_NUSA, EquipmentSetEffect_Newspaper, EquipmentSetEffect_OldRusty, EquipmentSetEffect_Purplestar, EquipmentSetEffect_Rainbow, EquipmentSetEffect_Rose, EquipmentSetEffect_Runic, EquipmentSetEffect_Snowflake, EquipmentSetEffect_Sovereign, EquipmentSetEffect_Tigris, FallingPetalEffect, FreyaDuckySilenceEffect, FriendlyFireShield, FrozenEffect, HideEffect, LesterBookofMemoryEffect, LesterExcitingTimeEffect, LuFlappingSoundEffect, NewYearFireworksEffect, NotTakingDamageEffect, OverhealEffect, PineQCEffect, PineQGEffect, ProtectedEffect, RebornEffect, ReductionShield, RenkaEffect, RequinaGreatPoisonEffect, ReservedEffect, ResolveEffect, RikaResolveEffect, ShintouEffect, SilenceEffect, SinEffect, SleepEffect, SmittenEffect, StatsEffect, StingEffect, StunEffect, TauntEffect, UlricInCloudEffect
+from effect import *
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
 import more_itertools as mit
 import itertools
@@ -1399,10 +1399,10 @@ class Character:
             copyed_buffs = self.buffs.copy() # Some effect will try apply other effects during this step, see comments on Effect class for details.
             copyed_debuffs = self.debuffs.copy()
             for effect in copyed_buffs:
-                if hasattr(effect, "is_protected_effect") and effect.is_protected_effect and not disable_protected_effect:
+                if isinstance(effect, ProtectedEffect) and not disable_protected_effect:
                     damage = effect.protected_apply_effect_during_damage_step(self, damage, attacker, func_after_dmg)
                 else:
-                    # Protected effect is disabled means this damage is taken by the protector.
+                    # When damage is taken by the protector, disable_protected_effect will be set to True,
                     damage = effect.apply_effect_during_damage_step(self, damage, attacker, "normal", attack_is_crit=is_crit,
                                                                     damage_taken_by_protector=disable_protected_effect)
             for effect in copyed_debuffs:
@@ -1674,6 +1674,7 @@ class Character:
             global_vars.turn_info_string += f"{self.name} is immune to {effect.name}.\n"
             return
         if effect.apply_rule == "stack":
+            # stack is confusing, basically refreshes duration call apply_effect_when_adding_stacks, but does not add stacks.
             for e in self.debuffs.copy() + self.buffs.copy():
                 if e.name == effect.name:
                     # if they both have attr additional_name, they must match
@@ -4494,7 +4495,7 @@ class April(Character):
     def skill1_logic(self):
         def copy_effect(self, target: Character):
             for e in target.buffs:
-                if not e.is_set_effect and not hasattr(e, "ch_april_mark_as_copied") and not e.is_protected_effect:
+                if not e.is_set_effect and not hasattr(e, "ch_april_mark_as_copied") and not isinstance(e, ProtectedEffect):
                     e.ch_april_mark_as_copied = False
                 if not e.is_set_effect and hasattr(e, "ch_april_mark_as_copied") and not e.ch_april_mark_as_copied:
                     e2 = copy.copy(e)

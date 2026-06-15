@@ -206,7 +206,7 @@ class Golem(Monster):
 
     def skill2_logic(self):
         def amplify(self, target, final_damage):
-            final_damage *= min(2.0, 1.0 + (1.0 - target.hp / target.maxhp))
+            final_damage *= min(2.0, 1.0 + (target.hp / target.maxhp))
             return final_damage
         damage_dealt = self.attack(multiplier=7.0, repeat=1, func_damage_step=amplify, target_kw1="enemy_in_front")
         return damage_dealt
@@ -314,11 +314,15 @@ class Mummy(Monster):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Mummy"
         self.skill1_description = "Attack 3 closest enemies with 300% atk."
-        self.skill2_description = "Attack 5 enemies with 200% atk and 50% chance to inflict Curse for 45 turns. Curse: atk is reduced by 20%, unstackable."
-        self.skill3_description = "When taking damage, 30% chance to inflict Curse on attacker for 45 turns. Curse: atk is reduced by 20%, unstackable."
+        self.skill2_description = "Attack 5 enemies with 200% atk and 50% chance to inflict Curse for 45 turns. Curse: atk is reduced by 20%." \
+        " If same effect is applied, duration is refreshed."
+        self.skill3_description = "When taking damage, 30% chance to inflict Curse on attacker for 45 turns. Curse: atk is reduced by 20%." \
+        " If same effect is applied, duration is refreshed."
         self.skill1_description_jp = "最も近い敵3体に攻撃力300%のダメージを与える。"
-        self.skill2_description_jp = "全ての敵に攻撃力200%のダメージを与え、確率50%で45ターンの間呪いを付与。呪い:攻撃力が20%減少する。"
-        self.skill3_description_jp = "ダメージを受けた時、30%の確率で攻撃者に45ターンの間呪いを付与。呪い:攻撃力が20%減少する。"
+        self.skill2_description_jp = "全ての敵に攻撃力200%のダメージを与え、確率50%で45ターンの間呪いを付与する。呪い:攻撃力が20%減少する。" \
+        "同じ効果が付与された場合、効果時間が更新される。"
+        self.skill3_description_jp = "ダメージを受けた時、30%の確率で攻撃者に45ターンの間呪いを付与する。呪い:攻撃力が20%減少する。" \
+        "同じ効果が付与された場合、効果時間が更新される。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = False
@@ -335,6 +339,7 @@ class Mummy(Monster):
             if dice <= 50:
                 curse = StatsEffect('Curse', duration=45, is_buff=False, stats_dict={'atk' : 0.8})
                 curse.apply_rule = "stack"
+                curse.additional_name = "Mummy_Curse"
                 target.apply_effect(curse)
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.0, repeat=1, func_after_dmg=curse_effect)
         return damage_dealt
@@ -346,6 +351,7 @@ class Mummy(Monster):
         if random.randint(1, 100) <= 30:
             curse = StatsEffect('Curse', duration=45, is_buff=False, stats_dict={'atk' : 0.8})
             curse.apply_rule = "stack"
+            curse.additional_name = "Mummy_Curse"
             attacker.apply_effect(curse)
 
 
@@ -357,11 +363,13 @@ class Pharaoh(Monster):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Pharaoh"
         self.skill1_description = "Attack 3 closest enemies with 320% atk. If target is cursed, damage is increased by 100%."
-        self.skill2_description = "Attack 3 closest enemies with 320% atk and 80% chance to inflict Curse for 45 turns. If target is cursed, damage is increased by 100%. Curse: atk is reduced by 30%, unstackable."
+        self.skill2_description = "Attack 3 closest enemies with 320% atk and 80% chance to inflict Curse for 45 turns. If target is cursed, damage is increased by 100%. Curse: atk is reduced by 30%," \
+        " if same effect is applied, duration is refreshed."
         self.skill3_description = "hp, atk, def, spd is increased by 20%. When taking damage, 40% chance to inflict Curse on attacker for 45 turns. At the end of turn, if there is a cursed enemy, increase atk by 30% for 3 turns."
         self.skill1_description_jp = "最も近い敵3体に攻撃力320%のダメージを与える。対象が呪われている場合、ダメージが100%増加する。"
-        self.skill2_description_jp = "最も近い敵3体に攻撃力320%のダメージを与え、確率80%で45ターンの間呪いを付与。対象が呪われている場合、ダメージが100%増加する。呪い:攻撃力が30%減少する。"
-        self.skill3_description_jp = "最大HP、攻撃力、防御力、速度を20%増加させる。ダメージを受けた時、40%の確率で攻撃者に45ターンの間呪いをかける。ターン終了時、呪われた敵がいる場合、攻撃力を30%増加させる。"
+        self.skill2_description_jp = "最も近い敵3体に攻撃力320%のダメージを与え、確率80%で45ターンの間呪いを付与する。対象が呪われている場合、ダメージが100%増加する。呪い:攻撃力が30%減少する。" \
+        "同じ効果が付与された場合、効果時間が更新される。"
+        self.skill3_description_jp = "最大HP、攻撃力、防御力、速度を20%増加させる。ダメージを受けた時、40%の確率で攻撃者に45ターンの間呪いを付与する。ターン終了時、呪われた敵がいる場合、攻撃力を30%増加させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 3
         self.is_boss = True
@@ -386,6 +394,7 @@ class Pharaoh(Monster):
             if dice <= 80:
                 curse = StatsEffect('Curse', duration=45, is_buff=False, stats_dict={'atk' : 0.7})
                 curse.apply_rule = "stack"
+                curse.additional_name = "Pharaoh_Curse"
                 target.apply_effect(curse)
         damage_dealt = self.attack(target_kw1="n_enemy_in_front",target_kw2="3", multiplier=3.2, repeat=1, func_damage_step=curse_amplify, func_after_dmg=curse_effect)
         return damage_dealt
@@ -397,6 +406,7 @@ class Pharaoh(Monster):
         if random.randint(1, 100) <= 40:
             curse = StatsEffect('Curse', duration=45, is_buff=False, stats_dict={'atk' : 0.7})
             curse.apply_rule = "stack"
+            curse.additional_name = "Pharaoh_Curse"
             attacker.apply_effect(curse)
 
     def battle_entry_effects(self):
@@ -414,8 +424,8 @@ class PoisonSlime(Monster):
         self.skill1_description = "Attack 5 enemies with 150% atk and 66% chance to inflict Poison for 20 turns. Poison: takes 2.5% of current hp status damage per turn."
         self.skill2_description = "Attack 5 enemies with 150% atk and 66% chance to inflict Poison for 20 turns. Poison: takes 2.5% of lost hp status damage per turn."
         self.skill3_description = "Reduce damage taken by 10%."
-        self.skill1_description_jp = "全ての敵に攻撃力150%のダメージを与え、確率66%で20ターンの間毒を付与。毒:毎ターン、現在のHPの2.5%を状態ダメージとして受ける。"
-        self.skill2_description_jp = "全ての敵に攻撃力150%のダメージを与え、確率66%で20ターンの間毒を付与。毒:毎ターン、失われたHPの2.5%を状態ダメージとして受ける。"
+        self.skill1_description_jp = "全ての敵に攻撃力150%のダメージを与え、確率66%で20ターンの間毒を付与する。毒:毎ターン、現在のHPの2.5%を状態ダメージとして受ける。"
+        self.skill2_description_jp = "全ての敵に攻撃力150%のダメージを与え、確率66%で20ターンの間毒を付与する。毒:毎ターン、失われたHPの2.5%を状態ダメージとして受ける。"
         self.skill3_description_jp = "受けるダメージを10%減少させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -456,7 +466,7 @@ class MadScientist(Monster):
         self.skill1_description = "Attack all enemies with 250% atk and inflict plague for 20 turns with 60% chance each. Plague: at end of turn, 30% chance to apply the same effect to a neighbor ally, every turn, take 9% of lost hp as status damage."
         self.skill2_description = "Attack 3 closest enemies with 300% atk, if target is inflicted with plague, healing efficiency is reduced by 60% for 20 turns."
         self.skill3_description = "Normal attack have 30% chance to inflict plague for 20 turns and deals 40% more damage."
-        self.skill1_description_jp = "全ての敵に攻撃力250%のダメージを与え、確率60%で20ターンの間疫病を付与。疫病:ターン終了時、30%の確率で隣接する味方を伝染し、毎ターン、失われたHPの9%を状態ダメージとして受ける。"
+        self.skill1_description_jp = "全ての敵に攻撃力250%のダメージを与え、確率60%で20ターンの間疫病を付与する。疫病:ターン終了時、30%の確率で隣接する味方を伝染し、毎ターン、失われたHPの9%を状態ダメージとして受ける。"
         self.skill2_description_jp = "最も近い敵3体に攻撃力300%のダメージを与え、対象が疫病効果がある場合、20ターンの間回復効率が60%減少する。"
         self.skill3_description_jp = "通常攻撃に30%の確率で20ターンの間疫病を付与、ダメージが40%増加する。"
         self.skill1_cooldown_max = 4
@@ -519,7 +529,7 @@ class Ghost(Monster):
         chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 30, 0], fillvalue=0))
         def fear_effect(self, target):
             dice = random.randint(1, 100)
-            if dice <= chance_dict[len(self.enemy)]:
+            if dice <= chance_dict[len(target.ally)]:
                 target.apply_effect(FearEffect('Fear', duration=30, is_buff=False))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.0, repeat=1, func_after_dmg=fear_effect)
         return damage_dealt
@@ -550,10 +560,10 @@ class Death(Monster):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Death"
         self.skill1_description = "Attack 5 enemies with 380% atk and apply Fear on targets for 30 turns. Apply chance is 100%, 80%, 60%, 30%, 0% for each enemy depending on how many allies the enemy has. The fewer allies the enemy has, the higher the chance."
-        self.skill2_description = "Attack 3 enemies with lowest hp with 400% atk. If target hp is below 15%, execute target and recover for 20% hp of maxhp. If enemy survived the attack and has Fear, the enemy is confused for 10 turns."
+        self.skill2_description = "Attack 3 enemies with lowest hp with 400% atk. If target hp is below 15%, deal 100% target hp bypass status damage and recover for 20% hp of maxhp. Otherwise if target has Fear, it is confused for 10 turns."
         self.skill3_description = "Maxhp, defense and atk is increased by 20%. As long as you are alive, Fear effect gain the following effect: atk - 40%, accuracy - 40%, spd - 40%."
         self.skill1_description_jp = "全ての敵に攻撃力380%のダメージを与え、確率100%、80%、60%、30%、0%で30ターンの間恐怖を付与。敵が味方の数によって確率が異なる。味方が少ないほど、確率が高くなる。"
-        self.skill2_description_jp = "最もHPが少ない敵3体に攻撃力400%のダメージを与える。対象のHPが15%以下の場合、対象を即死させ、最大HPの20%回復する。攻撃を生き延びた敵が恐怖を持っている場合、その敵を10ターンの間混乱させる。"
+        self.skill2_description_jp = "最もHPが少ない敵3体に攻撃力400%のダメージを与える。対象のHPが15%以下の場合、対象に100%HPの状態異常無視ダメージを与え、自分の最大HPの20%回復する。それ以外の場合、対象が恐怖を持っている場合、10ターンの間混乱させる。"
         self.skill3_description_jp = "最大HP、防御力、攻撃力を20%増加させる。自分が生存している間、恐怖効果は以下の効果を得る:攻撃力-40%、命中率-40%、速度-40%。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -566,7 +576,7 @@ class Death(Monster):
         chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 30, 0], fillvalue=0))
         def fear_effect(self, target):
             dice = random.randint(1, 100)
-            if dice <= chance_dict[len(self.enemy)]:
+            if dice <= chance_dict[len(target.ally)]:
                 target.apply_effect(FearEffect('Fear', duration=30, is_buff=False))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=3.8, repeat=1, func_after_dmg=fear_effect)
         return damage_dealt
@@ -641,7 +651,7 @@ class MachineGolem(Monster):
         self.skill2_description = "Attack all enemies with 275% atk, 75% chance to inflict Burn for 20 turns. Burn deals 30% of self atk as status damage each turn."
         self.skill3_description = "Increase atk by 20%, maxhp by 20%, defense by 30%."
         self.skill1_description_jp = "全ての敵に時限爆弾2つを設置。32ターン後に爆発し、攻撃力444%の状態ダメージを与える。"
-        self.skill2_description_jp = "全ての敵に攻撃力275%で攻撃し、確率75%で20ターンの間燃焼を付与。燃焼は攻撃力の30%を状態ダメージとして毎ターン受ける。"
+        self.skill2_description_jp = "全ての敵に攻撃力275%で攻撃し、確率75%で20ターンの間燃焼を付与する。燃焼は攻撃力の30%を状態ダメージとして毎ターン受ける。"
         self.skill3_description_jp = "攻撃力を20%、最大HPを20%、防御力30%増加させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
@@ -722,11 +732,11 @@ class Salamander(Monster):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Salamander"
         self.skill1_description = "Attack enemies with 150% atk 8 times, each attack has a 66% chance to inflict Burn for 22 turns." \
-        " Burn deals 12% of self atk as status damage each turn."
+        " Burn deals 12% of applier atk as status damage each turn."
         self.skill2_description = "Attack all enemies with 150% atk, each attack has a 75% chance to inflict Burn for 22 turns."
         self.skill3_description = "Recover hp by 2% of maxhp each turn."
         self.skill1_description_jp = "敵に攻撃力150%のダメージを8回与え、それぞれの攻撃に66%の確率で22ターンの間燃焼を付与。" \
-        "燃焼は攻撃力の12%を状態ダメージ毎ターン受ける。"
+        "燃焼は付与者の攻撃力の12%を状態ダメージ毎ターン受ける。"
         self.skill2_description_jp = "全ての敵に攻撃力150%のダメージを与え、それぞれの攻撃に75%の確率で22ターンの間燃焼を付与。"
         self.skill3_description_jp = "毎ターンHPが最大HPの2%回復する。"
         self.skill1_cooldown_max = 5
@@ -941,7 +951,7 @@ class GhostB(Monster):
         chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 40, 20], fillvalue=0))
         def fear_effect(self, target):
             dice = random.randint(1, 100)
-            if dice <= chance_dict[len(self.enemy)]:
+            if dice <= chance_dict[len(target.ally)]:
                 target.apply_effect(FearEffect('Fear', duration=30, is_buff=False))
         damage_dealt = self.attack(target_kw1="n_random_enemy",target_kw2="5", multiplier=2.25, repeat=1, func_after_dmg=fear_effect)
         return damage_dealt
@@ -1012,10 +1022,7 @@ class Ninja(Monster):
         def reduce_cd(self, target):
             dice = random.randint(1, 100)
             if dice <= 30:
-                self.skill1_cooldown -= 1
-                self.skill2_cooldown -= 1
-                self.skill1_cooldown = max(0, self.skill1_cooldown)
-                self.skill2_cooldown = max(0, self.skill2_cooldown)
+                self.update_cooldown()
         self.attack(func_after_dmg=reduce_cd)
 
 
@@ -1039,7 +1046,7 @@ class KillerBee(Monster):
     def skill1_logic(self):
         def sting_effect(self, target):
             target.apply_effect(StingEffect('Sting', duration=24, is_buff=False, value=0.09 * self.atk, imposter=self))
-        damage_dealt = self.attack(multiplier=3.0, repeat=4, func_after_dmg=sting_effect, target_kw1="enemy_in_front")
+        damage_dealt = self.attack(multiplier=2.5, repeat=4, func_after_dmg=sting_effect, target_kw1="enemy_in_front")
         return damage_dealt
 
     def skill2_logic(self):
@@ -1246,7 +1253,7 @@ class WarriorB(Monster):
         self.skill1_description_jp = "最も攻撃力が高い敵に攻撃力250%のダメージを4回与える。" \
         "それぞれの攻撃に難局を付与、25ターンの間クリティカル率を30%減少させる。"
         self.skill2_description_jp = "最も攻撃力が高い敵に攻撃力600%のダメージを与える。" \
-        "対象の守護者からの保護効果を無視。"
+        "対象の守護者からの保護効果を無視する。"
         self.skill3_description_jp = "最大HP100%、防御力30%増加させる。通常ダメージを受けた後、全ての味方に1ターンの間ガードを付与。" \
         "ガード:受けるダメージを70%減少させる。"
         self.skill1_cooldown_max = 4
@@ -1342,7 +1349,7 @@ class Angel(Monster):
 # ====================================
 
 
-
+# このターンで受ける通常ダメージは1回及び1回以下の場合、。。。
 
 
 
@@ -1365,9 +1372,9 @@ class Valkyrie(Monster):
         self.skill1_description = "Focus attack on the closest enemy with 280% atk 2 times, ignore their protected effects. If target does not have protected effect, damage increases by 100%."
         self.skill2_description = "Focus attack on the closest enemy with 340% atk 3 times, ignore their protected effects."
         self.skill3_description = "Normal attack inflict 2 bleed on target that does not have protected effect for 30 turns. Bleed deals 12% of atk status damage per turn."
-        self.skill1_description_jp = "最も近い敵に集中攻撃し攻撃力280%のダメージを2回与える。対象の守護者からの守護効果を無視。" \
+        self.skill1_description_jp = "最も近い敵に集中攻撃し攻撃力280%のダメージを2回与える。対象の守護者からの守護効果を無視する。" \
         "対象が守護効果を持っていない場合、ダメージが100%増加。"
-        self.skill2_description_jp = "最も近い敵に集中攻撃し攻撃力340%のダメージを3回与える。対象の守護者からの守護効果を無視。"
+        self.skill2_description_jp = "最も近い敵に集中攻撃し攻撃力340%のダメージを3回与える。対象の守護者からの守護効果を無視する。"
         self.skill3_description_jp = "通常攻撃は守護効果を持っていない対象に2つの出血を付与。出血は攻撃力の12%を状態ダメージとして毎ターン受ける。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -1410,8 +1417,8 @@ class Cavalier(Monster):
         self.skill2_description = "Attack closest enemy 6 times with 260% atk each, ignoring protected effects, damage increased by 30% for every fallen enemy."
         self.skill3_description = "Increase maxhp by 60%. When taking damage, if you have a higher speed than your opponent, the damage you take is reduced by 30%."
         self.skill1_description_jp = "ランダムな敵に攻撃力270%のダメージを6回与える。対象は20ターンの間盲目になり、命中率が15%減少。" \
-        "守護者からの守護効果を無視。"
-        self.skill2_description_jp = "最も近い敵に攻撃力260%のダメージを6回与える。対象の守護者からの守護効果を無視。" \
+        "守護者からの守護効果を無視する。"
+        self.skill2_description_jp = "最も近い敵に攻撃力260%のダメージを6回与える。対象の守護者からの守護効果を無視する。" \
         "倒れた敵1体につきダメージが30%増加。"
         self.skill3_description_jp = "最大HPを60%増加。ダメージを受けた時、速度が相手よりも高い場合、受けるダメージを30%減少。"
         self.skill1_cooldown_max = 5
@@ -1503,11 +1510,10 @@ class Kerberos(Monster):
         self.original_name = "Kerberos"
         self.skill1_description = "Attack 3 closest enemies with 240% atk 6 times."
         self.skill2_description = "Attack enemy with lowest hp percentage with 240% atk 9 times."
-        self.skill3_description = "During skill attack, if enemy hp is falls below 30%, execute the target, dealing target hp * 100% bypass status damage."
-        # 処刑
+        self.skill3_description = "During skill attack, if enemy hp is falls below 30%, deal target hp * 100% bypass status damage."
         self.skill1_description_jp = "最も近い3人の敵に攻撃力の240%で6回攻撃する。"
         self.skill2_description_jp = "HP割合が最も低い敵に攻撃力の240%で9回攻撃する。"
-        self.skill3_description_jp = "スキル攻撃中、敵のHPが30%以下になった場合、対象を処刑し、対象のHPの100%分の状態異常無視ダメージを与える。"
+        self.skill3_description_jp = "スキル攻撃中、敵のHPが30%以下になった場合、対象のHPの100%分の状態異常無視ダメージを与える。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -1599,7 +1605,7 @@ class Shenlong(Monster):
         " Trial of the Dragon cannot be removed by skill."
         self.skill3_description = "Increase hp by 222%."
         self.skill1_description_jp = "全ての敵を10ターンの間スタンさせる。全ての敵に攻撃力220%/240%/260%で3回攻撃。"
-        self.skill2_description_jp = "全ての味方の攻撃力と命中率を24ターンの間15%増加させる。最も近い敵龍の試練に付与されていない場合に龍の試練を付与。" \
+        self.skill2_description_jp = "全ての味方の攻撃力と命中率を24ターンの間15%増加させる。最も近い敵が龍の試練に付与されていない場合に龍の試練を付与する。" \
         "龍の試練:攻撃力とクリティカル率が30%増加。この効果が切れた場合、対象は1の状態ダメージを受け、12ターンの間スタンされる。" \
         "龍の試練はスキルで解除されない。"
         self.skill3_description_jp = "最大HPを222%増加させる。"
@@ -1654,7 +1660,7 @@ class Assassin(Monster):
         " If target is confused, damage is increased by 100%." # with a 83.22% chance to confuse the target.
         self.skill3_description = "Normal attack target closest enemy and attack 2 times, 20% chance to confuse the target for 6 turns."
         self.skill1_description_jp = "攻撃力と速度を24ターンの間33%増加させ、攻撃力444%分のHPを回復。"
-        self.skill2_description_jp = "最も近い敵に攻撃力177%のダメージを8回与え、それぞれの攻撃に20%の確率で12ターンの間混乱を付与。" \
+        self.skill2_description_jp = "最も近い敵に攻撃力177%のダメージを8回与え、それぞれの攻撃に20%の確率で12ターンの間混乱を付与する。" \
         "対象が混乱している場合、ダメージが100%増加。" 
         self.skill3_description_jp = "通常攻撃は最も近い敵に2回攻撃。20%の確率で6ターンの間混乱を付与。"
         self.skill1_cooldown_max = 5
@@ -2835,8 +2841,8 @@ class Dryad(Monster):
     def __init__(self, name, lvl, exp=0, equip=None, image=None):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "Dryad"
-        self.skill1_description = "Attack all enemies with 360% atk, 80% chance to reduce their crit rate by 30% for 26 turns."
-        self.skill2_description = "Heal all allies by 340% of atk, 80% chance to increase their crit defense by 70% for 26 turns."
+        self.skill1_description = "Attack all enemies with 360% atk, 80% chance to reduce their crit rate by 40% for 26 turns."
+        self.skill2_description = "Heal all allies by 340% of atk, 80% chance to increase their crit defense by 80% for 26 turns."
         self.skill3_description = "Increase maxhp by 100%. Every time you take critical damage, recover hp by 400% of atk."
         self.skill1_description_jp = "全ての敵に攻撃力360%で攻撃し、80%の確率で対象のクリティカル率を26ターンで40%減少。"
         self.skill2_description_jp = "全ての味方を攻撃力340%で回復し、80%の確率で味方のクリティカル防御を26ターンで80%増加。"
@@ -3290,7 +3296,7 @@ class MinotaurB(Monster):
         " is refreshed."
         self.skill2_description = "Attack one closest enemy with 800% atk and Stun the target for 8 turns."
         self.skill3_description = "Normal attack deals 100% more damage to enemy if they have less speed than you."
-        self.skill1_description_jp = "最大HPの30%分のHPを回復し、自身に30ターンの間で「決意」を付与する。通常ダメージを受けて現在のHPを超える場合、そのダメージを現在のHPから1を引いた値に減少させる。この効果は30ターン持続する。同じ効果が再度付与された場合、持続時間がリフレッシュされる。"
+        self.skill1_description_jp = "最大HPの30%分のHPを回復し、自身に30ターンの間で「決意」を付与する。通常ダメージを受けて現在のHPを超える場合、そのダメージを現在のHPから1を引いた値に減少させる。この効果は30ターン持続する。同じ効果が再度付与された場合、持続時間が更新される。"
         self.skill2_description_jp = "最も近い敵1体に攻撃力の800%で攻撃し、8ターンの間スタンさせる。"
         self.skill3_description_jp = "通常攻撃時、敵の速度が自分より低い場合、与えるダメージが100%増加する。"
         # ResolveEffect
@@ -3380,7 +3386,7 @@ class DarklordB(Monster):
             " increase evasion by 15%."
         self.skill3_description = "At start of battle, apply Resolve on all allies, when taking normal damage that would exceed" \
         " current hp, reduce damage taken to your current hp minus 1."
-        self.skill1_description_jp = "最も近い敵1体に攻撃力の150%で9回攻撃する。攻撃前に全ての敵に20ターンの間「スティング」を付与する。スティング：ダメージを受けた時、攻撃力の30%分の状態異常ダメージを受ける。"
+        self.skill1_description_jp = "最も近い敵1体に攻撃力の150%で9回攻撃する。攻撃前に全ての敵に20ターンの間「毒針」を付与する。毒針：ダメージを受けた時、攻撃力の30%分の状態異常ダメージを受ける。"
         self.skill2_description_jp = "最も近い敵1体に攻撃力の150%で9回攻撃する。攻撃前に全ての味方に20ターンの間「回避アップ」を付与し、回避率を15%増加させる。"
         self.skill3_description_jp = "戦闘開始時に全ての味方に「決意」を付与する。通常ダメージが現在のHPを超える場合、受けるダメージを現在のHPから1を引いた値に軽減する。"
         self.skill1_cooldown_max = 5
@@ -4108,8 +4114,8 @@ class Mage(Monster):
         self.skill1_description = "Attack 3 closest enemies with 300% atk and inflict Burn for 18 turns. Burn deals 13% of atk as status damage per turn. If target has negative status, inflict 3 Burn effects."
         self.skill2_description = "Attack closest enemy 3 times with 320% atk, if target has negative status, each attack inflict 3 Burn effects for 6 turns."
         self.skill3_description = "Increase atk by 10%"
-        self.skill1_description_jp = "最も近い敵3体に攻撃力300%で攻撃し、18ターンの間出血を付与。出血は攻撃力の13%を状態ダメージとして毎ターン受ける。対象がデバフを持っている場合、3つの出血効果を付与。"
-        self.skill2_description_jp = "最も近い敵に攻撃力320%で3回攻撃し、対象がデバフを持っている場合、各攻撃で6ターンの間3つの出血効果を付与。"
+        self.skill1_description_jp = "最も近い敵3体に攻撃力300%で攻撃し、18ターンの間燃焼を付与。燃焼は攻撃力の13%を状態ダメージとして毎ターン受ける。対象がデバフを持っている場合、3つの燃焼効果を付与。"
+        self.skill2_description_jp = "最も近い敵に攻撃力320%で3回攻撃し、対象がデバフを持っている場合、各攻撃で6ターンの間3つの燃焼効果を付与。"
         self.skill3_description_jp = "攻撃力を10%増加。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
