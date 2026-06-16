@@ -2037,14 +2037,6 @@ class Character:
         elif set_name == "Cosmic":
             effect_cosmic = StatsEffect("Cosmic Set", -1, True, {"maxhp": 1.018}, condition=lambda char: char.is_alive(),
                                         use_active_flag=False, is_set_effect=True)
-            # effect_cosmic.original_maxhp = self.maxhp
-            # def new_apply_effect_at_end_of_turn(effect, char):
-            #     if char.maxhp > effect.original_maxhp * 200:
-            #         effect.flag_for_remove = True
-            #         # print(f"{char.name} has reached the max hp limit.")
-
-            # # Bind the new method to the effect_cosmic instance
-            # effect_cosmic.apply_effect_at_end_of_turn = new_apply_effect_at_end_of_turn.__get__(effect_cosmic, type(effect_cosmic))
             self.apply_effect(effect_cosmic)
         elif set_name == "Newspaper":
             self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
@@ -2076,7 +2068,7 @@ class Character:
             self.apply_effect(StatsEffect("Runic Set", -1, True, {"crit": 1.00, "critdmg": -0.50}, is_set_effect=True))
         elif set_name == "Grassland":
             # If you haven't taken action yet in current battle, speed is increased by 100%, final damage taken is decreased by 30%
-            # EquipmentSetEffect_Grassland is a subclass of StatsEffect, removes it self when the character takes action.
+            # EquipmentSetEffect_Grassland is a subclass of StatsEffect, removes it self after the character takes action.
             self.apply_effect(EquipmentSetEffect_Grassland("Grassland Set", -1, True, {"spd": 2.40, "final_damage_taken_multipler": -0.30}))
         elif set_name == "Tigris":
             # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
@@ -2087,34 +2079,6 @@ class Character:
         elif set_name == "Armydesert":
             # gives some defensive sub stats: critdef, heal_efficiency, eva
             self.apply_effect(StatsEffect("Armydesert Set", -1, True, {"critdef": 0.50, "heal_efficiency": 0.50, "eva": 0.20}, is_set_effect=True))
-
-        # The following are for testing how valable a stat increase is, atk 50%, crit 100%, critdmg 100%....
-        elif set_name == "Statstestatk":
-            self.apply_effect(StatsEffect("Statstest_atk", -1, True, {"atk": 1.50}, is_set_effect=True))
-        elif set_name == "Statstestdef":
-            self.apply_effect(StatsEffect("Statstest_def", -1, True, {"defense": 1.50}, is_set_effect=True))
-        elif set_name == "Statstestspd":
-            self.apply_effect(StatsEffect("Statstest_spd", -1, True, {"spd": 1.50}, is_set_effect=True))
-        # maxhp
-        elif set_name == "Statstestmaxhp":
-            self.apply_effect(StatsEffect("Statstest_maxhp", -1, True, {"maxhp": 1.50}, is_set_effect=True))
-            self.hp = self.maxhp
-        elif set_name == "Statstestcrit":
-            self.apply_effect(StatsEffect("Statstest_crit", -1, True, {"crit": 1.00}, is_set_effect=True))
-        elif set_name == "Statstestcritdmg":
-            self.apply_effect(StatsEffect("Statstest_critdmg", -1, True, {"critdmg": 1.50}, is_set_effect=True))
-        elif set_name == "Statstesthe":
-            self.apply_effect(StatsEffect("Statstest_he", -1, True, {"heal_efficiency": 1.50}, is_set_effect=True))
-        elif set_name == "Statstestcritdef":
-            self.apply_effect(StatsEffect("Statstest_critdef", -1, True, {"critdef": 1.00}, is_set_effect=True))
-        # eva, acc, penetration
-        elif set_name == "Statstesteva":
-            self.apply_effect(StatsEffect("Statstest_eva", -1, True, {"eva": 0.50}, is_set_effect=True))
-        elif set_name == "Statstestacc":
-            self.apply_effect(StatsEffect("Statstest_acc", -1, True, {"acc": 0.50}, is_set_effect=True))
-        elif set_name == "Statstestpen":
-            self.apply_effect(StatsEffect("Statstest_pen", -1, True, {"penetration": 0.50}, is_set_effect=True))
-
         else:
             raise Exception("Effect not implemented.")
         

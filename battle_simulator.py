@@ -985,11 +985,11 @@ if __name__ == "__main__":
                                         tool_tip_text = "Restart battle")
     button_restart_battle.set_tooltip("Restart battle.", delay=0.1)
 
-    button_restart_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 380), (156, 35)),
+    button_all_turns = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 380), (156, 35)),
                                         text='All Turns',
                                         manager=ui_manager,
                                         tool_tip_text = "Skip to the end of the battle.")
-    button_restart_battle.set_tooltip("Skip to the end of the battle.", delay=0.1, wrap_width=300)
+    button_all_turns.set_tooltip("Skip to the end of the battle.", delay=0.1, wrap_width=300)
 
     button_left_simulate_current_battle = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 420), (78, 50)),
                                         text='Simulate',
@@ -2686,8 +2686,8 @@ if __name__ == "__main__":
                 button_quit_game.set_tooltip("Save player data as player_data.json and exit.", delay=0.1, wrap_width=300)
                 button_left_simulate_current_battle.set_text("Simulate")
                 button_left_simulate_current_battle.set_tooltip("Simulate current battle n times and print the result.", delay=0.1, wrap_width=300)
-                button_restart_battle.set_text("All Turns")
-                button_restart_battle.set_tooltip("Skip to the end of the battle.", delay=0.1, wrap_width=300)
+                button_all_turns.set_text("All Turns")
+                button_all_turns.set_tooltip("Skip to the end of the battle.", delay=0.1, wrap_width=300)
                 button_restart_battle.set_text("Restart Battle")
                 button_restart_battle.set_tooltip("Restart battle.", delay=0.1)
                 button_shuffle_party.set_text('Shuffle Party')
@@ -2778,8 +2778,8 @@ if __name__ == "__main__":
                 button_quit_game.set_tooltip("プレイヤーデータをplayer_data.jsonとして保存し、アプリを終了する。", delay=0.1, wrap_width=300)
                 button_left_simulate_current_battle.set_text("柳暗花明")
                 button_left_simulate_current_battle.set_tooltip("現在の戦闘をn回シミュレートし、結果を表示する。", delay=0.1, wrap_width=300)
-                button_restart_battle.set_text("夢幻泡影")
-                button_restart_battle.set_tooltip("戦闘終了まで飛ばす。", delay=0.1, wrap_width=300)
+                button_all_turns.set_text("夢幻泡影")
+                button_all_turns.set_tooltip("戦闘終了まで飛ばす。", delay=0.1, wrap_width=300)
                 button_restart_battle.set_text("東山再起")
                 button_restart_battle.set_tooltip("戦闘再開。", delay=0.1, wrap_width=300)
                 button_shuffle_party.set_text('一期一会')
@@ -5730,7 +5730,7 @@ if __name__ == "__main__":
                 if event.ui_element == next_turn_button:
                     if next_turn(party1, party2):
                         turn += 1
-                if event.ui_element == button_restart_battle:
+                if event.ui_element == button_all_turns:
                     all_turns(party1, party2)
                 if event.ui_element == button_restart_battle: # Restart battle
                     text_box.set_text("==============================\n")
