@@ -2089,13 +2089,19 @@ class Character:
         if global_vars.language == "English":
             str = "Equipment Set Effects:\n"
             if set_name != "None" and set_name != "Void":
-                str += self.equip["Weapon"].four_set_effect_description
+                effect_map = getattr(self.equip["Weapon"], "set_effect_description", {})
+                for set_count, description in effect_map.items():
+                    if description:
+                        str += f"{set_count} Set Effect:\n{description}\n"
             else:
                 str += "Equipment set effects is not active. Equip 4 items of the same set to receive benefits.\n"
         elif global_vars.language == "日本語":
             str = "装備セット効果:\n"
             if set_name != "None" and set_name != "Void":
-                str += self.equip["Weapon"].four_set_effect_description_jp
+                effect_map = getattr(self.equip["Weapon"], "set_effect_description_jp", {})
+                for set_count, description in effect_map.items():
+                    if description:
+                        str += f"{set_count}セット効果:\n{description}\n"
             else:
                 str += "装備セット効果ありません。\n"
         str += "\n"

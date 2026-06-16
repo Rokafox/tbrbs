@@ -57,9 +57,8 @@ class Equip(Block):
         self.max_stack = 1
 
         self.set_effect_is_acive = False
-        self.four_set_effect_description = ""
-        self.four_set_effect_description = self.assign_four_set_effect_description()
-        self.four_set_effect_description_jp = self.assign_four_set_effect_description_jp()
+        self.set_effect_description = self.assign_set_effect_description()
+        self.set_effect_description_jp = self.assign_set_effect_description_jp()
 
         self.owner: str | None = None
         self.for_attacker_value = 0
@@ -92,6 +91,8 @@ class Equip(Block):
             "spd_flat": self.spd_flat,
             "market_value": self.market_value,
             "image": self.image,
+            "set_effect_description": self.set_effect_description,
+            "set_effect_description_jp": self.set_effect_description_jp,
             "stars_rating": self.stars_rating,
             "stars_rating_max": self.stars_rating_max,
             "star_enhence_cost": self.star_enhence_cost,
@@ -103,238 +104,277 @@ class Equip(Block):
             "owner": self.owner
         }
     
-    def assign_four_set_effect_description(self):
+    def assign_set_effect_description(self):
+        # key: pieces, value: description
         match self.eq_set:
             case "Arasaka":
                 return (
-                    "Once per battle, leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 6 turns."
+                    {2: "Once per battle, leave with 1 hp when taking fatal damage, when triggered, gain immunity to damage for 2 turns.",
+                     4: "Extend damage immunity duration by 4 turns."}
                 )
             case "KangTao":
                 return (
-                    "Compare atk and def, apply the higher value * 999% as shield on self at start of battle."
+                    {2: "At start of battle, compare atk and def, apply the lower value * 450% as shield on self.",
+                     4: "Shield value is increased by the higher value * 550%."}
                 )
             case "Militech":
                 return (
-                    "Increase speed by 120% when hp falls below 30%."
+                    {2: "Increase speed by 50% when hp falls below 30%.",
+                     4: "Gain additional 70% speed increase (total 120%)."}
                 )
             case "NUSA":
                 return (
-                    "Increase atk by 6%, def by 6%, and maxhp by 6% for each ally alive including self."
+                    {2: "Increase atk by 3%, def by 3%, and maxhp by 3% for each ally alive including self.",
+                     4: "Gain additional 3% increase for each stat."}
                 )
             case "Sovereign":
                 return (
-                    "Apply Sovereign effect when taking damage, Sovereign increases atk by 20% and lasts 4 turns. Max 5 active effects."
+                    {2: "Apply Sovereign effect when taking damage, Sovereign increases atk by 20% and lasts 4 turns. Max 2 active effects.",
+                     4: "Max active effects increased by 3 (total 5)."}
                 )
             case "Snowflake":
                 return (
-                    "Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 25% hp and gain the following effect for 6 turns: "
-                    "atk, def, maxhp, spd are increased by 25%. Each activation of this effect increases the stats bonus and healing by 25%."
+                    {2: "Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 12% hp and gain the following effect for 4 turns: "
+                        "atk, def, maxhp, spd are increased by 12%. Each activation of this effect increases the stats bonus and healing by 12%.",
+                     4: "Stat and healing bonus increased by 13% (total 25%). Effect duration increased by 2 turns (total 6 turns)."}
                 )
             case "Flute":
                 return (
-                    "On one action, when successfully attacking enemy 4 times, all enemies take status damage equal to 130% of self atk."
+                    {2: "On one action, when successfully attacking enemy 4 times, all enemies take status damage equal to 60% of self atk.",
+                     4: "Damage increased by 70% (total 130%)."}
                 )
             case "Rainbow":
                 return (
-                    # {0: 1.60, 1: 1.35, 2: 1.10, 3: 0.85, 4: 0.60}
-                    "While attacking, damage increases by 60%/35%/10%/-15%/-40% depending on the proximity of the target."
+                    {2: "While attacking, damage increases by 40%/15%/-10%/-35%/-60% depending on the proximity of the target.",
+                     4: "Damage bonus increased by 20% for each proximity level."}
                 )
             case "Dawn":
                 return (
-                    "Atk increased by 24%, crit increased by 24% when hp is full. One time only, when dealing normal or skill attack damage, damage is increased by 120%."
+                    {2: "Atk increased by 12%, crit increased by 12% when hp is full.",
+                     4: "Stat increased by additional 12%. One time only, when dealing normal or skill attack damage, damage is increased by 100%."}
                 )
             case "Bamboo":
                 return (
-                    "After taking down an enemy with normal or skill attack, for 7 turns, recovers 20% of max hp each turn and increases atk, def, spd by 90%, crit and crit damage by 45%. "
-                    "Cannot be triggered when buff effect is active."
+                    {2: "After taking down an enemy with normal or skill attack, for 4 turns, recovers 10% of max hp each turn and increases atk, def, spd by 45%, crit and crit damage by 22%. "
+                        "Cannot be triggered when buff effect is active.",
+                     4: "Stat bonus and effect duration is doubled."}
                 )
             case "Rose":
                 return (
-                    "Heal efficiency is increased by 20%. Before heal, increase target's heal efficiency by 100% for 2 turns, increase your defense by 30% for 10 turns. "
-                    "Cannot be triggered by hp recover."
+                    {2: "Heal efficiency is increased by 10%. Before heal, increase target's heal efficiency by 50% for 2 turns, increase your defense by 15% for 10 turns. "
+                        "Cannot be triggered by hp recover.",
+                     4: "Stat bonus is doubled."}
                 )
             case "OldRusty":
                 return (
-                    "After using skill 1, 65% chance to reset cooldown of that skill."
+                    {2: "After using skill 1, 30% chance to reset cooldown of that skill.",
+                     4: "Increase reset chance by 33% (total 63%)."}
                 )
             case "Liquidation":
                 return (
-                    "When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 20%: hp, atk, def, spd." \
-                    " If the protector is taking damage for an ally, damage reduction effect is reduced by 50%."
+                    {2: "When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 10%: hp, atk, def, spd."
+                        " If the protector is taking damage for an ally, damage reduction effect is reduced by 50%.",
+                     4: "Damage reduction bonus is doubled (20% per stat)."}
                 )
             case "Cosmic":
                 return (
-                    "Every turn, max hp is increased by 1.8% of current maxhp."
+                    {2: "Every turn, max hp is increased by 0.8% of current maxhp.",
+                     4: "Gain additional max hp increase by 1%."}
                 )
             case "Newspaper":
                 return (
-                    "When dealing damage to enemy, if the enemy has more maxhp then self, damage is increased by 15% of the maxhp difference."
+                    {2: "When dealing damage to enemy, if the enemy has more maxhp then self, damage is increased by 7% of the maxhp difference.",
+                     4: "Damage bonus increased by 8% of the maxhp difference (total 15%)."}
                 )
             case "Cloud":
                 return (
-                    "increase speed by 5%, decrease atk by 10% and grant hide for 50 turns at the start of battle. You cannot be targeted unless for skills that targets 5 enemies." \
-                    " Hide effect is removed when all allies are hidden. When this hide effect is removed, apply Full Cloud, for 10 turns, speed is increased by 100%," \
-                    " final damage taken is reduced by 40%." 
+                    {2: "Increase speed by 5%, decrease atk by 10% and grant hide for 50 turns at the start of battle. You cannot be targeted unless for skills that targets 5 enemies."
+                        " Hide effect is removed when all allies are hidden.",
+                     4: "When this hide effect is removed, apply Full Cloud on self, for 12 turns, speed is increased by 100%,"
+                        " final damage taken is reduced by 40%."}
                 )
             case "Purplestar":
                 return (
-                    "After using skill 2, 85% chance to reset cooldown of that skill."
+                    {2: "After using skill 2, 30% chance to reset cooldown of that skill.",
+                     4: "Increase reset chance by 33% (total 63%)."}
                 )
             case "1987":
                 return (
-                    "Select the highest one from 3 of your main stats: atk, def, spd. 25.55% of the selected stat is added to the ally" \
-                    " who has the lowest value of the selected stat."
+                    {2: "Select the highest one from 3 of your main stats: atk, def, spd. 12% of the selected stat is added to the ally"
+                        " who has the lowest value of the selected stat.",
+                     4: "Stat bonus increased by 13.55% (total 25.55%)."}
                 )
             case "7891":
                 return (
-                    "Select the lowest one from 3 of your main stats: atk, def, spd. 55.55% of the selected stat is added to the ally" \
-                    " who has the highest value of the selected stat."
+                    {2: "Select the lowest one from 3 of your main stats: atk, def, spd. 25% of the selected stat is added to the ally"
+                        " who has the highest value of the selected stat.",
+                     4: "Stat bonus increased by 30.55% (total 55.55%)."}
                 )
             case "Freight":
                 return (
-                    "Prioritize skill 2 over skill 1 if both are available. Before an action, heal hp by 50% of speed. For 4 turns, speed is increased by 30%."
+                    {2: "Before an action, heal hp by 50% of speed.",
+                     4: "Prioritize skill 2 over skill 1 if both are available. Also, for 4 turns, speed is increased by 25%"}
                 )
             case "Runic":
-                # Set skill design: The reason why we have this is simply because some characters are too good
-                # when having 100% crit rate, calculating their true strength should be easier with this.
                 return (
-                    "Critical rate is increased by 100%, critical damage is decreased by 50%." \
-                    " When dealing critical damage and critical rate is over 100%, damage is increased by the excess critical rate."
+                    {2: "Critical rate is increased by 40%, critical damage is decreased by 20%."
+                        " When dealing critical damage and critical rate is over 100%, damage is increased by the excess critical rate.",
+                     4: "Critical rate bonus increased by 60%, critical damage decreased by 30%."}
                 )
             case "Grassland":
                 return (
-                    "If you haven't taken action yet in current battle, speed is increased by 140%, final damage taken is reduced by 30%." \
-                    " This effect is removed after taken action."
+                    {2: "If you haven't taken action yet in current battle, speed is increased by 60%, final damage taken is reduced by 14%."
+                        " This effect is removed after taken action.",
+                     4: "Speed bonus increased by 70%, final damage reduction increased by 16%."}
                 )
             case "Tigris":
                 return (
-                    "When targeting multiple enemies, for each enemy that is missing, damage is increased by 90% for that attack or skill."
+                    {2: "When targeting multiple enemies, for each enemy that is missing, damage is increased by 40% for that attack or skill.",
+                     4: "Gain additional 50% damage increase."}
                 )
             case "Armygreen":
                 return (
-                    "Crit, Critdmg, Accuracy + 30%, penetration + 10%."
+                    {2: "Crit, Critdmg, Accuracy + 15%, penetration + 5%.",
+                     4: "Stat bonus is doubled."}
                 )
             case "Armydesert":
-                # critdef, heal_efficiency, eva
                 return (
-                    "Critdef, heal efficiency + 50%, eva + 20%."
+                    {2: "Critdef, heal efficiency + 25%, eva + 10%.",
+                     4: "Stat bonus is doubled."}
                 )
             case _:
-                return ""
+                return {2: "", 4: ""}
+            
 
-
-    def assign_four_set_effect_description_jp(self):
+    def assign_set_effect_description_jp(self):
         match self.eq_set:
             case "Arasaka":
                 return (
-                    "バトル中に一度だけ、致命的なダメージを受けた時にHP1で生存する。発動時、6ターンの間ダメージ無効。"
+                    {2: "バトル中に一度だけ、致命的なダメージを受けた時にHP1で生存する。発動時、2ターンの間ダメージ無効。",
+                     4: "ダメージ無効の持続時間を4ターン延長する。"}
                 )
             case "KangTao":
                 return (
-                    "攻撃力と防御力を比較し、より高い方の値の999%の分をシールドとしてバトル開始時に自身に付与する。"
+                    {2: "バトル開始時に攻撃力と防御力を比較し、低い方の値の450%をシールドとして自身に付与する。",
+                     4: "シールド値が高い方の値の550%分増加する。"}
                 )
             case "Militech":
                 return (
-                    "HPが30%未満になった時、速度が120%増加する。"
+                    {2: "HPが30%未満になった時、速度が50%増加する。",
+                     4: "追加で70%の速度増加を得る（合計120%）。"}
                 )
             case "NUSA":
                 return (
-                    "自分を含む味方の生存数に応じて、攻撃力、防御力、最大HPがそれぞれ6%増加する。"
+                    {2: "自身を含む生存している味方1体につき、攻撃力、防御力、最大HPがそれぞれ3%増加する。",
+                     4: "各ステータスがさらに3%増加する。"}
                 )
             case "Sovereign":
                 return (
-                    "ダメージを受けた時に主権効果を付与する。攻撃力を20%増加させ、4ターン持続する。最大5つの効果が同時に適用される。"
+                    {2: "ダメージを受けた時に主権効果を付与する。主権効果は攻撃力を20%増加させ、4ターン持続する。最大同時発動数は2。",
+                     4: "最大同時発動数が3増加する（合計5）。"}
                 )
             case "Snowflake":
                 return (
-                    "行動終了時に雪花の一片を獲得。ピースを6つ集まるとHPが25%回復し、6ターンの間以下の効果を得ます：攻撃力、防御力、最大HP、速度が25%増加。この効果の発動ごとに、ステータスボーナスと回復量が25%増加する。"
+                    {2: "行動終了時に雪花の一片を獲得する。6つ集まるとHPを12%回復し、4ターンの間以下の効果を得る：攻撃力、防御力、最大HP、速度が12%増加。この効果の発動ごとに、ステータスボーナスと回復量が12%増加する。",
+                     4: "ステータスと回復量のボーナスが13%増加する（合計25%）。効果の持続時間が2ターン延長される（合計6ターン）。"}
                 )
             case "Flute":
                 return (
-                    "1回の行動で敵を4回攻撃に成功すると、全ての敵に自身の攻撃力の130%に相当する状態異常ダメージを与える。"
+                    {2: "1回の行動で敵への攻撃に4回成功した時、すべての敵に自身の攻撃力の60%に相当する状態異常ダメージを与える。",
+                     4: "ダメージが70%増加する（合計130%）。"}
                 )
             case "Rainbow":
                 return (
-                    "攻撃時、対象との距離に応じてダメージが60%/35%/10%/-15%/-40%に増加する。"
+                    {2: "攻撃時、ターゲットとの距離に応じてダメージが40%/15%/-10%/-35%/-60%増加する。",
+                     4: "距離レベルごとにダメージボーナスが20%増加する。"}
                 )
             case "Dawn":
                 return (
-                    "HPが満タンの時、攻撃力が24%、クリティカル率が24%増加する。1回のみ、通常攻撃またはスキル攻撃時にダメージが120%増加する。"
+                    {2: "HPが満タンの時、攻撃力が12%、クリティカル率が12%増加する。",
+                     4: "ステータスがさらに12%増加する。通常攻撃またはスキル攻撃でダメージを与える時、一度だけダメージが100%増加する。"}
                 )
             case "Bamboo":
                 return (
-                    "通常攻撃またはスキル攻撃で敵を倒した後、7ターンの間毎ターン最大HPの20%を回復し、攻撃力、防御力、速度が90%、クリティカル率とクリティカルダメージが45%増加する。"
-                    "バフ効果が既に発動された場合は発動しない。"
+                    {2: "通常攻撃またはスキル攻撃で敵を倒した後、4ターンの間毎ターン最大HPの10%を回復し、攻撃力、防御力、速度が45%、クリティカル率とクリティカルダメージが22%増加する。バフ効果が既に発動された場合は発動しない。",
+                     4: "ステータスボーナスと効果の持続時間が2倍になる。"}
                 )
             case "Rose":
                 return (
-                    "回復効率が20%増加する。治療の前に、対象の回復効率を2ターンの間100%増加させ、自分の防御力を10ターン30%増加する。"
-                    "HP回復効果は発動しない。"
+                    {2: "回復効率が10%増加する。治療を行う前に、対象の回復効率を2ターンの間50%増加させ、自身の防御力を10ターンの間15%増加させる。HP回復効果では発動しない。",
+                     4: "ステータスボーナスが2倍になる。"}
                 )
             case "OldRusty":
                 return (
-                    "スキル1を使用した後、65%の確率でそのスキルのクールダウンをリセットする。"
+                    {2: "スキル1を使用した後、30%の確率でそのスキルのクールダウンをリセットする。",
+                     4: "リセット確率が33%増加する（合計63%）。"}
                 )
             case "Liquidation":
                 return (
-                    "ダメージを受けた時、以下のステータスのうち、攻撃側より低いもの1つにつき、ダメージが20％減少：HP、攻撃力、防御力、速度。" \
-                    "守護者が味方のためにダメージを受けている場合、ダメージ軽減効果が50%減少。"
+                    {2: "ダメージを受けた時、以下のステータスのうち攻撃側より低いもの1つにつき、ダメージが10%減少する：HP、攻撃力、防御力、速度。守護者が味方のためにダメージを受けている場合、ダメージ軽減効果が50%減少する。",
+                     4: "ダメージ軽減ボーナスが2倍になる（各ステータス20%）。"}
                 )
             case "Cosmic":
                 return (
-                    "毎ターン、現在の最大HPの1.8%に相当する最大HPが増加する。"
+                    {2: "毎ターン、現在の最大HPの0.8%分、最大HPが増加する。",
+                     4: "追加で最大HPが1%増加する。"}
                 )
             case "Newspaper":
                 return (
-                    "敵にダメージを与えた際、敵の最大HPが自身よりも高い場合、その最大HPの差分の15%分ダメージが増加する。"
+                    {2: "敵にダメージを与える時、敵の最大HPが自身よりも高い場合、最大HPの差の7%分ダメージが増加する。",
+                     4: "ダメージボーナスが最大HPの差の8%分増加する（合計15%）。"}
                 )
             case "Cloud":
                 return (
-                    "バトル開始時に速度が5%増加し攻撃力が10%減少する。50ターンの間雲隠状態を付与される。雲隠状態中は、5体の敵を対象とするスキル以外のターゲットにはされません。"
-                    "雲隠状態が解除されると、雲満を付与し、10ターンの間速度が100%増加し、最終ダメージ倍率40%減少する。"
+                    {2: "バトル開始時に速度が5%増加し、攻撃力が10%減少する。また50ターンの間、自身に雲隠状態を付与する。雲隠状態中は、5体の敵を対象とするスキル以外ではターゲットにされない。味方全員が隠れた時、雲隠効果は解除される。",
+                     4: "この雲隠効果が解除された時、自身に「全雲（Full Cloud）」を付与する。12ターンの間、速度が100%増加し、最終被ダメージが40%減少する。"}
                 )
             case "Purplestar":
                 return (
-                    "スキル2を使用した後、85%の確率でそのスキルのクールダウンをリセットする。"
+                    {2: "スキル2を使用した後、30%の確率でそのスキルのクールダウンをリセットする。",
+                     4: "リセット確率が33%増加する（合計63%）。"}
                 )
             case "1987":
                 return (
-                    "攻撃力、防御力、速度の3つのステータスの中から最も高いものを選択し、選択したステータスの25.55%分が、選択したステータスの値が最も低い味方に付加される。"
+                    {2: "自身の主要3ステータス（攻撃力、防御力、速度）の中から最も高いものを選択する。選択したステータスの12%分が、そのステータスの値が最も低い味方に加算される。",
+                     4: "ステータスボーナスが13.55%増加する（合計25.55%）。"}
                 )
             case "7891":
                 return (
-                    "攻撃力、防御力、速度の3つのステータスの中から最も低いものを選択し、選択したステータスの55.55%分が、選択したステータスの値が最も高い味方に付加される。"
+                    {2: "自身の主要3ステータス（攻撃力、防御力、速度）の中から最も低いものを選択する。選択したステータスの25%分が、そのステータスの値が最も高い味方に加算される。",
+                     4: "ステータスボーナスが30.55%増加する（合計55.55%）。"}
                 )
             case "Freight":
                 return (
-                    "スキル1よりもスキル2を優先して使用する。行動前にHPを速度の50%分回復する。4ターンの間、速度が30%増加する。"
+                    {2: "行動前にHPを速度の50%分回復する。",
+                     4: "両方が使用可能な場合、スキル1よりもスキル2を優先して使用する。また、4ターンの間、速度が25%増加する。"}
                 )
             case "Runic":
                 return (
-                    "クリティカル率が100%増加し、クリティカルダメージが50%減少する。" \
-                    "クリティカル率100%以上でクリティカルダメージを与えた場合、クリティカル率超過分ダメージが増加する。"
+                    {2: "クリティカル率が40%増加し、クリティカルダメージが20%減少する。クリティカルダメージを与える時にクリティカル率が100%を超えている場合、超過したクリティカル率の分だけダメージが増加する。",
+                     4: "クリティカル率ボーナスがさらに60%増加し、クリティカルダメージがさらに30%減少する。"}
                 )
             case "Grassland":
                 return (
-                    "現在のバトルでまだ行動していない場合、速度が140%増加し、最終ダメージ倍率が30%減少する。" \
-                    "この効果は行動を取った後に解除される。"
+                    {2: "現在のバトルでまだ行動していない場合、速度が60%増加し、最終被ダメージが14%減少する。この効果は行動した後に解除される。",
+                     4: "速度ボーナスがさらに70%増加し、最終被ダメージ軽減が16%増加する。"}
                 )
             case "Tigris":
                 return (
-                    "複数の敵をターゲットにした場合、敵が1体足りないごとに、その攻撃またはスキルのダメージが90％増加する。"
+                    {2: "複数の敵をターゲットにする時、敵が1体不足しているごとに、その攻撃またはスキルのダメージが40%増加する。",
+                     4: "さらに50%の追加ダメージ増加を得る。"}
                 )
             case "Armygreen":
                 return (
-                    "クリティカル率、クリティカルダメージ、命中率が30%増加し、貫通率が10%増加する。"
+                    {2: "クリティカル率、クリティカルダメージ、命中率が15%増加し、貫通率が5%増加する。",
+                     4: "ステータスボーナスが2倍になる。"}
                 )
             case "Armydesert":
                 return (
-                    "クリティカル防御、回復効率が50%増加し、回避率が20%増加する。"
+                    {2: "クリティカル防御、回復効率が25%増加し、回避率が10%増加する。",
+                     4: "ステータスボーナスが2倍になる。"}
                 )
             case _:
-                return ""
-
-
+                return {2: "", 4: ""}
 
     def get_raritytypeeqset_list(self):
         return self.rarity_list, self.type_list, self.eq_set_list
@@ -1128,8 +1168,10 @@ class Equip(Block):
             else:
                 return "#BCC0D9"
 
-        if self.four_set_effect_description and include_set_effect:
-            stats += f"<font color={set_effect_display_color()}>4 Set Effect:\n{self.four_set_effect_description}</font>"
+        if include_set_effect:
+            for set_count, description in self.set_effect_description.items():
+                if description:
+                    stats += f"<font color={set_effect_display_color()}>{set_count} Set Effect:\n{description}</font>\n"
 
         return stats
 
@@ -1359,8 +1401,10 @@ class Equip(Block):
             else:
                 return "#BCC0D9"
 
-        if self.four_set_effect_description_jp and include_set_effect:
-            stats += f"<font color={set_effect_display_color()}>4セット効果:\n{self.four_set_effect_description_jp}</font>"
+        if include_set_effect:
+            for set_count, description in self.set_effect_description_jp.items():
+                if description:
+                    stats += f"<font color={set_effect_display_color()}>{set_count}セット効果:\n{description}</font>\n"
 
         return stats
 
