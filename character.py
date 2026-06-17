@@ -2658,7 +2658,6 @@ class FreyaBP(Character):
         self.skill3_description = "Apply Ducky Guard on yourself. When taking damage from a silenced or ducky silenced enemy, damage is reduced by 70%." \
         " If you take down an enemy with a skill, apply Cancellation Shield and Absorption Shield on yourself." \
         " Cancellation Shield: cancel up to 5 normal damage and provide CC immunity. Absorption Shield: absorb up to 800% of your atk damage."
-        # 沈黙のカモ
         self.skill1_description_jp = "ランダムな敵1体に攻撃力の570%で攻撃し、対象がカモ沈黙状態の場合、20ターンの間「束縛」と「難局」を付与する。束縛：攻撃力、防御力、速度を30%減少させる。難局：クリティカル率を60%減少させる。"
         self.skill2_description_jp = "ランダムな敵1体に攻撃力の570%で攻撃し、10ターンの間「カモ沈黙」を付与する。カモ沈黙：沈黙と同じ効果を持ち、この効果が解除されると新たなカモ沈黙がランダムな味方に付与される。対象が既にカモ沈黙状態の場合、スキル1のクールダウンが2減少する。"
         self.skill3_description_jp =  "自身に「カモ防御」を付与する。沈黙またはカモ沈黙状態の敵からダメージを受けた時、そのダメージが70%減少する。スキルで敵を倒した場合、自身に「キャンセルシールド」と「吸収シールド」を付与する。キャンセルシールド：通常ダメージを最大5回無効化し、CC免疫を提供する。吸収シールド：攻撃力の800%分のダメージを吸収する。"
@@ -3604,7 +3603,6 @@ class Rika(Character):
         " Fire % Flower: Before taking normal damage, damage taken is reduced by 40% and 50% of the damage is taken by the protector." \
         " Apply unremovable Blossom on yourself, Blossom: The first time when about to take lethal damage, all allies have their hp set to 1 and all damage taken is reduced to 0" \
         " for 20 turns. Blossom applied on allies can be removed by skill."
-        # 浄火朱華 咲き誇る花
         self.skill1_description_jp = "ランダムな敵3匹に攻撃力の160%で攻撃し、20ターンの間「燃焼」を付与する確率が80%ある。燃焼は毎ターン攻撃力の20%分のダメージを与える。"
         self.skill2_description_jp = "全ての敵に20ターンの間「燃焼」を付与する。燃焼は毎ターン攻撃力の20%分のダメージを与える。"
         self.skill3_description_jp = "戦闘開始時に全ての味方に「浄火朱華」を付与する。浄火朱華：通常ダメージを受ける前に、受けるダメージが40%減少し、そのダメージの50%を守護者が引き受ける。自身に解除不能な「咲き誇る花」を付与する。咲き誇る花：致命的なダメージを受ける際、全ての味方のHPが1に設定され、20ターンの間全てのダメージが0に軽減される。味方に付与された咲き誇る花はスキルによって解除できる。"
@@ -3703,7 +3701,6 @@ class RubinPF(Character):
         " When the ally is about to take damage, damage taken is reduced by 20%, then 30% of the damage is taken by you." \
         " Cannot protect against status effect and status damage. At start of battle, apply Peach Blossoms to an ally of highest defense." \
         " Peach Blossoms: Revive with 40% hp the next turn after defeated."
-        # 論外空間 桃返し 桃華満開
         self.skill1_description_jp = "20ターンの間、命中率が30%増加し、全ての味方の回避率が自分の命中率の10%分増加する。最低回避率のボーナスは1%となる。"
         self.skill2_description_jp = "最も近い敵に攻撃力の170%で6回集中攻撃する。各攻撃には、30%の確率で20ターンの間「論外空間」を付与し、受けるダメージを20%増加させる。"
         self.skill3_description_jp = "戦闘開始時に全ての味方に「桃返し」を付与する。味方がダメージを受ける直前に、そのダメージが20%減少し、残りの30%のダメージを自分が引き受ける。状態異常や状態異常ダメージには適用されない。戦闘開始時、防御力が最も高い味方1人に「桃華満開」を付与する。桃華満開：倒された次のターンにHP40%で復活する。"
@@ -4727,7 +4724,6 @@ class Taiyi(Character):
         " When taking damage, reduce damage taken by 2% + 4% for each stack." \
         " Seren: Critical damage and accuracy is increased by 40%." \
         " At end of turn, apply Seren to all allies who have Renka effect but does not have Seren effect."
-        # 蓮花 青蓮
         self.skill1_description_jp = "ランダムな敵に攻撃力の150%で6回攻撃し、各攻撃に3%の確率で10ターンの間スタンさせる。"
         self.skill2_description_jp = "ランダムな敵ペアに攻撃力の150%で3回攻撃する。"
         self.skill3_description_jp = "初めて敗北した際、HPを12%回復し、自身に「蓮花」と「青蓮」を付与する。蓮花には15スタックがあり、致命的なダメージを受けるたびに1スタックを消費してそのダメージを無効化し、HPを12%回復する。ダメージを受けた際、受けるダメージが2%＋スタックごとに4%減少する。青蓮：クリティカルダメージと命中率が40%増加する。ターン終了時、蓮花効果を持つが青蓮効果を持たない味方全員に青蓮を付与する。"
@@ -5362,7 +5358,6 @@ class Lester(Character):
         " Bookmarks of Memories: Everytime when missing an attack, atk, spd and accuracy is increased by 10% and recover 10% of maxhp." \
         " When using skills, if the ally with Bookmarks of Memories is defeated, the skill becomes normal attack," \
         " before this normal attack, 30% chance to revive the ally with 50% hp."
-        # 思い出のしおり ドキドキタイム
         self.skill1_description_jp = "「思い出のしおり」を持つ味方に24ターンの間「ドキドキタイム」を付与する。ドキドキタイム：HP回復を受けるたびに、超過回復分の15%攻撃力が増加する。この攻撃力のボーナス効果は10ターン持続する。同じ効果が再度適用された場合、攻撃力のボーナスは新しい効果に累積される。" \
         "攻撃力のボーナスは自身のレベル×5を超えることはない。"
         self.skill2_description_jp = "「思い出のしおり」を持つ味方から最大4つのアクティブなデバフを解除し、その味方の最大HPの10%を治療する。解除されたデバフ1つにつき、回復量が最大HPの10%増加する。"
@@ -5518,7 +5513,6 @@ class Mitsuki(Character):
         self.skill3_description = "At start of battle, apply unremovable Azure Sea for all allies." \
         " Azure Sea: Status damage taken is reduced by 70%. Apply unremovable Sea Family for yourself," \
         " When taking status damage, recover hp by 3% of current hp."
-        # Japanese: 蒼海 蒼海の眷属
         self.skill1_description_jp = "最も近い敵に現在HPの3%で12回攻撃する。各攻撃には8%の確率で8ターンの間、対象をスタンさせる。"
         self.skill2_description_jp = "全ての味方のHPを自分の現在HPの3%分治療し、各味方からランダムなデバフを2つ解除する。"
         self.skill3_description_jp = "戦闘開始時に全ての味方に解除不能な蒼海を付与する。蒼海:受ける状態異常ダメージが70%減少する。自身には解除不能な蒼海の眷属を付与する。状態異常ダメージを受けた時、現在HPの3%分のHPを回復する。"
@@ -5586,9 +5580,6 @@ class Wenyuan(Character):
         t = mit.one(self.target_selection(keyword="n_lowest_attr", keyword2="1", keyword3="hp", keyword4="enemy"))
         damage_dealt = self.attack(multiplier=2.3, repeat=3, target_list=[t])
         if t.is_dead() and self.is_alive():
-            # test_check = self.get_effect_that_named("Frost Lull", additional_name="Wenyuan_Frost_Lull")
-            # if test_check is not None:
-            #     print("Wenyuan has Frost Lull") # 1 in 100 chance this happens
             self.update_ally_and_enemy()
             self.heal(target_kw1="yourself", value=damage_dealt * 1.0)
             for a in self.ally:
@@ -5769,7 +5760,6 @@ class Cupid(Character):
         " When the same effect is applied, duration of the already applied effect is refreshed." \
         " If no enemy has Lead Arrow, heal hp by 200% of atk."
         self.skill3_description = "Normal attack does nothing. Apply For Love 2 times on yourself, when defeated, revive with 50% hp."
-        # 鉛矢 金矢 恋愛妄想 愛のために
         self.skill1_description_jp = "攻撃力が最も高い3人の敵に20ターンの間「鉛矢」を付与し、自身に20ターンの間「金矢」を付与する。鉛矢:クリティカル防御が100%減少し、この効果が解除されると状態異常ダメージを1受ける。金矢:クリティカルダメージが100%増加する。鉛矢または金矢が同じ対象に再度適用された場合、持続時間が更新される。"
         self.skill2_description_jp = "鉛矢を持つ全ての敵に攻撃力の200%で攻撃する。自分が金矢を持ち、対象が鉛矢を持っている場合、ダメージが100%増加するが、この攻撃で致命的ダメージを与えた場合、対象のHPは1残る。クリティカルの場合、対象に4ターンの間「恋愛妄想」を付与し、鉛矢の持続時間を恋愛妄想の持続時間に設定する。恋愛妄想:鉛矢を持つ味方は敵として認識され、鉛矢を持つ者だけが味方として認識される。同じ効果が再度適用された場合、既存の効果の持続時間が更新される。敵に鉛矢を持つ者がいない場合、攻撃力の200%分HPを治療する。"
         self.skill3_description_jp = "通常攻撃は何もしない。自身に「愛のために」を2回付与し、撃破された時、HP50%で復活する。"
@@ -7037,10 +7027,10 @@ class Zyl(Character):
         self.skill1_description = "Attack enemy of highest hp with 285% atk 3 times."
         self.skill2_description = "Attack 3 closest enemy with 230% atk 2 times, each attack has 50% chance to inflict Gravity Loss for 20 turns." \
         " Gravity Loss: defense and critdef reduced by 20%."
-        self.skill3_description = "When attacking, damage dealt is increased by the percentage of hp lost."
+        self.skill3_description = "When attacking, damage dealt is increased by self percentage of hp lost."
         self.skill1_description_jp = "HPが最も高い敵に攻撃力の285%で3回攻撃する。"
         self.skill2_description_jp = "最も近い敵3体に攻撃力の230%で2回攻撃し、各攻撃には50%の確率で20ターンの間「重力喪失」を付与する。重力喪失：防御力とクリティカル防御が20%減少する。"
-        self.skill3_description_jp = "攻撃時、失ったHPの割合に応じて与えるダメージが増加する。"
+        self.skill3_description_jp = "攻撃時、自分の失ったHPの割合に応じて与えるダメージが増加する。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
 
@@ -7145,14 +7135,11 @@ class Qimon(Character):
         self.skill3_description = "At start of battle, apply Bubble World on all enemies." \
         " Bubble World: When falling asleep, 3 active buffs are removed, damage taken that below 10% of maxhp" \
         " cannot remove Sleep effect."
-        # Sweat Dreams: "幻夢"
-        # "Bubble World", "Qimon_Bubble_World", "BubbleWorldEffect"
         self.skill1_description_jp = "全ての味方から睡眠効果を解除し、20ターンの間「幻夢」を付与する。幻夢：全ての主要ステータスが10%増加する。味方が睡眠状態の場合、この効果は3倍になる。"
         self.skill2_description_jp = "睡眠または幻夢を持つ全ての味方に12ターンの間「再生」を付与する。再生：毎ターン、失われたHPの3%を回復する。味方に睡眠または幻夢が付与されていない場合、このスキルは通常攻撃に変わる。"
         self.skill3_description_jp = "戦闘開始時、全ての敵に「泡沫の世界」を付与する。泡沫の世界：睡眠状態になると、3つのアクティブなバフが解除され、最大HPの10%未満のダメージでは睡眠効果が解除されない。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
-        # test, del later
 
     def skill1_logic(self):
         for a in self.ally:
@@ -7207,14 +7194,11 @@ class QimonNY(Character):
         self.skill3_description = "At start of battle, apply Dream Invitation on all enemies." \
         " Dream Invitation: When falling asleep, 3 active buffs are removed, damage taken is increased by 30% and only have 30% chance to" \
         " remove Sleep effect."
-        # Fancy Dreams: "美夢"
-        # "Dream Invitation", "QimonNY_Dream_Invitation", "BubbleWorldEffect"
         self.skill1_description_jp = "全ての味方の睡眠効果を解除し、20ターンの間「美夢」を付与する。美夢：ダメージを受けた際、最大HPの20%を超える部分のダメージが40%減少する。味方が睡眠効果を持っている場合、ダメージ軽減効果が2倍になる。"
         self.skill2_description_jp = "睡眠または美夢効果を持つ全ての味方のアクティブなデバフを3つ解除し、攻撃力の300%分のHPを回復させる。味方に睡眠または美夢効果を持つ者がいない場合、このスキルは通常攻撃に変わる。"
         self.skill3_description_jp = "戦闘開始時、全ての敵に「夢の誘い」を付与する。夢の誘い：睡眠状態になると、アクティブなバフが3つ解除され、受けるダメージが30%増加し、睡眠効果を解除する確率が30%になる。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
-        # test, del later
 
     def skill1_logic(self):
         for a in self.ally:
