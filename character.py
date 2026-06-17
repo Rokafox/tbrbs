@@ -7815,7 +7815,7 @@ class Gareth(Character):
         " Stun the target for 12 turns and final damage taken is further increased by 50%."
         self.skill2_description = "Target 2 allies of highest atk, if they have more than 150% heal efficiency,"  \
         " their atk is scaled by their heal efficiency for 22 turns, if heal efficiency is more than 300%, defense and speed is also scaled by 50% of heal efficiency."
-        self.skill3_description = "After using a skill, heal hp by 200% of defense. At start of battle, apply Very Food to all allies." \
+        self.skill3_description = "After using a skill, heal hp by 200% of defense. At start of battle, apply Emergency Food to all allies." \
         " When the ally is about to take damage, damage taken is reduced by 25%, then 60% of the damage is taken by you." \
         " Cannot protect against status effect and status damage."
         self.skill1_description_jp = "最も近い敵3体に攻撃力の250%で2回攻撃する。敵の回復効率が150%以上の場合、20ターンの間「脆弱」を付与し、回復効率と150%の差分で最終ダメージ倍率が増加する。この値はターンごとに変化しない。さらに、敵の回復効率が300%以上の場合、対象を12ターンの間スタンさせ、最終ダメージ倍率がさらに50%増加する。"
@@ -7855,7 +7855,7 @@ class Gareth(Character):
     def battle_entry_effects(self):
         allies = [x for x in self.ally if x != self]
         for ally in allies:
-            e = ProtectedEffect("Very Food", -1, True, False, self, 0.75, 0.6)
+            e = ProtectedEffect("Emergency Food", -1, True, False, self, 0.75, 0.6)
             e.can_be_removed_by_skill = False
             ally.apply_effect(e)
 
