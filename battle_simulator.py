@@ -114,8 +114,6 @@ def load_player(filename="player_data.json"):
             if hasattr(item, attr):
                 setattr(item, attr, value)
         item.estimate_market_price()
-        item.set_effect_description = item.assign_set_effect_description()
-        item.set_effect_description_jp = item.assign_set_effect_description_jp()
         item.for_attacker_value = item.estimate_value_for_attacker()
         item.for_support_value = item.estimate_value_for_support()
         player.inventory_equip.append(item)
@@ -5429,8 +5427,6 @@ if __name__ == "__main__":
                         item.estimate_market_price()
                         item.for_attacker_value = item.estimate_value_for_attacker()
                         item.for_support_value = item.estimate_value_for_support()
-                        item.set_effect_description = item.assign_set_effect_description()
-                        item.set_effect_description_jp = item.assign_set_effect_description_jp()
                         c.equip_item(item)
                         # print(f"Equipped {str(item)} to {c.name}.")
         return player

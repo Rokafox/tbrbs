@@ -2550,16 +2550,18 @@ class DurationBonusEffect(Effect):
 # End of Special effects
 # Effects in the above section need special handling.
 # =========================================================
-#---------------------------------------------------------
 # Equipment set effects
-#---------------------------------------------------------
-# Arasaka
-# Leave with 1 hp when taking fatal damage. Immune to damage for 3 turns.
+# =========================================================
+
 class EquipmentSetEffect_Arasaka(Effect):
-    def __init__(self, name, duration, is_buff, cc_immunity):
+    """
+    Leave with 1 hp when taking fatal damage. Immune to damage for immune_duration turns.
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, immune_duration):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.is_buff = is_buff
         self.cc_immunity = cc_immunity
+        self.immune_duration = immune_duration
         self.is_set_effect = True
         self.onehp_effect_triggered = False
         self.sort_priority = 2000
@@ -2571,21 +2573,28 @@ class EquipmentSetEffect_Arasaka(Effect):
             character.hp = 1
             global_vars.turn_info_string += f"{character.name} survived with 1 hp!\n"
             self.onehp_effect_triggered = True
-            self.duration = 6
+            self.duration = self.immune_duration
             return 0
         else:
             return damage
 
     def tooltip_description(self):
-        return f"Leave with 1 hp when taking fatal damage."
+        if not self.onehp_effect_triggered:
+            return f"Leave with 1 hp when taking fatal damage."
+        else:
+            return f"Immune to damage."
     
     def tooltip_description_jp(self):
-        return f"致命的なダメージを受けたとき、1HPで生き残る。"
+        if not self.onehp_effect_triggered:
+            return f"致命的なダメージを受けたとき、1HPで生き残る。"
+        else:
+            return f"ダメージ無効。"
 
 
-#---------------------------------------------------------
-# KangTao
 class EquipmentSetEffect_KangTao(Effect):
+    """
+    Shield that absorbs damage. This effect does not treat as Absorption Shield.
+    """
     def __init__(self, name, duration, is_buff, shield_value, cc_immunity):
         super().__init__(name, duration, is_buff, cc_immunity=False)
         self.shield_value = shield_value
@@ -2612,10 +2621,11 @@ class EquipmentSetEffect_KangTao(Effect):
         return f"{self.shield_value}ダメージを吸収する。この効果は吸収シールドとして扱われない。"
     
 
-#---------------------------------------------------------
-# Militech
-# Increase speed by 100% when hp falls below 20%.
 class EquipmentSetEffect_Militech(Effect):
+    """
+    See equip_set.py for details.
+    Increase speed by x% when hp falls below y%.
+    """
     def __init__(self, name, duration, is_buff, stats_dict=None, condition=None):
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
         self.is_set_effect = True
@@ -2674,10 +2684,11 @@ class EquipmentSetEffect_Militech(Effect):
         return string
 
 
-#---------------------------------------------------------
-# NUSA
-# Increase atk by 6%, def by 6%, and maxhp by 6% for each ally alive including self.
 class EquipmentSetEffect_NUSA(Effect):
+    """
+    See equip_set.py for details.
+    4 set: Increase atk by 6%, def by 6%, and maxhp by 6% for each ally alive including self.
+    """
     def __init__(self, name, duration, is_buff, stats_dict=None, stats_dict_function=None):
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
         self.is_set_effect = True
@@ -2728,48 +2739,53 @@ class EquipmentSetEffect_NUSA(Effect):
         return string
 
 
-#---------------------------------------------------------
-# Sovereign
-# Apply Sovereign effect when taking damage, Sovereign increases atk by 20% and last 4 turns. Max 5 active effects.
 class EquipmentSetEffect_Sovereign(Effect):
-    def __init__(self, name, duration, is_buff, stats_dict=None, stats_dict_function=None):
+    """
+    4 set: Apply Sovereign effect when taking damage, Sovereign increases atk by 20% and last 4 turns. Max 5 active effects.
+    """
+    def __init__(self, name, duration, is_buff, stats_dict=None, stats_dict_function=None, max_stacks=5):
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
         self.is_set_effect = True
         self.stats_dict = stats_dict
         self.flag_is_active = False
         self.stats_dict_function = stats_dict_function
         self.sort_priority = 2000
+        self.max_stacks = max_stacks
 
     def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
         # count how many "Sovereign" in character.buffs, if less than 5, apply effect.
-        if Counter([effect.name for effect in character.buffs])["Sovereign"] < 5:
+        if Counter([effect.name for effect in character.buffs])["Sovereign"] < self.max_stacks:
             character.apply_effect(StatsEffect("Sovereign", 4, True, self.stats_dict, is_set_effect=True))
         return damage
     
     def tooltip_description(self):
-        return f"Accumulate 1 stack of Sovereign when taking damage."
+        return f"Activate 1 Sovereign effect when taking damage."
 
     def tooltip_description_jp(self):
-        return f"ダメージを受けると主権のスタックが1つ蓄積される。"
+        return f"ダメージを受けると主権の効果が1つ発動される。"
 
-# ---------------------------------------------------------
-# Snowflake
-# Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 20% hp and gain the following effect for 6 turns:
-# atk, def, maxhp, spd are increased by 20%. 
-# Each activation of this effect increases the stats bonus and healing by 20%.
+
 class EquipmentSetEffect_Snowflake(Effect):
-    def __init__(self, name, duration, is_buff):
+    """
+    4 set:
+    Gain 1 piece of Snowflake at the end of action. When 6 pieces are accumulated, heal 20% hp and gain the following effect for 6 turns:
+    atk, def, maxhp, spd are increased by 20%. 
+    Each activation of this effect increases the stats bonus and healing by 20%.
+    """
+    def __init__(self, name, duration, is_buff, healing_and_stats_bonus=0.25, snowflake_duration=6):
         super().__init__(name, duration, is_buff, cc_immunity=False, delay_trigger=0)
         self.is_set_effect = True
         self.collected_pieces = 0
         self.activation_count = 0
         self.bonus_stats_dict = {"atk": 1.0, "defense": 1.0, "maxhp": 1.0, "spd": 1.0}
         self.sort_priority = 2000
-
+        self.healing_and_stats_bonus = healing_and_stats_bonus
+        self.snowflake_duration = snowflake_duration
+        
     def get_new_bonus_dict(self):
         new_bonus_dict = {}
         for key, value in self.bonus_stats_dict.items():
-            new_bonus_dict[key] = value + self.activation_count * 0.25
+            new_bonus_dict[key] = value + self.activation_count * self.healing_and_stats_bonus
         return new_bonus_dict
 
     def apply_effect_after_action(self, character):
@@ -2781,9 +2797,9 @@ class EquipmentSetEffect_Snowflake(Effect):
             return
         if self.collected_pieces >= 6:
             self.activation_count += 1
-            sf = StatsEffect("Snowflake", 6, True, self.get_new_bonus_dict(), is_set_effect=True)
+            sf = StatsEffect("Snowflake", self.snowflake_duration, True, self.get_new_bonus_dict(), is_set_effect=True)
             character.apply_effect(sf)
-            character.heal_hp(character.maxhp * 0.25 * self.activation_count, self)
+            character.heal_hp(character.maxhp * self.healing_and_stats_bonus * self.activation_count, self)
             self.collected_pieces = 0
 
     def tooltip_description(self):
@@ -2793,38 +2809,63 @@ class EquipmentSetEffect_Snowflake(Effect):
         return f"集めたピース:{self.collected_pieces}、発動回数:{self.activation_count}。6つのピースを集めて効果を発動する。"
 
 
-# ---------------------------------------------------------
-# Flute
 class EquipmentSetEffect_Flute(Effect):
-    def __init__(self, name, duration, is_buff):
+    """
+    On one action, when successfully attacking enemy 4 times, 
+    all enemies take status damage equal to {dmg*100}% of self atk.
+    """
+    def __init__(self, name, duration, is_buff, dmg=1.3):
         super().__init__(name, duration, is_buff)
         self.name = name
         self.is_buff = is_buff
         self.is_set_effect = True
         self.sort_priority = 2000
+        self.dmg = dmg
 
-# ---------------------------------------------------------
-# Rainbow
+    def tooltip_description(self):
+        return f"On one action, when successfully attacking enemy 4 times, all enemies take status damage equal to {self.dmg*100:.2f}% of self atk."
+    
+    def tooltip_description_jp(self):
+        return f"1回の行動で敵への攻撃に4回成功した時、すべての敵に自身の攻撃力の{self.dmg*100:.2f}%に相当する状態異常ダメージを与える。"
+
+
 class EquipmentSetEffect_Rainbow(Effect):
-    def __init__(self, name, duration, is_buff):
+    """
+    2 set: While attacking, damage increases by 40%/15%/-10%/-35%/-60% depending on the proximity of the target.
+    """
+    def __init__(self, name, duration, is_buff, dmg_xh, dmg_h, dmg_m, dmg_l, dmg_xl):
         super().__init__(name, duration, is_buff)
         self.name = name
         self.is_buff = is_buff
         self.is_set_effect = True
         self.sort_priority = 2000
+        self.dmg_xh = dmg_xh
+        self.dmg_h = dmg_h
+        self.dmg_m = dmg_m
+        self.dmg_l = dmg_l
+        self.dmg_xl = dmg_xl
 
-# ---------------------------------------------------------
-# Dawn
-# Atk increased by 24%, crit increased by 12% when hp is full.
-# One time only, when dealing damage, damage is increased by 120%.
+    def tooltip_description(self):
+        return f"While attacking, damage increases by {self.dmg_xh*100:.2f}%/{self.dmg_h*100:.2f}%/{self.dmg_m*100:.2f}%/{self.dmg_l*100:.2f}%/{self.dmg_xl*100:.2f}% depending on the proximity of the target."
+    
+    def tooltip_description_jp(self):
+        return f"攻撃時、ターゲットの距離に応じてダメージが{self.dmg_xh*100:.2f}%/{self.dmg_h*100:.2f}%/{self.dmg_m*100:.2f}%/{self.dmg_l*100:.2f}%/{self.dmg_xl*100:.2f}%増加する。"
+
+
 class EquipmentSetEffect_Dawn(Effect):
-    def __init__(self, name, duration, is_buff, stats_dict=None):
+    """
+    4 set: Atk increased by 24%, crit increased by 12% when hp is full.
+    One time only, when dealing damage, damage is increased by 100%.
+    """
+    def __init__(self, name, duration, is_buff, stats_dict=None, flag_onetime_damage_bonus_active=True, 
+                 onetime_damage_bonus=1.0):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
         self.stats_dict = stats_dict
         self.flag_is_active = True
-        self.flag_onetime_damage_bonus_active = True
+        self.flag_onetime_damage_bonus_active = flag_onetime_damage_bonus_active
         self.sort_priority = 2000
+        self.onetime_damage_bonus = onetime_damage_bonus
 
     def apply_effect_on_apply(self, character):
         character.update_stats(self.stats_dict, reversed=False)
@@ -2862,66 +2903,97 @@ class EquipmentSetEffect_Dawn(Effect):
             string += "効果は無効です。"
         return string
 
-# ---------------------------------------------------------
-# Bamboo
-# After taking down an enemy with normal or skill attack, for 5 turns,
-# regenerates 16% of max hp each turn and increases atk, def, spd by 32%
-    
+
 class EquipmentSetEffect_Bamboo(Effect):
-    def __init__(self, name, duration, is_buff, stats_dict=None):
+    """
+    4 set: After taking down an enemy with normal or skill attack, for 8 turns, regenerates max hp each turn and increases atk, def, spd.
+    """
+    def __init__(self, name, duration, is_buff, stats_dict=None, effect_duration=8):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
         self.stats_dict = stats_dict
         self.flag_is_active = False
         self.sort_priority = 2000
+        self.effect_duration = effect_duration
 
     def apply_effect_custom(self, character):
         if character.is_dead():
             return
         if not character.has_effect_that_named("Bamboo", additional_name="EquipmentSetEffect_Bamboo"):
-            effect_to_apply = StatsEffect("Bamboo", 7, True, self.stats_dict, is_set_effect=True)
+            effect_to_apply = StatsEffect("Bamboo", self.effect_duration, True, self.stats_dict, is_set_effect=True)
             effect_to_apply.additional_name = "EquipmentSetEffect_Bamboo"
             character.apply_effect(effect_to_apply)
-            e = ContinuousHealEffect("Bamboo", 7, True, lambda x, y: x.maxhp * 0.20, self, "20% maxhp",
+            e = ContinuousHealEffect("Bamboo", self.effect_duration, True, lambda x, y: x.maxhp * 0.20, self, "20% maxhp",
                                      value_function_description_jp="最大HPの20%")
             e.is_set_effect = True
             character.apply_effect(e)
 
-# ---------------------------------------------------------
-# Rose
-# Heal efficiency is increased by 20%. Before heal, increase target's heal efficiency by 40% for 2 turns.
-# Cannot be triggered by hp recover.
+    def tooltip_description(self):
+        return f"Take down an enemy to activate effect."
+    
+    def tooltip_description_jp(self):
+        return f"敵を倒すと効果が発動される。"
+
+
 class EquipmentSetEffect_Rose(Effect):
-    def __init__(self, name, duration, is_buff, he_bonus_before_heal=0.4):
+    """
+    2 set: Heal efficiency is increased by 10%. Before heal, 
+    increase target's heal efficiency by 50% for 2 turns, 
+    increase your defense by 15% for 10 turns.
+    """
+    def __init__(self, name, duration, is_buff, he_bonus_before_heal=1.0, 
+                 self_def_bonus=0.30):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
         self.he_bonus_before_heal = he_bonus_before_heal
+        self.self_def_bonus = self_def_bonus
         self.sort_priority = 2000
 
+    def tooltip_description(self):
+        return f"Activate effect before heal."
+    
+    def tooltip_description_jp(self):
+        return f"治療を行おうと効果が発動される。"
 
-# ---------------------------------------------------------
-# OldRusty
-# See character.py for implementation.
+
 class EquipmentSetEffect_OldRusty(Effect):
-    def __init__(self, name, duration, is_buff):
+    """
+    4 set: After using skill 1, 63% chance to reset cooldown of that skill.
+    """
+    def __init__(self, name, duration, is_buff, skill_reset_chance=0.63):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
         self.sort_priority = 2000
+        self.skill_reset_chance = skill_reset_chance
 
-# ---------------------------------------------------------
-# Purplestar
-# See character.py for implementation.
+    def tooltip_description(self):
+        return f"After using skill 1, {self.skill_reset_chance*100:.2f}% chance to reset cooldown of that skill."
+    
+    def tooltip_description_jp(self):
+        return f"スキル1を使用した後、そのスキルのクールダウンが{self.skill_reset_chance*100:.2f}%の確率でリセットされる。"
+
+
 class EquipmentSetEffect_Purplestar(Effect):
-    def __init__(self, name, duration, is_buff):
+    """
+    4 set: After using skill 2, 63% chance to reset cooldown of that skill.
+    """
+    def __init__(self, name, duration, is_buff, skill_reset_chance=0.63):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
         self.sort_priority = 2000
+        self.skill_reset_chance = skill_reset_chance
+
+    def tooltip_description(self):
+        return f"After using skill 2, {self.skill_reset_chance*100:.2f}% chance to reset cooldown of that skill."
+    
+    def tooltip_description_jp(self):
+        return f"スキル2を使用した後、そのスキルのクールダウンが{self.skill_reset_chance*100:.2f}%の確率でリセットされる。"
 
 
-# ---------------------------------------------------------
-# Liquidation
-# When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by 30%: hp, atk, def, spd.
 class EquipmentSetEffect_Liquidation(Effect):
+    """
+    When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by x%: hp, atk, def, spd.
+    """
     def __init__(self, name, duration, is_buff, damage_reduction):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
@@ -2942,46 +3014,84 @@ class EquipmentSetEffect_Liquidation(Effect):
                 damage = damage * (1 - damage_reduction_final)
                 global_vars.turn_info_string += f"{character.name}'s {key} is lower than {attacker.name}'s, damage is reduced by {int(damage_reduction_final*100)}%.\n"
         return damage
+    
+    def tooltip_description(self):
+        return f"When taking damage, for each of the following stats that is lower than attacker's, damage is reduced by {int(self.damage_reduction*100)}%: hp, atk, def, spd."
+    
+    def tooltip_description_jp(self):
+        return f"ダメージを受ける際、以下のステータスが攻撃者より低い場合、そのステータスごとにダメージが{int(self.damage_reduction*100)}%減少する: hp, atk, def, spd."
 
-# ---------------------------------------------------------
-# Newspaper
-# See character.py for implementation.
+
 class EquipmentSetEffect_Newspaper(Effect):
-    def __init__(self, name, duration, is_buff):
+    """
+    2 set: When dealing damage to enemy, if the enemy has more maxhp then self, damage is increased by x% of the maxhp difference.
+    """
+    def __init__(self, name, duration, is_buff, pctg_of_maxhp_diff=0.15):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
         self.sort_priority = 2000
+        self.pctg_of_maxhp_diff = pctg_of_maxhp_diff
 
-# ---------------------------------------------------------
-# Freight
-# See character.py for implementation.
+    def tooltip_description(self):
+        return f"2 set: When dealing damage to enemy, if the enemy has more maxhp then self, damage is increased by {int(self.pctg_of_maxhp_diff*100)}% of the maxhp difference."
+    
+    def tooltip_description_jp(self):
+        return f"2セット: 敵にダメージを与える際、敵の最大HPが自分より高い場合、最大HPの差の{int(self.pctg_of_maxhp_diff*100)}%分ダメージが増加する。"
+
+
 class EquipmentSetEffect_Freight(Effect):
-    def __init__(self, name, duration, is_buff):
+    """
+    4 set: Prioritize skill 2 over skill 1 if both are available. Before an action, heal hp by 50% of speed.
+    Before an action, for 4 turns, speed is increased by 25%
+    """
+    def __init__(self, name, duration, is_buff, increase_spd):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
         self.sort_priority = 2000
+        self.increase_spd = increase_spd
 
     def apply_effect_before_action(self, character):
         character.heal_hp(character.spd * 0.50, character)
-        # for x turns, increase spd by 30%.
-        spd_buff = StatsEffect("Freight", 4, True, {"spd": 1.30}, is_set_effect=True)
-        character.apply_effect(spd_buff)
+        if self.increase_spd:
+            spd_buff = StatsEffect("Freight", 4, True, {"spd": 1.30}, is_set_effect=True)
+            character.apply_effect(spd_buff)
+
+    def tooltip_description(self):
+        s = "Before an action, heal hp by 50% of speed."
+        s += " Prioritize skill 2 over skill 1 if both are available."
+        if self.increase_spd:
+            s += " Before an action, for 4 turns, speed is increased by 25%."
+        return s
+    
+    def tooltip_description_jp(self):
+        s = "行動前に、速度の50%分HPを回復する。"
+        s += "行動前に、スキル2を優先する。"
+        if self.increase_spd:
+            s += "行動前に、4ターンの間、速度が25%増加する。"
+        return s
 
 
-# ---------------------------------------------------------
-# Runic
-# See character.py for implementation.
 class EquipmentSetEffect_Runic(Effect):
+    """
+    2 set: Critical rate is increased by 40%, critical damage is decreased by 20%.
+    When dealing critical damage and critical rate is over 100%, damage is increased by the excess critical rate."
+    """
     def __init__(self, name, duration, is_buff):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
         self.sort_priority = 2000
 
+    def tooltip_description(self):
+        return f"Increase crit rate but decrease crit damage. When dealing critical damage and critical rate is over 100%, damage is increased by the excess critical rate."
+    
+    def tooltip_description_jp(self):
+        return f"クリティカル率が増加するが、クリティカルダメージが減少する。クリティカルダメージを与える際、クリティカル率が100%を超えている場合、超過分のクリティカル率に応じてダメージが増加する。"
 
-# ---------------------------------------------------------
-# Grassland
-# When you havent taken an action in battle yet, speed is increased by 100%.
+
 class EquipmentSetEffect_Grassland(StatsEffect):
+    """
+    When you havent taken an action in battle yet, speed is increased by x%.
+    """
     def __init__(self, name, duration, is_buff, stats_dict=None, condition=None, use_active_flag=True, 
                  stats_dict_function=None, is_set_effect=False, can_be_removed_by_skill=True, 
                  main_stats_additive_dict=None):
@@ -3001,17 +3111,21 @@ class EquipmentSetEffect_Grassland(StatsEffect):
         return super().tooltip_description_jp() + "行動を取った後、この効果が解除される。"
 
 
-# ---------------------------------------------------------
-# Tigris
-# See character.py for implementation.
 class EquipmentSetEffect_Tigris(Effect):
     """
     When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
     """
-    def __init__(self, name, duration, is_buff):
+    def __init__(self, name, duration, is_buff, damage_increase):
         super().__init__(name, duration, is_buff)
         self.is_set_effect = True
         self.sort_priority = 2000
+        self.damage_increase = damage_increase
+
+    def tooltip_description(self):
+        return f"When targeting multiple enemies, for each enemy that is missing, damage is increased by {int(self.damage_increase*100)}%."
+    
+    def tooltip_description_jp(self):
+        return f"複数の敵をターゲットにする時、敵が1体不足しているごとに、その攻撃またはスキルのダメージが{int(self.damage_increase*100)}%増加する。"
 
 
 #---------------------------------------------------------

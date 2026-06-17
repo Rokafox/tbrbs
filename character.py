@@ -8,6 +8,7 @@ from typing import Generator, Tuple
 from numpy import character
 from effect import *
 from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
+from equip_set import EQ_SET_REGISTRY
 import more_itertools as mit
 import itertools
 import global_vars
@@ -85,7 +86,7 @@ class Character:
         self.party: list[Character] = [] if resetally and resetenemy else self.party
         self.enemyparty: list[Character] = [] if resetally and resetenemy else self.enemyparty
         self.calculate_equip_effect(resethp=resethp)
-        self.eq_set = self.get_equipment_set()
+        self.eq_set = self.get_equipment_sets()
         self.skill1_cooldown = 0
         self.skill2_cooldown = 0
         self.skill1_can_be_used = True
@@ -245,7 +246,8 @@ class Character:
         if self.skill1_cooldown > 0:
             raise Exception
         damage_dealt = self.skill1_logic()
-        if self.get_equipment_set() == "OldRusty" and random.random() < 0.65:
+        oldrusty_set_effect = self.get_effect_that_named("OldRusty Set", None, "EquipmentSetEffect_OldRusty")
+        if oldrusty_set_effect and random.random() < oldrusty_set_effect.skill_reset_chance:
             global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Old Rusty set effect.\n"
             self.skill_func_flag_cooldown_does_not_apply = True
         if update_skillcooldown and not self.skill_func_flag_cooldown_does_not_apply:
@@ -259,7 +261,8 @@ class Character:
         if self.skill2_cooldown > 0:
             raise Exception
         damage_dealt = self.skill2_logic()
-        if self.get_equipment_set() == "Purplestar" and random.random() < 0.85:
+        purplestar_set_effect = self.get_effect_that_named("Purplestar Set", None, "EquipmentSetEffect_Purplestar")
+        if purplestar_set_effect and random.random() < purplestar_set_effect.skill_reset_chance:
             global_vars.turn_info_string += f"skill cooldown is reset for {self.name} due to Purplestar set effect.\n"
             self.skill_func_flag_cooldown_does_not_apply = True
         if update_skillcooldown and not self.skill_func_flag_cooldown_does_not_apply:
@@ -566,7 +569,12 @@ class Character:
 
         damage_dealt = 0
         self.multiple_target_selection_targets_missing = 0
-        attacker_eq_set = self.get_equipment_set()
+        rainbow_set_effect = self.get_effect_that_named("Rainbow Set", None, "EquipmentSetEffect_Rainbow")
+        dawn_set_effect = self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn")
+        bamboo_set_effect = self.get_effect_that_named("Bamboo Set", None, "EquipmentSetEffect_Bamboo")
+        newspaper_set_effect = self.get_effect_that_named("Newspaper Set", None, "EquipmentSetEffect_Newspaper")
+        runic_set_effect = self.get_effect_that_named("Runic Set", None, "EquipmentSetEffect_Runic")
+        tigris_set_effect = self.get_effect_that_named("Tigris Set", None, "EquipmentSetEffect_Tigris")
 
         for i in range(repeat):
             if repeat > 1 and i > 0:
@@ -605,7 +613,7 @@ class Character:
                     if critical:
                         final_damage = damage * (self.critdmg - target.critdef)
                         global_vars.turn_info_string += f"Critical!\n"
-                        if attacker_eq_set == "Runic" and self.crit > 1.0:
+                        if runic_set_effect and self.crit > 1.0:
                             crit_over = self.crit - 1.0
                             global_vars.turn_info_string += f"Damage increased by {crit_over * 100:.2f}% due to Runic Set effect.\n"
                             final_damage *= 1 + crit_over
@@ -618,26 +626,31 @@ class Character:
                         final_damage = func_damage_step(self, target, final_damage)
                     for eff in self.buffs.copy() + self.debuffs.copy():
                         final_damage = eff.apply_effect_in_attack_before_damage_step(self, target, final_damage)
-                    if attacker_eq_set == "Rainbow":
-                        rainbow_amplifier_dict = {0: 1.60, 1: 1.35, 2: 1.10, 3: 0.85, 4: 0.60}
+                    if rainbow_set_effect:
+                        rainbow_amplifier_dict = {0: 1 + rainbow_set_effect.dmg_xh,
+                                                  1: 1 + rainbow_set_effect.dmg_h,
+                                                  2: 1 + rainbow_set_effect.dmg_m,
+                                                  3: 1 + rainbow_set_effect.dmg_l,
+                                                  4: 1 + rainbow_set_effect.dmg_xl,
+                                                  }
                         self_target_index_diff = self.get_self_index() - target.get_self_index()
                         self_target_index_diff = abs(self_target_index_diff)
                         final_damage *= rainbow_amplifier_dict[self_target_index_diff]
-                    elif attacker_eq_set == "Dawn":
-                        if self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active:
-                            final_damage *= 2.20
-                            global_vars.turn_info_string += f"Damage increased by 120% due to Dawn Set effect.\n"
-                            self.get_effect_that_named("Dawn Set", None, "EquipmentSetEffect_Dawn").flag_onetime_damage_bonus_active = False
-                    elif attacker_eq_set == "Newspaper":
+                    if dawn_set_effect:
+                        if dawn_set_effect.flag_onetime_damage_bonus_active:
+                            final_damage *= 1 + dawn_set_effect.onetime_damage_bonus
+                            global_vars.turn_info_string += f"Damage increased by {dawn_set_effect.onetime_damage_bonus * 100:.2f}% due to Dawn Set effect.\n"
+                            dawn_set_effect.flag_onetime_damage_bonus_active = False
+                    if newspaper_set_effect:
                         # if the enemy has more maxhp then self, damage is increased by 15% of the maxhp difference.
                         if target.maxhp > self.maxhp:
-                            newspaper_effect_maxhp_diff = (target.maxhp - self.maxhp) * 0.15
+                            newspaper_effect_maxhp_diff = (target.maxhp - self.maxhp) * newspaper_set_effect.pctg_of_maxhp_diff
                             final_damage += newspaper_effect_maxhp_diff
                             global_vars.turn_info_string += f"Damage increased by {newspaper_effect_maxhp_diff} due to Newspaper Set effect.\n"
-                    elif attacker_eq_set == "Tigris":
+                    if tigris_set_effect:
                         # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
                         if self.multiple_target_selection_targets_missing > 0:
-                            tigris_effect_damage_bonus = self.multiple_target_selection_targets_missing * 0.90
+                            tigris_effect_damage_bonus = self.multiple_target_selection_targets_missing * tigris_set_effect.damage_increase
                             final_damage *= 1 + tigris_effect_damage_bonus
                             global_vars.turn_info_string += f"Damage increased by {tigris_effect_damage_bonus * 100:.2f}% due to Tigris Set effect.\n"
                     if final_damage < 0:
@@ -663,8 +676,8 @@ class Character:
                     
                     damage_dealt += final_damage
                     if target.is_dead():
-                        if attacker_eq_set == "Bamboo":
-                            self.get_effect_that_named("Bamboo Set", None, "EquipmentSetEffect_Bamboo").apply_effect_custom(self)
+                        if bamboo_set_effect:
+                            bamboo_set_effect.apply_effect_custom(self)
                     self.add_number_of_attacks(1)
                     if func_after_dmg is not None and self.is_alive():
                         func_after_dmg(self, target)
@@ -684,11 +697,12 @@ class Character:
 
     def add_number_of_attacks(self, n):
         self.number_of_attacks += n
-        if self.get_equipment_set() == "Flute" and self.number_of_attacks % 4 == 0:
+        if self.has_effect_that_named("Flute Set", None, "EquipmentSetEffect_Flute") and self.number_of_attacks % 4 == 0:
             global_vars.turn_info_string += f"Flute activated from {self.name}, all opponent will take status damage.\n"
+            ef = self.get_effect_that_named("Flute Set", None, "EquipmentSetEffect_Flute")
             for e in self.enemy:
                 if e.is_alive():
-                    e.take_status_damage(self.atk * 1.30, self)
+                    e.take_status_damage(self.atk * ef.dmg, self)
 
     def reset_number_of_attacks(self):
         self.number_of_attacks = 0
@@ -710,11 +724,12 @@ class Character:
             return 0
         if func_before_heal is not None:
             func_before_heal(self, targets)
-        if self.get_equipment_set() == "Rose":
+        rose_set_effect = self.get_effect_that_named("Rose Set", None, "EquipmentSetEffect_Rose")
+        if rose_set_effect:
             for t in targets:
                 t.apply_effect(StatsEffect("Beloved Girl", 2, True, 
-                {"heal_efficiency": self.get_effect_that_named("Rose Set", None, "EquipmentSetEffect_Rose").he_bonus_before_heal}))
-            self.apply_effect(StatsEffect("Beloved Girl", 10, True, {"defense": 1.30}))
+                {"heal_efficiency": rose_set_effect.he_bonus_before_heal}))
+            self.apply_effect(StatsEffect("Beloved Girl", 10, True, {"defense": 1 + rose_set_effect.self_def_bonus}))
         for i in range(repeat):
             for t in targets:
                 healing, healer, overhealing = t.heal_hp(value, self)
@@ -725,7 +740,8 @@ class Character:
 
 
     def action(self, skill_priority: int = 1) -> None:
-        if self.get_equipment_set() == "Freight":
+        freight_set_effect = self.get_effect_that_named("Freight Set", None, "EquipmentSetEffect_Freight")
+        if freight_set_effect:
             skill_priority = 2
 
         for eff in self.buffs.copy() + self.debuffs.copy():
@@ -1970,140 +1986,271 @@ class Character:
     def skill_tooltip_additional_jp(self):
         return ""
 
-    def get_equipment_set(self) -> str:
+    def get_equipment_sets(self) -> list[tuple[str, int]]:
+        """
+        get all equipment sets according to the current character equip.
+        ie. [("Arasaka", 2), ("KangTao", 2)],
+        ie. [("Arasaka", 4), ]
+        ie. [] when character has no equip, or the equip does not form any set:
+        Arasaka has 2 piece effect and 4 piece effect, but character only equipped boots
+        and nothing else.
+        ie. [("Something", 1),] this only happens when there is a set that has 1 piece effect,
+        """
         if not self.equip:
-            return "None"
+            return []
         for e in self.equip.values():
-            e.set_effect_is_acive = False
-        if len(self.equip) != 4:
-            return "None"
-
-        sets = {item.eq_set for item in self.equip.values()}
-        # return sets.pop() if len(sets) == 1 else "None"
-        if len(sets) == 1:
-            for e in self.equip.values():
-                e.set_effect_is_acive = True
-            return sets.pop()
-        else:
-            return "None"
+            e.set_effect_is_acive = 0
+        result = set()
+        # form counter from equip dict, key is set name, value is how many pieces of the set the character has equipped.
+        set_counter_from_equip = {}
+        for item in self.equip.values():
+            set_name = item.eq_set
+            if set_name not in set_counter_from_equip:
+                set_counter_from_equip[set_name] = 0
+            set_counter_from_equip[set_name] += 1
+        # now set_counter_from_equip should look like {"Arasaka": 1, "KangTao": 3}
+        # check if the eqset actually support it
+        for set_name, count in set_counter_from_equip.items():
+            eq_set = EQ_SET_REGISTRY.get(set_name)
+            if not eq_set:
+                continue
+            if getattr(eq_set, f"desc_{count}", ""):
+                # there exist description, meaning there is effect
+                result.add((set_name, count))
+        if not result:
+            return []
+        # next, set effect active according to the result.
+        for set_name, count in result:
+            for item in self.equip.values():
+                if item.eq_set == set_name:
+                    item.set_effect_is_acive = count
+        return list(result)
 
 
     def set_up_equipment_set_effects(self):
         # This function is called at the start of the battle. We expect item set effect
         # is just some status effect. just do self.apply_effect(some_effect), the effect have -1 duration.
-        set_name = self.get_equipment_set()
-        for effects in self.buffs + self.debuffs:
+        equipment_sets = self.get_equipment_sets()
+        for effects in self.buffs.copy() + self.debuffs.copy():
             if effects.is_set_effect:
                 self.remove_effect(effects)
-        if set_name == "None" or set_name == "Void":
+        if not equipment_sets:
             return
-        elif set_name == "Arasaka": 
-            self.apply_effect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False))
-        elif set_name == "KangTao":
-            highest_stat = max(self.atk, self.defense)
-            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, highest_stat * 9.99, False))
-        elif set_name == "Militech":
+        if ("Arasaka", 4) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False, 6))
+            return
+        if ("Arasaka", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Arasaka("Arasaka Set", -1, True, False, 2))
+        if ("KangTao", 4) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, self.atk * 5 + self.defense * 5, True))
+            return
+        if ("KangTao", 2) in equipment_sets:
+            low_stat = min(self.atk, self.defense)
+            self.apply_effect(EquipmentSetEffect_KangTao("KangTao Set", -1, True, low_stat * 5, False))
+        if ("Militech", 4) in equipment_sets:
             def condition_func(self):
                 return self.hp <= self.maxhp * 0.30
-            self.apply_effect(EquipmentSetEffect_Militech("Militech Set", -1, True, {"spd": 2.2}, condition_func))
-        elif set_name == "NUSA":
+            self.apply_effect(EquipmentSetEffect_Militech("Militech Set", -1, True, {"spd": 1.2}, condition_func))
+            return
+        if ("Militech", 2) in equipment_sets:
+            def condition_func(self):
+                return self.hp <= self.maxhp * 0.30
+            self.apply_effect(EquipmentSetEffect_Militech("Militech Set", -1, True, {"spd": 0.5}, condition_func))
+
+        if ("NUSA", 4) in equipment_sets:
             def stats_dict_function() -> dict:
                 allies_alive = len(self.ally)
                 return {"atk": 0.06 * allies_alive + 1 , "defense": 0.06 * allies_alive + 1, "maxhp": 0.06 * allies_alive + 1}
             self.apply_effect(EquipmentSetEffect_NUSA("NUSA Set", -1, True, {"atk": 1.30, "defense": 1.30, "maxhp": 1.30}, stats_dict_function))
-        elif set_name == "Sovereign":
-            self.apply_effect(EquipmentSetEffect_Sovereign("Sovereign Set", -1, True, {"atk": 1.20}))
-        elif set_name == "Snowflake":
+            return
+        if ("NUSA", 2) in equipment_sets:
+            def stats_dict_function() -> dict:
+                allies_alive = len(self.ally)
+                return {"atk": 0.03 * allies_alive + 1 , "defense": 0.03 * allies_alive + 1, "maxhp": 0.03 * allies_alive + 1}
+            self.apply_effect(EquipmentSetEffect_NUSA("NUSA Set", -1, True, {"atk": 1.15, "defense": 1.15, "maxhp": 1.15}, stats_dict_function))
+
+        if ("Sovereign", 4) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Sovereign("Sovereign Set", -1, True, {"atk": 1.20}, 5))
+            return
+        if ("Sovereign", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Sovereign("Sovereign Set", -1, True, {"atk": 1.20}, 2))
+
+        if ("Snowflake", 4) in equipment_sets:
             self.apply_effect(EquipmentSetEffect_Snowflake("Snowflake Set", -1, True))
-        elif set_name == "Flute":
+            return
+        if ("Snowflake", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Snowflake("Snowflake Set", -1, True, 0.12, 4))
+
+        if ("Flute", 4) in equipment_sets:
             self.apply_effect(EquipmentSetEffect_Flute("Flute Set", -1, True))
-        elif set_name == "Rainbow":
-            self.apply_effect(EquipmentSetEffect_Rainbow("Rainbow Set", -1, True))
-        elif set_name == "Dawn":
+            return
+        if ("Flute", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Flute("Flute Set", -1, True, 0.6))
+
+        if ("Rainbow", 4) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Rainbow("Rainbow Set", -1, True, 0.60, 0.35, 0.10, -0.15, -0.40))
+            return
+        if ("Rainbow", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Rainbow("Rainbow Set", -1, True, 0.40, 0.15, -0.10, -0.35, -0.60))
+
+        if ("Dawn", 4) in equipment_sets:
             self.apply_effect(EquipmentSetEffect_Dawn("Dawn Set", -1, True, {"atk": 1.24, "crit": 0.24}))
-        elif set_name == "Bamboo":
-            self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.90, "defense": 1.90, "spd": 1.90, "crit": 0.45, "critdmg": 0.45}))
-        elif set_name == "Rose":
-            self.apply_effect(EquipmentSetEffect_Rose("Rose Set", -1, True, he_bonus_before_heal=1.00))
-            belove_girl_self_effect = StatsEffect("Beloved Girl", -1, True, {"heal_efficiency": 0.20})
-            belove_girl_self_effect.is_set_effect = True
-            self.apply_effect(belove_girl_self_effect)
-        elif set_name == "OldRusty":
+            return
+        if ("Dawn", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Dawn("Dawn Set", -1, True, {"atk": 1.12, "crit": 0.12}, False))
+
+        if ("Bamboo", 4) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.90, "defense": 1.90, "spd": 1.90, "crit": 0.44, "critdmg": 0.44}))
+            return
+        if ("Bamboo", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Bamboo("Bamboo Set", -1, True, {"atk": 1.45, "defense": 1.45, "spd": 1.45, "crit": 0.22, "critdmg": 0.22}, 4))
+
+        if ("Rose", 4) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Rose("Rose Set", -1, True))
+            beloved_girl_self_effect = StatsEffect("Beloved Girl", -1, True, {"heal_efficiency": 0.20})
+            beloved_girl_self_effect.is_set_effect = True
+            self.apply_effect(beloved_girl_self_effect)
+            return
+        if ("Rose", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Rose("Rose Set", -1, True, he_bonus_before_heal=0.50, self_def_bonus=0.15))
+            beloved_girl_self_effect = StatsEffect("Beloved Girl", -1, True, {"heal_efficiency": 0.10})
+            beloved_girl_self_effect.is_set_effect = True
+            self.apply_effect(beloved_girl_self_effect)
+
+        if ("OldRusty", 4) in equipment_sets:
             self.apply_effect(EquipmentSetEffect_OldRusty("OldRusty Set", -1, True))
-        elif set_name == "Purplestar":
+            return
+        if ("OldRusty", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_OldRusty("OldRusty Set", -1, True, 0.30))
+
+        if ("Purplestar", 4) in equipment_sets:
             self.apply_effect(EquipmentSetEffect_Purplestar("Purplestar Set", -1, True))
-        elif set_name == "Liquidation":
+            return
+        if ("Purplestar", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Purplestar("Purplestar Set", -1, True, 0.30))
+
+        if ("Liquidation", 4) in equipment_sets:
             self.apply_effect(EquipmentSetEffect_Liquidation("Liquidation Set", -1, True, 0.20))
-        elif set_name == "Cosmic":
+            return
+        if ("Liquidation", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Liquidation("Liquidation Set", -1, True, 0.10))
+
+        if ("Cosmic", 4) in equipment_sets:
             effect_cosmic = StatsEffect("Cosmic Set", -1, True, {"maxhp": 1.018}, condition=lambda char: char.is_alive(),
                                         use_active_flag=False, is_set_effect=True)
             self.apply_effect(effect_cosmic)
-        elif set_name == "Newspaper":
+            return
+        if ("Cosmic", 2) in equipment_sets:
+            effect_cosmic = StatsEffect("Cosmic Set", -1, True, {"maxhp": 1.008}, condition=lambda char: char.is_alive(),
+                                        use_active_flag=False, is_set_effect=True)
+            self.apply_effect(effect_cosmic)
+
+        if ("Newspaper", 4) in equipment_sets:
             self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True))
-        elif set_name == "Cloud":
-            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 10, True, {"spd": 2.00, "final_damage_taken_multipler": -0.40})
+            return
+        if ("Newspaper", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Newspaper("Newspaper Set", -1, True, 0.07))
+
+        if ("Cloud", 4) in equipment_sets:
+            cloud_hide_effect_spd_boost = StatsEffect("Full Cloud", 12, True, {"spd": 2.00, "final_damage_taken_multipler": -0.40})
             cloud_hide_effect = HideEffect("Hide", 50, True, effect_apply_to_character_on_remove=cloud_hide_effect_spd_boost)
             cloud_hide_effect.is_set_effect = True
             cloud_hide_effect.sort_priority = 2000
             cloud_speed_effect = StatsEffect("Cloudy", -1, True, {"spd": 1.05, "atk": 0.90}, is_set_effect=True)
             self.apply_effect(cloud_hide_effect)
             self.apply_effect(cloud_speed_effect)
-        # 1987: Select the highest one from 3 of your main stats: atk, def, spd. 15% of the selected stat is added to the ally
-        # who has the lowest value of the selected stat.
-        elif set_name == "1987":
+            return
+        if ("Cloud", 2) in equipment_sets:
+            cloud_hide_effect = HideEffect("Hide", 50, True)
+            cloud_hide_effect.is_set_effect = True
+            cloud_hide_effect.sort_priority = 2000
+            cloud_speed_effect = StatsEffect("Cloudy", -1, True, {"spd": 1.05, "atk": 0.90}, is_set_effect=True)
+            self.apply_effect(cloud_hide_effect)
+            self.apply_effect(cloud_speed_effect)
+
+        if ("1987", 4) in equipment_sets:
+            onenineeightseven_effect = Effect("1987 Full Set", -1, True)
+            onenineeightseven_effect.is_set_effect = True
+            onenineeightseven_effect.sort_priority = 2000
+            onenineeightseven_effect.effect_value = 0.2555
+            self.apply_effect(onenineeightseven_effect)
+            return
+        if ("1987", 2) in equipment_sets:
             onenineeightseven_effect = Effect("1987 Set", -1, True)
             onenineeightseven_effect.is_set_effect = True
             onenineeightseven_effect.sort_priority = 2000
+            onenineeightseven_effect.effect_value = 0.1200
             self.apply_effect(onenineeightseven_effect)
-        elif set_name == "7891":
-            seveneightnineone_effect = Effect("7891 Set", -1, True)
-            seveneightnineone_effect.is_set_effect = True
-            seveneightnineone_effect.sort_priority = 2000
-            self.apply_effect(seveneightnineone_effect)
-        elif set_name == "Freight":
-            self.apply_effect(EquipmentSetEffect_Freight("Freight Set", -1, True))
-        elif set_name == "Runic":
-            # Critical rate is increased by 100%, critical damage is decreased by 50%. 
-            # When dealing damage, any critical rate over 100% is converted to critical damage
+
+        if ("7891", 4) in equipment_sets:
+            sevennineeightone_effect = Effect("7891 Full Set", -1, True)
+            sevennineeightone_effect.is_set_effect = True
+            sevennineeightone_effect.sort_priority = 2000
+            sevennineeightone_effect.effect_value = 0.5555
+            self.apply_effect(sevennineeightone_effect)
+            return
+        if ("7891", 2) in equipment_sets:
+            sevennineeightone_effect = Effect("7891 Set", -1, True)
+            sevennineeightone_effect.is_set_effect = True
+            sevennineeightone_effect.sort_priority = 2000
+            sevennineeightone_effect.effect_value = 0.2500
+            self.apply_effect(sevennineeightone_effect)
+
+        if ("Freight", 4) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Freight("Freight Set", -1, True, True))
+            return
+        if ("Freight", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Freight("Freight Set", -1, True, False))
+
+        if ("Runic", 4) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Runic("Runic Set", -1, True))
             self.apply_effect(StatsEffect("Runic Set", -1, True, {"crit": 1.00, "critdmg": -0.50}, is_set_effect=True))
-        elif set_name == "Grassland":
-            # If you haven't taken action yet in current battle, speed is increased by 100%, final damage taken is decreased by 30%
-            # EquipmentSetEffect_Grassland is a subclass of StatsEffect, removes it self after the character takes action.
-            self.apply_effect(EquipmentSetEffect_Grassland("Grassland Set", -1, True, {"spd": 2.40, "final_damage_taken_multipler": -0.30}))
-        elif set_name == "Tigris":
+            return
+        if ("Runic", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Runic("Runic Set", -1, True))
+            self.apply_effect(StatsEffect("Runic Set", -1, True, {"crit": 0.40, "critdmg": -0.20}, is_set_effect=True))
+
+        if ("Grassland", 4) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Grassland("Grassland Set", -1, True, {"spd": 2.30, "final_damage_taken_multipler": -0.30}))
+            return
+        if ("Grassland", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Grassland("Grassland Set", -1, True, {"spd": 1.60, "final_damage_taken_multipler": -0.14}))
+
+        if ("Tigris", 4) in equipment_sets:
             # When targeting multiple enemies, for each enemy that is missing, damage is increased by x%.
-            self.apply_effect(EquipmentSetEffect_Tigris("Tigris Set", -1, True))
-        elif set_name == "Armygreen":
+            self.apply_effect(EquipmentSetEffect_Tigris("Tigris Set", -1, True, 0.9))
+            return
+        if ("Tigris", 2) in equipment_sets:
+            self.apply_effect(EquipmentSetEffect_Tigris("Tigris Set", -1, True, 0.4))
+
+
+        if ("Armygreen", 4) in equipment_sets:
             # gives some sub stats
             self.apply_effect(StatsEffect("Armygreen Set", -1, True, {"crit": 0.30, "acc": 0.30, "critdmg": 0.30, "penetration": 0.10}, is_set_effect=True))
-        elif set_name == "Armydesert":
+            return
+        if ("Armygreen", 2) in equipment_sets:
+            self.apply_effect(StatsEffect("Armygreen Set", -1, True, {"crit": 0.15, "acc": 0.15, "critdmg": 0.15, "penetration": 0.05}, is_set_effect=True))
+
+        if ("Armydesert", 4) in equipment_sets:
             # gives some defensive sub stats: critdef, heal_efficiency, eva
             self.apply_effect(StatsEffect("Armydesert Set", -1, True, {"critdef": 0.50, "heal_efficiency": 0.50, "eva": 0.20}, is_set_effect=True))
-        else:
-            raise Exception("Effect not implemented.")
+            return
+        if ("Armydesert", 2) in equipment_sets:
+            self.apply_effect(StatsEffect("Armydesert Set", -1, True, {"critdef": 0.25, "heal_efficiency": 0.25, "eva": 0.10}, is_set_effect=True))
         
+
     def equipment_set_effects_tooltip(self):
-        set_name = self.get_equipment_set()
-        if set_name == "None" or set_name == "Void":
+        l = self.get_equipment_sets()
+        if not l:
             return ""
         if global_vars.language == "English":
             str = "Equipment Set Effects:\n"
-            if set_name != "None" and set_name != "Void":
-                effect_map = getattr(self.equip["Weapon"], "set_effect_description", {})
-                for set_count, description in effect_map.items():
-                    if description:
-                        str += f"{set_count} Set Effect:\n{description}\n"
-            else:
-                str += "Equipment set effects is not active. Equip 4 items of the same set to receive benefits.\n"
+            for set_name, count in l:
+                str += eval(f"EQ_SET_REGISTRY['{set_name}'].desc_{count}") + "\n"
         elif global_vars.language == "日本語":
             str = "装備セット効果:\n"
-            if set_name != "None" and set_name != "Void":
-                effect_map = getattr(self.equip["Weapon"], "set_effect_description_jp", {})
-                for set_count, description in effect_map.items():
-                    if description:
-                        str += f"{set_count}セット効果:\n{description}\n"
-            else:
-                str += "装備セット効果ありません。\n"
+            for set_name, count in l:
+                str += eval(f"EQ_SET_REGISTRY['{set_name}'].desc_jp_{count}") + "\n"
         str += "\n"
         str += "=" * 20 + "\n"
         for effect in self.buffs:
@@ -2146,45 +2293,39 @@ class Character:
         """
         This is called after battle_entry_effects, eq set like 1987 needs to trigger here
         """
-        if self.get_equipment_set() == "1987":
-            the_stat_dict = {"atk": self.atk, "defense": self.defense, "spd": self.spd}
-            # select the highest stat
-            selected_stat = max(the_stat_dict, key=the_stat_dict.get)
-            if selected_stat == "atk":
-                ally_to_buff: Character = min(self.ally, key=lambda x: x.atk)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"atk": self.atk * (0.2555)}, is_set_effect=True)
-                e.can_be_removed_by_skill = False
-                ally_to_buff.apply_effect(e)
-            elif selected_stat == "defense":
-                ally_to_buff: Character = min(self.ally, key=lambda x: x.defense)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"defense": self.defense * (0.2555)}, is_set_effect=True)
-                e.can_be_removed_by_skill = False
-                ally_to_buff.apply_effect(e)
-            elif selected_stat == "spd":
-                ally_to_buff: Character = min(self.ally, key=lambda x: x.spd)
-                e = StatsEffect("1987", -1, True, main_stats_additive_dict={"spd": self.spd * (0.2555)}, is_set_effect=True)
-                e.can_be_removed_by_skill = False
-                ally_to_buff.apply_effect(e)
-        elif self.get_equipment_set() == "7891":
-            # "Select the lowest one from 3 of your main stats: atk, def, spd. 55.55% of the selected stat is added to the ally who has the highest value of the selected stat."
-            the_stat_dict = {"atk": self.atk, "defense": self.defense, "spd": self.spd}
-            # select the lowest stat
-            selected_stat = min(the_stat_dict, key=the_stat_dict.get)
-            if selected_stat == "atk":
-                ally_to_buff: Character = max(self.ally, key=lambda x: x.atk)
-                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"atk": self.atk * 0.5555}, is_set_effect=True)
-                e.can_be_removed_by_skill = False
-                ally_to_buff.apply_effect(e)
-            elif selected_stat == "defense":
-                ally_to_buff: Character = max(self.ally, key=lambda x: x.defense)
-                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"defense": self.defense * 0.5555}, is_set_effect=True)
-                e.can_be_removed_by_skill = False
-                ally_to_buff.apply_effect(e)
-            elif selected_stat == "spd":
-                ally_to_buff: Character = max(self.ally, key=lambda x: x.spd)
-                e = StatsEffect("7891", -1, True, main_stats_additive_dict={"spd": self.spd * 0.5555}, is_set_effect=True)
-                e.can_be_removed_by_skill = False
-                ally_to_buff.apply_effect(e)
+        s_1987 = self.get_effect_that_named("1987 Set")
+        f_1987 = self.get_effect_that_named("1987 Full Set")
+        s_7891 = self.get_effect_that_named("7891 Set")
+        f_7891 = self.get_effect_that_named("7891 Full Set")
+        stat_values = {"atk": self.atk, "defense": self.defense, "spd": self.spd}
+        stat_getter_map = {
+            "atk": lambda x: x.atk,
+            "defense": lambda x: x.defense,
+            "spd": lambda x: x.spd,
+        }
+
+        def apply_entry_set_effect(effect, effect_name: str, self_stat_selector, ally_selector):
+            if not effect or not self.ally:
+                return
+            selected_stat = self_stat_selector(stat_values, key=stat_values.get)
+            ally_to_buff: Character = ally_selector(self.ally, key=stat_getter_map[selected_stat])
+            e = StatsEffect(
+                effect_name,
+                -1,
+                True,
+                main_stats_additive_dict={selected_stat: stat_values[selected_stat] * effect.effect_value},
+                is_set_effect=True,
+            )
+            e.can_be_removed_by_skill = False
+            ally_to_buff.apply_effect(e)
+
+        # 1987: pick highest own stat, buff the ally with the lowest value of that stat.
+        apply_entry_set_effect(s_1987, "1987", max, min)
+        apply_entry_set_effect(f_1987, "1987", max, min)
+
+        # 7891: pick lowest own stat, buff the ally with the highest value of that stat.
+        apply_entry_set_effect(s_7891, "7891", min, max)
+        apply_entry_set_effect(f_7891, "7891", min, max)
 
 
 
