@@ -46,6 +46,9 @@ class Effect:
         if self.duration > 0:
             self.duration -= 1
     
+    def apply_effect_on_battle_entry(self):
+        pass
+
     def apply_effect_on_apply(self, character):
         pass
     
@@ -1558,16 +1561,13 @@ class StatsEffect(Effect):
         self.stats_dict_value_increase_when_missing_attack = stats_dict_value_increase_when_missing_attack
 
     def apply_effect_on_apply(self, character):
-        # print(f"Applying effect {self.name} on {character.name}")
         if self.condition is None or self.condition(character):
             if self.main_stats_additive_dict:
-                # print(f"Adding main stats {self.main_stats_additive_dict} to {character.name}")
                 new_dict = {**self.main_stats_additive_dict, **{'effect_pointer': self}}
                 character.additive_main_stats.append(new_dict)
                 character.update_main_stats_additive(effect_pointer=self)
 
             if self.stats_dict:
-                # print(f"Adding stats {self.stats_dict} to {character.name}")
                 character.update_stats(self.stats_dict, reversed=False)
             self.flag_is_active = True
 
@@ -3037,6 +3037,70 @@ class EquipmentSetEffect_Newspaper(Effect):
     
     def tooltip_description_jp(self):
         return f"2セット: 敵にダメージを与える際、敵の最大HPが自分より高い場合、最大HPの差の{int(self.pctg_of_maxhp_diff*100)}%分ダメージが増加する。"
+
+
+class EquipmentSetEffect_1987_7891(Effect):
+    """
+    1987 set: Select the highest one from 3 of your main stats: atk, def, spd. x% of the selected stat is added as buff to the ally
+    who has the lowest value of the selected stat.
+    7891 set: Select the lowest one from 3 of your main stats: atk, def, spd. x% of the selected stat is added to the ally
+    who has the highest value of the selected stat.
+    """
+    def __init__(self, name, duration, is_buff, stat_pctg, character, tag):
+        super().__init__(name, duration, is_buff)
+        self.is_set_effect = True
+        self.sort_priority = 2000
+        self.stat_pctg = stat_pctg
+        self.character = character
+        self.tag = tag
+        self.selected_stat = None
+        self.target_ally = self.character # select self as fallback to avoid error in tooltip
+
+    def apply_effect_on_battle_entry(self):
+        if not self.character.ally:
+            return
+        assert self.character is not None
+        assert self.tag in ["1987", "7891"]
+        stat_values = {"atk": self.character.atk, "defense": self.character.defense, "spd": self.character.spd}
+        stat_getter_map = {
+            "atk": lambda x: x.atk,
+            "defense": lambda x: x.defense,
+            "spd": lambda x: x.spd,
+        }
+
+        if self.tag == "1987":
+            char_stat_selector = max
+            ally_selector = min
+            buff_effect_name = "1987"
+        elif self.tag == "7891":
+            char_stat_selector = min
+            ally_selector = max
+            buff_effect_name = "7891"
+
+        selected_stat = char_stat_selector(stat_values, key=stat_values.get)
+        self.selected_stat = selected_stat
+        ally_to_buff = ally_selector(self.character.ally, key=stat_getter_map[selected_stat])
+        self.target_ally = ally_to_buff
+        e = StatsEffect(
+            buff_effect_name,
+            -1,
+            True,
+            main_stats_additive_dict={selected_stat: stat_values[selected_stat] * self.stat_pctg},
+        )
+        e.can_be_removed_by_skill = False
+        ally_to_buff.apply_effect(e)
+
+    def tooltip_description(self):
+        if self.tag == "1987":
+            return f"{int(self.stat_pctg*100)}% of {self.selected_stat} is added as buff to {self.target_ally.name}, who has the lowest value of {self.selected_stat} among allies."
+        elif self.tag == "7891":
+            return f"{int(self.stat_pctg*100)}% of {self.selected_stat} is added as buff to {self.target_ally.name}, who has the highest value of {self.selected_stat} among allies."
+
+    def tooltip_description_jp(self):
+        if self.tag == "1987":
+            return f"{int(self.stat_pctg*100)}%の{self.selected_stat}が、味方の中で{self.selected_stat}が最も低い{self.target_ally.name}にバフとして付与される。"
+        elif self.tag == "7891":
+            return f"{int(self.stat_pctg*100)}%の{self.selected_stat}が、味方の中で{self.selected_stat}が最も高い{self.target_ally.name}にバフとして付与される。"
 
 
 class EquipmentSetEffect_Freight(Effect):

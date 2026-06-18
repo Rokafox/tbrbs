@@ -2026,27 +2026,22 @@ if __name__ == "__main__":
             text_box.append_html_text(text_box_text_to_append)
             return
         if global_vars.cheap_inventory_show_current_option == "Equip":
-            if not is_in_manipulatable_game_states():
-                text_box_text_to_append += "Cannot equip items when not in first turn or after the battle is concluded.\n"
+            if not is_start_of_battle():
+                text_box_text_to_append += "Can only equip at the start of the battle.\n"
                 text_box.append_html_text(text_box_text_to_append)
                 return
             for character in all_characters:
-                if character.name == character_selection_menu.selected_option[0].split()[-1] and character.is_alive():
+                if character.name == character_selection_menu.selected_option[0].split()[-1]:
+                    assert character.is_alive(), "Dead at start of battle? Make no sense."
                     # check if selected items have more than 1 of the same type
-                    item_types_seen = []
-                    for item in selected_items:
-                        if item.type in item_types_seen:
-                            text_box_text_to_append += f"Cannot equip multiple items of the same type at once.\n"
-                            text_box.append_html_text(text_box_text_to_append)
-                            return
-                        else:
-                            item_types_seen.append(item.type)
+                    if len({item.type for item in selected_items}) != len(selected_items):
+                        text_box_text_to_append += "Cannot equip multiple items of the same type at once.\n"
+                        text_box.append_html_text(text_box_text_to_append)
+                        return
 
                     for equip in selected_items:
                         text_box_text_to_append += f"Equipped {str(equip)} for {character.name}.\n"
                     old_items = character.equip_item_from_list(selected_items)
-                    # remove all None in old_items, this happens when trying to equip to an empty slot, so None is returned
-                    old_items = [x for x in old_items if x]
                     if old_items:
                         for items in old_items:
                             text_box_text_to_append += f"{str(items)} is added to inventory.\n"
@@ -2054,10 +2049,6 @@ if __name__ == "__main__":
                         player.add_package_of_items_to_inventory(old_items)
                     else:
                         player.remove_selected_item_from_inventory(True)
-                elif character.name == character_selection_menu.selected_option[0].split()[-1] and not character.is_alive():
-                    text_box_text_to_append += f"Can only equip items to alive characters.\n"
-                    text_box.append_html_text(text_box_text_to_append)
-                    return
         elif global_vars.cheap_inventory_show_current_option == "Consumable":
             for character in all_characters:
                 if character.name == character_selection_menu.selected_option[0].split()[-1]:
@@ -2207,11 +2198,12 @@ if __name__ == "__main__":
 
     def unequip_item():
         text_box.set_text("==============================\n")
-        if not is_in_manipulatable_game_states():
-            text_box.append_html_text("Cannot unequip items when not in first turn or after the battle is concluded.\n")
+        if not is_start_of_battle():
+            text_box.append_html_text("Can only unequip at the start of the battle.\n")
             return
         for character in all_characters:
-            if character.name == character_selection_menu.selected_option[0].split()[-1] and character.is_alive():
+            if character.name == character_selection_menu.selected_option[0].split()[-1]:
+                assert character.is_alive(), "Dead at start of battle? Make no sense."
                 item_type = eq_selection_menu.selected_option[0]
                 unequipped_item = character.unequip_item(item_type, False)
                 if unequipped_item:
@@ -2221,18 +2213,16 @@ if __name__ == "__main__":
                     text_box.append_html_text(f"{character.name} does not have {item_type} equipped.\n")
                 redraw_ui(party1, party2)
                 return
-            elif character.name == character_selection_menu.selected_option[0].split()[-1] and not character.is_alive():
-                text_box.append_html_text(f"Can only unequip items from alive characters.\n")
-                return
 
 
     def unequip_all_items():
         text_box.set_text("==============================\n")
-        if not is_in_manipulatable_game_states():
-            text_box.append_html_text("Cannot unequip items when not in first turn or after the battle is concluded.\n")
+        if not is_start_of_battle():
+            text_box.append_html_text("Can only unequip at the start of the battle.\n")
             return
         for character in all_characters:
-            if character.name == character_selection_menu.selected_option[0].split()[-1] and character.is_alive():
+            if character.name == character_selection_menu.selected_option[0].split()[-1]:
+                assert character.is_alive(), "Dead at start of battle? Make no sense."
                 unequipped_items = character.unequip_all(False)
                 if unequipped_items:
                     text_box.append_html_text(f"Unequipped all equipment from {character.name}.\n")
@@ -2240,9 +2230,6 @@ if __name__ == "__main__":
                 else:
                     text_box.append_html_text(f"{character.name} does not have any equipment equipped.\n")
                 redraw_ui(party1, party2)
-                return
-            elif character.name == character_selection_menu.selected_option[0].split()[-1] and not character.is_alive():
-                text_box.append_html_text(f"Can only unequip items from alive characters.\n")
                 return
 
 
@@ -4053,10 +4040,7 @@ if __name__ == "__main__":
                 c.reset_stats()
             reset_ally_enemy_attr(party1, party2)
             for c in itertools.chain(party1, party2):
-                c.battle_entry_effects()
-                c.battle_entry_effects_eqset()
-            # for c in itertools.chain(party1, party2):
-            #     print(c)
+                c.battle_entry_effects_activate()
             try:
                 result = all_turns(party1, party2, for_simulation=True)
             except Exception as e:
@@ -4233,19 +4217,9 @@ if __name__ == "__main__":
         if auto_battle_active and use_random_consumable_selection_menu.selected_option[0] == "True":
             use_random_consumable()
 
-
-    def is_in_manipulatable_game_states() -> bool:
-        """
-        Allows the following disruptive action:
-        Equip/Unequip
-        """
-        if turn == 1:
-            return True
-        # When the game is concluded, allow the player to equip/unequip
-        if not is_someone_alive(party1) or not is_someone_alive(party2): 
-            return True
-        return False
-
+    def is_start_of_battle() -> bool:
+        global turn
+        return turn == 1
 
     def update_character_selection_menu(party_show_in_menu: list[str] | None, di: int=0):
         """
@@ -4306,9 +4280,7 @@ if __name__ == "__main__":
         global_vars.turn_info_string = ""
         reset_ally_enemy_attr(party1, party2)
         global_vars.turn_info_string += "Battle entry effects:\n"
-        for character in party1:
-            character.battle_entry_effects_activate()
-        for character in party2:
+        for character in party1 + party2:
             character.battle_entry_effects_activate()
         redraw_ui(party1, party2)
         text_box.append_html_text(global_vars.turn_info_string)
@@ -4331,9 +4303,7 @@ if __name__ == "__main__":
         global_vars.turn_info_string = ""
         reset_ally_enemy_attr(party1, party2)
         global_vars.turn_info_string += "Battle entry effects:\n"
-        for character in party1:
-            character.battle_entry_effects_activate()
-        for character in party2:
+        for character in party1 + party2:
             character.battle_entry_effects_activate()
         redraw_ui(party1, party2)
         text_box.append_html_text(global_vars.turn_info_string)
@@ -4811,7 +4781,7 @@ if __name__ == "__main__":
                   buff_added_this_turn=None, debuff_added_this_turn=None, shield_value_diff_dict=None, redraw_eq_slots=True,
                   also_draw_chart=True, optimize_for_auto_battle=False):
 
-        def redraw_party(party, image_slots, equip_slots_weapon, equip_slots_armor, equip_slots_accessory, equip_stats_boots, 
+        def redraw_party(party: list[Character], image_slots, equip_slots_weapon, equip_slots_armor, equip_slots_accessory, equip_stats_boots, 
                          labels, healthbar, equip_effect_slots, image_slots_overlays, healthbar_overlays):
             for i, character in enumerate(party):
                 if refill_image:

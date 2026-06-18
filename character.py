@@ -123,6 +123,10 @@ class Character:
         self.clear_others()
 
     def reset_stats(self, resethp=True, resetally=True, resetenemy=True, reset_battle_entry=True):
+        """
+        Call initialize_stats with same parameters. 
+        The usefullness of this method is unclear.
+        """
         self.initialize_stats(resethp, resetally, resetenemy, reset_battle_entry)
 
     def get_self_index(self):
@@ -132,6 +136,8 @@ class Character:
         for i, char in enumerate(self.party):
             if char == self:
                 return i
+        # It is not possible that self is not in self.party.
+        raise Exception("Character is not in their own party.")
 
     def record_damage_taken(self) -> bool: 
         if self.damage_taken_this_turn: # not []
@@ -183,11 +189,6 @@ class Character:
                 
     def calculate_equip_effect(self, resethp=True):
         if self.equip:
-            # print(self.equip)
-            # {'Weapon': <equip.Equip object at 0x79335ff22360>, 
-            # 'Armor': <equip.Equip object at 0x79331fb83e90>, 
-            # 'Accessory': <equip.Equip object at 0x79331f132030>, 
-            # 'Boots': <equip.Equip object at 0x79331f132120>}
             for item in self.equip.values():
                 self.maxhp += item.maxhp_flat
                 self.atk += item.atk_flat
@@ -215,12 +216,13 @@ class Character:
                 self.defense += item.def_extra
                 self.spd += item.spd_extra
 
+            self.set_up_equipment_set_effects()
 
             if resethp and self.hp < self.maxhp:
                 self.hp = self.maxhp
             if self.hp > self.maxhp:
                 self.hp = self.maxhp
-            self.set_up_equipment_set_effects()
+
         return self.equip
 
     def clear_others(self):
@@ -841,7 +843,11 @@ class Character:
             f"経験値/最大経験値/パーセント: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n"
             # f"バトルターン数: {self.battle_turns}\n"
 
-    def tooltip_status_effects(self):
+    def tooltip_status_effects(self) -> Tuple[str, str, str]:
+        """
+        return a tuple of three strings:
+        (special_effects_string, buff_effects_string, debuff_effects_string)
+        """
         if global_vars.language == "日本語":
             str_sp = "スペシャル効果:\n"
             str_buff = "バフ効果:\n"
@@ -979,6 +985,10 @@ class Character:
             global_vars.turn_info_string += f"{self.name} leveled up!\n"
 
     def reset_stats_and_reapply_effects(self, reset_hp=True):
+        """
+        Backup current non equip set effects, reset stats and reapply the effects from backup.
+        reset_hp: set resethp attr in reset_stats to True or False.
+        """
         buff_copy = [effect for effect in self.buffs if not effect.is_set_effect]
         debuff_copy = [effect for effect in self.debuffs if not effect.is_set_effect]
         self.reset_stats(resethp=reset_hp, resetally=False, resetenemy=False, reset_battle_entry=False) # We are probably doing this during battle
@@ -999,29 +1009,42 @@ class Character:
         self.reset_stats_and_reapply_effects()
         self.maxexp = self.calculate_maxexp()
 
-    def equip_item(self, item: Equip):
+    def equip_item(self, item: Equip) -> Equip | None:
+        """
+        Equip an equipment item, return the old item that was replaced (if any).
+        """
         old_item = self.equip.pop(item.type, None)
         self.equip[item.type] = item
         self.reset_stats_and_reapply_effects(False)
         return old_item
 
-    def equip_item_from_list(self, item_list: list):
-        # the items in item_list must not exist more than once of the same item.type
-        item_type_seen = []
-        for item in item_list:
-            if item.type in item_type_seen:
-                raise Exception("Cannot equip more than one of the same item type.")
-            item_type_seen.append(item.type)
+    def equip_item_from_list(self, item_list: list[Equip]) -> list[Equip]:
+        """
+        Equip multiple equipment items from a list,
+        return a list of old items that were replaced.
+        """
+        # only Equip item allowed in the list
+        if not all(isinstance(item, Equip) for item in item_list):
+            raise ValueError("All items in the list must be of type Equip.")
+        # 2 boots cannot be equipped at the same time.
+        if len({item.type for item in item_list}) != len(item_list):
+            raise Exception("Cannot equip more than one of the same item type.")
 
         old_item_list = []
         for item in item_list:
             old_item = self.equip.pop(item.type, None)
             self.equip[item.type] = item
-            old_item_list.append(old_item)
-        self.reset_stats_and_reapply_effects(False)
+            if old_item is not None:
+                old_item_list.append(old_item)
+        self.reset_stats_and_reapply_effects(True)
         return old_item_list
 
-    def unequip_item(self, item_type: str, strict):
+    def unequip_item(self, item_type: str, strict: bool) -> Equip | None:
+        """
+        Specify the type of equipment ("Weapon", "Armor", "Accessory", "Boots") to unequip,
+        return the unequipped item.
+        if strict is True, raise an error if no item of the specified type is equipped.
+        """
         if strict and item_type not in self.equip:
             raise ValueError(f"No {item_type} equipped")
         
@@ -1029,53 +1052,58 @@ class Character:
         self.reset_stats_and_reapply_effects(False)
         return unequipped_item
 
-    def unequip_all(self, strict):
+    def unequip_all(self, strict: bool) -> list[Equip]:
+        """
+        Unequip all equipment items,
+        return a list of unequipped items.
+        if strict is True, raise an error if no equipment is equipped.
+        """
         if not self.equip:
             if strict:
                 raise ValueError("No equipment equipped")
             else:
-                return {}
+                return []
         unequipped_items = list(self.equip.values())
         self.equip.clear()
         self.reset_stats_and_reapply_effects(False)
         return unequipped_items
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         return self.hp > 0
 
-    def is_dead(self):
+    def is_dead(self) -> bool:
         return self.hp <= 0
 
-    def is_charmed(self):
+    def is_charmed(self) -> bool:
         return self.has_effect_that_named("Charm", class_name="CharmEffect")
     
-    def is_confused(self):
+    def is_confused(self) -> bool:
         return self.has_effect_that_named("Confuse", class_name="ConfuseEffect")
     
-    def is_stunned(self):
+    def is_stunned(self) -> bool:
         return self.has_effect_that_named("Stun", class_name="StunEffect")
     
-    def is_silenced(self):
+    def is_silenced(self) -> bool:
         s1 = self.has_effect_that_named("Silence", class_name="SilenceEffect")
         s2 = self.has_effect_that_named("Ducky Silence")
         return s1 or s2 
     
-    def is_sleeping(self):
+    def is_sleeping(self) -> bool:
         return self.has_effect_that_named("Sleep")
     
-    def is_frozed(self):
+    def is_frozed(self) -> bool:
         return self.has_effect_that_named("Frozen", class_name="FrozenEffect")
     
-    def is_petrfied(self):
+    def is_petrfied(self) -> bool:
         return self.has_effect_that_named("Petrify", class_name="PetrifyEffect")
     
-    def is_hidden(self):
+    def is_hidden(self) -> bool:
         for e in self.buffs + self.debuffs:
             if e.name == "Hide" and e.is_active:
                 return True
         return False
 
-    def is_protected(self):
+    def is_protected(self) -> bool:
         return self.has_effect_that_named(None, None, class_name="ProtectedEffect")
 
     def trigger_hidden_effect_on_allies(self, attacker: 'Character'=None, damage_overkill: int | float=-1, damage_is_taken_by_protector: bool=False):
@@ -1283,10 +1311,14 @@ class Character:
         self.hp = min(self.maxhp, self.hp + hp_removed)
         return prev, new, delta
 
-    def update_main_stats_additive(self, reversed=False, effect_pointer=None):
-        # update stats from self.additive_main_stats, which is a list of dict, if any.
-        # example : [{'hp': 200, 'effect_pointer': a Effect object}, {'atk': 30, 'spd': 50, 'effect_pointer': another Effect object}]
-        # effect_pointer: A Effect object. If it is None, update with every records, otherwise, only update with the certain matched record.
+    def update_main_stats_additive(self, reversed=False, effect_pointer=None) -> int:
+        """
+        update stats from self.additive_main_stats, which is a list of dict, if any.
+        example : [{'hp': 200, 'effect_pointer': a Effect object}, {'atk': 30, 'spd': 50, 'effect_pointer': another Effect object}]
+        effect_pointer: A Effect object. If it is None, update with every records, otherwise, only update with the certain matched record.
+        reversed: If True, subtract the values instead of adding them.
+        return the total hp that is illegally removed by this operation,
+        """
         if not self.additive_main_stats: # No dict records
             return 0
         hp_illegally_removed_by_this_operation = 0
@@ -1309,15 +1341,11 @@ class Character:
                     new_value = max(new_value, 1)
                 assert new_value >= 0, f"New value is negative: {new_value}, {attr}, {value}"
                 maxhp_prev = self.maxhp
-                # print(f"maxhp_prev: {maxhp_prev}")
                 hp_prev = self.hp
-                # print(f"hp_prev: {hp_prev}")
                 setattr(self, attr, new_value)
                 self.hp = min(self.hp, self.maxhp)
-                # print(f"self.hp: {self.hp}")
                 maxhp_curr = self.maxhp
                 hp_curr = self.hp
-                # print(f"maxhp_curr: {maxhp_curr}")
                 if maxhp_curr < maxhp_prev:
                     hp_illegally_removed_by_this_operation += hp_prev - hp_curr
                 else:
@@ -2169,32 +2197,20 @@ class Character:
             self.apply_effect(cloud_speed_effect)
 
         if ("1987", 4) in equipment_sets:
-            onenineeightseven_effect = Effect("1987 Full Set", -1, True)
-            onenineeightseven_effect.is_set_effect = True
-            onenineeightseven_effect.sort_priority = 2000
-            onenineeightseven_effect.effect_value = 0.2555
-            self.apply_effect(onenineeightseven_effect)
+            e = EquipmentSetEffect_1987_7891("1987 Full Set", -1, True, 0.2555, self, "1987")
+            self.apply_effect(e)
             return
         if ("1987", 2) in equipment_sets:
-            onenineeightseven_effect = Effect("1987 Set", -1, True)
-            onenineeightseven_effect.is_set_effect = True
-            onenineeightseven_effect.sort_priority = 2000
-            onenineeightseven_effect.effect_value = 0.1200
-            self.apply_effect(onenineeightseven_effect)
+            e = EquipmentSetEffect_1987_7891("1987 Set", -1, True, 0.1200, self, "1987")
+            self.apply_effect(e)
 
         if ("7891", 4) in equipment_sets:
-            sevennineeightone_effect = Effect("7891 Full Set", -1, True)
-            sevennineeightone_effect.is_set_effect = True
-            sevennineeightone_effect.sort_priority = 2000
-            sevennineeightone_effect.effect_value = 0.5555
-            self.apply_effect(sevennineeightone_effect)
+            e = EquipmentSetEffect_1987_7891("7891 Full Set", -1, True, 0.5555, self, "7891")
+            self.apply_effect(e)
             return
         if ("7891", 2) in equipment_sets:
-            sevennineeightone_effect = Effect("7891 Set", -1, True)
-            sevennineeightone_effect.is_set_effect = True
-            sevennineeightone_effect.sort_priority = 2000
-            sevennineeightone_effect.effect_value = 0.2500
-            self.apply_effect(sevennineeightone_effect)
+            e = EquipmentSetEffect_1987_7891("7891 Set", -1, True, 0.2500, self, "7891")
+            self.apply_effect(e)
 
         if ("Freight", 4) in equipment_sets:
             self.apply_effect(EquipmentSetEffect_Freight("Freight Set", -1, True, True))
@@ -2237,7 +2253,7 @@ class Character:
             return
         if ("Armydesert", 2) in equipment_sets:
             self.apply_effect(StatsEffect("Armydesert Set", -1, True, {"critdef": 0.25, "heal_efficiency": 0.25, "eva": 0.10}, is_set_effect=True))
-        
+
 
     def equipment_set_effects_tooltip(self):
         l = self.get_equipment_sets()
@@ -2283,50 +2299,13 @@ class Character:
         pass
 
     def battle_entry_effects_activate(self):
-        # Battle entry effect can only activate once until self.initialize_stats() is called.
-        if not self.battle_entry:
-            self.battle_entry_effects()
-            self.battle_entry = True
-            self.battle_entry_effects_eqset()
-
-    def battle_entry_effects_eqset(self):
-        """
-        This is called after battle_entry_effects, eq set like 1987 needs to trigger here
-        """
-        s_1987 = self.get_effect_that_named("1987 Set")
-        f_1987 = self.get_effect_that_named("1987 Full Set")
-        s_7891 = self.get_effect_that_named("7891 Set")
-        f_7891 = self.get_effect_that_named("7891 Full Set")
-        stat_values = {"atk": self.atk, "defense": self.defense, "spd": self.spd}
-        stat_getter_map = {
-            "atk": lambda x: x.atk,
-            "defense": lambda x: x.defense,
-            "spd": lambda x: x.spd,
-        }
-
-        def apply_entry_set_effect(effect, effect_name: str, self_stat_selector, ally_selector):
-            if not effect or not self.ally:
-                return
-            selected_stat = self_stat_selector(stat_values, key=stat_values.get)
-            ally_to_buff: Character = ally_selector(self.ally, key=stat_getter_map[selected_stat])
-            e = StatsEffect(
-                effect_name,
-                -1,
-                True,
-                main_stats_additive_dict={selected_stat: stat_values[selected_stat] * effect.effect_value},
-                is_set_effect=True,
-            )
-            e.can_be_removed_by_skill = False
-            ally_to_buff.apply_effect(e)
-
-        # 1987: pick highest own stat, buff the ally with the lowest value of that stat.
-        apply_entry_set_effect(s_1987, "1987", max, min)
-        apply_entry_set_effect(f_1987, "1987", max, min)
-
-        # 7891: pick lowest own stat, buff the ally with the highest value of that stat.
-        apply_entry_set_effect(s_7891, "7891", min, max)
-        apply_entry_set_effect(f_7891, "7891", min, max)
-
+        if self.battle_entry:
+            print(f"Warning: {self.name} has already activated battle entry effects. This should not happen.")
+            return
+        self.battle_entry_effects()
+        self.battle_entry = True
+        for e in self.buffs.copy() + self.debuffs.copy():
+            e.apply_effect_on_battle_entry()
 
 
     def record_battle_turns(self, increment=1):
@@ -8472,7 +8451,7 @@ class Tim(Character):
 # After using a skill, 20% chance to recast the skill
 # After using skill1, if skill2 can be used, use skill2
 # After using a skill, reset cooldown of the other skill
-
+# damage record to counter single attacker
 
 
 

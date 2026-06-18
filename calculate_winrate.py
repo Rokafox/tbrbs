@@ -28,6 +28,13 @@ class FinePrinter:
 
 
 def get_all_characters(test_mode: int | str) -> tuple[list[character.Character], str]:
+    """
+    test_mode:
+    1: all characters, no monster
+    2: all monsters, no character
+    3: all characters and monsters
+    "character_name": all characters and monsters, but must include character_name
+    """
     all_characters = [cls(name, 40) for name, cls in character.__dict__.items() 
                     if inspect.isclass(cls) and issubclass(cls, character.Character) and cls != character.Character]
     all_monsters = [cls(name, 40) for name, cls in monsters.__dict__.items() 
@@ -154,8 +161,7 @@ def simulate_battle_between_party(party1: list[character.Character], party2: lis
         return None
     reset_ally_enemy_attr(party1, party2)
     for c in itertools.chain(party1, party2):
-        c.battle_entry_effects()
-        c.battle_entry_effects_eqset()
+        c.battle_entry_effects_activate()
     while turn < 300 and is_someone_alive(party1) and is_someone_alive(party2):
         printer.fine_print("=====================================")
         printer.fine_print(f"Turn {turn}")

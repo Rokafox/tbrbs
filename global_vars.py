@@ -1,7 +1,7 @@
+
+# game state
 turn_info_string = ""
-turn = 1 # Not used
-
-
+game_turn = 1 # Not used
 # theme
 theme = "Yellow Theme"
 language = "English"
