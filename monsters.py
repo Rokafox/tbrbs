@@ -528,6 +528,8 @@ class Ghost(Monster):
     def skill1_logic(self):
         chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 30, 0], fillvalue=0))
         def fear_effect(self, target):
+            if target.is_dead():
+                return
             dice = random.randint(1, 100)
             if dice <= chance_dict[len(target.ally)]:
                 target.apply_effect(FearEffect('Fear', duration=30, is_buff=False))
@@ -575,6 +577,8 @@ class Death(Monster):
     def skill1_logic(self):
         chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 30, 0], fillvalue=0))
         def fear_effect(self, target):
+            if target.is_dead():
+                return
             dice = random.randint(1, 100)
             if dice <= chance_dict[len(target.ally)]:
                 target.apply_effect(FearEffect('Fear', duration=30, is_buff=False))
@@ -950,6 +954,8 @@ class GhostB(Monster):
     def skill1_logic(self):
         chance_dict = dict(zip_longest(range(1, 11), [100, 80, 60, 40, 20], fillvalue=0))
         def fear_effect(self, target):
+            if target.is_dead():
+                return
             dice = random.randint(1, 100)
             if dice <= chance_dict[len(target.ally)]:
                 target.apply_effect(FearEffect('Fear', duration=30, is_buff=False))
@@ -3751,7 +3757,7 @@ class PuppetB(Monster):
         self.skill1_description_jp = "20ターンの間、速度を15%増加。"
         self.skill2_description_jp = "自分に吸収シールドを付与し、シールドは最大HPの60%のダメージを吸収。"
         self.skill3_description_jp = "全ての味方を守護。受けるダメージを25%減少し、90%のダメージが自分が受ける。"
-        self.skill1_cooldown_max = 4
+        self.skill1_cooldown_max = 3
         self.skill2_cooldown_max = 4
         self.is_boss = False
 
@@ -5392,7 +5398,7 @@ class Darklord(Monster):
         " and apply Decay and Poison for 20 turns. Poison: deals 10% of maxhp status damage each turn."
         self.skill1_description_jp = "1ターンの間、命中率を30%増加させ、全ての敵に攻撃力の400%で攻撃し、20ターンの間「腐敗」を付与する。腐敗:すべてのHP回復効果が無効化され、次のターンに回復量と同じ状態異常ダメージを受ける。同じ効果が再度付与された場合、持続時間が更新される。全ての味方に20ターンの間「リジェネ」を付与し、各ターンに最大HPの5%を回復する。"
         self.skill2_description_jp = "1ターンの間、命中率を30%増加させ、全ての敵に攻撃力の400%で攻撃する。敵が1体だけの場合、攻撃力の2000%で攻撃する。全ての味方に20ターンの間「防御力アップ」を2回付与し、防御力を30%増加させる。"
-        self.skill3_description_jp = "スキル2を使用した後、味方が死亡している場合、その味方をHP100%で復活させ、20ターンの間「腐敗」と「毒」を付与する。毒:毎ターン最大HPの10%分の状態異常ダメージを与える。"
+        self.skill3_description_jp = "スキル2を使用した後、死亡している味方がいる場合、その味方をHP100%で復活させ、20ターンの間「腐敗」と「毒」を付与する。毒:毎ターン最大HPの10%分の状態異常ダメージを与える。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -6119,3 +6125,94 @@ class RoyalPriest(Monster):
 # ====================================
 # Monster in this category either punish for being solo alive or gain benefit for being solo alive
 # TODO: Add at least 1 monster in this category
+
+
+# ====================================
+# End of No ally
+# ====================================
+# Anti Single Main Attacker
+# ====================================
+
+class TestSubjectA(Monster):
+    """
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "TestSubjectA"
+        self.skill1_description = "Attack 1 enemy with 340% atk. Increase atk by 20% for 20 turns for all allies."
+        self.skill2_description = "Attack enemy in the front with 260% atk 3 times, each attack has a 50% chance to reduce target's atk by 20% for 20 turns."
+        self.skill3_description = "Each time taking normal damage from the same enemy, reduces the normal damage taken" \
+        " from the same enemy by 15%. Max damage reduction 90%. Effect reset when taking normal damage from another enemy,"
+        self.skill1_description_jp = "敵1体に攻撃力340%で攻撃。全ての味方の攻撃力を20%増加。20ターン持続。"
+        self.skill2_description_jp = "近い敵に攻撃力260%で3回攻撃する。各攻撃は50%の確率で対象の攻撃力を20%減少させる。減少は20ターン持続。"
+        self.skill3_description_jp = "同じ敵から通常ダメージを受ける度に、その敵から受ける通常ダメージを15%減少させる。最大で90%のダメージ減少。別の敵から通常ダメージを受けた場合、効果はリセットされる。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=3.4)
+        if self.is_alive():
+            for ally in self.ally:
+                ally.apply_effect(StatsEffect('TestSubjectA Buff', 20, True, {'atk' : 1.2}))
+        return damage_dealt
+
+    def skill2_logic(self):
+        def reduce_atk(self, target):
+            if random.random() < 0.5:
+                target.apply_effect(StatsEffect('TestSubjectA Debuff', 20, False, {'atk' : 0.8}))
+        damage_dealt = self.attack(multiplier=2.6, repeat=3, func_after_dmg=reduce_atk, target_kw1="enemy_in_front")
+        return damage_dealt
+
+    def battle_entry_effects(self):
+        e = EffectShieldSingleThreat('Passive', -1, True, False, 0.15, 0.9)
+        e.can_be_removed_by_skill = False
+        self.apply_effect(e)
+
+
+class TestSubjectB(Monster):
+    """
+    EffectShieldSingleThreat for allies
+    """
+    def __init__(self, name, lvl, exp=0, equip=None, image=None):
+        super().__init__(name, lvl, exp, equip, image)
+        self.original_name = "TestSubjectB"
+        self.skill1_description = "Attack furthest enemy with 160% atk 6 times," \
+        " Apply sp damage reduction to furthest ally for 20 turns, each time taking normal damage from the same enemy, " \
+        "reduces the normal damage taken from the same enemy by 12%. Max damage reduction 84%. " \
+        "Effect reset when taking normal damage from another enemy."
+        self.skill2_description = "Attack closest enemy with 200% atk 5 times, " \
+        "apply sp damage reduction to all neighbor allies not including self, " \
+        "With same effect as skill 1"
+        self.skill3_description = "Accuracy is increased by 12%."
+        self.skill1_description_jp = "最も遠い敵に攻撃力160%で6回攻撃し、最も遠い味方にSPダメージ減少を20ターン付与する。" \
+        "同じ敵から通常ダメージを受ける度に、その敵から受ける通常ダメージを12%減少させる。最大で84%のダメージ減少。別の敵から通常ダメージを受けた場合、効果はリセットされる。"
+        self.skill2_description_jp = "最も近い敵に攻撃力200%で5回攻撃し、自身を除く隣接する全ての味方にSPダメージ減少を付与する。" \
+        "SPダメージ減少効果はスキル1と同じ。"
+        self.skill3_description_jp = "命中率が12%増加。"
+        self.skill1_cooldown_max = 4
+        self.skill2_cooldown_max = 4
+        self.is_boss = False
+
+
+    def skill1_logic(self):
+        damage_dealt = self.attack(multiplier=1.6, repeat=6, target_kw1="furthest_enemy")
+        if self.is_alive():
+            target = next(self.target_selection(keyword="furthest_ally"))
+            e = EffectShieldSingleThreat('SP DR', 20, True, False, 0.12, 0.84)
+            target.apply_effect(e)
+        return damage_dealt
+    
+    def skill2_logic(self):
+        damage_dealt = self.attack(multiplier=2.0, repeat=5, target_kw1="enemy_in_front")
+        if self.is_alive():
+            targets = self.get_neighbor_allies_not_including_self()
+            for target in targets:
+                e = EffectShieldSingleThreat('SP DR', 20, True, False, 0.12, 0.84)
+                target.apply_effect(e)
+        return damage_dealt
+    
+    def battle_entry_effects(self):
+        e = StatsEffect('TestSubjectB Passive', -1, True, {'acc' : 0.12}, can_be_removed_by_skill=False)
+        self.apply_effect(e)
+    

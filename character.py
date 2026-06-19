@@ -517,6 +517,26 @@ class Character:
                     nfat_d_t = sorted(nfat_d_t, key=lambda x: x[1], reverse=True)
                     yield from [nfat_d_t[i][0] for i in range(n)]
 
+            case ("furthest_enemy", _, _, _):
+                if ts_available_enemy:
+                    fet_d_t = []  # list of tuples (enemy, distance to self)
+                    for fet_e in ts_available_enemy:
+                        fet_d_t.append((fet_e, abs(self.get_self_index() - fet_e.get_self_index())))
+                    fet_d_t = sorted(fet_d_t, key=lambda x: x[1], reverse=True)
+                    yield fet_d_t[0][0]
+
+            case ("n_furthest_enemy", n, _, _):
+                n = int(n)
+                if ts_available_enemy:
+                    if n > len(ts_available_enemy):
+                        n = len(ts_available_enemy)
+                    self.multiple_target_selection_targets_missing = n - len(ts_available_enemy)
+                    nfet_d_t = []  # list of tuples (enemy, distance to self)
+                    for nfet_e in ts_available_enemy:
+                        nfet_d_t.append((nfet_e, abs(self.get_self_index() - nfet_e.get_self_index())))
+                    nfet_d_t = sorted(nfet_d_t, key=lambda x: x[1], reverse=True)
+                    yield from [nfet_d_t[i][0] for i in range(n)]
+
             case ("Undefined_ally", _, _, _):
                 yield random.choice(self.ally)
 

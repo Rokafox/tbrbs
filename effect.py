@@ -3,6 +3,7 @@ from collections import Counter
 import copy
 import random
 import global_vars
+import more_itertools as mit
 
 
 class Effect:
@@ -88,6 +89,7 @@ class Effect:
         """
         Triggers when character with this effect is about to take damage.
         Include both damage step and status damage step.
+        which_ds: "normal" or "status", which damage type in damage step. Confusing.
         """
         return damage
 
@@ -837,6 +839,68 @@ class EffectShield2_HealonDamage(Effect):
     
     def tooltip_description_jp(self):
         return f"ダメージが最大HPの{self.hp_threshold*100:.1f}%を超えると、最大HPの{self.heal_with_self_maxhp_percentage*100:.1f}%回復する。"
+
+
+class EffectShieldSingleThreat(Effect):
+    """
+    Take less and less damage from the same attacker, damage reduction effect
+    resets when taking damage from a different attacker. Only applies to normal damage.
+    """
+    def __init__(self, name, duration, is_buff, cc_immunity, damage_reduction_per_attack=0.1,
+                 damage_reduction_max=0.9):
+        super().__init__(name, duration, is_buff, cc_immunity=False)
+        self.is_buff = is_buff
+        self.cc_immunity = cc_immunity
+        self.damage_reduction_per_attack = damage_reduction_per_attack
+        self.damage_reduction_max = damage_reduction_max
+        self.sort_priority = 200
+        self.recent_attacker = None
+
+    def apply_effect_during_damage_step(self, character, damage, attacker, which_ds, **keywords):
+        if which_ds != "normal":
+            return damage
+        # everytime a character takes damage, the following is recorded:
+        # self.damage_taken_this_turn.append((damage, attacker, "normal"))
+        # character has the following attributes:
+        # self.damage_taken_this_turn: list[tuple[int, Character, str]] = []
+        # # list of tuples (damage, attacker, dt), damage is int, attacker is Character object, dt is damage type
+        # # useful for recording damage taken sequence for certain effects
+        # self.damage_taken_history: list[list[tuple[int, Character, str]]] = [] # list of self.damage_taken_this_turn
+        # the useful dt is "normal", "normal_critical".
+        all_records = character.damage_taken_history + [character.damage_taken_this_turn]
+        if not all_records:
+            return damage
+        all_record_reversed = list(mit.collapse(all_records, levels=1))[::-1]
+        c = 0
+        for _, a, dt in all_record_reversed:
+            if dt != "normal" and dt != "normal_critical":
+                continue
+            if a == attacker:
+                c += 1
+            else:
+                self.recent_attacker = attacker
+                break
+        dr = min(c * self.damage_reduction_per_attack, self.damage_reduction_max)
+        # print(f"{character.name} has been attacked by {attacker.name} for {c} times in this turn, damage reduction is {dr*100:.1f}%")
+        damage = damage * (1 - dr)
+        return damage
+        
+    def tooltip_description(self):
+        if self.recent_attacker:
+            s = f"Reduces normal damage taken from {self.recent_attacker.name} by {min(self.damage_reduction_per_attack * 100, self.damage_reduction_max * 100):.1f}% per attack, up to a maximum of {self.damage_reduction_max * 100:.1f}%."
+        else:
+            s = f"Reduces normal damage taken from the same attacker by {self.damage_reduction_per_attack * 100:.1f}% per attack, up to a maximum of {self.damage_reduction_max * 100:.1f}%."
+        s += " Damage reduction resets when taking damage from a different attacker."
+        return s
+    
+    def tooltip_description_jp(self):
+        if self.recent_attacker:
+            s = f"{self.recent_attacker.name}から受ける通常ダメージを{min(self.damage_reduction_per_attack * 100, self.damage_reduction_max * 100):.1f}%ずつ減少させ、最大で{self.damage_reduction_max * 100:.1f}%まで減少する。"
+        else:
+            s = f"同じ攻撃者から受ける通常ダメージを{self.damage_reduction_per_attack * 100:.1f}%ずつ減少させ、最大で{self.damage_reduction_max * 100:.1f}%まで減少する。"
+        s += "ダメージ軽減は異なる攻撃者からのダメージを受けるとリセットされる。"
+        return s
+
 
 
 class FriendlyFireShield(Effect):
