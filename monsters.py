@@ -189,10 +189,10 @@ class Golem(Monster):
         self.original_name = "Golem"
         self.skill1_description = "Attack all enemies with 500% atk."
         self.skill2_description = "Attack 1 closest enemy with 700% atk. Damage increased by target's hp percentage. Max bonus damage: 100%."
-        self.skill3_description = "Increase hp by 200%."
+        self.skill3_description = "Increase hp by 220%."
         self.skill1_description_jp = "全ての敵に攻撃力500%のダメージを与える。"
         self.skill2_description_jp = "最も近い敵に攻撃力700%のダメージを与える。ダメージは対象のHP割合によって増加する。最大ボーナスダメージ:100%。"
-        self.skill3_description_jp = "最大HPを200%増加させる。"
+        self.skill3_description_jp = "最大HPを220%増加させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 4
         self.is_boss = True
@@ -215,7 +215,7 @@ class Golem(Monster):
         pass
 
     def battle_entry_effects(self):
-        self.apply_effect(StatsEffect('Golem Passive', -1, True, {'maxhp' : 3.0}, can_be_removed_by_skill=False))
+        self.apply_effect(StatsEffect('Golem Passive', -1, True, {'maxhp' : 3.2}, can_be_removed_by_skill=False))
         self.hp = self.maxhp
 
 
@@ -225,11 +225,11 @@ class Yeti(Monster):
         self.original_name = "Yeti"
         self.skill1_description = "Attack 1 closest enemy with 800% atk."
         self.skill2_description = "Attack 1 closest enemy with 800% atk."
-        self.skill3_description = "Increase hp by 200%. After taking down an enemy with skill, recover hp by 50% of maxhp, for 20 turns," \
-        " increase atk by 30% and reduce damage taken by 30%."
+        self.skill3_description = "Increase hp by 200%. After taking down an enemy with skill, recover hp by 50% of maxhp, for 24 turns," \
+        " increase atk by 30% and reduce damage taken by 40%."
         self.skill1_description_jp = "最も近い敵に攻撃力800%のダメージを与える。"
         self.skill2_description_jp = "最も近い敵に攻撃力800%のダメージを与える。"
-        self.skill3_description_jp = "最大HPを200%増加させる。スキルで敵を倒した後、最大HPの50%を回復し、20ターンの間攻撃力を30%増加し、受けるダメージを30%減少させる。"
+        self.skill3_description_jp = "最大HPを200%増加させる。スキルで敵を倒した後、最大HPの50%を回復し、24ターンの間攻撃力を30%増加し、受けるダメージを40%減少させる。"
         self.skill1_cooldown_max = 5
         self.skill2_cooldown_max = 5
         self.is_boss = True
@@ -241,7 +241,7 @@ class Yeti(Monster):
         def recoverhp(self, target):
             if target.is_dead():
                 self.heal_hp(self.maxhp * 0.5, self)
-                self.apply_effect(StatsEffect('Full', 20, True, {'atk' : 1.3, 'final_damage_taken_multipler' : -0.3}))
+                self.apply_effect(StatsEffect('Full', 24, True, {'atk' : 1.3, 'final_damage_taken_multipler' : -0.4}))
         damage_dealt = self.attack(multiplier=8.0, repeat=1, func_after_dmg=recoverhp, target_kw1="enemy_in_front")
         return damage_dealt
 
@@ -249,7 +249,7 @@ class Yeti(Monster):
         def recoverhp(self, target):
             if target.is_dead():
                 self.heal_hp(self.maxhp * 0.5, self)
-                self.apply_effect(StatsEffect('Full', 20, True, {'atk' : 1.3, 'final_damage_taken_multipler' : -0.3}))
+                self.apply_effect(StatsEffect('Full', 24, True, {'atk' : 1.3, 'final_damage_taken_multipler' : -0.4}))
         damage_dealt = self.attack(multiplier=8.0, repeat=1, func_after_dmg=recoverhp, target_kw1="enemy_in_front")
         return damage_dealt
         

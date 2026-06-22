@@ -442,7 +442,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sample = int(sys.argv[1])
     else:
-        sample = 15000
+        sample = 30000
     character_list, character_must_include = get_all_characters(2)
     # "default", "file", "suppress"
     a, b = calculate_winrate_for_character(sample, character_list, "suppress", run_tests=False, character_must_include=character_must_include)
