@@ -1212,9 +1212,8 @@ class Asura(Monster):
                 target.apply_effect(StatsEffect('Vulnerable', 30, False, {'final_damage_taken_multipler' : 0.12}))
         damage_dealt = self.attack(multiplier=2.2, repeat=6, func_after_dmg=vulnerable_effect)
         shield = self.get_effect_that_named(effect_name="Asura Passive", class_name="CancellationShield")
-        if not shield:
-            raise Exception("Cancellation Shield not found on Asura.")
-        shield.uses = 6
+        if shield:
+            shield.uses = 6
         return damage_dealt
 
 
@@ -1222,9 +1221,8 @@ class Asura(Monster):
         self.apply_effect(StatsEffect('Accuracy Up', 24, True, {'acc' : 0.12}))
         damage_dealt = self.attack(multiplier=2.4, repeat=6)
         shield = self.get_effect_that_named(effect_name="Asura Passive", class_name="CancellationShield")
-        if not shield:
-            raise Exception("Cancellation Shield not found on Asura.")
-        shield.uses = 6
+        if shield:
+            shield.uses = 6
         return damage_dealt
 
 
@@ -2240,11 +2238,13 @@ class Captain(Monster):
     def clear_others(self):
         self.skill1_add_def_down = False
         self.skill2_add_unhealable = False
+        self.skill1_can_be_copied = False
+        self.skill2_can_be_copied = False
 
 
     def skill1_logic(self):
         def def_down(self, target):
-            if self.skill1_add_def_down:
+            if hasattr(self, 'skill1_add_def_down') and self.skill1_add_def_down:
                 target.apply_effect(StatsEffect('Def Down', 24, False, {'defense' : 0.9}))
                 self.skill1_add_def_down = False
             else:
@@ -2259,7 +2259,7 @@ class Captain(Monster):
 
     def skill2_logic(self):
         def unhealable(self, target):
-            if self.skill2_add_unhealable:
+            if hasattr(self, 'skill2_add_unhealable') and self.skill2_add_unhealable:
                 target.apply_effect(StatsEffect('Heal Reduced', 24, False, {"heal_efficiency": -0.1}))
                 self.skill2_add_unhealable = False
             else:
@@ -2438,7 +2438,11 @@ class Merman(Monster):
         self.skill2_cooldown_max = 5
         self.is_boss = False
         self.s1target = None
+        self.skill2_can_be_copied = False
 
+    def clear_others(self):
+        self.s1target = None
+        self.skill2_can_be_copied = False
     
 
     def skill1_logic(self):
@@ -5860,7 +5864,10 @@ class Garuda(Monster):
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
         self.is_boss = True
+        self.skill1_can_be_copied = False
 
+    def clear_others(self):
+        self.skill1_can_be_copied = False
     
 
     def generate_random_buff(self):
@@ -5987,6 +5994,8 @@ class Daji(Monster):
     def clear_others(self):
         self.current_atk_bonus = 1.11
         self.current_shield_bonus = 3
+        self.skill1_can_be_copied = False
+        self.skill2_can_be_copied = False
 
     def get_atk_bonus(self):
         return max(0, self.current_atk_bonus)

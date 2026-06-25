@@ -226,6 +226,9 @@ class Character:
         return self.equip
 
     def clear_others(self):
+        """
+        Reset other attributes not cleaned by initialize_stats.
+        """
         pass
 
     def update_skill_cooldown(self, skill):
@@ -8187,12 +8190,14 @@ class AceAL(Character):
         super().__init__(name, lvl, exp, equip, image)
         self.name = "AceAL"
         self.skill1_description = "All allies have their defense increased by 15% of your defense for 20 turns," \
-        " for each ally missing, effect is increased by 15%."
+        " for each ally missing, effect is increased by 15%." \
+        " If you are confused or charmed, missing allies are counted as 0."
         self.skill2_description = "Apply Sword Art on enemy of highest atk for 20 turns." \
         " Sword Art: Whenever taking normal damage, take status damage equal to 100% of the defense of the effect applier."
         self.skill3_description = "At start of battle, apply Judgment on an ally of highest atk." \
         " Judgment: crit, critdmg, accuracy increased by 40%, atk and penetration increased by 20%."
-        self.skill1_description_jp = "全ての味方の防御力を、自身の防御力の15%分増加させる。効果は20ターン持続する。撃破された味方1人につき、効果が15%増加する。"
+        self.skill1_description_jp = "全ての味方の防御力を、自身の防御力の15%分増加させる。効果は20ターン持続する。撃破された味方1人につき、効果が15%増加する。" \
+        "自分が混乱または魅了状態の場合、撃破された味方は0としてカウントされる。"
         self.skill2_description_jp = "攻撃力が最も高い敵に20ターンの間「剣舞」を付与する。剣舞：通常ダメージを受けるたびに、この効果を付与した者の防御力の100%分の状態異常ダメージを受ける。"
         self.skill3_description_jp = "戦闘開始時、攻撃力が最も高い味方1人に「審判」を付与する。審判：クリティカル率、クリティカルダメージ、命中率が40%増加し、攻撃力と貫通力が20%増加する。"
         self.skill1_cooldown_max = 4
@@ -8200,6 +8205,8 @@ class AceAL(Character):
 
     def skill1_logic(self):
         missing_allies = 5 - len(self.ally) + 1
+        if self.is_confused() or self.is_charmed():
+            missing_allies = 0
         for a in self.ally:
             a.apply_effect(StatsEffect("Defense Up", 20, True, main_stats_additive_dict={"defense": self.defense * 0.15 * missing_allies}))
         return 0

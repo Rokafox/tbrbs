@@ -3911,7 +3911,7 @@ if __name__ == "__main__":
                     for character in party1:
                         if character.is_alive():
                             character.gain_exp(adventure_mode_exp_reward())
-                            text_box.append_html_text(f"{character.name} gained {adventure_mode_exp_reward()} exp.\n")
+                            global_vars.turn_info_string += f"{character.name} gained {adventure_mode_exp_reward()} exp.\n"
                     cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
                     player.add_cash(cash_reward)
                     global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
