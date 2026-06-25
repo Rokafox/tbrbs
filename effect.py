@@ -3210,10 +3210,10 @@ class EquipmentSetEffect_Runic(Effect):
         self.sort_priority = 2000
 
     def tooltip_description(self):
-        return f"Increase crit rate but decrease crit damage. When dealing critical damage and critical rate is over 100%, damage is increased by the excess critical rate."
+        return f"When dealing critical damage and critical rate is over 100%, damage is increased by the excess critical rate."
     
     def tooltip_description_jp(self):
-        return f"クリティカル率が増加するが、クリティカルダメージが減少する。クリティカルダメージを与える際、クリティカル率が100%を超えている場合、超過分のクリティカル率に応じてダメージが増加する。"
+        return f"クリティカルダメージを与える際、クリティカル率が100%を超えている場合、超過分のクリティカル率に応じてダメージが増加する。"
 
 
 class EquipmentSetEffect_Grassland(StatsEffect):

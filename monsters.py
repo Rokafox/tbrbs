@@ -6178,17 +6178,17 @@ class TestSubjectB(Monster):
         super().__init__(name, lvl, exp, equip, image)
         self.original_name = "TestSubjectB"
         self.skill1_description = "Attack furthest enemy with 160% atk 6 times," \
-        " Apply sp damage reduction to furthest ally for 20 turns, each time taking normal damage from the same enemy, " \
+        " Apply continuous damage reduction to furthest ally for 20 turns, each time taking normal damage from the same enemy, " \
         "reduces the normal damage taken from the same enemy by 12%. Max damage reduction 84%. " \
         "Effect reset when taking normal damage from another enemy."
         self.skill2_description = "Attack closest enemy with 200% atk 5 times, " \
-        "apply sp damage reduction to all neighbor allies not including self, " \
+        "apply continuous damage reduction to all neighbor allies not including self, " \
         "With same effect as skill 1"
         self.skill3_description = "Accuracy is increased by 12%."
-        self.skill1_description_jp = "最も遠い敵に攻撃力160%で6回攻撃し、最も遠い味方にSPダメージ減少を20ターン付与する。" \
+        self.skill1_description_jp = "最も遠い敵に攻撃力160%で6回攻撃し、最も遠い味方に連続ダメージ減少を20ターン付与する。" \
         "同じ敵から通常ダメージを受ける度に、その敵から受ける通常ダメージを12%減少させる。最大で84%のダメージ減少。別の敵から通常ダメージを受けた場合、効果はリセットされる。"
-        self.skill2_description_jp = "最も近い敵に攻撃力200%で5回攻撃し、自身を除く隣接する全ての味方にSPダメージ減少を付与する。" \
-        "SPダメージ減少効果はスキル1と同じ。"
+        self.skill2_description_jp = "最も近い敵に攻撃力200%で5回攻撃し、自身を除く隣接する全ての味方に連続ダメージ減少を付与する。" \
+        "連続ダメージ減少効果はスキル1と同じ。"
         self.skill3_description_jp = "命中率が12%増加。"
         self.skill1_cooldown_max = 4
         self.skill2_cooldown_max = 4
@@ -6199,7 +6199,7 @@ class TestSubjectB(Monster):
         damage_dealt = self.attack(multiplier=1.6, repeat=6, target_kw1="furthest_enemy")
         if self.is_alive():
             target = next(self.target_selection(keyword="furthest_ally"))
-            e = EffectShieldSingleThreat('SP DR', 20, True, False, 0.12, 0.84)
+            e = EffectShieldSingleThreat('Continuous DR', 20, True, False, 0.12, 0.84)
             target.apply_effect(e)
         return damage_dealt
     
@@ -6208,7 +6208,7 @@ class TestSubjectB(Monster):
         if self.is_alive():
             targets = self.get_neighbor_allies_not_including_self()
             for target in targets:
-                e = EffectShieldSingleThreat('SP DR', 20, True, False, 0.12, 0.84)
+                e = EffectShieldSingleThreat('Continuous DR', 20, True, False, 0.12, 0.84)
                 target.apply_effect(e)
         return damage_dealt
     
@@ -6216,3 +6216,4 @@ class TestSubjectB(Monster):
         e = StatsEffect('TestSubjectB Passive', -1, True, {'acc' : 0.12}, can_be_removed_by_skill=False)
         self.apply_effect(e)
     
+

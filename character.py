@@ -2062,9 +2062,18 @@ class Character:
             eq_set = EQ_SET_REGISTRY.get(set_name)
             if not eq_set:
                 continue
-            if getattr(eq_set, f"desc_{count}", ""):
-                # there exist description, meaning there is effect
-                result.add((set_name, count))
+            if count == 4:
+                if getattr(eq_set, f"desc_{count}", ""):
+                    # there exist description, meaning there is effect
+                    result.add((set_name, count))
+            else:
+                # loop through count to 1, if there exist description, there is effect
+                # 🦊NOTE🦊: this method of handling is not clean as 4 set effect is
+                # handled as special case.
+                for i in range(count, 0, -1):
+                    if getattr(eq_set, f"desc_{i}", ""):
+                        result.add((set_name, i))
+
         if not result:
             return []
         # next, set effect active according to the result.
