@@ -2294,10 +2294,14 @@ class Character:
         if global_vars.language == "English":
             str = "Equipment Set Effects:\n"
             for set_name, count in l:
+                if count == 4:
+                    str += eval(f"EQ_SET_REGISTRY['{set_name}'].desc_{2}") + "\n"
                 str += eval(f"EQ_SET_REGISTRY['{set_name}'].desc_{count}") + "\n"
         elif global_vars.language == "日本語":
             str = "装備セット効果:\n"
             for set_name, count in l:
+                if count == 4:
+                    str += eval(f"EQ_SET_REGISTRY['{set_name}'].desc_jp_{2}") + "\n"
                 str += eval(f"EQ_SET_REGISTRY['{set_name}'].desc_jp_{count}") + "\n"
         str += "\n"
         str += "=" * 20 + "\n"
