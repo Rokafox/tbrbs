@@ -768,34 +768,34 @@ if __name__ == "__main__":
 
     image_slot1 = pygame_gui.elements.UIImage(pygame.Rect((100, 50), (156, 156)),
                                         pygame.Surface((156, 156)),
-                                        ui_manager)
+                                        ui_manager_lower)
     image_slot2 = pygame_gui.elements.UIImage(pygame.Rect((300, 50), (156, 156)),
                                         pygame.Surface((156, 156)),
-                                        ui_manager)
+                                        ui_manager_lower)
     image_slot3 = pygame_gui.elements.UIImage(pygame.Rect((500, 50), (156, 156)),
                                         pygame.Surface((156, 156)),
-                                        ui_manager)
+                                        ui_manager_lower)
     image_slot4 = pygame_gui.elements.UIImage(pygame.Rect((700, 50), (156, 156)),
                                         pygame.Surface((156, 156)),
-                                        ui_manager)
+                                        ui_manager_lower)
     image_slot5 = pygame_gui.elements.UIImage(pygame.Rect((900, 50), (156, 156)),
                                         pygame.Surface((156, 156)),
-                                        ui_manager)
+                                        ui_manager_lower)
     image_slot6 = pygame_gui.elements.UIImage(pygame.Rect((100, 650), (156, 156)),
                                         pygame.Surface((156, 156)),
-                                        ui_manager)
+                                        ui_manager_lower)
     image_slot7 = pygame_gui.elements.UIImage(pygame.Rect((300, 650), (156, 156)),
                                         pygame.Surface((156, 156)),
-                                        ui_manager)
+                                        ui_manager_lower)
     image_slot8 = pygame_gui.elements.UIImage(pygame.Rect((500, 650), (156, 156)),
                                         pygame.Surface((156, 156)),
-                                        ui_manager)
+                                        ui_manager_lower)
     image_slot9 = pygame_gui.elements.UIImage(pygame.Rect((700, 650), (156, 156)),
                                         pygame.Surface((156, 156)),
-                                        ui_manager)
+                                        ui_manager_lower)
     image_slot10 = pygame_gui.elements.UIImage(pygame.Rect((900, 650), (156, 156)),
                                         pygame.Surface((156, 156)),
-                                        ui_manager)
+                                        ui_manager_lower)
 
     image_slots_party1 = [image_slot1, image_slot2, image_slot3, image_slot4, image_slot5]
     image_slots_party2 = [image_slot6, image_slot7, image_slot8, image_slot9, image_slot10]
@@ -803,37 +803,37 @@ if __name__ == "__main__":
 
     image_slot_overlay1 = pygame_gui.elements.UIImage(pygame.Rect((100, 0), (156, 210)),
                                         pygame.Surface((156, 210)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     image_slot_overlay2 = pygame_gui.elements.UIImage(pygame.Rect((300, 0), (156, 210)),
                                         pygame.Surface((156, 210)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     image_slot_overlay3 = pygame_gui.elements.UIImage(pygame.Rect((500, 0), (156, 210)),
                                         pygame.Surface((156, 210)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     image_slot_overlay4 = pygame_gui.elements.UIImage(pygame.Rect((700, 0), (156, 210)),
                                         pygame.Surface((156, 210)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     image_slot_overlay5 = pygame_gui.elements.UIImage(pygame.Rect((900, 0), (156, 210)),
                                         pygame.Surface((156, 210)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     image_slot_overlay_party1 = [image_slot_overlay1, image_slot_overlay2, image_slot_overlay3, image_slot_overlay4, image_slot_overlay5]
     for _ in image_slot_overlay_party1:
         _.set_image(images_item["405"])
     image_slot_overlay6 = pygame_gui.elements.UIImage(pygame.Rect((100, 550), (156, 256)),
                                         pygame.Surface((156, 256)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     image_slot_overlay7 = pygame_gui.elements.UIImage(pygame.Rect((300, 550), (156, 256)),
                                         pygame.Surface((156, 256)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     image_slot_overlay8 = pygame_gui.elements.UIImage(pygame.Rect((500, 550), (156, 256)),
                                         pygame.Surface((156, 256)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     image_slot_overlay9 = pygame_gui.elements.UIImage(pygame.Rect((700, 550), (156, 256)),
                                         pygame.Surface((156, 256)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     image_slot_overlay10 = pygame_gui.elements.UIImage(pygame.Rect((900, 550), (156, 256)),
                                         pygame.Surface((156, 256)),
-                                        ui_manager_overlay)
+                                        ui_manager)
     image_slot_overlay_party2 = [image_slot_overlay6, image_slot_overlay7, image_slot_overlay8, image_slot_overlay9, image_slot_overlay10]
     for _ in image_slot_overlay_party2:
         _.set_image(images_item["405"])
@@ -923,43 +923,43 @@ if __name__ == "__main__":
 
     # Character Names and Level Labels
     # ==========================
-    label1 = pygame_gui.elements.UILabel(pygame.Rect((75, 10), (200, 50)),
+    label1 = pygame_gui.elements.UILabel(pygame.Rect((75, 10), (200, 35)),
                                         "label",
                                         ui_manager)
 
-    label2 = pygame_gui.elements.UILabel(pygame.Rect((275, 10), (200, 50)),
+    label2 = pygame_gui.elements.UILabel(pygame.Rect((275, 10), (200, 35)),
                                         "label",
                                         ui_manager)
 
-    label3 = pygame_gui.elements.UILabel(pygame.Rect((475, 10), (200, 50)),
+    label3 = pygame_gui.elements.UILabel(pygame.Rect((475, 10), (200, 35)),
                                         "label",
                                         ui_manager)
 
-    label4 = pygame_gui.elements.UILabel(pygame.Rect((675, 10), (200, 50)),
+    label4 = pygame_gui.elements.UILabel(pygame.Rect((675, 10), (200, 35)),
                                         "label",
                                         ui_manager)
 
-    label5 = pygame_gui.elements.UILabel(pygame.Rect((875, 10), (200, 50)),
+    label5 = pygame_gui.elements.UILabel(pygame.Rect((875, 10), (200, 35)),
                                         "label",
                                         ui_manager)
 
-    label6 = pygame_gui.elements.UILabel(pygame.Rect((75, 610), (200, 50)),
+    label6 = pygame_gui.elements.UILabel(pygame.Rect((75, 610), (200, 35)),
                                         "label",
                                         ui_manager)
 
-    label7 = pygame_gui.elements.UILabel(pygame.Rect((275, 610), (200, 50)),
+    label7 = pygame_gui.elements.UILabel(pygame.Rect((275, 610), (200, 35)),
                                         "label",
                                         ui_manager)
 
-    label8 = pygame_gui.elements.UILabel(pygame.Rect((475, 610), (200, 50)),
+    label8 = pygame_gui.elements.UILabel(pygame.Rect((475, 610), (200, 35)),
                                         "label",
                                         ui_manager)
 
-    label9 = pygame_gui.elements.UILabel(pygame.Rect((675, 610), (200, 50)),
+    label9 = pygame_gui.elements.UILabel(pygame.Rect((675, 610), (200, 35)),
                                         "label",
                                         ui_manager)
 
-    label10 = pygame_gui.elements.UILabel(pygame.Rect((875, 610), (200, 50)),
+    label10 = pygame_gui.elements.UILabel(pygame.Rect((875, 610), (200, 35)),
                                         "label",
                                         ui_manager)
 
@@ -4656,95 +4656,95 @@ if __name__ == "__main__":
     # each healthbar is divided into 3 parts, a overlay is created on top of it.
     # this overlay will be used to show status effects tooltips,
     # we create 3 pages because often, status effects have too much text to be shown in one page
-    character_healthbar_slot_top1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 220), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_top1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 250), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_top1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 220), (59, 65)),
-                                        pygame.Surface((59, 30)),
+    character_healthbar_slot_top1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 250), (59, 40)),
+                                        pygame.Surface((59, 40)),
                                         ui_manager)
-    character_healthbar_slot_top1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 220), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_top1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 250), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_top2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 220), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_top2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 250), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_top2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 220), (59, 65)),
-                                        pygame.Surface((59, 30)),
+    character_healthbar_slot_top2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 250), (59, 40)),
+                                        pygame.Surface((59, 40)),
                                         ui_manager)
-    character_healthbar_slot_top2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 220), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_top2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 250), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_top3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 220), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_top3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 250), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_top3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 220), (59, 65)),
-                                        pygame.Surface((59, 30)),
+    character_healthbar_slot_top3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 250), (59, 40)),
+                                        pygame.Surface((59, 40)),
                                         ui_manager)
-    character_healthbar_slot_top3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 220), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_top3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 250), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_top4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 220), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_top4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 250), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_top4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 220), (59, 65)),
-                                        pygame.Surface((59, 30)),
+    character_healthbar_slot_top4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 250), (59, 40)),
+                                        pygame.Surface((59, 40)),
                                         ui_manager)
-    character_healthbar_slot_top4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 220), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_top4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 250), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_top5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 220), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_top5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 250), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_top5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 220), (59, 65)),
-                                        pygame.Surface((59, 30)),
+    character_healthbar_slot_top5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 250), (59, 40)),
+                                        pygame.Surface((59, 40)),
                                         ui_manager)
-    character_healthbar_slot_top5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 220), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_top5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 250), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 825), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_buttom1_o1 = pygame_gui.elements.UIImage(pygame.Rect((90, 850), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 825), (59, 65)),
-                                        pygame.Surface((59, 30)),
+    character_healthbar_slot_buttom1_o2 = pygame_gui.elements.UIImage(pygame.Rect((90+58, 850), (59, 40)),
+                                        pygame.Surface((59, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 825), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_buttom1_o3 = pygame_gui.elements.UIImage(pygame.Rect((90+58+59, 850), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 825), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_buttom2_o1 = pygame_gui.elements.UIImage(pygame.Rect((290, 850), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 825), (59, 65)),
-                                        pygame.Surface((59, 30)),
+    character_healthbar_slot_buttom2_o2 = pygame_gui.elements.UIImage(pygame.Rect((290+58, 850), (59, 40)),
+                                        pygame.Surface((59, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 825), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_buttom2_o3 = pygame_gui.elements.UIImage(pygame.Rect((290+58+59, 850), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 825), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_buttom3_o1 = pygame_gui.elements.UIImage(pygame.Rect((490, 850), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 825), (59, 65)),
-                                        pygame.Surface((59, 30)),
+    character_healthbar_slot_buttom3_o2 = pygame_gui.elements.UIImage(pygame.Rect((490+58, 850), (59, 40)),
+                                        pygame.Surface((59, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 825), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_buttom3_o3 = pygame_gui.elements.UIImage(pygame.Rect((490+58+59, 850), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 825), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_buttom4_o1 = pygame_gui.elements.UIImage(pygame.Rect((690, 850), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 825), (59, 65)),
-                                        pygame.Surface((59, 30)),
+    character_healthbar_slot_buttom4_o2 = pygame_gui.elements.UIImage(pygame.Rect((690+58, 850), (59, 40)),
+                                        pygame.Surface((59, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 825), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_buttom4_o3 = pygame_gui.elements.UIImage(pygame.Rect((690+58+59, 850), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 825), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_buttom5_o1 = pygame_gui.elements.UIImage(pygame.Rect((890, 850), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 825), (59, 65)),
-                                        pygame.Surface((59, 30)),
+    character_healthbar_slot_buttom5_o2 = pygame_gui.elements.UIImage(pygame.Rect((890+58, 850), (59, 40)),
+                                        pygame.Surface((59, 40)),
                                         ui_manager)
-    character_healthbar_slot_buttom5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 825), (58, 65)),
-                                        pygame.Surface((58, 30)),
+    character_healthbar_slot_buttom5_o3 = pygame_gui.elements.UIImage(pygame.Rect((890+58+59, 850), (58, 40)),
+                                        pygame.Surface((58, 40)),
                                         ui_manager)
     health_bar_party1_overlay = [[character_healthbar_slot_top1_o1, character_healthbar_slot_top1_o2, character_healthbar_slot_top1_o3],
                                 [character_healthbar_slot_top2_o1, character_healthbar_slot_top2_o2, character_healthbar_slot_top2_o3],
@@ -4788,9 +4788,9 @@ if __name__ == "__main__":
                     image_slots[i].set_image(character.featured_image)
 
                 if global_vars.language == "日本語" and hasattr(character, "tooltip_string_jp"):
-                    image_slots[i].set_tooltip(character.tooltip_string_jp(), delay=0.1, wrap_width=250)
+                    healthbar[i].set_tooltip(character.tooltip_string_jp(), delay=0.1, wrap_width=250)
                 else:
-                    image_slots[i].set_tooltip(character.tooltip_string(), delay=0.1, wrap_width=250)
+                    healthbar[i].set_tooltip(character.tooltip_string(), delay=0.1, wrap_width=250)
                 
 
                 if redraw_eq_slots:
@@ -6078,6 +6078,14 @@ if __name__ == "__main__":
         ui_manager_overlay.draw_ui(display_surface)
         # debug_ui_manager.update(time_delta)
         # debug_ui_manager.draw_ui(display_surface)
+
+        # if there exist tooltip on screen, hide all in image_slot_overlay_party1 and 2
+        # if ui_manager.get_any_tool_tip_on_screen():
+        #     for e in image_slot_overlay_party1 + image_slot_overlay_party2:
+        #         e.hide()
+        # else:
+        #     for e in image_slot_overlay_party1 + image_slot_overlay_party2:
+        #         e.show()
 
         if auto_battle_active:
             time_acc += time_delta

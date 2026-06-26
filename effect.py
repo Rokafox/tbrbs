@@ -881,7 +881,7 @@ class EffectShieldSingleThreat(Effect):
                 self.recent_attacker = attacker
                 break
         dr = min(c * self.damage_reduction_per_attack, self.damage_reduction_max)
-        # print(f"{character.name} has been attacked by {attacker.name} for {c} times in this turn, damage reduction is {dr*100:.1f}%")
+        global_vars.turn_info_string += f"{character.name} has {dr*100:.1f}% damage reduction from {attacker.name} due to {self.name}.\n"
         damage = damage * (1 - dr)
         return damage
         
