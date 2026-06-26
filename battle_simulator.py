@@ -2319,9 +2319,9 @@ if __name__ == "__main__":
             for k, (a, b, c) in player.selected_item.items():
                 if c == item_to_level_up:
                     if global_vars.language == "English":
-                        k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=300)
+                        k.set_tooltip(item_to_level_up.print_stats_html(), delay=0.1, wrap_width=400)
                     elif global_vars.language == "日本語":
-                        k.set_tooltip(item_to_level_up.print_stats_html_jp(), delay=0.1, wrap_width=300)
+                        k.set_tooltip(item_to_level_up.print_stats_html_jp(), delay=0.1, wrap_width=400)
         if cost_total > 0:
             player.lose_cash(cost_total, False)
             text_box_text_to_append += f"Leveled {len(selected_items)} items for {cost_total} cash.\n"
