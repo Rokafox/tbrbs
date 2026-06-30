@@ -308,7 +308,7 @@ class Nine(): # A reference to 9Nine, Nine is just the player's name
 
         # maps UIImage to actual inventory item
         try:
-            dict_image_slots_items = {k: v for k, v in mit.zip_equal(gutted_slots, chunked_inventory[page])} # UIImage : Equip
+            dict_image_slots_items = {k: v for k, v in zip(gutted_slots, chunked_inventory[page], strict=True)} # UIImage : Equip
         except IndexError:
             dict_image_slots_items = {}
         self.dict_image_slots_items = dict_image_slots_items
@@ -3081,7 +3081,7 @@ if __name__ == "__main__":
         gutted_inventory_image_slots = inventory_image_slots[:n]
         # maps UIImage to Rect, used for collision detection in pygame event
         list_of_rects_for_inventory_image_slots = [x.get_abs_rect() for x in gutted_inventory_image_slots]
-        dict_image_slots_rects = {k: v for k, v in mit.zip_equal(gutted_inventory_image_slots, list_of_rects_for_inventory_image_slots)} # UIImage : Rect
+        dict_image_slots_rects = {k: v for k, v in zip(gutted_inventory_image_slots, list_of_rects_for_inventory_image_slots, strict=True)} # UIImage : Rect
         dict_image_slots_rects: dict[pygame_gui.elements.UIImage, pygame.Rect]
         return gutted_inventory_image_slots, dict_image_slots_rects
 
@@ -5212,7 +5212,7 @@ if __name__ == "__main__":
         image_slots = [shop_image_slota, shop_image_slotb, shop_image_slotc, shop_image_slotd, shop_image_slote]
         # Code here is copyed from Nine() class
         list_of_shop_items = list(shop_instance.inventory.keys())
-        dict_image_slots_items = {k: v for k, v in mit.zip_equal(image_slots, list_of_shop_items)}
+        dict_image_slots_items = {k: v for k, v in zip(image_slots, list_of_shop_items, strict=True)}
         # set up image and tooltip to UIImage based on item info
         for ui_image, item in dict_image_slots_items.items():
             if item.image:
@@ -5249,11 +5249,11 @@ if __name__ == "__main__":
                 ui_image.set_tooltip(item.print_stats_html(), delay=0.1, wrap_width=400)
         # set up prices
         price_labels = [shop_price_labela, shop_price_labelb, shop_price_labelc, shop_price_labeld, shop_price_labele]
-        for price_label, (p, d, f) in mit.zip_equal(price_labels, list(shop_instance.inventory.values())): 
+        for price_label, (p, d, f) in zip(price_labels, list(shop_instance.inventory.values()), strict=True): 
             price_label.set_text(str(f))
         # show discount
         discount_labels = [shop_price_discount_labela, shop_price_discount_labelb, shop_price_discount_labelc, shop_price_discount_labeld, shop_price_discount_labele]
-        for discount_label, (p, d, f) in mit.zip_equal(discount_labels, list(shop_instance.inventory.values())):
+        for discount_label, (p, d, f) in zip(discount_labels, list(shop_instance.inventory.values()), strict=True):
             # if no discount, show nothing
             if d == 0:
                 discount_label.set_text("")
