@@ -3392,32 +3392,15 @@ if __name__ == "__main__":
             raise ValueError(f"party must be 1 or 2, but got {party}")
         names = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]]
         random_plus_all_characters_names: list[str] = ["***Random***"] + all_characters_names
-        if party == 1:
-            party1_member_a_selection_menu.set_options(random_plus_all_characters_names)
-            party1_member_a_selection_menu.set_selected_option(names[0])
-            party1_member_b_selection_menu.set_options(random_plus_all_characters_names)
-            party1_member_b_selection_menu.set_selected_option(names[1])
-            party1_member_c_selection_menu.set_options(random_plus_all_characters_names)
-            party1_member_c_selection_menu.set_selected_option(names[2])
-            party1_member_d_selection_menu.set_options(random_plus_all_characters_names)
-            party1_member_d_selection_menu.set_selected_option(names[3])
-            party1_member_e_selection_menu.set_options(random_plus_all_characters_names)
-            party1_member_e_selection_menu.set_selected_option(names[4])
+        if party == 2 and current_game_mode == "Adventure Mode":
+            cheems_response_label.set_text("Party 2 is reserved for monsters in adventure mode.")
+            return None
 
-        else:
-            if current_game_mode == "Adventure Mode":
-                cheems_response_label.set_text("Party 2 is reserved for monsters in adventure mode.")
-                return None
-            party2_member_a_selection_menu.set_options(random_plus_all_characters_names)
-            party2_member_a_selection_menu.set_selected_option(names[0])
-            party2_member_b_selection_menu.set_options(random_plus_all_characters_names)
-            party2_member_b_selection_menu.set_selected_option(names[1])
-            party2_member_c_selection_menu.set_options(random_plus_all_characters_names)
-            party2_member_c_selection_menu.set_selected_option(names[2])
-            party2_member_d_selection_menu.set_options(random_plus_all_characters_names)
-            party2_member_d_selection_menu.set_selected_option(names[3])
-            party2_member_e_selection_menu.set_options(random_plus_all_characters_names)
-            party2_member_e_selection_menu.set_selected_option(names[4])
+        party_prefix = "party1" if party == 1 else "party2"
+        for i, c in enumerate(["a", "b", "c", "d", "e"]):
+            selection_menu = globals()[f"{party_prefix}_member_{c}_selection_menu"]
+            selection_menu.set_options(random_plus_all_characters_names)
+            selection_menu.set_selected_option(names[i])
             
 
     def cheems_save_team(team_name: str | None, party_one_or_two: int):
@@ -3479,20 +3462,8 @@ if __name__ == "__main__":
 
         # Update the cheems selection menu
         cheems_show_player_cheems_selection_menu.set_options(["None"] + cheems_get_player_team_names(player))
+        cheems_ui_set_according_to_selected_team()
 
-        cheems_player_cheems_member_label.set_text("")
-        img_slots = [cheems_player_cheems_char_img_slot_a, cheems_player_cheems_char_img_slot_b, 
-        cheems_player_cheems_char_img_slot_c, cheems_player_cheems_char_img_slot_d, cheems_player_cheems_char_img_slot_e]
-        for i in img_slots:
-            i.set_image(images_item["405"])
-        cheems_apply_to_party1_button.hide()
-        cheems_apply_to_party2_button.hide()
-        cheems_delete_team_button.hide()
-        cheems_update_with_party1_button.hide()
-        cheems_update_with_party2_button.hide()
-        cheems_rename_teams_entry.hide()
-        cheems_rename_team_button.hide()
-        cheems_meme_dog_image_slot.show()         
 
     def cheems_update_team(with_party_one_or_two: int):
         # update the selected team with the current party 1 or party 2
@@ -3528,20 +3499,8 @@ if __name__ == "__main__":
         cheems_response_label.set_text(f"Team updated.")
 
         cheems_show_player_cheems_selection_menu.set_options(["None"] + cheems_get_player_team_names(player))
+        cheems_ui_set_according_to_selected_team()
 
-        cheems_player_cheems_member_label.set_text("")
-        img_slots = [cheems_player_cheems_char_img_slot_a, cheems_player_cheems_char_img_slot_b,
-        cheems_player_cheems_char_img_slot_c, cheems_player_cheems_char_img_slot_d, cheems_player_cheems_char_img_slot_e]
-        for i in img_slots:
-            i.set_image(images_item["405"])
-        cheems_apply_to_party1_button.hide()
-        cheems_apply_to_party2_button.hide()
-        cheems_delete_team_button.hide()
-        cheems_update_with_party1_button.hide()
-        cheems_update_with_party2_button.hide()
-        cheems_rename_teams_entry.hide()
-        cheems_rename_team_button.hide()
-        cheems_meme_dog_image_slot.show()
 
     def cheems_delete_team(team_name: str):
         """
@@ -3566,20 +3525,8 @@ if __name__ == "__main__":
         cheems_response_label.set_text(f"Team {team_name} deleted.")
 
         cheems_show_player_cheems_selection_menu.set_options(["None"] + cheems_get_player_team_names(player))
+        cheems_ui_set_according_to_selected_team()
 
-        cheems_player_cheems_member_label.set_text("")
-        img_slots = [cheems_player_cheems_char_img_slot_a, cheems_player_cheems_char_img_slot_b, 
-        cheems_player_cheems_char_img_slot_c, cheems_player_cheems_char_img_slot_d, cheems_player_cheems_char_img_slot_e]
-        for i in img_slots:
-            i.set_image(images_item["405"])
-        cheems_apply_to_party1_button.hide()
-        cheems_apply_to_party2_button.hide()
-        cheems_delete_team_button.hide()
-        cheems_update_with_party1_button.hide()
-        cheems_update_with_party2_button.hide()
-        cheems_rename_teams_entry.hide()
-        cheems_rename_team_button.hide()
-        cheems_meme_dog_image_slot.show()
 
 
     def cheems_rename_team(old_team_name: str, new_team_name: str):
@@ -3613,24 +3560,69 @@ if __name__ == "__main__":
         player.cheems = dict(sorted(player.cheems.items()))
         cheems_response_label.set_text(f"Team {old_team_name} renamed to {new_team_name}.")
 
-        # Update the cheems selection menu
         cheems_show_player_cheems_selection_menu.set_options(["None"] + cheems_get_player_team_names(player))
-
-        cheems_player_cheems_member_label.set_text("")
-        img_slots = [cheems_player_cheems_char_img_slot_a, cheems_player_cheems_char_img_slot_b, 
-        cheems_player_cheems_char_img_slot_c, cheems_player_cheems_char_img_slot_d, cheems_player_cheems_char_img_slot_e]
-        for i in img_slots:
-            i.set_image(images_item["405"])
-        cheems_apply_to_party1_button.hide()
-        cheems_apply_to_party2_button.hide()
-        cheems_delete_team_button.hide()
-        cheems_update_with_party1_button.hide()
-        cheems_update_with_party2_button.hide()
-        cheems_rename_teams_entry.hide()
-        cheems_rename_team_button.hide()
-        cheems_meme_dog_image_slot.show()
+        cheems_ui_set_according_to_selected_team()
 
 
+    def cheems_ui_set_according_to_selected_team():
+        """
+        set UI according to the selected team in cheems_show_player_cheems_selection_menu.
+        """
+        global cheems_show_player_cheems_selection_menu
+        img_slots = [cheems_player_cheems_char_img_slot_a,
+                        cheems_player_cheems_char_img_slot_b,
+                    cheems_player_cheems_char_img_slot_c,
+                    cheems_player_cheems_char_img_slot_d,
+                    cheems_player_cheems_char_img_slot_e,]
+        if cheems_show_player_cheems_selection_menu.selected_option[0] != "None":
+            member_list = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]]
+            text = ""
+            for i, m in enumerate(member_list):
+                if m != "***Random***":
+                    text += f"{m}    "
+                    actual_character = None
+                    for c in all_characters:
+                        if c.name == m:
+                            actual_character = c
+                            break
+                    try:
+                        img_slots[i].set_image(actual_character.featured_image)
+                    except Exception:
+                        img_slots[i].set_image(images_item["404"])
+                    finally:
+                        if global_vars.language == "日本語":
+                            img_slots[i].set_tooltip(actual_character.skill_tooltip_jp(), delay=0.1, wrap_width=600)
+                        elif global_vars.language == "English":
+                            img_slots[i].set_tooltip(actual_character.skill_tooltip(), delay=0.1, wrap_width=600)
+                else:
+                    text += "Random    "
+                    img_slots[i].set_image(images_item["406cheems"])
+                    if global_vars.language == "日本語":
+                        img_slots[i].set_tooltip("ランダムに選ばれたキャラクター。", delay=0.1)
+                    elif global_vars.language == "English":
+                        img_slots[i].set_tooltip("Randomly selected character.", delay=0.1)
+
+            cheems_player_cheems_member_label.set_text(text)
+            cheems_apply_to_party1_button.show()
+            cheems_apply_to_party2_button.show()
+            cheems_delete_team_button.show()
+            cheems_update_with_party1_button.show()
+            cheems_update_with_party2_button.show()
+            cheems_rename_teams_entry.show()
+            cheems_rename_team_button.show()
+            cheems_meme_dog_image_slot.hide()
+        else:
+            cheems_player_cheems_member_label.set_text("")
+            for i in img_slots:
+                i.set_image(images_item["405"])
+            cheems_apply_to_party1_button.hide()
+            cheems_apply_to_party2_button.hide()
+            cheems_delete_team_button.hide()
+            cheems_update_with_party1_button.hide()
+            cheems_update_with_party2_button.hide()
+            cheems_rename_teams_entry.hide()
+            cheems_rename_team_button.hide()
+            cheems_meme_dog_image_slot.show() 
 
 
     def cheems_get_player_team_names(player: Nine) -> list[str]:
@@ -5932,60 +5924,8 @@ if __name__ == "__main__":
                         case _:
                             raise Exception("Unknown option selected in cheap_inventory_what_to_show_selection_menu")  
                 if event.ui_element == cheems_show_player_cheems_selection_menu:
-                    img_slots = [cheems_player_cheems_char_img_slot_a,
-                                    cheems_player_cheems_char_img_slot_b,
-                                cheems_player_cheems_char_img_slot_c,
-                                cheems_player_cheems_char_img_slot_d,
-                                cheems_player_cheems_char_img_slot_e,]
-                    if cheems_show_player_cheems_selection_menu.selected_option[0] != "None":
-                        member_list = player.cheems[cheems_show_player_cheems_selection_menu.selected_option[0]]
-                        text = ""
-                        for i, m in enumerate(member_list):
-                            if m != "***Random***":
-                                text += f"{m}    "
-                                actual_character = None
-                                for c in all_characters:
-                                    if c.name == m:
-                                        actual_character = c
-                                        break
-                                try:
-                                    img_slots[i].set_image(actual_character.featured_image)
-                                except Exception:
-                                    img_slots[i].set_image(images_item["404"])
-                                finally:
-                                    if global_vars.language == "日本語":
-                                        img_slots[i].set_tooltip(actual_character.skill_tooltip_jp(), delay=0.1, wrap_width=600)
-                                    elif global_vars.language == "English":
-                                        img_slots[i].set_tooltip(actual_character.skill_tooltip(), delay=0.1, wrap_width=600)
-                            else:
-                                text += "Random    "
-                                img_slots[i].set_image(images_item["406cheems"])
-                                if global_vars.language == "日本語":
-                                    img_slots[i].set_tooltip("ランダムに選ばれたキャラクター。", delay=0.1)
-                                elif global_vars.language == "English":
-                                    img_slots[i].set_tooltip("Randomly selected character.", delay=0.1)
-
-                        cheems_player_cheems_member_label.set_text(text)
-                        cheems_apply_to_party1_button.show()
-                        cheems_apply_to_party2_button.show()
-                        cheems_delete_team_button.show()
-                        cheems_update_with_party1_button.show()
-                        cheems_update_with_party2_button.show()
-                        cheems_rename_teams_entry.show()
-                        cheems_rename_team_button.show()
-                        cheems_meme_dog_image_slot.hide()
-                    else:
-                        cheems_player_cheems_member_label.set_text("")
-                        for i in img_slots:
-                            i.set_image(images_item["405"])
-                        cheems_apply_to_party1_button.hide()
-                        cheems_apply_to_party2_button.hide()
-                        cheems_delete_team_button.hide()
-                        cheems_update_with_party1_button.hide()
-                        cheems_update_with_party2_button.hide()
-                        cheems_rename_teams_entry.hide()
-                        cheems_rename_team_button.hide()
-                        cheems_meme_dog_image_slot.show()                        
+                    cheems_ui_set_according_to_selected_team()
+                       
 
 
             ui_manager_lower.process_events(event)
