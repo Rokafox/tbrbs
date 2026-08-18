@@ -1544,7 +1544,6 @@ class Kerberos(Monster):
 
 
 
-
 # ====================================
 # End of Ignore Protected Effect
 # ====================================
@@ -2404,7 +2403,7 @@ class General(Monster):
             self.apply_effect(StatsEffect('Strong', 10, True, {'atk' : 1.3, 'defense' : 1.3}))
         self.heal_hp(4.0 * self.atk, self)
         def destroy_effect(self, target):
-            destory = StatsEffect('Destroy', 30, False, {'maxhp' : max(target.hp / target.maxhp, 0.01)})
+            destory = StatsEffect('Destroy', 30, False, main_stats_additive_dict={"maxhp": -target.maxhp + target.hp})
             destory.apply_rule = "stack"
             destory.can_be_removed_by_skill = False
             if target.is_alive():

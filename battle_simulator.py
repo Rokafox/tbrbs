@@ -5857,7 +5857,7 @@ if __name__ == "__main__":
                             global_vars.cheap_inventory_show_current_option = "Equip"
                             player.build_inventory_slots()
                             if global_vars.language == "日本語":
-                                use_item_button.set_text("鳳冠霞帔")
+                                use_item_button.set_text("狼に衣")
                             elif global_vars.language == "English":
                                 use_item_button.set_text("Equip Item")
                             eq_selection_menu.show()

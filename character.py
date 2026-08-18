@@ -115,6 +115,11 @@ class Character:
         # When applying buffs, the bonus value is added in apply_effect method, can be negative.
         self.duration_bonus_when_apply_effect_buff: int = 0 
         self.duration_bonus_when_apply_effect_debuff: int = 0
+        # attack_ability and defense_ability are calculated only at start of battle.
+        # This value is calculated by offensive stats.
+        self.attack_ability: int = int(self.atk * (1 + self.crit * (self.critdmg - 1)) * (1 + self.penetration) * ((1 + self.acc) * 0.66))
+        # This value is calculated by defensive stats.
+        self.defense_ability: int = int((self.defense + self.maxhp / 20) * (1 + self.critdef) * (1 + self.eva) * (self.heal_efficiency) * 0.75)
 
         if self.equip:
             for item in self.equip.values():
@@ -186,8 +191,11 @@ class Character:
                         break
                 break
         return count
-                
+    
     def calculate_equip_effect(self, resethp=True):
+        """
+        Add stat bonus from equipment and apply equipment set effects.
+        """
         if self.equip:
             for item in self.equip.values():
                 self.maxhp += item.maxhp_flat
@@ -843,8 +851,9 @@ class Character:
             f"heal efficiency: {self.heal_efficiency*100:.2f}%\n" \
             f"final damage taken: {self.final_damage_taken_multipler*100:.2f}%\n" \
             f"max skill cooldown: {self.skill1_cooldown_max}/{self.skill2_cooldown_max}\n" \
-            f"exp/maxexp/perc: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n"
-            # f"battle turns: {self.battle_turns}\n"
+            f"exp/maxexp/perc: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n" \
+            f"attack ability: {self.attack_ability}\n" \
+            f"defense ability: {self.defense_ability}\n"
 
     def tooltip_string_jp(self):
         level = self.lvl if self.lvl < self.lvl_max else "MAX"
@@ -863,8 +872,9 @@ class Character:
             f"回復効率: {self.heal_efficiency*100:.2f}%\n" \
             f"最終ダメージ倍率: {self.final_damage_taken_multipler*100:.2f}%\n" \
             f"最大スキルクールダウン: {self.skill1_cooldown_max}/{self.skill2_cooldown_max}\n" \
-            f"経験値/最大経験値/パーセント: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n"
-            # f"バトルターン数: {self.battle_turns}\n"
+            f"経験値/最大経験値/パーセント: {self.exp}/{self.maxexp}/{self.exp/self.maxexp*100:.2f}%\n" \
+            f"攻撃能力: {self.attack_ability}\n" \
+            f"防御能力: {self.defense_ability}\n"
 
     def tooltip_status_effects(self) -> Tuple[str, str, str]:
         """
@@ -1887,7 +1897,9 @@ class Character:
                 total += effect.shield_value
         return total
 
-    def get_active_removable_effects(self, get_buffs=True, get_debuffs=True) -> list[Effect]:
+    def get_active_removable_effects(self, get_buffs: bool, get_debuffs: bool) -> list[Effect]:
+        if not get_buffs and not get_debuffs:
+            raise Exception("Make no sense. At least one of get_buffs or get_debuffs must be True.")
         active_effects = []
         if get_buffs:
             active_effects += [effect for effect in self.buffs if effect.can_be_removed_by_skill and effect.duration > 0 and not effect.is_set_effect]
@@ -3493,7 +3505,7 @@ class Taily(Character):
         self.name = "Taily"
         self.skill1_description = "305% atk on 3 closest enemies, Stun the target for 10 turns."
         self.skill2_description = "700% atk on enemy with highest hp, damage increased by 50% if target has more than 90% hp ratio."
-        self.skill3_description = "At start of battle, apply Blessing of Firewood to all allies." \
+        self.skill3_description = "At start of battle, apply Blessing of Brushwood to all allies." \
         " When an ally is about to take normal damage, take the damage instead. Damage taken is reduced by 40% when taking damage for an ally." \
         " Cannot protect against status effect and status damage."
         self.skill1_description_jp = "最も近い3体の敵に305%の攻撃を行い、対象を10ターンの間スタンさせる。"
@@ -3524,7 +3536,7 @@ class Taily(Character):
     def battle_entry_effects(self):
         allies = [x for x in self.ally if x != self]
         for ally in allies:
-            e = ProtectedEffect("Blessing of Firewood", -1, True, False, self, 0.6, can_be_removed_by_skill=False)
+            e = ProtectedEffect("Blessing of Brushwood", -1, True, False, self, 0.6, can_be_removed_by_skill=False)
             ally.apply_effect(e)
 
 

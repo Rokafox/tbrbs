@@ -480,7 +480,7 @@ class ReductionShield(Effect):
                     str += " Applies to normal damage."
                 elif self.cover_status_damage:
                     str += " Applies to status damage."
-        elif self.damage_function:
+        if self.damage_function:
             str += f" Damage reduction is further calculated by a function."
         if self.requirement_description is not None:
             str += f" Requirement: {self.requirement_description}"
@@ -508,8 +508,8 @@ class ReductionShield(Effect):
                     str += "通常ダメージに適用。"
                 elif self.cover_status_damage:
                     str += "状態異常ダメージに適用。"
-        elif self.damage_function:
-            str += f"ダメージ軽減は関数によってさらに計算される。"
+        if self.damage_function:
+            str += f"ダメージ軽減はさらに関数によって計算される。"
         if self.requirement_description_jp is not None:
             str += f"条件:{self.requirement_description_jp}"
         return str
@@ -3638,7 +3638,7 @@ class PineQGEffect(ReductionShield):
         if character.is_dead():
             return
         # copy random 2 buffs, apply them to allies who has QC effect
-        all_buffs: list[Effect] = character.get_active_removable_effects(get_buffs=True)
+        all_buffs: list[Effect] = character.get_active_removable_effects(get_buffs=True, get_debuffs=False)
         if len(all_buffs) < 2:
             selected_buffs = all_buffs
         else:
@@ -3673,7 +3673,7 @@ class PineQCEffect(ReductionShield):
         if character.is_dead():
             return
         # copy random 2 buffs, apply them to allies who has QG effect
-        all_buffs: list[Effect] = character.get_active_removable_effects(get_buffs=True)
+        all_buffs: list[Effect] = character.get_active_removable_effects(get_buffs=True, get_debuffs=False)
         if len(all_buffs) < 2:
             selected_buffs = all_buffs
         else:
