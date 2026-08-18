@@ -24,6 +24,7 @@ cue_best_equip = []
 # shop
 player_is_in_shop = False
 current_shop_instance = None
+allow_premium_shop = True
 # others
 allow_cheat = False
 # temp

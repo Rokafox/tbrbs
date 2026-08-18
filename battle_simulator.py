@@ -1838,7 +1838,10 @@ if __name__ == "__main__":
             upgrade_list.sort(key=lambda x: x[1], reverse=True)
             
             # Construct the return string
-            return_string = "Characters needing the most upgrade:\n"
+            if global_vars.language == "English":
+                return_string = "Characters needing the most upgrade:\n"
+            elif global_vars.language == "日本語":
+                return_string = "アップグレードが最も必要なキャラクター:\n"
             for character, diff_value, current_equip in upgrade_list:
                 return_string += f"<a href='{character.name}'>{character.name}</a> (Upgrade Value: {diff_value})\n"
                 if global_vars.language == "English":
@@ -1872,7 +1875,10 @@ if __name__ == "__main__":
             try:
                 selected_character_eq = selected_character.equip[selected_eq_type]
             except KeyError:
-                return f"{selected_character.name} does not have {selected_eq_type} equipped."
+                if global_vars.language == "English":
+                    return f"{selected_character.name} does not have {selected_eq_type} equipped."
+                elif global_vars.language == "日本語":
+                    return f"{selected_character.name}は{selected_eq_type}を装備しておらんのじゃ。"
 
             # Filter inventory for matching equipment type and set
             filtered_eq_list = [
@@ -1894,12 +1900,21 @@ if __name__ == "__main__":
             best_500_eq_list = sorted_eq_list[:500]
 
             # Construct the return string
-            return_string = f"Equipment for {selected_character.name} (Top 500 upgrades):\n"
+            if global_vars.language == "English":
+                return_string = f"Equipment for {selected_character.name} (Top 500 upgrades):\n"
+            elif global_vars.language == "日本語":
+                return_string = f"{selected_character.name}の装備（上位500件のアップグレード）:\n"
             for i, eq in enumerate(best_500_eq_list):
-                return_string += f"{eq.print_stats_html(item_to_compare=selected_character_eq, include_set_effect=False)}\n"
+                if global_vars.language == "English":
+                    return_string += f"{eq.print_stats_html(item_to_compare=selected_character_eq, include_set_effect=False)}\n"
+                elif global_vars.language == "日本語":
+                    return_string += f"{eq.print_stats_html_jp(item_to_compare=selected_character_eq, include_set_effect=False)}\n"
 
             if len(sorted_eq_list) > 500:
-                return_string += "Showing the top 500 entries. Some entries were omitted.\n"
+                if global_vars.language == "English":
+                    return_string += "Showing the top 500 entries. Some entries were omitted.\n"
+                elif global_vars.language == "日本語":
+                    return_string += "上位500件のみ表示しておる。いくつかのものは省略されました。\n"
 
             global_vars.cue_best_equip = best_500_eq_list
             player.build_inventory_slots()
@@ -5109,7 +5124,7 @@ if __name__ == "__main__":
     # Add "Forge" to each string in the list
     extra_shop_list_a = [f"{item} Forge" for item in extra_shop_list]
     extra_shop_list_b = [f"{item} Reforged" for item in extra_shop_list]
-    if global_vars.allow_cheat:
+    if global_vars.allow_premium_shop:
         extra_shop_list_c = [f"{item} Premium" for item in extra_shop_list]
     else:
         extra_shop_list_c = None
@@ -5291,10 +5306,10 @@ if __name__ == "__main__":
             if start_with_max_level:
                 player = Nine(5000000000)
                 player.cleared_stages = 2000
-                package_of_equips = [EquipPackage(100), EquipPackage2(100), EquipPackage3(100), EquipPackage4(100), 
-                                    EquipPackage5(100), EquipPackage6(100), FoodPackage(100), FoodPackage2(100), FoodPackage3(100)]
+                package_of_equips = [EquipPackage(500), EquipPackage2(500), EquipPackage3(500), EquipPackage4(500), 
+                                    EquipPackage5(500), EquipPackage6(500), FoodPackage(500), FoodPackage2(500), FoodPackage3(500)]
                 player.add_package_of_items_to_inventory(package_of_equips)
-                package_of_ingots = [SliverIngot(1), GoldIngot(1), DiamondIngot(1)]
+                package_of_ingots = [SliverIngot(500000), GoldIngot(200000), DiamondIngot(100000)]
                 player.add_package_of_items_to_inventory(package_of_ingots)
             else:
                 player = Nine(80000)

@@ -382,7 +382,7 @@ def calculate_winrate_for_character(sample, character_list: list[character.Chara
 
         for character in itertools.chain(party1, party2):
             character.fineprint_mode = fineprint_mode
-            character.equip_item_from_list(generate_equips_list(4, random_full_eqset=True, locked_rarity="Legendary"))
+            character.equip_item_from_list(generate_equips_list(4, random_full_eqset=True, locked_rarity="Epic", tier="normal"))
             character.reset_stats()
 
         try:

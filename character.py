@@ -7,7 +7,7 @@ import textwrap
 from typing import Generator, Tuple
 from numpy import character
 from effect import *
-from equip import Equip, generate_equips_list, adventure_generate_random_equip_with_weight
+from equip import Equip, generate_equips_list
 from equip_set import EQ_SET_REGISTRY
 import more_itertools as mit
 import itertools

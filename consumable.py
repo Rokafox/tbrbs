@@ -2,7 +2,7 @@ from block import *
 from effect import *
 import random
 
-from equip import generate_equips_list, adventure_generate_random_equip_with_weight
+from equip import generate_equips_list
 
 
 # NOTE:
@@ -62,14 +62,14 @@ class EquipPackage(Consumable):
         self.type = "Eqpackage"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 5000
+        self.market_value = 20000
         self.can_use_for_auto_battle = False
 
     def E(self, user, player):
         return f"{user.name} obtained a bunch of equipment from {self.name}."
 
     def E_actual(self, user, player):
-        equips = generate_equips_list(100, eq_level=1, locked_rarity="Common")
+        equips = generate_equips_list(100, eq_level=1, locked_rarity="Common", tier="random")
         player.add_package_of_items_to_inventory(equips)
         return None
 
@@ -85,14 +85,14 @@ class EquipPackage2(Consumable):
         self.type = "Eqpackage"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 10000
+        self.market_value = 100000
         self.can_use_for_auto_battle = False
 
     def E(self, user, player):
         return f"{user.name} obtained a bunch of equipment from {self.name}."
 
     def E_actual(self, user, player):
-        equips = generate_equips_list(100, eq_level=1, locked_rarity="Uncommon")
+        equips = generate_equips_list(100, eq_level=1, locked_rarity="Uncommon", tier="random")
         player.add_package_of_items_to_inventory(equips)
         return None
 
@@ -108,14 +108,14 @@ class EquipPackage3(Consumable):
         self.type = "Eqpackage"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 25000
+        self.market_value = 250000
         self.can_use_for_auto_battle = False
 
     def E(self, user, player):
         return f"{user.name} obtained a bunch of equipment from {self.name}."
 
     def E_actual(self, user, player):
-        equips = generate_equips_list(100, eq_level=1, locked_rarity="Rare")
+        equips = generate_equips_list(100, eq_level=1, locked_rarity="Rare", tier="random")
         player.add_package_of_items_to_inventory(equips)
         return None
 
@@ -131,14 +131,14 @@ class EquipPackage4(Consumable):
         self.type = "Eqpackage"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 50000
+        self.market_value = 600000
         self.can_use_for_auto_battle = False
 
     def E(self, user, player):
         return f"{user.name} obtained a bunch of equipment from {self.name}."
 
     def E_actual(self, user, player):
-        equips = generate_equips_list(100, eq_level=1, locked_rarity="Epic")
+        equips = generate_equips_list(100, eq_level=1, locked_rarity="Epic", tier="random")
         player.add_package_of_items_to_inventory(equips)
         return None
 
@@ -154,14 +154,14 @@ class EquipPackage5(Consumable):
         self.type = "Eqpackage"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 100000
+        self.market_value = 3000000
         self.can_use_for_auto_battle = False
 
     def E(self, user, player):
         return f"{user.name} obtained a bunch of equipment from {self.name}."
 
     def E_actual(self, user, player):
-        equips = generate_equips_list(100, eq_level=1, locked_rarity="Unique")
+        equips = generate_equips_list(100, eq_level=1, locked_rarity="Unique", tier="random")
         player.add_package_of_items_to_inventory(equips)
         return None
 
@@ -177,14 +177,14 @@ class EquipPackage6(Consumable):
         self.type = "Eqpackage"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 250000
+        self.market_value = 30000000
         self.can_use_for_auto_battle = False
 
     def E(self, user, player):
         return f"{user.name} obtained a bunch of equipment from {self.name}."
 
     def E_actual(self, user, player):
-        equips = generate_equips_list(100, eq_level=1, locked_rarity="Legendary")
+        equips = generate_equips_list(100, eq_level=1, locked_rarity="Legendary", tier="random")
         player.add_package_of_items_to_inventory(equips)
         return None
 
@@ -203,14 +203,14 @@ class EquipPackageBrandSpecific(Consumable):
         self.eq_set = self.brand
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
-        self.market_value = 500000
+        self.market_value = 5000000
         self.can_use_for_auto_battle = False
 
     def E(self, user, player):
         return f"{user.name} obtained a bunch of equipment from {self.name}."
 
     def E_actual(self, user, player):
-        equips = generate_equips_list(100, eq_level=1, locked_eq_set=self.brand)
+        equips = generate_equips_list(100, eq_level=1, locked_eq_set=self.brand, tier="normal")
         player.add_package_of_items_to_inventory(equips)
         return None
 

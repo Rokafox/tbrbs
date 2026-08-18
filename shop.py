@@ -114,7 +114,8 @@ class Armory_Brand_Specific_Reforged(Shop):
 
     def get_items_from_manufacturers(self):
         package_of_items = []
-        package_of_items.extend(equip.generate_equips_list(9, eq_level=1, min_market_value=100, locked_eq_set=self.brand_name))
+        package_of_items.extend(equip.generate_equips_list(9, eq_level=1, min_market_value=100, 
+                                                           locked_eq_set=self.brand_name, tier="normal"))
         package_of_items.append(consumable.EquipPackageBrandSpecific(random.randint(1, 20), self.brand_name))
 
         if len(package_of_items) < 5:
@@ -138,6 +139,9 @@ class Armory_Brand_Specific_Reforged(Shop):
 
 
 class Armory_Brand_Specific_Premium(Shop):
+    """
+    This shop is usually disabled as way too overpowered.
+    """
     def __init__(self, name, description, brand_name):
         super().__init__(name, description)
         self.currency = "GoldIngot"
@@ -151,7 +155,9 @@ class Armory_Brand_Specific_Premium(Shop):
 
     def get_items_from_manufacturers(self):
         package_of_items = []
-        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=200, locked_eq_set=self.brand_name, locked_rarity="Legendary"))
+        package_of_items.extend(equip.generate_equips_list(5, eq_level=1, min_market_value=200, 
+                                                           locked_eq_set=self.brand_name, 
+                                                           locked_rarity="Legendary", tier="good"))
 
         if len(package_of_items) < 5:
             raise ValueError(f"Not enough items in the package_of_items, only {len(package_of_items)} items is available.")

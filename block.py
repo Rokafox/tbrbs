@@ -10,6 +10,8 @@ class Block:
         """
         self.name = name
         self.description = description
+        self.name_jp = name
+        self.description_jp = description
         self.rarity_list = ["Common", "Uncommon", "Rare", "Epic", "Unique", "Legendary"]
         self.type_list = ["None"]
         self.eq_set_list = ["None"]
@@ -36,6 +38,8 @@ class Block:
             "object": str(self.__class__),
             "name": self.name,
             "description": self.description,
+            "name_jp": self.name_jp,
+            "description_jp": self.description_jp,
             "rarity": self.rarity,
             "type": self.type,
             "eq_set": self.eq_set,
@@ -79,6 +83,27 @@ class Block:
         str += f"{self.description} \nCurrent stack: {self.current_stack}\n"
         if include_market_price:
             str += f"<font color={market_color}>Market price: {self.market_value}</font>\n"
+        return str
+
+    def print_stats_html_jp(self, include_market_price=True):
+        match self.rarity:
+            case "Common":
+                color = "#2c2c2c"
+            case "Uncommon":
+                color = "#B87333"
+            case "Rare":
+                color = "#FF0000"
+            case "Epic":
+                color = "#659a00"
+            case "Unique":
+                color = "#9966CC"
+            case "Legendary":
+                color = "#21d6ff"
+        market_color = "#202d82" # blue
+        str = f"<font color={color}>{self.name_jp}</font>\n"
+        str += f"{self.description_jp} \n数量: {self.current_stack}\n"
+        if include_market_price:
+            str += f"<font color={market_color}>市場価格: {self.market_value}</font>\n"
         return str
     
     def is_full(self):
