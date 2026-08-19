@@ -264,11 +264,6 @@ class Equip(Block):
         
         self.enhance_by_rarity()
 
-
-    def generate_void(self):
-        raise NotImplementedError("Use generate(tier='void') instead.")
-
-
     def level_change(self, increment):
         prev_level = self.level
         new_level = self.level + increment
@@ -466,12 +461,17 @@ class Equip(Block):
         return stats
 
 
-    def print_stats_html(self, include_market_price=True, item_to_compare=None, include_set_effect=True):
+    def print_stats_html(self, include_market_price=True, item_to_compare=None, include_set_effect=True, language="en"):
         """
         item_to_compare: another Equip object to compare with, all stats, attack value, support value,
-        market value will be displayed side by side including the difference
-        If there is something to compare, the stats that this item does not have but the other item has will also be displayed
+        market value will be displayed side by side including the difference.
+        If there is something to compare, the stats that this item does not have but the other item has
+        will also be displayed.
+
+        language: "en" or "ja"
         """
+        lang = "ja" if str(language).lower().startswith("ja") else "en"
+
         match self.rarity:
             case "Common":
                 color = "#2c2c2c"
@@ -494,6 +494,81 @@ class Equip(Block):
         star_color_purple = "#9B30FF"
         star_color_red = "#FF0000"
         star_color_gold = "#FFD700"
+
+        if lang == "ja":
+            empty_owner = "なし"
+            void_header = "虚空の呪"
+            header_prefix = "レベル"
+            owner_label = "所有者"
+            attack_value_label = "攻撃相性"
+            support_value_label = "防御相性"
+            market_label = "市場価格"
+            star_cost_label = "スター強化コスト"
+            level_cost_label = "レベルアップコスト"
+            set_effect_suffix = "セット効果"
+            title_stat_names = {
+                "Max HP": "最大HP",
+                "Attack": "攻撃",
+                "Defense": "防御",
+                "Speed": "速度",
+                "Evasion": "回避",
+                "Accuracy": "命中",
+                "Critical Chance": "クリティカル確率",
+                "Critical Damage": "クリティカルダメージ",
+                "Critical Defense": "クリティカル防御",
+                "Penetration": "貫通",
+                "Heal Efficiency": "回復効率",
+                "Extra Max HP": "追加最大HP",
+                "Extra Attack": "追加攻撃",
+                "Extra Defense": "追加防御",
+                "Extra Speed": "追加速度",
+            }
+            flat_stat_names = {
+                "Max HP": "最大HP",
+                "Attack": "攻撃",
+                "Defense": "防御",
+                "Speed": "速度",
+            }
+            flat_potential_suffix = "潜在値"
+            set_effect_label = "{count}セット効果"
+            eq_set_desc_key = "description_jp"
+        else:
+            empty_owner = "None"
+            void_header = "Void Force"
+            header_prefix = "lv"
+            owner_label = "Owner"
+            attack_value_label = "Attack Value"
+            support_value_label = "Support Value"
+            market_label = "Market Price"
+            star_cost_label = "Stars Enhancement Cost"
+            level_cost_label = "Level Up Cost"
+            set_effect_suffix = "Set Effect"
+            title_stat_names = {
+                "Max HP": "Max HP",
+                "Attack": "Attack",
+                "Defense": "Defense",
+                "Speed": "Speed",
+                "Evasion": "Evasion",
+                "Accuracy": "Accuracy",
+                "Critical Chance": "Critical Chance",
+                "Critical Damage": "Critical Damage",
+                "Critical Defense": "Critical Defense",
+                "Penetration": "Penetration",
+                "Heal Efficiency": "Heal Efficiency",
+                "Extra Max HP": "Extra Max HP",
+                "Extra Attack": "Extra Attack",
+                "Extra Defense": "Extra Defense",
+                "Extra Speed": "Extra Speed",
+            }
+            flat_stat_names = {
+                "Max HP": "Max HP",
+                "Attack": "Attack",
+                "Defense": "Defense",
+                "Speed": "Speed",
+            }
+            flat_potential_suffix = "Potential"
+            set_effect_label = "{count} Set Effect"
+            eq_set_desc_key = "description"
 
         def eq_set_str():
             if self.eq_set == "None":
@@ -531,26 +606,26 @@ class Equip(Block):
 
         def add_stat_line(stat_name: str, self_val, cmp_val=0, is_percent=False, extra_color=None):
             if (self_val != 0) or (item_to_compare and cmp_val != 0):
+                label = title_stat_names.get(stat_name, stat_name)
                 if item_to_compare:
                     if is_percent:
-                        line = f"{stat_name}: {self_val * 100:.2f}% | " + diff_str_percent(self_val, cmp_val) + "\n"
+                        line = f"{label}: {self_val * 100:.2f}% | " + diff_str_percent(self_val, cmp_val) + "\n"
                     else:
-                        line = f"{stat_name}: {self_val} | " + diff_str(self_val, cmp_val) + "\n"
+                        line = f"{label}: {self_val} | " + diff_str(self_val, cmp_val) + "\n"
                 else:
                     if is_percent:
-                        line = f"{stat_name}: {self_val * 100:.2f}%\n"
+                        line = f"{label}: {self_val * 100:.2f}%\n"
                     else:
-                        line = f"{stat_name}: {self_val}\n"
-
+                        line = f"{label}: {self_val}\n"
                 if extra_color:
                     return f"<font color={extra_color}>{line}</font>"
                 return line
             return ""
 
-        if not self.eq_set == "Void":
-            stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>lv{self.level} {eq_set_str()}{self.rarity} {self.type}</b></font></shadow>\n"
+        if self.eq_set != "Void":
+            stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>{header_prefix}{self.level} {eq_set_str()}{self.rarity} {self.type}</b></font></shadow>\n"
         else:
-            stats = "Void Force\n"
+            stats = f"{void_header}\n"
 
         if self.stars_rating > 0:
             stats += "<font color=" + star_color + ">" + '★' * min(int(self.stars_rating), 5) + "</font>"
@@ -565,35 +640,39 @@ class Equip(Block):
 
         if (self.maxhp_flat != 0):
             if not item_to_compare:
-                stats += "Max HP: " + str(round(self.maxhp_flat, 3)) + "\n"
+                stats += f"{flat_stat_names['Max HP']}: {round(self.maxhp_flat, 3)}\n"
             else:
-                self_val = round(self.maxhp_flat, 3)
-                cmp_val = round(item_to_compare.maxhp_flat, 3)
-                stats += "Max HP Potential: " + str(self_val) + " | " + diff_str(self_val, cmp_val) + "\n"
+                self_val = round(self._mainstat_potential if lang == "ja" else self.maxhp_flat, 3)
+                cmp_val = round(item_to_compare._mainstat_potential if lang == "ja" else item_to_compare.maxhp_flat, 3)
+                label = f"{flat_stat_names['Max HP']}{flat_potential_suffix}"
+                stats += f"{label}: {self_val} | {diff_str(self_val, cmp_val)}\n"
 
         if (self.atk_flat != 0):
             if not item_to_compare:
-                stats += "Attack: " + str(round(self.atk_flat, 3)) + "\n"
+                stats += f"{flat_stat_names['Attack']}: {round(self.atk_flat, 3)}\n"
             else:
-                self_val = round(self.atk_flat, 3)
-                cmp_val = round(item_to_compare.atk_flat, 3)
-                stats += "Attack Potential: " + str(self_val) + " | " + diff_str(self_val, cmp_val) + "\n"
+                self_val = round(self._mainstat_potential if lang == "ja" else self.atk_flat, 3)
+                cmp_val = round(item_to_compare._mainstat_potential if lang == "ja" else item_to_compare.atk_flat, 3)
+                label = f"{flat_stat_names['Attack']}{flat_potential_suffix}"
+                stats += f"{label}: {self_val} | {diff_str(self_val, cmp_val)}\n"
 
         if (self.def_flat != 0):
             if not item_to_compare:
-                stats += "Defense: " + str(round(self.def_flat, 3)) + "\n"
+                stats += f"{flat_stat_names['Defense']}: {round(self.def_flat, 3)}\n"
             else:
-                self_val = round(self.def_flat, 3)
-                cmp_val = round(item_to_compare.def_flat, 3)
-                stats += "Defense Potential: " + str(self_val) + " | " + diff_str(self_val, cmp_val) + "\n"
+                self_val = round(self._mainstat_potential if lang == "ja" else self.def_flat, 3)
+                cmp_val = round(item_to_compare._mainstat_potential if lang == "ja" else item_to_compare.def_flat, 3)
+                label = f"{flat_stat_names['Defense']}{flat_potential_suffix}"
+                stats += f"{label}: {self_val} | {diff_str(self_val, cmp_val)}\n"
 
         if (self.spd_flat != 0):
             if not item_to_compare:
-                stats += "Speed: " + str(round(self.spd_flat, 3)) + "\n"
+                stats += f"{flat_stat_names['Speed']}: {round(self.spd_flat, 3)}\n"
             else:
-                self_val = round(self.spd_flat, 3)
-                cmp_val = round(item_to_compare.spd_flat, 3)
-                stats += "Speed Potential: " + str(self_val) + " | " + diff_str(self_val, cmp_val) + "\n"
+                self_val = round(self._mainstat_potential if lang == "ja" else self.spd_flat, 3)
+                cmp_val = round(item_to_compare._mainstat_potential if lang == "ja" else item_to_compare.spd_flat, 3)
+                label = f"{flat_stat_names['Speed']}{flat_potential_suffix}"
+                stats += f"{label}: {self_val} | {diff_str(self_val, cmp_val)}\n"
 
         stats += add_stat_line("Max HP", self.maxhp_percent, cmp.maxhp_percent if cmp else 0, is_percent=True)
         stats += add_stat_line("Attack", self.atk_percent, cmp.atk_percent if cmp else 0, is_percent=True)
@@ -620,16 +699,16 @@ class Equip(Block):
             return stats
 
         if self.owner or (cmp and cmp.owner):
-            self_val = self.owner if self.owner else "None"
-            cmp_val = cmp.owner if (cmp and cmp.owner) else "None"
+            self_val = self.owner if self.owner else empty_owner
+            cmp_val = cmp.owner if (cmp and cmp.owner) else empty_owner
             if cmp:
                 if self_val == cmp_val:
                     diff_owner = f"<font color=#6495ed>{cmp_val} → 0</font>"
                 else:
                     diff_owner = f"<font color=#898900>{cmp_val} ≠</font>"
-                stats += f"<font color={owner_color}>Owner: {self_val} | {diff_owner}</font>\n"
+                stats += f"<font color={owner_color}>{owner_label}: {self_val} | {diff_owner}</font>\n"
             else:
-                stats += f"<font color={owner_color}>Owner: {self_val}</font>\n"
+                stats += f"<font color={owner_color}>{owner_label}: {self_val}</font>\n"
 
         if (self.for_attacker_value > 0) or (cmp and cmp.for_attacker_value > 0):
             self_val = self.for_attacker_value
@@ -642,9 +721,9 @@ class Equip(Block):
                     diff_str_att = f"<font color=#FF0000>{cmp_val:.4f} ↓ {abs(diff):.4f}</font>"
                 else:
                     diff_str_att = f"<font color=#6495ed>{cmp_val:.4f} → {abs(diff):.4f}</font>"
-                stats += f"<font color={attacker_value_color}>Attack Value: {self_val:.4f} | {diff_str_att}</font>\n"
+                stats += f"<font color={attacker_value_color}>{attack_value_label}: {self_val:.4f} | {diff_str_att}</font>\n"
             else:
-                stats += f"<font color={attacker_value_color}>Attack Value: {self_val:.4f}</font>\n"
+                stats += f"<font color={attacker_value_color}>{attack_value_label}: {self_val:.4f}</font>\n"
 
         if (self.for_support_value > 0) or (cmp and cmp.for_support_value > 0):
             self_val = self.for_support_value
@@ -657,23 +736,22 @@ class Equip(Block):
                     diff_str_sup = f"<font color=#FF0000>{cmp_val:.4f} ↓ {abs(diff):.4f}</font>"
                 else:
                     diff_str_sup = f"<font color=#6495ed>{cmp_val:.4f} → {abs(diff):.4f}</font>"
-                stats += f"<font color={support_value_color}>Support Value: {self_val:.4f} | {diff_str_sup}</font>\n"
+                stats += f"<font color={support_value_color}>{support_value_label}: {self_val:.4f} | {diff_str_sup}</font>\n"
             else:
-                stats += f"<font color={support_value_color}>Support Value: {self_val:.4f}</font>\n"
+                stats += f"<font color={support_value_color}>{support_value_label}: {self_val:.4f}</font>\n"
 
         if not item_to_compare:
             if self.stars_rating < self.stars_rating_max:
-                stats += f"<font color=#AF6E4D>Stars Enhancement Cost: {self.star_enhence_cost} </font>\n"
+                stats += f"<font color=#AF6E4D>{star_cost_label}: {self.star_enhence_cost} </font>\n"
             else:
-                stats += f"<font color=#AF6E4D>Stars Enhancement Cost: MAX </font>\n"
+                stats += f"<font color=#AF6E4D>{star_cost_label}: MAX </font>\n"
             if self.level < self.level_max:
-                stats += f"<font color=#702963>Level Up Cost: {self.level_cost} </font>\n"
+                stats += f"<font color=#702963>{level_cost_label}: {self.level_cost} </font>\n"
             else:
-                stats += f"<font color=#702963>Level Up Cost: MAX </font>\n"
+                stats += f"<font color=#702963>{level_cost_label}: MAX </font>\n"
 
-        if not item_to_compare:
-            if include_market_price:
-                stats += "<font color=" + market_color + ">" + f"Market Price: {int(self.market_value)}" + "</font>\n"
+        if not item_to_compare and include_market_price:
+            stats += f"<font color={market_color}>{market_label}: {int(self.market_value)}</font>\n"
 
         stats += "</font>"
 
@@ -685,270 +763,20 @@ class Equip(Block):
 
         if include_set_effect:
             eq_set = EQ_SET_REGISTRY.get(self.eq_set)
-            eq_set_desc = eq_set.description if eq_set else {}
+            eq_set_desc = getattr(eq_set, eq_set_desc_key) if eq_set else {}
             for set_count, description in eq_set_desc.items():
                 if description:
-                    stats += f"<font color={set_effect_display_color(set_count)}>{set_count} Set Effect:\n{description}</font>\n"
+                    stats += f"<font color={set_effect_display_color(set_count)}>{set_count}{set_effect_suffix}:\n{description}</font>\n"
 
         return stats
-
 
     def print_stats_html_jp(self, include_market_price=True, item_to_compare=None, include_set_effect=True):
-        """
-        item_to_compare: 比較用の別のEquipオブジェクト。
-        全てのステータス、攻撃相性、防御相性、市場価格を並べて表示し、差分も表示します。
-        比較対象が存在する場合、比較先に存在してこちらに存在しないステータスも表示します。
-        """
-
-        match self.rarity:
-            case "Common":
-                color = "#2c2c2c"
-            case "Uncommon":
-                color = "#B87333"
-            case "Rare":
-                color = "#FF0000"
-            case "Epic":
-                color = "#659a00"
-            case "Unique":
-                color = "#9966CC"
-            case "Legendary":
-                color = "#21d6ff"
-
-        star_color = "#3746A7"
-        market_color = "#202d82"
-        owner_color = "#0e492a"
-        attacker_value_color = "#ffa500"
-        support_value_color = "#00cc84"
-        star_color_purple = "#9B30FF"
-        star_color_red = "#FF0000"
-        star_color_gold = "#FFD700"
-
-        def eq_set_str():
-            if self.eq_set == "None":
-                return ""
-            else:
-                return str(self.eq_set) + " "
-
-        def star_font_color() -> str:
-            if self.stars_rating <= 5:
-                return star_color
-            elif 5 < self.stars_rating <= 10:
-                return star_color_purple
-            elif 10 < self.stars_rating <= 15:
-                return star_color_red
-            else:
-                return star_color_gold
-
-        # 差分表示用関数（通常値）
-        def diff_str(self_val, cmp_val):
-            diff = self_val - cmp_val
-            if diff > 0:
-                return f"<font color=#00FF00>{cmp_val} ↑ {abs(diff)}</font>"
-            elif diff < 0:
-                return f"<font color=#FF0000>{cmp_val} ↓ {abs(diff)}</font>"
-            else:
-                return f"<font color=#6495ed>{cmp_val} → {abs(diff)}</font>"
-
-        # 差分表示用関数（パーセント）
-        def diff_str_percent(self_val, cmp_val):
-            diff = (self_val - cmp_val)*100
-            if diff > 0:
-                return f"<font color=#00FF00>{cmp_val*100:.2f}% ↑ {abs(diff):.2f}%</font>"
-            elif diff < 0:
-                return f"<font color=#FF0000>{cmp_val*100:.2f}% ↓ {abs(diff):.2f}%</font>"
-            else:
-                return f"<font color=#6495ed>{cmp_val*100:.2f}% → {abs(diff):.2f}%</font>"
-
-        def add_stat_line(stat_name_jp: str, self_val, cmp_val=0, is_percent=False, extra_color=None):
-            """
-            ステータス行を追加する関数。
-            item_to_compareがない場合は通常表示。
-            item_to_compareがある場合は "現在値 | cmp値 差分" 形式で表示する。
-            is_percent=Trueのときは%表記し差分計算も%で行う。
-            extra_colorが指定されている場合、そのカラーで表示（日本語版では追加系ステータスなどに使用）
-            """
-            # 表示するか判断
-            if (self_val != 0) or (item_to_compare and cmp_val != 0):
-                if item_to_compare:
-                    if is_percent:
-                        line = f"{stat_name_jp}: {self_val*100:.2f}% | " + diff_str_percent(self_val, cmp_val) + "\n"
-                    else:
-                        line = f"{stat_name_jp}: {self_val} | " + diff_str(self_val, cmp_val) + "\n"
-                else:
-                    if is_percent:
-                        line = f"{stat_name_jp}: {self_val*100:.2f}%\n"
-                    else:
-                        line = f"{stat_name_jp}: {self_val}\n"
-                
-                if extra_color:
-                    return f"<font color={extra_color}>{line}</font>"
-                return line
-            return ""
-
-        if not self.eq_set == "Void":
-            stats = f"<shadow size=0.5 offset=0,0 color={star_color_gold}><font color={color}><b>レベル{self.level} {eq_set_str()}{self.rarity} {self.type}</b></font></shadow>\n"
-        else:
-            stats = f"虚空の呪\n"
-
-        if self.stars_rating > 0:
-            stats += "<font color=" + star_color + ">" + '★'*min(int(self.stars_rating), 5) + "</font>"
-        if self.stars_rating > 5:
-            stats += "<font color=" + star_color_purple + ">" + '★'*min(int(self.stars_rating-5), 5) + "</font>"
-        if self.stars_rating > 10:
-            stats += "<font color=" + star_color_red + ">" + '★'*min(int(self.stars_rating-10), 5) + "</font>"
-        stats += "\n" if self.stars_rating > 0 else ""
-        stats += "<font color=" + color + ">"
-
-        # 比較用値取得用ショートハンド
-        cmp = item_to_compare
-
-        # Flat系ステータス
-        # maxhp_flat
-        if (self.maxhp_flat != 0):
-            if not item_to_compare:
-                stats += "最大HP: " + str(round(self.maxhp_flat,3)) + "\n"
-            else:
-                # compare with self._mainstat_potential
-                self_val = round(self._mainstat_potential,3)
-                cmp_val = round(item_to_compare._mainstat_potential,3)
-                stats += "最大HP潜在値: " + str(self_val) + " | " + diff_str(self_val, cmp_val) + "\n"
-
-        # atk_flat
-        if (self.atk_flat != 0):
-            if not item_to_compare:
-                stats += "攻撃: " + str(round(self.atk_flat,3)) + "\n"
-            else:
-                self_val = round(self._mainstat_potential,3)
-                cmp_val = round(item_to_compare._mainstat_potential,3)
-                stats += "攻撃潜在値: " + str(self_val) + " | " + diff_str(self_val, cmp_val) + "\n"
-
-        # def_flat
-        if (self.def_flat != 0):
-            if not item_to_compare:
-                stats += "防御: " + str(round(self.def_flat,3)) + "\n"
-            else:
-                self_val = round(self._mainstat_potential,3)
-                cmp_val = round(item_to_compare._mainstat_potential,3)
-                stats += "防御潜在値: " + str(self_val) + " | " + diff_str(self_val, cmp_val) + "\n"
-
-        # spd_flat
-        if (self.spd_flat != 0):
-            if not item_to_compare:
-                stats += "速度: " + str(round(self.spd_flat,3)) + "\n"
-            else:
-                self_val = round(self._mainstat_potential,3)
-                cmp_val = round(item_to_compare._mainstat_potential,3)
-                stats += "速度潜在値: " + str(self_val) + " | " + diff_str(self_val, cmp_val) + "\n"
-
-        # %系ステータス
-        stats += add_stat_line("最大HP", self.maxhp_percent, cmp.maxhp_percent if cmp else 0, is_percent=True)
-        stats += add_stat_line("攻撃", self.atk_percent, cmp.atk_percent if cmp else 0, is_percent=True)
-        stats += add_stat_line("防御", self.def_percent, cmp.def_percent if cmp else 0, is_percent=True)
-        stats += add_stat_line("速度", self.spd, cmp.spd if cmp else 0, is_percent=True)
-        stats += add_stat_line("回避", self.eva, cmp.eva if cmp else 0, is_percent=True)
-        stats += add_stat_line("命中", self.acc, cmp.acc if cmp else 0, is_percent=True)
-        stats += add_stat_line("クリティカル確率", self.crit, cmp.crit if cmp else 0, is_percent=True)
-        stats += add_stat_line("クリティカルダメージ", self.critdmg, cmp.critdmg if cmp else 0, is_percent=True)
-        stats += add_stat_line("クリティカル防御", self.critdef, cmp.critdef if cmp else 0, is_percent=True)
-        stats += add_stat_line("貫通", self.penetration, cmp.penetration if cmp else 0, is_percent=True)
-        # 回復効率は最後に"</font>\n"が付いていたので同様にする
-        heal_line = add_stat_line("回復効率", self.heal_efficiency, cmp.heal_efficiency if cmp else 0, is_percent=True)
-        if heal_line:
-            # 回復効率の行末に</font>を付ける
-            heal_line = heal_line.rstrip("\n") + "</font>\n"
-            stats += heal_line
-
-        # 追加系ステータス
-        stats += add_stat_line("追加最大HP", self.maxhp_extra, cmp.maxhp_extra if cmp else 0, extra_color=star_font_color())
-        stats += add_stat_line("追加攻撃", self.atk_extra, cmp.atk_extra if cmp else 0, extra_color=star_font_color())
-        stats += add_stat_line("追加防御", self.def_extra, cmp.def_extra if cmp else 0, extra_color=star_font_color())
-        stats += add_stat_line("追加速度", self.spd_extra, cmp.spd_extra if cmp else 0, extra_color=star_font_color())
-
-        if self.eq_set == "Void":
-            return stats
-
-        # 所有者
-        if self.owner or (cmp and cmp.owner):
-            self_val = self.owner if self.owner else "なし"
-            cmp_val = cmp.owner if (cmp and cmp.owner) else "なし"
-            if cmp:
-                if self_val == cmp_val:
-                    diff_owner = f"<font color=#6495ed>{cmp_val} → 0</font>"
-                else:
-                    # 名前に数値的な差分はないが、違いを示すため"≠"を使用
-                    diff_owner = f"<font color=#898900>{cmp_val} ≠</font>"
-                stats += f"<font color={owner_color}>所有者: {self_val} | {diff_owner}</font>\n"
-            else:
-                stats += f"<font color={owner_color}>所有者: {self_val}</font>\n"
-
-        # 攻撃相性
-        if (self.for_attacker_value > 0) or (cmp and cmp.for_attacker_value > 0):
-            self_val = self.for_attacker_value
-            cmp_val = cmp.for_attacker_value if cmp else 0
-            diff = self_val - cmp_val
-            if cmp:
-                if diff > 0:
-                    diff_str_att = f"<font color=#00FF00>{cmp_val:.4f} ↑ {abs(diff):.4f}</font>"
-                elif diff < 0:
-                    diff_str_att = f"<font color=#FF0000>{cmp_val:.4f} ↓ {abs(diff):.4f}</font>"
-                else:
-                    diff_str_att = f"<font color=#6495ed>{cmp_val:.4f} → {abs(diff):.4f}</font>"
-                stats += f"<font color={attacker_value_color}>攻撃相性: {self_val:.4f} | {diff_str_att}</font>\n"
-            else:
-                stats += f"<font color={attacker_value_color}>攻撃相性: {self_val:.4f}</font>\n"
-
-        # 防御相性
-        if (self.for_support_value > 0) or (cmp and cmp.for_support_value > 0):
-            self_val = self.for_support_value
-            cmp_val = cmp.for_support_value if cmp else 0
-            diff = self_val - cmp_val
-            if cmp:
-                if diff > 0:
-                    diff_str_sup = f"<font color=#00FF00>{cmp_val:.4f} ↑ {abs(diff):.4f}</font>"
-                elif diff < 0:
-                    diff_str_sup = f"<font color=#FF0000>{cmp_val:.4f} ↓ {abs(diff):.4f}</font>"
-                else:
-                    diff_str_sup = f"<font color=#6495ed>{cmp_val:.4f} → {abs(diff):.4f}</font>"
-                stats += f"<font color={support_value_color}>防御相性: {self_val:.4f} | {diff_str_sup}</font>\n"
-            else:
-                stats += f"<font color={support_value_color}>防御相性: {self_val:.4f}</font>\n"
-
-        # スター強化コスト
-        if not item_to_compare:
-            if self.stars_rating < self.stars_rating_max:
-                stats += f"<font color=#AF6E4D>スター強化コスト: {self.star_enhence_cost} </font>\n"
-            else:
-                stats += f"<font color=#AF6E4D>スター強化コスト: MAX </font>\n"
-
-        # レベルアップコスト
-        if not item_to_compare:
-            if self.level < self.level_max:
-                stats += f"<font color=#702963>レベルアップコスト: {self.level_cost} </font>\n"
-            else:
-                stats += f"<font color=#702963>レベルアップコスト: MAX </font>\n"
-
-        # 市場価格
-        if not item_to_compare:
-            if include_market_price:
-                stats += "<font color=" + market_color + ">" + f"市場価格: {int(self.market_value)}" + "</font>\n"
-
-        stats += "</font>"
-
-        # セット効果
-        def set_effect_display_color(count):
-            if self.set_effect_is_acive >= count:
-                return "#444B74"
-            else:
-                return "#BCC0D9"
-
-        if include_set_effect:
-            eq_set = EQ_SET_REGISTRY.get(self.eq_set)
-            eq_set_desc = eq_set.description_jp if eq_set else {}
-            for set_count, description in eq_set_desc.items():
-                if description:
-                    stats += f"<font color={set_effect_display_color(set_count)}>{set_count}セット効果:\n{description}</font>\n"
-
-        return stats
+        return self.print_stats_html(
+            include_market_price=include_market_price,
+            item_to_compare=item_to_compare,
+            include_set_effect=include_set_effect,
+            language="ja",
+        )
 
 
 def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rarity=None, random_full_eqset=False, 

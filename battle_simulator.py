@@ -1898,9 +1898,9 @@ if __name__ == "__main__":
 
             # Construct the return string
             if global_vars.language == "English":
-                return_string = f"Equipment for {selected_character.name} (Top 500 upgrades):\n"
+                return_string = f"Equipment suitable for {selected_character.name} (Top 500 upgrades):\n"
             elif global_vars.language == "日本語":
-                return_string = f"{selected_character.name}の装備（上位500件のアップグレード）:\n"
+                return_string = f"{selected_character.name}に相応しい装備（上位500件のアップグレード）:\n"
             for i, eq in enumerate(best_500_eq_list):
                 if global_vars.language == "English":
                     return_string += f"{eq.print_stats_html(item_to_compare=selected_character_eq, include_set_effect=False)}\n"

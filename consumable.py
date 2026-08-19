@@ -57,6 +57,8 @@ class Consumable(Block):
 class EquipPackage(Consumable):
     def __init__(self, stack: int):
         super().__init__("Common Chest", "Obtain 100 random common rarity equipment.")
+        self.name_jp = "一般の宝箱"
+        self.description_jp = "一般レアリティの装備を100個ランダムに入手する。"
         self.image = "wood_chest_birch"
         self.rarity = "Common"
         self.type = "Eqpackage"
@@ -80,6 +82,8 @@ class EquipPackage(Consumable):
 class EquipPackage2(Consumable):
     def __init__(self, stack: int):
         super().__init__("Uncommon Chest", "Obtain 100 random uncommon rarity equipment.")
+        self.name_jp = "珍しい宝箱"
+        self.description_jp = "珍しいレアリティの装備を100個ランダムに入手する。"
         self.image = "wood_chest"
         self.rarity = "Uncommon"
         self.type = "Eqpackage"
@@ -103,6 +107,8 @@ class EquipPackage2(Consumable):
 class EquipPackage3(Consumable):
     def __init__(self, stack: int):
         super().__init__("Rare Chest", "Obtain 100 random rare rarity equipment.")
+        self.name_jp = "レアの宝箱"
+        self.description_jp = "レアレアリティの装備を100個ランダムに入手する。"
         self.image = "wood_chest_maple"
         self.rarity = "Rare"
         self.type = "Eqpackage"
@@ -126,6 +132,8 @@ class EquipPackage3(Consumable):
 class EquipPackage4(Consumable):
     def __init__(self, stack: int):
         super().__init__("Epic Chest", "Obtain 100 random epic rarity equipment.")
+        self.name_jp = "上級の宝箱"
+        self.description_jp = "エピックレアリティの装備を100個ランダムに入手する。"
         self.image = "wood_chest_mahogany"
         self.rarity = "Epic"
         self.type = "Eqpackage"
@@ -149,6 +157,8 @@ class EquipPackage4(Consumable):
 class EquipPackage5(Consumable):
     def __init__(self, stack: int):
         super().__init__("Unique Chest", "Obtain 100 random unique rarity equipment.")
+        self.name_jp = "特別な宝箱"
+        self.description_jp = "ユニークレアリティの装備を100個ランダムに入手する。"
         self.image = "wood_chest_silver"
         self.rarity = "Unique"
         self.type = "Eqpackage"
@@ -172,6 +182,8 @@ class EquipPackage5(Consumable):
 class EquipPackage6(Consumable):
     def __init__(self, stack: int):
         super().__init__("Legendary Chest", "Obtain 100 random legendary rarity equipment.")
+        self.name_jp = "伝説の宝箱"
+        self.description_jp = "伝説レアリティの装備を100個ランダムに入手する。"
         self.image = "wood_chest_gold"
         self.rarity = "Legendary"
         self.type = "Eqpackage"
@@ -197,6 +209,8 @@ class EquipPackageBrandSpecific(Consumable):
     def __init__(self, stack: int, brand: str):
         super().__init__(f"{brand} Chest", f"Obtain 100 random {brand} equipment.")
         self.brand = brand
+        self.name_jp = f"{brand}の宝箱"
+        self.description_jp = f"{brand}の装備を100個ランダムに入手する。"
         self.image = "special_chest"
         self.rarity = "Epic"
         self.type = "Eqpackage"
@@ -228,6 +242,8 @@ class EquipPackageBrandSpecific(Consumable):
 class FoodPackage(Consumable):
     def __init__(self, stack: int):
         super().__init__("Uncommon Sack", "Obtain 100 random common or uncommon rarity food.")
+        self.name_jp = "珍しい袋"
+        self.description_jp = "一般または珍しいレアリティの食べ物を100個ランダムに入手する。"
         self.image = "large_sack_old_worn"
         self.rarity = "Uncommon"
         self.type = "Foodpackage"
@@ -267,6 +283,8 @@ class FoodPackage(Consumable):
 class FoodPackage2(Consumable):
     def __init__(self, stack: int):
         super().__init__("Rare Sack", "Obtain 100 random rare or epic rarity food.")
+        self.name_jp = "レア袋"
+        self.description_jp = "レアまたはエピックレアリティの食べ物を100個ランダムに入手する。"
         self.image = "large_sack"
         self.rarity = "Epic"
         self.type = "Foodpackage"
@@ -301,6 +319,8 @@ class FoodPackage2(Consumable):
 class FoodPackage3(Consumable):
     def __init__(self, stack: int):
         super().__init__("Unique Sack", "Obtain 100 random unique or legendary rarity food.")
+        self.name_jp = "特別な袋"
+        self.description_jp = "ユニークまたは伝説レアリティの食べ物を100個ランダムに入手する。"
         self.image = "food_basket"
         self.rarity = "Legendary"
         self.type = "Foodpackage"
@@ -340,6 +360,8 @@ class FoodPackage3(Consumable):
 class Apple(Consumable):
     def __init__(self, stack: int):
         super().__init__("Apple", "ATK + 10% for 16-20 turns.")
+        self.name_jp = "りんご"
+        self.description_jp = "16〜20ターンの間、攻撃力が10%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_apple"
         self.rarity = "Common"
@@ -369,6 +391,8 @@ class Apple(Consumable):
 class Coconuts(Consumable):
     def __init__(self, stack: int):
         super().__init__("Coconuts", "DEF + 10% for 16-20 turns.")
+        self.name_jp = "ココナッツ"
+        self.description_jp = "16〜20ターンの間、防御力が10%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_coconuts"
         self.rarity = "Common"
@@ -398,6 +422,8 @@ class Coconuts(Consumable):
 class Banana(Consumable):
     def __init__(self, stack: int):
         super().__init__("Banana", "Recover approximatly 30000 hp.")
+        self.name_jp = "バナナ"
+        self.description_jp = "約30000HPを回復する。"
         self.image = "banana"
         self.rarity = "Common"
         self.type = "Food"
@@ -421,6 +447,8 @@ class Banana(Consumable):
 class Orange(Consumable):
     def __init__(self, stack: int):
         super().__init__("Orange", "Apply Shield to user for 8-9 turns. Shield absorbs approximatly 22500 damage.")
+        self.name_jp = "オレンジ"
+        self.description_jp = "8〜9ターンの間、味方にシールドを付与する。シールドは約22500のダメージを吸収する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_orange"
         self.rarity = "Common"
@@ -452,6 +480,8 @@ class Orange(Consumable):
 class Kiwi(Consumable):
     def __init__(self, stack: int):
         super().__init__("Kiwi", "Recover approximatly 70000 hp.")
+        self.name_jp = "キウイ"
+        self.description_jp = "約70000HPを回復する。"
         self.image = "kiwi"
         self.rarity = "Uncommon"
         self.type = "Food"
@@ -475,6 +505,8 @@ class Kiwi(Consumable):
 class Fried_Shrimp(Consumable):
     def __init__(self, stack: int):
         super().__init__("Fried Shrimp", "ATK + 15% for 17-21 turns.")
+        self.name_jp = "エビフライ"
+        self.description_jp = "17〜21ターンの間、攻撃力が15%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_fried_shrimp"
         self.rarity = "Uncommon"
@@ -504,6 +536,8 @@ class Fried_Shrimp(Consumable):
 class Pomegranate(Consumable):
     def __init__(self, stack: int):
         super().__init__("Pomegranate", "DEF + 15% for 17-21 turns.")
+        self.name_jp = "ザクロ"
+        self.description_jp = "17〜21ターンの間、防御力が15%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_pomegranate"
         self.rarity = "Uncommon"
@@ -534,6 +568,8 @@ class Baozi(Consumable):
     # maxhp + 30% for 27-33 turns
     def __init__(self, stack: int):
         super().__init__("Baozi", "Max HP + 30% for 27-33 turns.")
+        self.name_jp = "包子"
+        self.description_jp = "27〜33ターンの間、最大HPが30%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_baozi"
         self.rarity = "Uncommon"
@@ -566,6 +602,8 @@ class Baozi(Consumable):
 class Strawberry(Consumable):
     def __init__(self, stack: int):
         super().__init__("Strawberry", "")
+        self.name_jp = "いちご"
+        self.description_jp = "約150000HPを回復する。"
         self.description = "Recover approximatly 150000 hp."
         self.image = "strawberry"
         self.rarity = "Rare"
@@ -591,6 +629,8 @@ class Strawberry(Consumable):
 class Orange_Juice_60(Consumable):
     def __init__(self, stack: int):
         super().__init__("60% Orange Juice", "Apply Shield to user for 8-10 turns. Shield absorbs approximatly 112500 damage.")
+        self.name_jp = "60%オレンジジュース"
+        self.description_jp = "8〜10ターンの間、味方にシールドを付与する。シールドは約112500のダメージを吸収する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_orange_juice_60"
         self.rarity = "Rare"
@@ -621,6 +661,8 @@ class Orange_Juice_60(Consumable):
 class Milk(Consumable):
     def __init__(self, stack: int):
         super().__init__("Milk", "Gain EXP by approximately 20% of max EXP.")
+        self.name_jp = "牛乳"
+        self.description_jp = "最大EXPの約20%分の経験値を獲得する。"
         self.image = "food_milk"
         self.rarity = "Rare"
         self.type = "Food"
@@ -638,6 +680,8 @@ class Milk(Consumable):
 class Sandwich(Consumable):
     def __init__(self, stack: int):
         super().__init__("Sandwich", "All main stats + 5% for 18-22 turns.")
+        self.name_jp = "サンドイッチ"
+        self.description_jp = "18〜22ターンの間、主要ステータスが5%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_sandwich"
         self.rarity = "Rare"
@@ -668,6 +712,8 @@ class Sandwich(Consumable):
 class Pancake(Consumable):
     def __init__(self, stack: int):
         super().__init__("Pancake", "Recover approximatly 230000 hp.")
+        self.name_jp = "パンケーキ"
+        self.description_jp = "約230000HPを回復する。"
         self.image = "pancake"
         self.rarity = "Epic"
         self.type = "Food"
@@ -691,6 +737,8 @@ class Pancake(Consumable):
 class Swiss_Roll(Consumable):
     def __init__(self, stack: int):
         super().__init__("Swiss Roll", "Regenerate approximately 26450 hp each turn for 10 turns.")
+        self.name_jp = "スイスロール"
+        self.description_jp = "10ターンの間、毎ターン約26450HPを回復する。"
         self.image = "food_swiss_roll"
         self.rarity = "Epic"
         self.type = "Food"
@@ -723,6 +771,8 @@ class Swiss_Roll(Consumable):
 class Chocolate(Consumable):
     def __init__(self, stack: int):
         super().__init__("Chocolate", "CRIT Rate + 55.55% for 19-23 turns.")
+        self.name_jp = "チョコレート"
+        self.description_jp = "19〜23ターンの間、会心率が55.55%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_chocolate"
         self.rarity = "Epic"
@@ -752,6 +802,8 @@ class Chocolate(Consumable):
 class Onigiri(Consumable):
     def __init__(self, stack: int):
         super().__init__("Onigiri", "Max HP + 60% for 31-37 turns.")
+        self.name_jp = "おにぎり"
+        self.description_jp = "31〜37ターンの間、最大HPが60%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_onigiri"
         self.rarity = "Epic"
@@ -783,6 +835,8 @@ class Onigiri(Consumable):
 class Mantou(Consumable):
     def __init__(self, stack: int):
         super().__init__("Mantou", "Recover approximatly 300000 hp.")
+        self.name_jp = "マントウ"
+        self.description_jp = "約300000HPを回復する。"
         self.image = "mantou"
         self.rarity = "Unique"
         self.type = "Food"
@@ -806,6 +860,8 @@ class Mantou(Consumable):
 class Ramen(Consumable):
     def __init__(self, stack: int):
         super().__init__("Ramen", "Apply Shield to user for 9-12 turns. Damage is reduced by 15%, each subsequent damage taken on the same turn is further reduced by 15%.")
+        self.name_jp = "ラーメン"
+        self.description_jp = "9〜12ターンの間、味方にシールドを付与する。ダメージが15%軽減され、同じターンに受ける追加のダメージはさらに15%軽減される。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_ramen"
         self.rarity = "Unique"
@@ -835,6 +891,8 @@ class Ramen(Consumable):
 class Orange_Juice(Consumable):
     def __init__(self, stack: int):
         super().__init__("100% Orange Juice", "Apply Shield to user for 9-12 turns. Shield absorbs approximatly 225000 damage.")
+        self.name_jp = "100%オレンジジュース"
+        self.description_jp = "9〜12ターンの間、味方にシールドを付与する。シールドは約225000のダメージを吸収する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_orange_juice"
         self.rarity = "Unique"
@@ -866,6 +924,8 @@ class Orange_Juice(Consumable):
 class Matcha_Roll(Consumable):
     def __init__(self, stack: int):
         super().__init__("Matcha Roll", "All main stats + 12% for 22-26 turns.")
+        self.name_jp = "抹茶ロール"
+        self.description_jp = "22〜26ターンの間、主要ステータスが12%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_matcha_roll"
         self.rarity = "Legendary"
@@ -896,6 +956,8 @@ class Matcha_Roll(Consumable):
 class Sushi_A(Consumable):
     def __init__(self, stack: int):
         super().__init__("Sushi A", "All main stats except max HP + 3.3% for all allies for 22-26 turns.")
+        self.name_jp = "寿司A"
+        self.description_jp = "22〜26ターンの間、味方全員の最大HPを除く主要ステータスが3.3%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_sushi_a"
         self.rarity = "Legendary"
@@ -930,6 +992,8 @@ class Sushi_A(Consumable):
 class Icecream(Consumable):
     def __init__(self, stack: int):
         super().__init__("Icecream", "Recover 222222 hp and remove 2 random debuffs.")
+        self.name_jp = "アイスクリーム"
+        self.description_jp = "222222HPを回復し、ランダムなデバフを2つ解除する。"
         self.image = "food_icecream"
         self.rarity = "Legendary"
         self.type = "Food"
@@ -953,6 +1017,8 @@ class Icecream(Consumable):
 class Fries(Consumable):
     def __init__(self, stack: int):
         super().__init__("Fries", "Apply Shield to user for 14-16 turns. Shield reduces damage taken by 25%.")
+        self.name_jp = "フライドポテト"
+        self.description_jp = "14〜16ターンの間、味方にシールドを付与する。シールドは受けるダメージを25%軽減する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_fries"
         self.rarity = "Legendary"
@@ -982,6 +1048,8 @@ class Fries(Consumable):
 class Chocolate_Cake(Consumable):
     def __init__(self, stack: int):
         super().__init__("Chocolate Cake", "CRIT Rate + 55.55%, CRIT Dmg + 33.33% for 21-25 turns.")
+        self.name_jp = "チョコレートケーキ"
+        self.description_jp = "21〜25ターンの間、会心率が55.55%上昇し、会心ダメージが33.33%上昇する。 同じ効果が適用された場合、効果時間が更新される。"
         self.description += " When same effect is applied, duration is refreshed."
         self.image = "food_chocolate_cake"
         self.rarity = "Legendary"
