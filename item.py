@@ -28,7 +28,7 @@ class SliverIngot(Item):
     def __init__(self, stack: int):
         super().__init__("Sliver Ingot", "A shiny piece of silver ingot.")
         self.name_jp = "銀のインゴット"
-        self.description_jp = "光沢のある銀のインゴット。"
+        self.description_jp = "きらりと光る銀のインゴット。"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.image = "sliver_ingot_111000"
@@ -47,7 +47,7 @@ class GoldIngot(Item):
     def __init__(self, stack: int):
         super().__init__("Gold Ingot", "A shiny piece of gold ingot.")
         self.name_jp = "金のインゴット"
-        self.description_jp = "光沢のある金のインゴット。"
+        self.description_jp = "きらりと光る金のインゴット。"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.image = "gold_ingot_9820000"
@@ -66,7 +66,7 @@ class DiamondIngot(Item):
     def __init__(self, stack: int):
         super().__init__("Diamond Ingot", "A shiny piece of diamond ingot.")
         self.name_jp = "ダイヤモンドのインゴット"
-        self.description_jp = "光沢のあるダイヤモンドのインゴット。"
+        self.description_jp = "きらりと光るダイヤモンドのインゴット。"
         self.current_stack = max(1, stack)
         self.current_stack = min(self.current_stack, self.max_stack)
         self.image = "diamond_ingot_62000000"

@@ -1,7 +1,7 @@
 import io
-import warnings
 import pygame
-warnings.simplefilter(action='ignore', category=FutureWarning) # No future, now is eternal
+# import warnings
+# warnings.simplefilter(action='ignore', category=FutureWarning) # No future, now is eternal
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns

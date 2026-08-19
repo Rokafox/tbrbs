@@ -1244,33 +1244,30 @@ if __name__ == "__main__":
         if not adventure_mode_stages.get(adventure_mode_current_stage) or force_regenerate_stage:
             adventure_mode_stages[adventure_mode_current_stage] = new_selection_of_monsters
 
-        # v3.3.0: Because we can easily edit party members now, generating for all monsters is needed.
-        if adventure_mode_current_stage < 500:
-            # for m in adventure_mode_stages[adventure_mode_current_stage]:
-            for m in all_monsters:
-                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Common", 
-                                                            eq_level=int(adventure_mode_current_stage)))
-        elif 500 <= adventure_mode_current_stage < 1000:
-            for m in all_monsters:
-                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Uncommon", 
-                                                            eq_level=int(adventure_mode_current_stage)))
-        elif 1000 <= adventure_mode_current_stage < 1500:
-            for m in all_monsters:
-                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Rare", 
-                                                            eq_level=int(adventure_mode_current_stage)))
-        elif 1500 <= adventure_mode_current_stage < 2000:
-            for m in all_monsters:
-                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Epic", 
-                                                            eq_level=int(adventure_mode_current_stage)))
-        elif 2000 <= adventure_mode_current_stage < 2500:
-            for m in all_monsters:
-                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Unique", 
-                                                            eq_level=int(adventure_mode_current_stage)))
-        elif 2500 <= adventure_mode_current_stage:
-            for m in all_monsters:
-                m.equip_item_from_list(generate_equips_list(4, locked_eq_set="Void", include_void=True, locked_rarity="Legendary", 
-                                                            eq_level=int(adventure_mode_current_stage)))
-
+        def _get_monster_stage_rarity(stage: int) -> str:
+            thresholds = (
+                (500, "Common"),
+                (1000, "Uncommon"),
+                (1500, "Rare"),
+                (2000, "Epic"),
+                (2500, "Unique"),
+            )
+            for threshold, rarity in thresholds:
+                if stage < threshold:
+                    return rarity
+            return "Legendary"
+        
+        rarity = _get_monster_stage_rarity(adventure_mode_current_stage)
+        for m in all_monsters:
+            m.equip_item_from_list(
+                generate_equips_list(
+                    4,
+                    locked_eq_set="Void",
+                    locked_rarity=rarity,
+                    eq_level=int(adventure_mode_current_stage),
+                    tier="void",
+                )
+            )
 
     def adventure_mode_stage_jump(how_many: int) -> bool:
         global current_game_mode, adventure_mode_current_stage

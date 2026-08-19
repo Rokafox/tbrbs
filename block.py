@@ -1,4 +1,4 @@
-import random
+import uuid
 # The top level class for any and all objects, as a reference to Minecraft blocks and Blender starting block.
 # The following classes inherit from this class:
 # Equip, Consumable, Item
@@ -114,3 +114,6 @@ class Block:
     
     def get_rarity_order(self):
         return self.rarity_list.index(self.rarity)
+
+    def misc_generate_uuid(self):
+        return str(uuid.uuid7())

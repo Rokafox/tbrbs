@@ -182,7 +182,7 @@ class Equip(Block):
         return None
 
     def fake_dice(self, tier: str) -> int:
-        sides = [1, 2, 3, 4, 5, 6, 7, 8]
+        sides = [0, 1, 2, 3, 4, 5, 6, 7]
         weights = {
             "bad": [60, 30, 10, 5, 2, 1, 0, 0],
             "normal": [30, 40, 20, 10, 5, 2, 1, 0],
@@ -192,85 +192,72 @@ class Equip(Block):
 
     def generate(self, tier: str):
         """
-        Generate stats. [tier] can be "bad", "normal", or "good". 
-        The higher the tier, the more likely to generate more stats.
+        Generate stats. [tier] can be "bad", "normal", "good", "void".
+        void is only used only for Void Force on monsters on adventure mode. 
+        The higher the tier, the more likely to generate more substats based on
+        the fake dice function. And more likely to generate higher mainstats.
         """
-        level = self.level
-        # All substats are reset to 0
-        self.maxhp_percent = 0.00
-        self.atk_percent = 0.00
-        self.def_percent = 0.00
-        self.spd = 0.00
-        self.eva = 0.00
-        self.acc = 0.00
-        self.crit = 0.00
-        self.critdmg = 0.00
-        self.critdef = 0.00
-        self.penetration = 0.00
-        self.heal_efficiency = 0.00
         substats = ["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc", "crit", "critdmg", "critdef", "penetration", "heal_efficiency"]
-        lines_already_have = []
-        lines_already_generated = 0
-        for ss in substats:
-            if eval(f"self.{ss}") > 0:
-                lines_already_generated += 1
-                lines_already_have.append(ss)
+        for attr in substats:
+            setattr(self, attr, 0)
 
-        extra_lines_to_generate = self.fake_dice(tier) - 1
-        mainstats_nd_base_max_allowed_value = 4000
+        if tier == "void":
+            # depending on self level. Default 1 line. Every 500 level, add 1 line. Max 7.
+            extra_lines_to_generate = min(1 + self.level // 500, 7)
+        else:
+            extra_lines_to_generate = self.fake_dice(tier)
+        msndmav = 4000 # mainstats_nd_base_max_allowed_value
 
         match tier:
             case "bad": 
-                mainstats_nd_base_value = (1, mainstats_nd_base_max_allowed_value, 1000, 1000)
+                mainstats_nd_base_value = (1, msndmav, 1000, 1000)
             case "normal":
-                mainstats_nd_base_value = (250, mainstats_nd_base_max_allowed_value, 1250, 1000)
-            case "good":
-                mainstats_nd_base_value = (500, mainstats_nd_base_max_allowed_value, 1500, 1000)
+                mainstats_nd_base_value = (250, msndmav, 1250, 1000)
+            case "good" | "void":
+                mainstats_nd_base_value = (500, msndmav, 1500, 1000)
             case _:
                 raise Exception("Invalid tier")
         
         if self.type == self.type_list[2]:  # Accessory
             v = normal_distribution(*mainstats_nd_base_value)
-            self._mainstat_potential = v / mainstats_nd_base_max_allowed_value
+            self._mainstat_potential = v / msndmav
             v /= 40
-            v *= level
+            v *= self.level
             self.maxhp_flat = v
 
         elif self.type == self.type_list[0]: # Weapon
             v = max(normal_distribution(*mainstats_nd_base_value) * 0.05, 1)
-            self._mainstat_potential = v / (mainstats_nd_base_max_allowed_value * 0.05)
+            self._mainstat_potential = v / (msndmav * 0.05)
             v /= 40
-            v *= level
+            v *= self.level
             self.atk_flat = v
         elif self.type == self.type_list[1]: # Armor
             v = max(normal_distribution(*mainstats_nd_base_value) * 0.05, 1)
-            self._mainstat_potential = v / (mainstats_nd_base_max_allowed_value * 0.05)
+            self._mainstat_potential = v / (msndmav * 0.05)
             v /= 40
-            v *= level
+            v *= self.level
             self.def_flat = v
         elif self.type == self.type_list[3]: # Boots
             v = max(normal_distribution(*mainstats_nd_base_value) * 0.05, 1)
-            self._mainstat_potential = v / (mainstats_nd_base_max_allowed_value * 0.05)
+            self._mainstat_potential = v / (msndmav * 0.05)
             v /= 40
-            v *= level
+            v *= self.level
             self.spd_flat = v
         else:
             raise Exception("Invalid type")
         
         if extra_lines_to_generate > 0:
             for i in range(extra_lines_to_generate):
-                if len(lines_already_have) < 6:
-                    attr = random.choice(substats)
-                    if attr not in lines_already_have:
-                        lines_already_have.append(attr)
-                else:
-                    attr = random.choice(lines_already_have)
+                attr = substats.pop(substats.index(random.choice(substats)))
+
                 if attr == "penetration":
-                    value = normal_distribution(1, 4000, 400, 600) * 0.0001
+                    value = normal_distribution(1, 2000, 400, 600) * 0.0001
                 elif attr == "def_percent":
+                    # slightly better for def to reduce fully equipped OTK.
                     value = normal_distribution(1, 4000, 1200, 1000) * 0.0001
                 elif attr == "eva":
-                    value = normal_distribution(1, 4000, 750, 800) * 0.0001
+                    # slightly lower, so eva can never win against high acc.
+                    value = normal_distribution(1, 3000, 750, 800) * 0.0001
                 else:
                     value = normal_distribution(1, 4000, 1000, 1000) * 0.0001
                 setattr(self, attr, getattr(self, attr) + value)
@@ -279,65 +266,7 @@ class Equip(Block):
 
 
     def generate_void(self):
-        """
-        Only for Void Force on monsters
-        """
-        level = self.level
-        if level < 200:
-            extra_lines_to_generate = 1
-        elif 200 <= level < 400:
-            extra_lines_to_generate = 1
-        elif 400 <= level < 600:
-            extra_lines_to_generate = 2
-        elif 600 <= level < 800:
-            extra_lines_to_generate = 3
-        elif 800 <= level < 1000:
-            extra_lines_to_generate = 4
-        elif 1000 <= level < 2000:
-            extra_lines_to_generate = 5
-        elif 2000 <= level < 2500:
-            extra_lines_to_generate = 6
-        elif 2500 <= level:
-            extra_lines_to_generate = 7
-        else:
-            extra_lines_to_generate = 0
-        
-        if self.type == self.type_list[2]:
-            self.maxhp_flat = max(normal_distribution(1, 4000, 1200, 1000), 1)
-            self.maxhp_flat /= 40
-            self.maxhp_flat *= level
-        elif self.type == self.type_list[0]:
-            self.atk_flat = max(normal_distribution(1, 3000, 1200, 500) * 0.05, 1)
-            self.atk_flat /= 40
-            self.atk_flat *= level
-        elif self.type == self.type_list[1]:
-            self.def_flat = max(normal_distribution(1, 4000, 1600, 666) * 0.05, 1)
-            self.def_flat /= 40
-            self.def_flat *= level
-        elif self.type == self.type_list[3]:
-            self.spd_flat = max(normal_distribution(1, 3000, 1200, 500) * 0.05, 1)
-            self.spd_flat /= 40
-            self.spd_flat *= level
-        else:
-            raise Exception("Invalid type")
-        
-        attributes = ["maxhp_percent", "atk_percent", "def_percent", "spd", "eva", "acc",
-                      "crit", "critdmg", "critdef", "penetration", "heal_efficiency"]
-        if extra_lines_to_generate > 0:
-            selected_attributes = random.sample(attributes, extra_lines_to_generate)
-            
-            for attr in selected_attributes:
-                if attr == "penetration":
-                    value = normal_distribution(1, 2000, 400, 500) * 0.0001
-                elif attr == "def_percent":
-                    value = normal_distribution(1, 2000, 800, 500) * 0.00015
-                elif attr == "eva":
-                    value = normal_distribution(1, 2000, 400, 500) * 0.0001
-                else:
-                    value = normal_distribution(1, 2000, 500, 500) * 0.00015
-                setattr(self, attr, getattr(self, attr) + value)
-        
-        self.enhance_by_rarity()
+        raise NotImplementedError("Use generate(tier='void') instead.")
 
 
     def level_change(self, increment):
@@ -369,8 +298,9 @@ class Equip(Block):
             current_level = self.level
         if current_level == self.level_max:
             return 0
-        base_cost = 0.01  
-        return int(base_cost * (current_level ** 1.985))  # 3015329 from 1 to 1000
+        base_cost = 0.01
+        process_cost = 20  
+        return int(base_cost * (current_level ** 1.985)) + process_cost  # appx 3015329 from 1 to 1000
     
     def level_up_cost_multilevel(self, levels: int) -> int:
         # calculate the cost of leveling up multiple levels from current level
@@ -409,14 +339,11 @@ class Equip(Block):
         rarity_multiplier = rarity_multipliers.get(self.rarity)
         random_multiplier = random.uniform(0.95, 1.05)
         level_multiplier = max(1, 0.006 * (self.level ** 1.333))
+        self.market_value = (base_value + base_value_b + base_value_c) * rarity_multiplier * random_multiplier
+        self.market_value *= level_multiplier
         if self.eq_set == "None":
-            self.market_value = (base_value + base_value_b + base_value_c) * rarity_multiplier * random_multiplier * 0.66
-            self.market_value *= level_multiplier
-            return self.market_value
-        else:
-            self.market_value = (base_value + base_value_b + base_value_c) * rarity_multiplier * random_multiplier
-            self.market_value *= level_multiplier 
-            return self.market_value
+            self.market_value *= 0.66 
+        return self.market_value
 
     def estimate_value_for_attacker(self):
         """
@@ -1025,38 +952,35 @@ class Equip(Block):
 
 
 def generate_equips_list(num=1, locked_type=None, locked_eq_set=None, locked_rarity=None, random_full_eqset=False, 
-                         eq_level=40, include_void=False, min_market_value=1, tier="bad") -> list:
+                         eq_level=40, min_market_value=1, tier="bad") -> list:
     """
-    [tier] can be "bad", "normal", "good", or "random".
+    [tier] can be "bad", "normal", "good", "random", "void"
     """
     items = []
     rarity_pool, types, eq_set_pool = Equip("Foo", "Weapon", "Common").get_raritytypeeqset_list()
-    if not include_void:
-        eq_set_pool.remove("Void")
+    eq_set_pool_no_void = [eq_set for eq_set in eq_set_pool if eq_set != "Void"]
     types_cycle = cycle(types)
     if random_full_eqset:
-        random_eq_set = random.choice(eq_set_pool[1:])
+        random_eq_set = random.choice(eq_set_pool_no_void[1:])
     for i in range(num):
         item_type = locked_type if locked_type else next(types_cycle)
         if random_full_eqset:
             item_eq_set = random_eq_set
         else:
-            item_eq_set = locked_eq_set if locked_eq_set else random.choice(eq_set_pool)
+            item_eq_set = locked_eq_set if locked_eq_set else random.choice(eq_set_pool_no_void)
         item_rarity = locked_rarity if locked_rarity else random.choice(rarity_pool)
 
-        item = Equip(f"Item_{i + 1}", item_type, item_rarity, item_eq_set, level=eq_level)
+        item = Equip(f"EQ_", item_type, item_rarity, item_eq_set, level=eq_level)
+        item.name += item.misc_generate_uuid()
         if tier == "random":
             tier = random.choice(["bad", "normal", "good"])
-        if include_void and item_eq_set == "Void":
-            item.generate_void()
-        else:
-            while item.market_value < min_market_value:
-                item.generate(tier=tier)
+
+        while item.market_value < min_market_value:
+            item.generate(tier=tier)
+
         items.append(item)
 
     return items
 
-# nd_list = [normal_distribution(1, 3000, 1000, 500) for i in range(1000)]
-# avg = sum(nd_list)/len(nd_list)
-# print(avg) # near 1000
+
 # print(generate_equips_list(4, locked_eq_set="Arasaka"))
