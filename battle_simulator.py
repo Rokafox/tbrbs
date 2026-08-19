@@ -3664,22 +3664,7 @@ if __name__ == "__main__":
         debuff_before = {k: [x.name for x in debuff_before[k]] for k in debuff_before.keys()}
         shield_value_before = {character.name: character.get_shield_value() for character in itertools.chain(party1, party2)}
 
-        global_vars.turn_info_string = ""
-        text_box.set_text("=====================================\n")
-        global_vars.turn_info_string += f"Turn {turn}\n"
-
-        # Use random consumable
-        if auto_battle_active and use_random_consumable_selection_menu.selected_option[0] == "True":
-            use_random_consumable()
-
-        reset_ally_enemy_attr(party1, party2)
-        for character in itertools.chain(party1, party2):
-            character.update_ally_and_enemy()
-            character.status_effects_start_of_turn()
-            character.record_battle_turns()
-
-        if not is_someone_alive(party1) or not is_someone_alive(party2) or turn > 300:
-
+        def _record_data_and_call_redraw_after_turn(main_char: Character | None, also_draw_eq_slots: bool = True):
             buff_after = {character.name: character.buffs for character in itertools.chain(party1, party2)} 
             buff_after = {k: [x.name for x in buff_after[k]] for k in buff_after.keys()}
             buff_applied_this_turn = {k: [x for x in buff_after[k] if x not in buff_before[k]] for k in buff_before.keys()}
@@ -3690,25 +3675,32 @@ if __name__ == "__main__":
             shield_value_after = {character.name: character.get_shield_value() for character in itertools.chain(party1, party2)}
             shield_value_diff = {k: shield_value_after[k] - shield_value_before[k] for k in shield_value_before.keys()}
 
-            redraw_ui(party1, party2, refill_image=True, main_char=None, 
-                    buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
-                    shield_value_diff_dict=shield_value_diff, also_draw_chart=False)
+            redraw_ui(party1, party2, refill_image=True, main_char=main_char,
+                                buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
+                                shield_value_diff_dict=shield_value_diff, redraw_eq_slots=also_draw_eq_slots, also_draw_chart=False)
 
-            for character in itertools.chain(party1, party2):
-                character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
-                character.record_healing_received()
+        global_vars.turn_info_string = ""
+        text_box.set_text("=====================================\n")
+        global_vars.turn_info_string += f"Turn {turn}\n"
 
-            if global_vars.draw_battle_chart == "True":
-                create_tmp_damage_data_csv(party1, party2)
-                create_healing_data_csv(party1, party2)
-                draw_chart()
+        party1_defeated = False
+        party2_defeated = False
 
-            if not is_someone_alive(party1):
+        def check_if_a_ending_and_update_defeat_status(): # a for all lose
+            nonlocal party1_defeated, party2_defeated
+            party1_defeated = not is_someone_alive(party1)
+            party2_defeated = not is_someone_alive(party2)
+            return party1_defeated or party2_defeated
+
+        def a_ending_aftermath():
+            if party1_defeated and party2_defeated:
+                global_vars.turn_info_string += "Both parties are defeated.\n"
+            elif party1_defeated:
                 if current_game_mode == "Adventure Mode":
                     global_vars.turn_info_string += "Defeated.\n"
                 else:
                     global_vars.turn_info_string += "Party 1 is defeated.\n"
-            elif not is_someone_alive(party2):
+            elif party2_defeated:
                 if current_game_mode == "Adventure Mode":
                     global_vars.turn_info_string += "Victory!\n"
                     player.cleared_stages = adventure_mode_current_stage
@@ -3724,6 +3716,31 @@ if __name__ == "__main__":
                     global_vars.turn_info_string += "Party 2 is defeated.\n"
             else:
                 global_vars.turn_info_string += "Battle ended with no result.\n"
+
+        # Use random consumable
+        if auto_battle_active and use_random_consumable_selection_menu.selected_option[0] == "True":
+            use_random_consumable()
+
+        reset_ally_enemy_attr(party1, party2)
+        for character in itertools.chain(party1, party2):
+            character.update_ally_and_enemy()
+            character.status_effects_start_of_turn()
+            character.record_battle_turns()
+
+        if check_if_a_ending_and_update_defeat_status() or turn > 300:
+            _record_data_and_call_redraw_after_turn(main_char=None)
+
+            for character in itertools.chain(party1, party2):
+                character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
+                character.record_healing_received()
+
+            if global_vars.draw_battle_chart == "True":
+                create_tmp_damage_data_csv(party1, party2)
+                create_healing_data_csv(party1, party2)
+                draw_chart()
+
+            a_ending_aftermath()
+
             text_box.append_html_text(global_vars.turn_info_string)
             save_player(player)
             return False
@@ -3739,21 +3756,9 @@ if __name__ == "__main__":
         for character in party2:
             character.update_ally_and_enemy()
 
-        if not is_someone_alive(party1) or not is_someone_alive(party2) or turn > 300:
+        if check_if_a_ending_and_update_defeat_status() or turn > 300:
 
-            buff_after = {character.name: character.buffs for character in itertools.chain(party1, party2)} 
-            buff_after = {k: [x.name for x in buff_after[k]] for k in buff_after.keys()}
-            buff_applied_this_turn = {k: [x for x in buff_after[k] if x not in buff_before[k]] for k in buff_before.keys()}
-            # buff_removed_this_turn = {k: [x for x in buff_before[k] if x not in buff_after[k]] for k in buff_before.keys()}
-            debuff_after = {character.name: character.debuffs for character in itertools.chain(party1, party2)}
-            debuff_after = {k: [x.name for x in debuff_after[k]] for k in debuff_after.keys()}
-            debuff_applied_this_turn = {k: [x for x in debuff_after[k] if x not in debuff_before[k]] for k in debuff_before.keys()}
-            shield_value_after = {character.name: character.get_shield_value() for character in itertools.chain(party1, party2)}
-            shield_value_diff = {k: shield_value_after[k] - shield_value_before[k] for k in shield_value_before.keys()}
-
-            redraw_ui(party1, party2, refill_image=True, main_char=None, 
-                    buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
-                    shield_value_diff_dict=shield_value_diff, also_draw_chart=False)
+            _record_data_and_call_redraw_after_turn(main_char=None)
 
             for character in itertools.chain(party1, party2):
                 character.record_damage_taken() # Empty damage_taken this turn and add to damage_taken_history
@@ -3764,27 +3769,8 @@ if __name__ == "__main__":
                 create_healing_data_csv(party1, party2)
                 draw_chart()
 
-            if not is_someone_alive(party1):
-                if current_game_mode == "Adventure Mode":
-                    global_vars.turn_info_string += "Defeated.\n"
-                else:
-                    global_vars.turn_info_string += "Party 1 is defeated.\n"    
-            elif not is_someone_alive(party2):
-                if current_game_mode == "Adventure Mode":
-                    text_box.append_html_text("Victory!\n")
-                    player.cleared_stages = adventure_mode_current_stage
-                    # gain exp for alive characters in party 1
-                    for character in party1:
-                        if character.is_alive():
-                            character.gain_exp(adventure_mode_exp_reward())
-                            global_vars.turn_info_string += f"{character.name} gained {adventure_mode_exp_reward()} exp.\n"
-                    cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
-                    player.add_cash(cash_reward)
-                    global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
-                else:
-                    global_vars.turn_info_string += "Party 2 is defeated.\n"
-            else:
-                global_vars.turn_info_string += "Battle ended with no result.\n"
+            a_ending_aftermath()
+
             text_box.append_html_text(global_vars.turn_info_string)
             save_player(player)
             return False
@@ -3801,20 +3787,8 @@ if __name__ == "__main__":
         for character in itertools.chain(party1, party2):
             character.status_effects_at_end_of_turn()
 
-        buff_after = {character.name: character.buffs for character in itertools.chain(party1, party2)} 
-        buff_after = {k: [x.name for x in buff_after[k]] for k in buff_after.keys()}
-        buff_applied_this_turn = {k: [x for x in buff_after[k] if x not in buff_before[k]] for k in buff_before.keys()}
-        # buff_removed_this_turn = {k: [x for x in buff_before[k] if x not in buff_after[k]] for k in buff_before.keys()}
-        debuff_after = {character.name: character.debuffs for character in itertools.chain(party1, party2)}
-        debuff_after = {k: [x.name for x in debuff_after[k]] for k in debuff_after.keys()}
-        debuff_applied_this_turn = {k: [x for x in debuff_after[k] if x not in debuff_before[k]] for k in debuff_before.keys()}
-        shield_value_after = {character.name: character.get_shield_value() for character in itertools.chain(party1, party2)}
-        shield_value_diff = {k: shield_value_after[k] - shield_value_before[k] for k in shield_value_before.keys()}
-
-        redraw_ui(party1, party2, refill_image=True, main_char=the_chosen_one, 
-                  buff_added_this_turn=buff_applied_this_turn, debuff_added_this_turn=debuff_applied_this_turn,
-                  shield_value_diff_dict=shield_value_diff, redraw_eq_slots=False, also_draw_chart=False,
-                  optimize_for_auto_battle=True)
+        _record_data_and_call_redraw_after_turn(main_char=the_chosen_one, 
+                                                also_draw_eq_slots=False)
 
         does_anyone_taken_any_damage = False
         does_anyone_recieved_any_healing = False
@@ -3842,30 +3816,8 @@ if __name__ == "__main__":
             if does_anyone_taken_any_damage or does_anyone_recieved_any_healing:
                 draw_chart()
 
-        if not is_someone_alive(party1) or not is_someone_alive(party2) or turn > 300:
-            if not is_someone_alive(party1) and not is_someone_alive(party2):
-                global_vars.turn_info_string += "Both parties are defeated.\n"
-            elif not is_someone_alive(party1):
-                if current_game_mode == "Adventure Mode":
-                    global_vars.turn_info_string += "Defeated.\n"
-                else:
-                    global_vars.turn_info_string += "Party 1 is defeated.\n"
-            elif not is_someone_alive(party2):
-                if current_game_mode == "Adventure Mode":
-                    global_vars.turn_info_string += "Victory!\n"
-                    player.cleared_stages = adventure_mode_current_stage
-                    # gain exp for alive characters in party 1
-                    for character in party1:
-                        if character.is_alive():
-                            character.gain_exp(adventure_mode_exp_reward())
-                            global_vars.turn_info_string += f"{character.name} gained {adventure_mode_exp_reward()} exp.\n"
-                    cash_reward, cash_reward_no_random = adventure_mode_cash_reward()
-                    player.add_cash(cash_reward)
-                    global_vars.turn_info_string += f"Gained {cash_reward} cash.\n"
-                else:
-                    global_vars.turn_info_string += "Party 2 is defeated.\n"
-            else:
-                global_vars.turn_info_string += "Battle ended with no result.\n"
+        if check_if_a_ending_and_update_defeat_status() or turn > 300:
+            a_ending_aftermath()
             text_box.append_html_text(global_vars.turn_info_string)
             save_player(player)
             return False
@@ -4719,7 +4671,7 @@ if __name__ == "__main__":
 
     def redraw_ui(party1, party2, *, refill_image=True, main_char=None,
                   buff_added_this_turn=None, debuff_added_this_turn=None, shield_value_diff_dict=None, redraw_eq_slots=True,
-                  also_draw_chart=True, optimize_for_auto_battle=False):
+                  also_draw_chart=True):
 
         def redraw_party(party: list[Character], image_slots, equip_slots_weapon, equip_slots_armor, equip_slots_accessory, equip_stats_boots, 
                          labels, healthbar, equip_effect_slots, image_slots_overlays, healthbar_overlays):
